@@ -2,6 +2,12 @@ plugins {
 	id 'java'
 }
 
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(11)
+	}
+}
+
 repositories {
 	mavenLocal()
 	maven {
@@ -14,20 +20,17 @@ repositories {
 }
 
 def runeLiteVersion = 'latest.release'
-def pluginMainClass = 'com.example.ExamplePluginTest'
+def pluginMainClass = 'net.runelite.client.plugins.retronpcswapper.cache.RetroCacheTest'
 
 dependencies {
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
-
-	compileOnly 'org.projectlombok:lombok:1.18.30'
-	annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
 	testImplementation 'junit:junit:4.12'
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
 }
 
-group = 'com.example'
+group = 'net.runelite.client.plugins.retronpcswapper'
 
 tasks.withType(JavaCompile).configureEach {
 	options.encoding = 'UTF-8'
@@ -38,7 +41,13 @@ tasks.register('run', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = pluginMainClass
 
-	jvmArgs "-ea"
+	jvmArgs "--add-opens=java.base/java.lang=ALL-UNNAMED",
+			"--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+			"--add-opens=java.base/java.util=ALL-UNNAMED",
+			"--add-exports=java.base/sun.security.action=ALL-UNNAMED",
+			"--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
+			"--add-exports=java.desktop/sun.font=ALL-UNNAMED",
+			"-ea"
 	args "--developer-mode", "--debug"
 }
 
