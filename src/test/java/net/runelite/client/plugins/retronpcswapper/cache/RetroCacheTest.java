@@ -56,12 +56,6 @@ public class RetroCacheTest
 		assertNotNull(blueDragon.getModels());
 		assertTrue(blueDragon.getModels().length > 0);
 
-		for (String key : files.keySet())
-		{
-			System.out.println("Config.jag file key: " + key);
-		}
-
-		byte[] seqDat = files.get(String.valueOf(RetroCacheReader.hashFileName("seq.dat")));
 		RetroNpcDefinition imp708 = defs.get(708);
 		assertNotNull(imp708);
 		assertEquals("Imp", imp708.getName());

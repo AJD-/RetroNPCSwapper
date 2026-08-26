@@ -26,6 +26,8 @@ package net.runelite.client.plugins.retronpcswapper;
 
 import com.google.inject.Provides;
 import java.io.File;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,9 +41,11 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
+import net.runelite.api.NodeCache;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.NpcChanged;
+import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.RuneLite;
 import net.runelite.client.callback.ClientThread;
@@ -74,7 +78,14 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	private final Set<Integer> modifiedNpcIndexes = new HashSet<>();
 	private final Map<Integer, Integer> originalIdleAnims = new HashMap<>();
+	private final Map<Integer, Integer> originalPoseAnims = new HashMap<>();
+	private final Map<Integer, Integer> originalIdleRotateLeftAnims = new HashMap<>();
+	private final Map<Integer, Integer> originalIdleRotateRightAnims = new HashMap<>();
 	private final Map<Integer, Integer> originalWalkAnims = new HashMap<>();
+	private final Map<Integer, Integer> originalWalkRotate180Anims = new HashMap<>();
+	private final Map<Integer, Integer> originalWalkRotateLeftAnims = new HashMap<>();
+	private final Map<Integer, Integer> originalWalkRotateRightAnims = new HashMap<>();
+	private final Map<Integer, Integer> originalRunAnims = new HashMap<>();
 	private final Map<Integer, int[]> originalModelsMap = new HashMap<>();
 
 	@Override
@@ -149,12 +160,34 @@ public class RetroNpcSwapperPlugin extends Plugin
 	public void onNpcSpawned(NpcSpawned event)
 	{
 		processNpc(event.getNpc());
+		resetNpcModelCache();
 	}
 
 	@Subscribe
 	public void onNpcChanged(NpcChanged event)
 	{
 		processNpc(event.getNpc());
+		resetNpcModelCache();
+	}
+
+	@Subscribe
+	public void onNpcDespawned(NpcDespawned event)
+	{
+		NPC npc = event.getNpc();
+		if (npc != null)
+		{
+			int npcIdx = npc.getIndex();
+			modifiedNpcIndexes.remove(npcIdx);
+			originalIdleAnims.remove(npcIdx);
+			originalPoseAnims.remove(npcIdx);
+			originalIdleRotateLeftAnims.remove(npcIdx);
+			originalIdleRotateRightAnims.remove(npcIdx);
+			originalWalkAnims.remove(npcIdx);
+			originalWalkRotate180Anims.remove(npcIdx);
+			originalWalkRotateLeftAnims.remove(npcIdx);
+			originalWalkRotateRightAnims.remove(npcIdx);
+			originalRunAnims.remove(npcIdx);
+		}
 	}
 
 	@Subscribe
@@ -174,32 +207,36 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		int anim = npc.getAnimation();
+
 		if (anim == -1)
 		{
+			// Animation finished - re-enforce retro pose animations (idle / walk)
+			applyRetroSwap(npc, data);
 			return;
 		}
 
+		// Guard against re-triggering if current animation is already the retro target animation
 		if (anim == data.getAttackAnimationId() || anim == data.getDefendAnimationId() || anim == data.getDeathAnimationId())
 		{
 			return;
 		}
 
-		// Match modern death animations (5491, 5492, 5493, 5509, 5512, 313, 836, 1589, 1828, 302 for Skeleton/Imp)
-		if (data.getDeathAnimationId() != -1 && (anim == 5491 || anim == 5492 || anim == 5493 || anim == 5509 || anim == 5512 || anim == 8004 || anim == 8005 || anim == 1589 || anim == 1828 || anim == 313 || anim == 302 || anim == 836))
+		// Match modern death animations (5491, 5492, 5493, 5509, 5512, 8004, 8005, 1589, 1828, 313, 302, 836, 172, 173, 5390)
+		if (data.getDeathAnimationId() != -1 && (anim == 5491 || anim == 5492 || anim == 5493 || anim == 5509 || anim == 5512 || anim == 8004 || anim == 8005 || anim == 1589 || anim == 1828 || anim == 313 || anim == 302 || anim == 836 || anim == 172 || anim == 173 || anim == 5390))
 		{
-			log.info("SWAPPING DEATH ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getDeathAnimationId());
+			log.debug("SWAPPING DEATH ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getDeathAnimationId());
 			npc.setAnimation(data.getDeathAnimationId());
 		}
-		// Match modern defend/take hit animations (5490, 5489, 5488, 5508, 5511, 312, 310, 300, 1588, 1827 for Skeleton/Imp)
-		else if (data.getDefendAnimationId() != -1 && (anim == 5490 || anim == 5489 || anim == 5488 || anim == 5508 || anim == 5511 || anim == 8003 || anim == 1588 || anim == 1827 || anim == 312 || anim == 310 || anim == 300 || anim == 424))
+		// Match modern defend/take hit animations (5490, 5489, 5488, 5508, 5511, 8003, 1588, 1827, 312, 310, 300, 424, 170, 5388)
+		else if (data.getDefendAnimationId() != -1 && (anim == 5490 || anim == 5489 || anim == 5488 || anim == 5508 || anim == 5511 || anim == 8003 || anim == 1588 || anim == 1827 || anim == 312 || anim == 310 || anim == 300 || anim == 424 || anim == 170 || anim == 5388))
 		{
-			log.info("SWAPPING DEFEND ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getDefendAnimationId());
+			log.debug("SWAPPING DEFEND ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getDefendAnimationId());
 			npc.setAnimation(data.getDefendAnimationId());
 		}
-		// Match modern attack animations (5485, 5486, 5487, 5507, 5510, 309, 240, 8002 for Skeleton/Imp)
-		else if (data.getAttackAnimationId() != -1 && (anim == 5485 || anim == 5486 || anim == 5487 || anim == 5507 || anim == 5510 || anim == 8002 || anim == 309 || anim == 240))
+		// Match modern attack animations (5485, 5486, 5487, 5507, 5510, 8002, 309, 240, 169, 5385)
+		else if (data.getAttackAnimationId() != -1 && (anim == 5485 || anim == 5486 || anim == 5487 || anim == 5507 || anim == 5510 || anim == 8002 || anim == 309 || anim == 240 || anim == 169 || anim == 5385))
 		{
-			log.info("SWAPPING ATTACK ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getAttackAnimationId());
+			log.debug("SWAPPING ATTACK ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getAttackAnimationId());
 			npc.setAnimation(data.getAttackAnimationId());
 		}
 	}
@@ -212,8 +249,14 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			modifiedNpcIndexes.clear();
 			originalIdleAnims.clear();
+			originalPoseAnims.clear();
+			originalIdleRotateLeftAnims.clear();
+			originalIdleRotateRightAnims.clear();
 			originalWalkAnims.clear();
-			originalModelsMap.clear();
+			originalWalkRotate180Anims.clear();
+			originalWalkRotateLeftAnims.clear();
+			originalWalkRotateRightAnims.clear();
+			originalRunAnims.clear();
 		}
 	}
 
@@ -230,6 +273,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName());
 		if (data == null)
 		{
+			resetNpc(npc);
 			return;
 		}
 
@@ -252,6 +296,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 		NPCComposition comp = npc.getTransformedComposition();
 		if (comp == null)
 		{
+			comp = npc.getComposition();
+		}
+		if (comp == null)
+		{
 			comp = client.getNpcDefinition(npc.getId());
 		}
 
@@ -261,30 +309,43 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		int npcIdx = npc.getIndex();
+		int npcId = npc.getId();
+		int compId = comp.getId();
 
 		// Save original animation states before overriding
 		if (!modifiedNpcIndexes.contains(npcIdx))
 		{
 			originalIdleAnims.put(npcIdx, npc.getIdlePoseAnimation());
+			originalPoseAnims.put(npcIdx, npc.getPoseAnimation());
+			originalIdleRotateLeftAnims.put(npcIdx, npc.getIdleRotateLeft());
+			originalIdleRotateRightAnims.put(npcIdx, npc.getIdleRotateRight());
 			originalWalkAnims.put(npcIdx, npc.getWalkAnimation());
+			originalWalkRotate180Anims.put(npcIdx, npc.getWalkRotate180());
+			originalWalkRotateLeftAnims.put(npcIdx, npc.getWalkRotateLeft());
+			originalWalkRotateRightAnims.put(npcIdx, npc.getWalkRotateRight());
+			originalRunAnims.put(npcIdx, npc.getRunAnimation());
 			modifiedNpcIndexes.add(npcIdx);
 		}
 
 		int[] compModels = comp.getModels();
-		log.info("INTERCEPTED NPC: name='{}', id={}, index={}, category={}, origModels={}",
-			npc.getName(), npc.getId(), npcIdx, data.getCategory(), Arrays.toString(compModels));
+		log.debug("INTERCEPTED NPC: name='{}', id={}, compId={}, index={}, category={}, origModels={}",
+			npc.getName(), npc.getId(), compId, npcIdx, data.getCategory(), Arrays.toString(compModels));
 
 		// Swap model IDs array on NPCComposition
 		if (compModels != null && data.getRetroModelIds() != null && data.getRetroModelIds().length > 0)
 		{
-			if (!originalModelsMap.containsKey(npcIdx))
+			int[] retroModels = data.getRetroModelIds();
+			if (!originalModelsMap.containsKey(compId))
 			{
-				originalModelsMap.put(npcIdx, compModels.clone());
+				originalModelsMap.put(compId, compModels.clone());
+			}
+			if (!originalModelsMap.containsKey(npcId))
+			{
+				originalModelsMap.put(npcId, compModels.clone());
 			}
 
-			int[] retroModels = data.getRetroModelIds();
-			log.info("SWAPPING MODELS for NPC '{}' (ID: {}): original={} -> retro={}",
-				npc.getName(), npc.getId(), Arrays.toString(compModels), Arrays.toString(retroModels));
+			log.debug("SWAPPING MODELS for NPC '{}' (ID: {}, CompID: {}): original={} -> retro={}",
+				npc.getName(), npc.getId(), compId, Arrays.toString(compModels), Arrays.toString(retroModels));
 
 			for (int i = 0; i < compModels.length; i++)
 			{
@@ -302,17 +363,24 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Apply idle animation override from 2005 cache definition
 		if (data.getIdleAnimationId() != -1)
 		{
-			log.info("SWAPPING IDLE ANIMATION for NPC '{}': orig={} -> retro={}",
+			log.debug("SWAPPING IDLE ANIMATION for NPC '{}': orig={} -> retro={}",
 				npc.getName(), npc.getIdlePoseAnimation(), data.getIdleAnimationId());
 			npc.setIdlePoseAnimation(data.getIdleAnimationId());
+			npc.setPoseAnimation(data.getIdleAnimationId());
+			npc.setIdleRotateLeft(data.getIdleAnimationId());
+			npc.setIdleRotateRight(data.getIdleAnimationId());
 		}
 
 		// Apply walking animation override from 2005 cache definition
 		if (data.getWalkAnimationId() != -1)
 		{
-			log.info("SWAPPING WALK ANIMATION for NPC '{}': orig={} -> retro={}",
+			log.debug("SWAPPING WALK ANIMATION for NPC '{}': orig={} -> retro={}",
 				npc.getName(), npc.getWalkAnimation(), data.getWalkAnimationId());
 			npc.setWalkAnimation(data.getWalkAnimationId());
+			npc.setWalkRotate180(data.getWalkAnimationId());
+			npc.setWalkRotateLeft(data.getWalkAnimationId());
+			npc.setWalkRotateRight(data.getWalkAnimationId());
+			npc.setRunAnimation(data.getWalkAnimationId());
 		}
 	}
 
@@ -322,25 +390,42 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private void resetNpc(NPC npc)
 	{
 		int npcIdx = npc.getIndex();
+		int npcId = npc.getId();
 
 		if (modifiedNpcIndexes.remove(npcIdx))
 		{
-			log.info("Resetting NPC visuals for: {} (ID: {})", npc.getName(), npc.getId());
+			log.debug("Resetting NPC visuals for: {} (ID: {})", npc.getName(), npc.getId());
 
 			NPCComposition comp = npc.getTransformedComposition();
 			if (comp == null)
 			{
-				comp = client.getNpcDefinition(npc.getId());
+				comp = npc.getComposition();
+			}
+			if (comp == null)
+			{
+				comp = client.getNpcDefinition(npcId);
 			}
 
-			int[] origModels = originalModelsMap.remove(npcIdx);
+			int compId = comp != null ? comp.getId() : npcId;
+			int[] origModels = originalModelsMap.get(compId);
+			if (origModels == null)
+			{
+				origModels = originalModelsMap.get(npcId);
+			}
+
 			if (origModels != null && comp != null && comp.getModels() != null)
 			{
 				int[] compModels = comp.getModels();
-				int len = Math.min(compModels.length, origModels.length);
-				for (int i = 0; i < len; i++)
+				for (int i = 0; i < compModels.length; i++)
 				{
-					compModels[i] = origModels[i];
+					if (i < origModels.length)
+					{
+						compModels[i] = origModels[i];
+					}
+					else
+					{
+						compModels[i] = -1;
+					}
 				}
 			}
 
@@ -350,10 +435,52 @@ public class RetroNpcSwapperPlugin extends Plugin
 				npc.setIdlePoseAnimation(origIdle);
 			}
 
+			Integer origPose = originalPoseAnims.remove(npcIdx);
+			if (origPose != null && origPose != -1)
+			{
+				npc.setPoseAnimation(origPose);
+			}
+
+			Integer origIdleRotL = originalIdleRotateLeftAnims.remove(npcIdx);
+			if (origIdleRotL != null && origIdleRotL != -1)
+			{
+				npc.setIdleRotateLeft(origIdleRotL);
+			}
+
+			Integer origIdleRotR = originalIdleRotateRightAnims.remove(npcIdx);
+			if (origIdleRotR != null && origIdleRotR != -1)
+			{
+				npc.setIdleRotateRight(origIdleRotR);
+			}
+
 			Integer origWalk = originalWalkAnims.remove(npcIdx);
 			if (origWalk != null && origWalk != -1)
 			{
 				npc.setWalkAnimation(origWalk);
+			}
+
+			Integer origWalk180 = originalWalkRotate180Anims.remove(npcIdx);
+			if (origWalk180 != null && origWalk180 != -1)
+			{
+				npc.setWalkRotate180(origWalk180);
+			}
+
+			Integer origWalkRotL = originalWalkRotateLeftAnims.remove(npcIdx);
+			if (origWalkRotL != null && origWalkRotL != -1)
+			{
+				npc.setWalkRotateLeft(origWalkRotL);
+			}
+
+			Integer origWalkRotR = originalWalkRotateRightAnims.remove(npcIdx);
+			if (origWalkRotR != null && origWalkRotR != -1)
+			{
+				npc.setWalkRotateRight(origWalkRotR);
+			}
+
+			Integer origRun = originalRunAnims.remove(npcIdx);
+			if (origRun != null && origRun != -1)
+			{
+				npc.setRunAnimation(origRun);
 			}
 		}
 	}
@@ -398,6 +525,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 				processNpc(npc);
 			}
 		}
+
+		resetNpcModelCache();
 	}
 
 	/**
@@ -405,25 +534,84 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void resetAllModifiedNpcs()
 	{
-		if (client.getGameState() != GameState.LOGGED_IN)
+		if (client.getGameState() == GameState.LOGGED_IN)
 		{
-			modifiedNpcIndexes.clear();
-			originalIdleAnims.clear();
-			originalWalkAnims.clear();
-			originalModelsMap.clear();
-			return;
-		}
-
-		for (NPC npc : client.getNpcs())
-		{
-			if (npc != null && modifiedNpcIndexes.contains(npc.getIndex()))
+			for (NPC npc : client.getNpcs())
 			{
-				resetNpc(npc);
+				if (npc != null && modifiedNpcIndexes.contains(npc.getIndex()))
+				{
+					resetNpc(npc);
+				}
 			}
 		}
+
+		// Also restore all cached NPC compositions that were modified, ensuring no stale models remain
+		for (Map.Entry<Integer, int[]> entry : originalModelsMap.entrySet())
+		{
+			int id = entry.getKey();
+			int[] origModels = entry.getValue();
+			NPCComposition comp = client.getNpcDefinition(id);
+			if (comp != null && comp.getModels() != null && origModels != null)
+			{
+				int[] compModels = comp.getModels();
+				for (int i = 0; i < compModels.length; i++)
+				{
+					if (i < origModels.length)
+					{
+						compModels[i] = origModels[i];
+					}
+					else
+					{
+						compModels[i] = -1;
+					}
+				}
+			}
+		}
+
 		modifiedNpcIndexes.clear();
 		originalIdleAnims.clear();
+		originalPoseAnims.clear();
+		originalIdleRotateLeftAnims.clear();
+		originalIdleRotateRightAnims.clear();
 		originalWalkAnims.clear();
+		originalWalkRotate180Anims.clear();
+		originalWalkRotateLeftAnims.clear();
+		originalWalkRotateRightAnims.clear();
+		originalRunAnims.clear();
 		originalModelsMap.clear();
+
+		resetNpcModelCache();
+	}
+
+	/**
+	 * Resets the client's internal NPCComposition and NPC model caches so that model ID
+	 * changes to NPCComposition.getModels() take effect immediately on screen.
+	 */
+	private void resetNpcModelCache()
+	{
+		try
+		{
+			NPCComposition sampleComp = client.getNpcDefinition(0);
+			if (sampleComp != null)
+			{
+				Class<?> compClass = sampleComp.getClass();
+				for (Field field : compClass.getDeclaredFields())
+				{
+					if (Modifier.isStatic(field.getModifiers()) && NodeCache.class.isAssignableFrom(field.getType()))
+					{
+						field.setAccessible(true);
+						NodeCache cache = (NodeCache) field.get(null);
+						if (cache != null)
+						{
+							cache.reset();
+						}
+					}
+				}
+			}
+		}
+		catch (Throwable t)
+		{
+			log.debug("Failed to reset NPC model cache: {}", t.getMessage());
+		}
 	}
 }
