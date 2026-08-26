@@ -1,15 +1,12 @@
 package net.runelite.client.plugins.retronpcswapper.cache;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import net.runelite.client.RuneLite;
-import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.retronpcswapper.RetroNpcData;
 import net.runelite.client.plugins.retronpcswapper.RetroNpcMapping;
-import net.runelite.client.plugins.retronpcswapper.RetroNpcSwapperPlugin;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -17,7 +14,6 @@ public class RetroCacheTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		// Plugin is automatically discovered and loaded from runelite-plugin.properties on the classpath.
 		RuneLite.main(args);
 	}
 
@@ -140,9 +136,9 @@ public class RetroCacheTest
 
 		// Verify Varrock Guard IDs map to GUARDS category
 		assertNotNull(RetroNpcMapping.get(11903, "Guard"));
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, RetroNpcMapping.get(11903, "Guard").getCategory());
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, Objects.requireNonNull(RetroNpcMapping.get(11903, "Guard")).getCategory());
 		assertNotNull(RetroNpcMapping.get(3244, "Guard"));
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, RetroNpcMapping.get(3244, "Guard").getCategory());
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, Objects.requireNonNull(RetroNpcMapping.get(3244, "Guard")).getCategory());
 
 		// Verify non-guard NPCs are excluded from GUARDS category
 		assertNull(RetroNpcMapping.get(0, "Guard dog"));
@@ -284,7 +280,7 @@ public class RetroCacheTest
 					int count = stream.readUnsignedByte();
 					for (int c = 0; c < count; c++) stream.readUnsignedByte();
 				}
-				else if (opcode == 4) {}
+				else if (opcode == 4) { /* noop */ }
 				else if (opcode == 5) stream.readUnsignedByte();
 				else if (opcode == 6) leftHand = stream.readUnsignedShort();
 				else if (opcode == 7) rightHand = stream.readUnsignedShort();

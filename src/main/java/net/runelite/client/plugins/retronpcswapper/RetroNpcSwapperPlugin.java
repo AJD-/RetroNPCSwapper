@@ -42,6 +42,7 @@ import net.runelite.api.GameState;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
 import net.runelite.api.NodeCache;
+import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.NpcChanged;
@@ -290,6 +291,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 			originalWalkRotateRightAnims.clear();
 			originalRunAnims.clear();
 		}
+		else if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
+		{
+			clientThread.invoke(this::recheckLoadedNpcs);
+		}
 	}
 
 	/**
@@ -505,10 +510,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 				int[] compModels = comp.getModels();
 				if (compModels.length == origModels.length)
 				{
-					for (int i = 0; i < compModels.length; i++)
-					{
-						compModels[i] = origModels[i];
-					}
+                    System.arraycopy(origModels, 0, compModels, 0, compModels.length);
 				}
 				else
 				{
@@ -639,7 +641,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		for (NPC npc : client.getNpcs())
+		WorldView worldView = client.getTopLevelWorldView();
+		if (worldView == null)
+		{
+			return;
+		}
+
+		for (NPC npc : worldView.npcs())
 		{
 			if (npc != null)
 			{
@@ -657,11 +665,15 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
-			for (NPC npc : client.getNpcs())
+			WorldView worldView = client.getTopLevelWorldView();
+			if (worldView != null)
 			{
-				if (npc != null && modifiedNpcIndexes.contains(npc.getIndex()))
+				for (NPC npc : worldView.npcs())
 				{
-					resetNpc(npc);
+					if (npc != null && modifiedNpcIndexes.contains(npc.getIndex()))
+					{
+						resetNpc(npc);
+					}
 				}
 			}
 		}
@@ -677,10 +689,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 				int[] compModels = comp.getModels();
 				if (compModels.length == origModels.length)
 				{
-					for (int i = 0; i < compModels.length; i++)
-					{
-						compModels[i] = origModels[i];
-					}
+                    System.arraycopy(origModels, 0, compModels, 0, compModels.length);
 				}
 				else
 				{
