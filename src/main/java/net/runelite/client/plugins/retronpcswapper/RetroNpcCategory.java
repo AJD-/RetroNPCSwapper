@@ -31,7 +31,14 @@ public enum RetroNpcCategory
 {
 	DEMONS("Demons"),
 	DRAGONS("Dragons"),
-	MISC("Misc NPCs");
+	GOBLINS("Goblins"),
+	GUARDS("Guards"),
+	IMPS("Imps"),
+	SKELETONS("Skeletons"),
+	ZOMBIES("Zombies"),
+	GHOSTS("Ghosts"),
+	GIANTS("Giants"),
+	CHICKENS("Chickens");
 
 	private final String name;
 

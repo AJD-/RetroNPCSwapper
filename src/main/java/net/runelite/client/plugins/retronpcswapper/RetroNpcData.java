@@ -68,7 +68,19 @@ public class RetroNpcData
 	 */
 	private final int deathAnimationId;
 
-	public RetroNpcData(RetroNpcCategory category, int[] retroModelIds, int idleAnimationId, int walkAnimationId, int attackAnimationId, int defendAnimationId, int deathAnimationId)
+	/**
+	 * Model width scale override (128 = 1.0x).
+	 * Set to -1 if preserving default NPC width scale.
+	 */
+	private final int widthScale;
+
+	/**
+	 * Model height scale override (128 = 1.0x).
+	 * Set to -1 if preserving default NPC height scale.
+	 */
+	private final int heightScale;
+
+	public RetroNpcData(RetroNpcCategory category, int[] retroModelIds, int idleAnimationId, int walkAnimationId, int attackAnimationId, int defendAnimationId, int deathAnimationId, int widthScale, int heightScale)
 	{
 		this.category = category;
 		this.retroModelIds = retroModelIds != null ? retroModelIds.clone() : new int[0];
@@ -77,11 +89,18 @@ public class RetroNpcData
 		this.attackAnimationId = attackAnimationId;
 		this.defendAnimationId = defendAnimationId;
 		this.deathAnimationId = deathAnimationId;
+		this.widthScale = widthScale;
+		this.heightScale = heightScale;
+	}
+
+	public RetroNpcData(RetroNpcCategory category, int[] retroModelIds, int idleAnimationId, int walkAnimationId, int attackAnimationId, int defendAnimationId, int deathAnimationId)
+	{
+		this(category, retroModelIds, idleAnimationId, walkAnimationId, attackAnimationId, defendAnimationId, deathAnimationId, -1, -1);
 	}
 
 	public RetroNpcData(RetroNpcCategory category, int[] retroModelIds, int idleAnimationId, int walkAnimationId, int deathAnimationId)
 	{
-		this(category, retroModelIds, idleAnimationId, walkAnimationId, -1, -1, deathAnimationId);
+		this(category, retroModelIds, idleAnimationId, walkAnimationId, -1, -1, deathAnimationId, -1, -1);
 	}
 
 	public RetroNpcCategory getCategory()
@@ -119,6 +138,16 @@ public class RetroNpcData
 		return deathAnimationId;
 	}
 
+	public int getWidthScale()
+	{
+		return widthScale;
+	}
+
+	public int getHeightScale()
+	{
+		return heightScale;
+	}
+
 	@Override
 	public boolean equals(Object o)
 	{
@@ -130,6 +159,8 @@ public class RetroNpcData
 			attackAnimationId == that.attackAnimationId &&
 			defendAnimationId == that.defendAnimationId &&
 			deathAnimationId == that.deathAnimationId &&
+			widthScale == that.widthScale &&
+			heightScale == that.heightScale &&
 			category == that.category &&
 			Arrays.equals(retroModelIds, that.retroModelIds);
 	}
@@ -144,6 +175,8 @@ public class RetroNpcData
 		result = 31 * result + attackAnimationId;
 		result = 31 * result + defendAnimationId;
 		result = 31 * result + deathAnimationId;
+		result = 31 * result + widthScale;
+		result = 31 * result + heightScale;
 		return result;
 	}
 }

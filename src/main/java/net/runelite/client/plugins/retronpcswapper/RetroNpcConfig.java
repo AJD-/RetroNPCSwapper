@@ -27,10 +27,19 @@ package net.runelite.client.plugins.retronpcswapper;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.ConfigSection;
 
 @ConfigGroup("retronpcswapper")
 public interface RetroNpcConfig extends Config
 {
+	@ConfigSection(
+		name = "Misc NPCs",
+		description = "Retro models and animations for miscellaneous NPCs",
+		position = 3,
+		closedByDefault = false
+	)
+	String miscSection = "miscSection";
+
 	@ConfigItem(
 		keyName = "swapDemons",
 		name = "Demons",
@@ -54,12 +63,97 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapMisc",
-		name = "Misc NPCs",
-		description = "Swap miscellaneous modern NPC models and animations to their 2004/2005 retro variants.",
+		keyName = "swapGoblins",
+		name = "Goblins",
+		description = "Swap modern Goblin models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 1
+	)
+	default boolean swapGoblins()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapGuards",
+		name = "Guards",
+		description = "Swap modern Guard models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 2
+	)
+	default boolean swapGuards()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapImps",
+		name = "Imps",
+		description = "Swap modern Imp models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
 		position = 3
 	)
-	default boolean swapMisc()
+	default boolean swapImps()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapSkeletons",
+		name = "Skeletons",
+		description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 4
+	)
+	default boolean swapSkeletons()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapZombies",
+		name = "Zombies",
+		description = "Swap modern Zombie models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 5
+	)
+	default boolean swapZombies()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapGhosts",
+		name = "Ghosts",
+		description = "Swap modern Ghost models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 6
+	)
+	default boolean swapGhosts()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapGiants",
+		name = "Giants",
+		description = "Swap modern Giant models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 7
+	)
+	default boolean swapGiants()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapChickens",
+		name = "Chickens",
+		description = "Swap modern Chicken models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 8
+	)
+	default boolean swapChickens()
 	{
 		return true;
 	}

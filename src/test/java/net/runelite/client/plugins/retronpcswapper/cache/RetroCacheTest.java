@@ -68,6 +68,7 @@ public class RetroCacheTest
 		RetroNpcMapping.loadFrom2005Cache(defs);
 		RetroNpcData skelData = RetroNpcMapping.get(90, "Skeleton");
 		assertNotNull(skelData);
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.SKELETONS, skelData.getCategory());
 		assertEquals(262, skelData.getIdleAnimationId());
 		assertEquals(259, skelData.getWalkAnimationId());
 		assertEquals(260, skelData.getAttackAnimationId());
@@ -76,10 +77,229 @@ public class RetroCacheTest
 
 		RetroNpcData impData = RetroNpcMapping.get(708, "Imp");
 		assertNotNull(impData);
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.IMPS, impData.getCategory());
 		assertEquals(171, impData.getIdleAnimationId());
 		assertEquals(168, impData.getWalkAnimationId());
 		assertEquals(169, impData.getAttackAnimationId());
 		assertEquals(170, impData.getDefendAnimationId());
 		assertEquals(172, impData.getDeathAnimationId());
+
+		RetroNpcData goblinData = RetroNpcMapping.get(0, "Goblin");
+		assertNotNull(goblinData);
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GOBLINS, goblinData.getCategory());
+		assertEquals(311, goblinData.getIdleAnimationId());
+		assertEquals(308, goblinData.getWalkAnimationId());
+		assertEquals(309, goblinData.getAttackAnimationId());
+		assertEquals(312, goblinData.getDefendAnimationId());
+		assertEquals(313, goblinData.getDeathAnimationId());
+
+		RetroNpcData guardData = RetroNpcMapping.get(0, "Guard");
+		assertNotNull(guardData);
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, guardData.getCategory());
+		assertArrayEquals(new int[0], guardData.getRetroModelIds());
+		assertEquals(808, guardData.getIdleAnimationId());
+		assertEquals(819, guardData.getWalkAnimationId());
+		assertEquals(422, guardData.getAttackAnimationId());
+		assertEquals(424, guardData.getDefendAnimationId());
+		assertEquals(836, guardData.getDeathAnimationId());
+
+		RetroNpcData zombieData = RetroNpcMapping.get(0, "Zombie");
+		assertNotNull(zombieData);
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.ZOMBIES, zombieData.getCategory());
+		assertEquals(301, zombieData.getIdleAnimationId());
+		assertEquals(298, zombieData.getWalkAnimationId());
+		assertEquals(299, zombieData.getAttackAnimationId());
+		assertEquals(303, zombieData.getDefendAnimationId());
+		assertEquals(302, zombieData.getDeathAnimationId());
+
+		RetroNpcData ghostData = RetroNpcMapping.get(0, "Ghost");
+		assertNotNull(ghostData);
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GHOSTS, ghostData.getCategory());
+
+		RetroNpcData giantData = RetroNpcMapping.get(0, "Hill giant");
+		assertNotNull(giantData);
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GIANTS, giantData.getCategory());
+		assertArrayEquals(new int[0], giantData.getRetroModelIds());
+		assertEquals(130, giantData.getIdleAnimationId());
+		assertEquals(127, giantData.getWalkAnimationId());
+		assertEquals(128, giantData.getAttackAnimationId());
+		assertEquals(129, giantData.getDefendAnimationId());
+		assertEquals(131, giantData.getDeathAnimationId());
+
+		RetroNpcData chickenData = RetroNpcMapping.get(0, "Chicken");
+		assertNotNull(chickenData);
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.CHICKENS, chickenData.getCategory());
+		assertArrayEquals(new int[]{2849}, chickenData.getRetroModelIds());
+		assertEquals(54, chickenData.getIdleAnimationId());
+		assertEquals(53, chickenData.getWalkAnimationId());
+		assertEquals(55, chickenData.getAttackAnimationId());
+		assertEquals(56, chickenData.getDefendAnimationId());
+		assertEquals(57, chickenData.getDeathAnimationId());
+		assertEquals(-1, chickenData.getWidthScale());
+		assertEquals(-1, chickenData.getHeightScale());
+
+		// Verify Varrock Guard IDs map to GUARDS category
+		assertNotNull(RetroNpcMapping.get(11903, "Guard"));
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, RetroNpcMapping.get(11903, "Guard").getCategory());
+		assertNotNull(RetroNpcMapping.get(3244, "Guard"));
+		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, RetroNpcMapping.get(3244, "Guard").getCategory());
+
+		// Verify non-guard NPCs are excluded from GUARDS category
+		assertNull(RetroNpcMapping.get(0, "Guard dog"));
+		assertNull(RetroNpcMapping.get(0, "Ogre guard"));
+		assertNull(RetroNpcMapping.get(0, "Khazard Guard"));
+		assertNull(RetroNpcMapping.get(0, "Border Guard"));
+	}
+
+	@Test
+	public void inspectSequences() throws Exception
+	{
+		File cacheDir = new File("retrocache/2005cache");
+		if (!cacheDir.exists()) return;
+
+		RetroCacheReader reader = new RetroCacheReader(cacheDir);
+		assertTrue(reader.init());
+
+		byte[] archiveData = reader.readFile(0, 2);
+		Map<String, byte[]> files = reader.readArchive(archiveData);
+		byte[] seqDat = files.get(String.valueOf(RetroCacheReader.hashFileName("seq.dat")));
+		assertNotNull(seqDat);
+
+		Buffer stream = new Buffer(seqDat);
+		int totalSeqs = stream.readUnsignedShort();
+		System.out.println("Total 317 sequences in seq.dat: " + totalSeqs);
+
+		for (int j = 0; j < totalSeqs; j++)
+		{
+			// Check opcode loop for seq
+			int frameCount = 0;
+			int frameStep = -1;
+			while (stream.getOffset() < seqDat.length)
+			{
+				int opcode = stream.readUnsignedByte();
+				if (opcode == 0) break;
+				if (opcode == 1)
+				{
+					frameCount = stream.readUnsignedByte();
+					for (int f = 0; f < frameCount; f++)
+					{
+						stream.readUnsignedShort(); // primaryFrame
+						stream.readUnsignedShort(); // secondaryFrame
+						stream.readUnsignedShort(); // duration
+					}
+				}
+				else if (opcode == 2)
+				{
+					frameStep = stream.readUnsignedShort();
+				}
+				else if (opcode == 3)
+				{
+					int count = stream.readUnsignedByte();
+					for (int c = 0; c < count; c++) stream.readUnsignedByte();
+				}
+				else if (opcode == 4)
+				{
+					// stretches
+				}
+				else if (opcode == 5)
+				{
+					stream.readUnsignedByte(); // forcedPriority
+				}
+				else if (opcode == 6)
+				{
+					stream.readUnsignedShort(); // leftHandItem
+				}
+				else if (opcode == 7)
+				{
+					stream.readUnsignedShort(); // rightHandItem
+				}
+				else if (opcode == 8)
+				{
+					stream.readUnsignedByte(); // maxLoops
+				}
+				else if (opcode == 9)
+				{
+					stream.readUnsignedByte(); // animatingPrecedence
+				}
+				else if (opcode == 10)
+				{
+					stream.readUnsignedByte(); // walkingPrecedence
+				}
+				else if (opcode == 11)
+				{
+					stream.readUnsignedByte(); // replayMode
+				}
+				else if (opcode == 12)
+				{
+					stream.readInt();
+				}
+			}
+
+			if ((j >= 50 && j <= 60) || (j >= 125 && j <= 135) || (j >= 165 && j <= 185) || (j >= 255 && j <= 265) || (j >= 295 && j <= 315) || (j >= 420 && j <= 430))
+			{
+				System.out.println("Seq " + j + ": frameCount=" + frameCount + ", frameStep=" + frameStep);
+			}
+		}
+		reader.close();
+	}
+
+	@Test
+	public void inspectAllZombieSequences() throws Exception
+	{
+		File cacheDir = new File("retrocache/2005cache");
+		if (!cacheDir.exists()) return;
+
+		RetroCacheReader reader = new RetroCacheReader(cacheDir);
+		assertTrue(reader.init());
+
+		byte[] archiveData = reader.readFile(0, 2);
+		Map<String, byte[]> files = reader.readArchive(archiveData);
+		byte[] seqDat = files.get(String.valueOf(RetroCacheReader.hashFileName("seq.dat")));
+
+		Buffer stream = new Buffer(seqDat);
+		int totalSeqs = stream.readUnsignedShort();
+
+		for (int j = 0; j < totalSeqs; j++)
+		{
+			int frameCount = 0;
+			int frameStep = -1;
+			int leftHand = -1, rightHand = -1;
+			while (stream.getOffset() < seqDat.length)
+			{
+				int opcode = stream.readUnsignedByte();
+				if (opcode == 0) break;
+				if (opcode == 1)
+				{
+					frameCount = stream.readUnsignedByte();
+					for (int f = 0; f < frameCount; f++)
+					{
+						stream.readUnsignedShort();
+						stream.readUnsignedShort();
+						stream.readUnsignedShort();
+					}
+				}
+				else if (opcode == 2) frameStep = stream.readUnsignedShort();
+				else if (opcode == 3)
+				{
+					int count = stream.readUnsignedByte();
+					for (int c = 0; c < count; c++) stream.readUnsignedByte();
+				}
+				else if (opcode == 4) {}
+				else if (opcode == 5) stream.readUnsignedByte();
+				else if (opcode == 6) leftHand = stream.readUnsignedShort();
+				else if (opcode == 7) rightHand = stream.readUnsignedShort();
+				else if (opcode == 8) stream.readUnsignedByte();
+				else if (opcode == 9) stream.readUnsignedByte();
+				else if (opcode == 10) stream.readUnsignedByte();
+				else if (opcode == 11) stream.readUnsignedByte();
+				else if (opcode == 12) stream.readInt();
+			}
+
+			if (j >= 295 && j <= 305)
+			{
+				System.out.println("317 Zombie Seq " + j + ": frames=" + frameCount + ", leftHand=" + leftHand + ", rightHand=" + rightHand);
+			}
+		}
+		reader.close();
 	}
 }
