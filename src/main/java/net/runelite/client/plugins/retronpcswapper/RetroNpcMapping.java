@@ -24,14 +24,14 @@
  */
 package net.runelite.client.plugins.retronpcswapper;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import net.runelite.client.plugins.retronpcswapper.cache.RetroNpcDefinition;
+
+import javax.annotation.Nullable;
 
 /**
  * Registry class that maps Modern NPC IDs and Names to Retro (2004/2005) model & animation data,
@@ -121,48 +121,7 @@ public class RetroNpcMapping
 			}
 
 			String nameLower = def.getName().toLowerCase(Locale.ROOT).trim();
-			RetroNpcCategory category = null;
-
-			if (nameLower.contains("demon"))
-			{
-				category = RetroNpcCategory.DEMONS;
-			}
-			else if (nameLower.contains("dragon"))
-			{
-				category = RetroNpcCategory.DRAGONS;
-			}
-			else if (nameLower.contains("goblin"))
-			{
-				category = RetroNpcCategory.GOBLINS;
-			}
-			else if (nameLower.equals("guard"))
-			{
-				category = RetroNpcCategory.GUARDS;
-			}
-			else if (nameLower.contains("imp"))
-			{
-				category = RetroNpcCategory.IMPS;
-			}
-			else if (nameLower.contains("skeleton"))
-			{
-				category = RetroNpcCategory.SKELETONS;
-			}
-			else if (nameLower.contains("zombie"))
-			{
-				category = RetroNpcCategory.ZOMBIES;
-			}
-			else if (nameLower.contains("ghost"))
-			{
-				category = RetroNpcCategory.GHOSTS;
-			}
-			else if (nameLower.contains("giant"))
-			{
-				category = RetroNpcCategory.GIANTS;
-			}
-			else if (nameLower.contains("chicken"))
-			{
-				category = RetroNpcCategory.CHICKENS;
-			}
+			RetroNpcCategory category = getNpcCategory(nameLower);
 
 			if (category != null && def.getModels() != null && def.getModels().length > 0)
 			{
@@ -480,6 +439,53 @@ public class RetroNpcMapping
 				}
 			}
 		}
+	}
+
+	@Nullable
+	private static RetroNpcCategory getNpcCategory(String nameLower) {
+		RetroNpcCategory category = null;
+
+		if (nameLower.contains("demon"))
+		{
+			category = RetroNpcCategory.DEMONS;
+		}
+		else if (nameLower.contains("dragon"))
+		{
+			category = RetroNpcCategory.DRAGONS;
+		}
+		else if (nameLower.contains("goblin"))
+		{
+			category = RetroNpcCategory.GOBLINS;
+		}
+		else if (nameLower.equals("guard"))
+		{
+			category = RetroNpcCategory.GUARDS;
+		}
+		else if (nameLower.contains("imp"))
+		{
+			category = RetroNpcCategory.IMPS;
+		}
+		else if (nameLower.contains("skeleton"))
+		{
+			category = RetroNpcCategory.SKELETONS;
+		}
+		else if (nameLower.contains("zombie"))
+		{
+			category = RetroNpcCategory.ZOMBIES;
+		}
+		else if (nameLower.contains("ghost"))
+		{
+			category = RetroNpcCategory.GHOSTS;
+		}
+		else if (nameLower.contains("giant"))
+		{
+			category = RetroNpcCategory.GIANTS;
+		}
+		else if (nameLower.contains("chicken"))
+		{
+			category = RetroNpcCategory.CHICKENS;
+		}
+		return category;
 	}
 
 	public static RetroNpcData get(int npcId, String npcName)

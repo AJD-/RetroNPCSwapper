@@ -25,7 +25,6 @@
 package net.runelite.client.plugins.retronpcswapper.cache;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.Map;
