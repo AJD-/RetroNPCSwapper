@@ -40,9 +40,9 @@ public class RetroNpcCategoryTest
 {
 	@BeforeClass
 	public static void setUp()
-
 	{
 		File cacheDir = new File("retrocache/2005cache");
+
 		if (cacheDir.exists())
 		{
 			RetroCacheReader reader = new RetroCacheReader(cacheDir);

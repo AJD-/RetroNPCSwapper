@@ -331,8 +331,6 @@ public class RetroNpcMapping
 			attackAnim = 55;
 			defendAnim = 56;
 			deathAnim = 57;
-			widthScale = -1;
-			heightScale = -1;
 			modernAttacks = CHICKEN_MODERN_ATTACKS;
 			modernDefends = CHICKEN_MODERN_DEFENDS;
 			modernDeaths = CHICKEN_MODERN_DEATHS;
