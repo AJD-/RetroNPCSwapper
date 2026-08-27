@@ -399,7 +399,7 @@ public class RetroNpcCategoryTest
 		RetroNpcData hillGiant = RetroNpcMapping.get(0, "Hill giant");
 		assertNotNull("Hill giant mapping must exist", hillGiant);
 		assertEquals(RetroNpcCategory.HILL_GIANTS, hillGiant.getCategory());
-		assertArrayEquals(new int[0], hillGiant.getRetroModelIds());
+		assertArrayEquals(new int[]{2870, 2866}, hillGiant.getRetroModelIds());
 		assertEquals(130, hillGiant.getIdleAnimationId());
 		assertEquals(127, hillGiant.getWalkAnimationId());
 		assertEquals(128, hillGiant.getAttackAnimationId());

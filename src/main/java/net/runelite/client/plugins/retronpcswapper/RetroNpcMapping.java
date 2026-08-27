@@ -194,8 +194,8 @@ public class RetroNpcMapping
 				}
 				else if (category == RetroNpcCategory.HILL_GIANTS)
 				{
-					// TODO: Replace retro models for hill giants (they are multi-part models)
-					models = null;
+					// TODO: Find the 'real' Hill Giant Head (currently set to a Jogre head)
+					models = new int[] {2870, 2866};
 					stanceAnim = 130;
 					walkAnim = 127;
 					attackAnim = 128;
@@ -420,7 +420,7 @@ public class RetroNpcMapping
 					RetroNpcData hillGiantData = RetroNpcData.builder()
 						.category(RetroNpcCategory.HILL_GIANTS)
 						// TODO: Replace with retro model Ids (they are multi-part models)
-						.retroModelIds(null)
+						.retroModelIds(new int[]{2870, 2866})
 						.idleAnimationId(130)
 						.walkAnimationId(127)
 						.attackAnimationId(128)
