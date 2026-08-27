@@ -166,10 +166,10 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigSection(
-		name = "Dragons",
+		name = "Dragons (Disabled)",
 		description = "Retro models and animations for Dragon NPCs",
 		position = 1,
-		closedByDefault = false
+		closedByDefault = true
 	)
 	String dragonSection = "dragonSection";
 
@@ -200,10 +200,10 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigSection(
-		name = "Demons",
+		name = "Demons (Disabled)",
 		description = "Retro models and animations for Demon NPCs",
 		position = 2,
-		closedByDefault = false
+		closedByDefault = true
 	)
 	String demonSection = "demonSection";
 
