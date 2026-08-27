@@ -29,15 +29,17 @@ package net.runelite.client.plugins.retronpcswapper;
  */
 public enum RetroNpcCategory
 {
-	DEMONS("Demons"),
-	DRAGONS("Dragons"),
+	LESSER_DEMONS("Lesser_Demons"),
+	ADULT_DRAGONS("Adult_Dragons"),
 	GOBLINS("Goblins"),
 	GUARDS("Guards"),
 	IMPS("Imps"),
 	SKELETONS("Skeletons"),
 	ZOMBIES("Zombies"),
 	GHOSTS("Ghosts"),
-	GIANTS("Giants"),
+	HILL_GIANTS("Hill_Giants"),
+	MOSS_GIANTS("Moss_Giants"),
+	FIRE_GIANTS("Fire_Giants"),
 	CHICKENS("Chickens");
 
 	private final String name;

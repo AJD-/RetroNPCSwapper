@@ -32,24 +32,42 @@ import net.runelite.client.config.ConfigSection;
 @ConfigGroup("retronpcswapper")
 public interface RetroNpcConfig extends Config
 {
+	@ConfigSection(
+			name = "Demons",
+			description = "Retro models and animations for Demon NPCs",
+			position = 0,
+			closedByDefault = false
+	)
+	String demonSection = "demonSection";
+
 	@ConfigItem(
-		keyName = "swapDemons",
-		name = "Demons",
-		description = "Swap modern Demon models and animations to their 2004/2005 retro variants.",
+		keyName = "swapLesserDemons",
+		name = "Lesser Demons",
+		description = "Swap modern Lesser Demon models and animations to their 2004/2005 retro variants.",
+		section = demonSection,
 		position = 1
 	)
-	default boolean swapDemons()
+	default boolean swapLesserDemons()
 	{
 		return true;
 	}
 
-	@ConfigItem(
-		keyName = "swapDragons",
-		name = "Dragons",
-		description = "Swap modern Dragon models and animations to their 2004/2005 retro variants.",
-		position = 2
+	@ConfigSection(
+			name = "Dragons",
+			description = "Retro models and animations for Dragon NPCs",
+			position = 1,
+			closedByDefault = false
 	)
-	default boolean swapDragons()
+	String dragonSection = "dragonSection";
+
+	@ConfigItem(
+		keyName = "swapAdultDragons",
+		name = "Adult Dragons",
+		description = "Swap modern Adult Dragon models and animations to their 2004/2005 retro variants.",
+		section = dragonSection,
+		position = 1
+	)
+	default boolean swapAdultDragons()
 	{
 		return true;
 	}
@@ -57,7 +75,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigSection(
 			name = "Misc NPCs",
 			description = "Retro models and animations for miscellaneous NPCs",
-			position = 3,
+			position = 2,
 			closedByDefault = false
 	)
 	String miscSection = "miscSection";
@@ -147,13 +165,37 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapGiants",
-		name = "Giants",
-		description = "Swap modern Giant models and animations to their 2004/2005 retro variants.",
+		keyName = "swapHillGiants",
+		name = "Hill Giants",
+		description = "Swap modern Hill Giant models and animations to their 2004/2005 retro variants.",
 		section = miscSection,
 		position = 8
 	)
-	default boolean swapGiants()
+	default boolean swapHillGiants()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapMossGiants",
+		name = "Moss Giants",
+		description = "Swap modern Moss Giant models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 9
+	)
+	default boolean swapMossGiants()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapFireGiants",
+		name = "Fire Giants",
+		description = "Swap modern Fire Giant models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 10
+	)
+	default boolean swapFireGiants()
 	{
 		return true;
 	}
@@ -162,7 +204,7 @@ public interface RetroNpcConfig extends Config
 			name = "Safety",
 			description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
 			position = 4,
-			closedByDefault = false
+			closedByDefault = true
 	)
 	String safetySection = "safetySection";
 
@@ -175,7 +217,7 @@ public interface RetroNpcConfig extends Config
 	)
 	default boolean disablePvpWorld()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -187,6 +229,6 @@ public interface RetroNpcConfig extends Config
 	)
 	default boolean disableWilderness()
 	{
-		return false;
+		return true;
 	}
 }

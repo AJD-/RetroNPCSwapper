@@ -138,7 +138,7 @@ public class RetroNpcMapping
 				Set<Integer> modernDefends = Collections.emptySet();
 				Set<Integer> modernDeaths = Collections.emptySet();
 
-				if (category == RetroNpcCategory.DEMONS)
+				if (category == RetroNpcCategory.LESSER_DEMONS)
 				{
 					attackAnim = 64;
 					defendAnim = 65;
@@ -147,7 +147,7 @@ public class RetroNpcMapping
 					modernDefends = DEMON_MODERN_DEFENDS;
 					modernDeaths = DEMON_MODERN_DEATHS;
 				}
-				else if (category == RetroNpcCategory.DRAGONS)
+				else if (category == RetroNpcCategory.ADULT_DRAGONS)
 				{
 					attackAnim = 91;
 					defendAnim = 89;
@@ -192,9 +192,9 @@ public class RetroNpcMapping
 					modernDefends = CHICKEN_MODERN_DEFENDS;
 					modernDeaths = CHICKEN_MODERN_DEATHS;
 				}
-				else if (category == RetroNpcCategory.GIANTS)
+				else if (category == RetroNpcCategory.HILL_GIANTS)
 				{
-					// Giant models in OSRS are already authentic retro models; preserve models and override animations
+					// TODO: Replace retro models for hill giants (they are multi-part models)
 					models = null;
 					stanceAnim = 130;
 					walkAnim = 127;
@@ -207,7 +207,7 @@ public class RetroNpcMapping
 				}
 				else if (category == RetroNpcCategory.GUARDS)
 				{
-					// Models resolved from classic OSRS guard definition (NPC 3269) for Varrock guards
+					// TODO: Replace retro models for guards (they are multi-part models)
 					models = null;
 					stanceAnim = 808;
 					walkAnim = 819;
@@ -418,7 +418,8 @@ public class RetroNpcMapping
 				else if (nameLower.contains("hill giant"))
 				{
 					RetroNpcData hillGiantData = RetroNpcData.builder()
-						.category(RetroNpcCategory.GIANTS)
+						.category(RetroNpcCategory.HILL_GIANTS)
+						// TODO: Replace with retro model Ids (they are multi-part models)
 						.retroModelIds(null)
 						.idleAnimationId(130)
 						.walkAnimationId(127)
@@ -445,13 +446,13 @@ public class RetroNpcMapping
 	private static RetroNpcCategory getNpcCategory(String nameLower) {
 		RetroNpcCategory category = null;
 
-		if (nameLower.contains("demon"))
+		if (nameLower.contains("lesser demon"))
 		{
-			category = RetroNpcCategory.DEMONS;
+			category = RetroNpcCategory.LESSER_DEMONS;
 		}
-		else if (nameLower.contains("dragon"))
+		else if (nameLower.contains("dragon") && !(nameLower.contains("baby")) && !(nameLower.contains("king")))
 		{
-			category = RetroNpcCategory.DRAGONS;
+			category = RetroNpcCategory.ADULT_DRAGONS;
 		}
 		else if (nameLower.contains("goblin"))
 		{
@@ -477,9 +478,9 @@ public class RetroNpcMapping
 		{
 			category = RetroNpcCategory.GHOSTS;
 		}
-		else if (nameLower.contains("giant"))
+		else if (nameLower.contains("hill giant"))
 		{
-			category = RetroNpcCategory.GIANTS;
+			category = RetroNpcCategory.HILL_GIANTS;
 		}
 		else if (nameLower.contains("chicken"))
 		{

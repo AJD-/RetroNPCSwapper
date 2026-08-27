@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import net.runelite.client.RuneLite;
+import net.runelite.client.plugins.retronpcswapper.RetroNpcCategory;
 import net.runelite.client.plugins.retronpcswapper.RetroNpcData;
 import net.runelite.client.plugins.retronpcswapper.RetroNpcMapping;
 import org.junit.Test;
@@ -116,15 +117,15 @@ public class RetroCacheTest
 		assertNotNull(ghostData);
 		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GHOSTS, ghostData.getCategory());
 
-		RetroNpcData giantData = RetroNpcMapping.get(0, "Hill giant");
-		assertNotNull(giantData);
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GIANTS, giantData.getCategory());
-		assertArrayEquals(new int[0], giantData.getRetroModelIds());
-		assertEquals(130, giantData.getIdleAnimationId());
-		assertEquals(127, giantData.getWalkAnimationId());
-		assertEquals(128, giantData.getAttackAnimationId());
-		assertEquals(129, giantData.getDefendAnimationId());
-		assertEquals(131, giantData.getDeathAnimationId());
+		RetroNpcData hillGiantData = RetroNpcMapping.get(0, "Hill giant");
+		assertNotNull(hillGiantData);
+		assertEquals(RetroNpcCategory.HILL_GIANTS, hillGiantData.getCategory());
+		assertArrayEquals(new int[0], hillGiantData.getRetroModelIds());
+		assertEquals(130, hillGiantData.getIdleAnimationId());
+		assertEquals(127, hillGiantData.getWalkAnimationId());
+		assertEquals(128, hillGiantData.getAttackAnimationId());
+		assertEquals(129, hillGiantData.getDefendAnimationId());
+		assertEquals(131, hillGiantData.getDeathAnimationId());
 
 		RetroNpcData chickenData = RetroNpcMapping.get(0, "Chicken");
 		assertNotNull(chickenData);

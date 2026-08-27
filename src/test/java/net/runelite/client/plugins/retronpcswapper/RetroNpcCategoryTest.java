@@ -70,7 +70,7 @@ public class RetroNpcCategoryTest
 	{
 		RetroNpcData lesserDemon = RetroNpcMapping.get(82, "Lesser demon");
 		assertNotNull("Lesser demon mapping must exist", lesserDemon);
-		assertEquals(RetroNpcCategory.DEMONS, lesserDemon.getCategory());
+		assertEquals(RetroNpcCategory.LESSER_DEMONS, lesserDemon.getCategory());
 		assertTrue("Lesser demon should have models", lesserDemon.getRetroModelIds().length > 0);
 
 		// Verify modern attack animations
@@ -106,7 +106,7 @@ public class RetroNpcCategoryTest
 	{
 		RetroNpcData blueDragon = RetroNpcMapping.get(55, "Blue dragon");
 		assertNotNull("Blue dragon mapping must exist", blueDragon);
-		assertEquals(RetroNpcCategory.DRAGONS, blueDragon.getCategory());
+		assertEquals(RetroNpcCategory.ADULT_DRAGONS, blueDragon.getCategory());
 		assertTrue("Blue dragon should have models", blueDragon.getRetroModelIds().length > 0);
 
 		// Verify dragon animations
@@ -398,7 +398,7 @@ public class RetroNpcCategoryTest
 	{
 		RetroNpcData hillGiant = RetroNpcMapping.get(0, "Hill giant");
 		assertNotNull("Hill giant mapping must exist", hillGiant);
-		assertEquals(RetroNpcCategory.GIANTS, hillGiant.getCategory());
+		assertEquals(RetroNpcCategory.HILL_GIANTS, hillGiant.getCategory());
 		assertArrayEquals(new int[0], hillGiant.getRetroModelIds());
 		assertEquals(130, hillGiant.getIdleAnimationId());
 		assertEquals(127, hillGiant.getWalkAnimationId());
@@ -411,7 +411,7 @@ public class RetroNpcCategoryTest
 		{
 			RetroNpcData giantById = RetroNpcMapping.get(id, "Hill giant");
 			assertNotNull("Hill giant ID " + id + " must exist", giantById);
-			assertEquals(RetroNpcCategory.GIANTS, giantById.getCategory());
+			assertEquals(RetroNpcCategory.HILL_GIANTS, giantById.getCategory());
 		}
 
 		// Test modern giant animations
@@ -551,7 +551,7 @@ public class RetroNpcCategoryTest
 		// ID 55 is a modern Zombie ID, but also Blue Dragon in 2005 cache
 		RetroNpcData dragon = RetroNpcMapping.get(55, "Blue dragon");
 		assertNotNull(dragon);
-		assertEquals(RetroNpcCategory.DRAGONS, dragon.getCategory());
+		assertEquals(RetroNpcCategory.ADULT_DRAGONS, dragon.getCategory());
 
 		RetroNpcData zombie = RetroNpcMapping.get(55, "Zombie");
 		assertNotNull(zombie);
@@ -616,8 +616,8 @@ public class RetroNpcCategoryTest
 	{
 		// Test config defaults
 		RetroNpcConfig config = new RetroNpcConfig() {};
-		assertFalse("disablePvpWorld must default to false", config.disablePvpWorld());
-		assertFalse("disableWilderness must default to false", config.disableWilderness());
+		assertTrue("disablePvpWorld must default to true", config.disablePvpWorld());
+		assertTrue("disableWilderness must default to true", config.disableWilderness());
 
 		// Test annotations on disablePvpWorld
 		var pvpMethod = RetroNpcConfig.class.getMethod("disablePvpWorld");

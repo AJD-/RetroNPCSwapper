@@ -622,10 +622,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		switch (category)
 		{
-			case DEMONS:
-				return config.swapDemons();
-			case DRAGONS:
-				return config.swapDragons();
+			case LESSER_DEMONS:
+				return config.swapLesserDemons();
+			case ADULT_DRAGONS:
+				return config.swapAdultDragons();
 			case GOBLINS:
 				return config.swapGoblins();
 			case GUARDS:
@@ -638,8 +638,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return config.swapZombies();
 			case GHOSTS:
 				return config.swapGhosts();
-			case GIANTS:
-				return config.swapGiants();
+			case HILL_GIANTS:
+				return config.swapHillGiants();
+			case MOSS_GIANTS:
+				return config.swapMossGiants();
+			case FIRE_GIANTS:
+				return config.swapFireGiants();
 			case CHICKENS:
 				return config.swapChickens();
 			default:
