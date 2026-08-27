@@ -224,50 +224,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		// Match modern death animations
-		if (data.getDeathAnimationId() != -1 && (
-			anim == 5491 || anim == 5492 || anim == 5493 || anim == 5509 || anim == 5512 || anim == 8004 || anim == 8005
-			|| anim == 1589 || anim == 1828 || anim == 313 || anim == 302 || anim == 836 || anim == 172 || anim == 173 || anim == 5390
-			|| anim == 6182 // Goblin death
-			|| (data.getCategory() == RetroNpcCategory.ZOMBIES && (
-				anim == 5575 || anim == 5580 || anim == 5587 || anim == 5588 || anim == 5591 || anim == 5594 || anim == 836 || anim == 2304 || anim == 302
-			))
-			|| anim == 4653 || anim == 4659 || anim == 4667 || anim == 4673 || anim == 7004 // Giant death
-			|| anim == 5389 // Chicken death
-			|| anim == 7044 // Modern guard death
-		))
+		// Match modern combat animations using Category-Scoped Data Sets
+		if (data.isDeathAnimation(anim))
 		{
 			log.debug("SWAPPING DEATH ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getDeathAnimationId());
 			npc.setAnimation(data.getDeathAnimationId());
 		}
-		// Match modern defend/take hit animations
-		else if (data.getDefendAnimationId() != -1 && (
-			anim == 5490 || anim == 5489 || anim == 5488 || anim == 5508 || anim == 5511 || anim == 8003 || anim == 1588
-			|| anim == 1827 || anim == 312 || anim == 310 || anim == 300 || anim == 424 || anim == 170 || anim == 5388
-			|| anim == 6183 // Goblin defend
-			|| (data.getCategory() == RetroNpcCategory.ZOMBIES && (
-				(anim >= 5567 && anim <= 5595 && anim != 5568 && anim != 5571 && anim != 5573 && anim != 5576 && anim != 5577 && anim != 5578 && anim != 5581 && anim != 5583 && anim != 5585 && anim != 5590 && anim != 5593 && anim != 5575 && anim != 5580 && anim != 5587 && anim != 5588 && anim != 5591 && anim != 5594)
-				|| anim == 424 || anim == 425 || anim == 1156 || anim == 2303 || anim == 300 || anim == 301 || anim == 303
-			))
-			|| anim == 4651 || anim == 4657 || anim == 4665 || anim == 4671 || anim == 7001 // Giant defend
-			|| anim == 7043 // Modern guard defend
-		))
+		else if (data.isDefendAnimation(anim))
 		{
 			log.debug("SWAPPING DEFEND ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getDefendAnimationId());
 			npc.setAnimation(data.getDefendAnimationId());
 		}
-		// Match modern attack animations
-		else if (data.getAttackAnimationId() != -1 && (
-			anim == 5485 || anim == 5486 || anim == 5487 || anim == 5507 || anim == 5510 || anim == 8002 || anim == 309
-			|| anim == 240 || anim == 169 || anim == 5385
-			|| anim == 6184 || anim == 6185 || anim == 6186 || anim == 6188 || anim == 6190 || anim == 6191 // Goblin attack
-			|| (data.getCategory() == RetroNpcCategory.ZOMBIES && (
-				anim == 5568 || anim == 5571 || anim == 5573 || anim == 5576 || anim == 5577 || anim == 5578 || anim == 5581 || anim == 5583 || anim == 5585 || anim == 5590 || anim == 5593 || anim == 422 || anim == 423 || anim == 412 || anim == 299
-			))
-			|| anim == 4652 || anim == 4658 || anim == 4666 || anim == 4672 || anim == 7002 || anim == 7003 // Giant attack
-			|| anim == 5387 // Chicken attack
-			|| anim == 422 || anim == 423 || anim == 451 || anim == 7041 || anim == 7042 // Guard attack
-		))
+		else if (data.isAttackAnimation(anim))
 		{
 			log.debug("SWAPPING ATTACK ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getAttackAnimationId());
 			npc.setAnimation(data.getAttackAnimationId());
