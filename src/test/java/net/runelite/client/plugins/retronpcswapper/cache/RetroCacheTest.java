@@ -120,7 +120,7 @@ public class RetroCacheTest
 		RetroNpcData hillGiantData = RetroNpcMapping.get(0, "Hill giant");
 		assertNotNull(hillGiantData);
 		assertEquals(RetroNpcCategory.HILL_GIANTS, hillGiantData.getCategory());
-		assertArrayEquals(new int[0], hillGiantData.getRetroModelIds());
+		assertArrayEquals(new int[]{2870, 2866}, hillGiantData.getRetroModelIds());
 		assertEquals(130, hillGiantData.getIdleAnimationId());
 		assertEquals(127, hillGiantData.getWalkAnimationId());
 		assertEquals(128, hillGiantData.getAttackAnimationId());
