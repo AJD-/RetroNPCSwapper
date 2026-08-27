@@ -77,11 +77,14 @@ public class RetroNpcMapping
 	);
 
 	public static final Set<Integer> ZOMBIE_MODERN_ATTACKS = Set.of(
-		5568, 5571, 5573, 5576, 5577, 5578, 5581, 5583, 5585, 5590, 5593, 422, 423, 412, 299
+		5568, 5571, 5573, 5576, 5577, 5578, 5581, 5583, 5585, 5590, 5593, 422, 423, 412, 451, 299
 	);
-	public static final Set<Integer> ZOMBIE_MODERN_DEFENDS = buildZombieDefends();
+	public static final Set<Integer> ZOMBIE_MODERN_DEFENDS = Set.of(
+		5567, 5570, 5574, 5579, 5582, 5584, 5586, 5589, 5592, 424, 425, 1156, 2303, 300
+	);
 	public static final Set<Integer> ZOMBIE_MODERN_DEATHS = Set.of(
-		5575, 5580, 5587, 5588, 5591, 5594, 836, 2304, 302
+		5569, 5572, 5575, 5580, 5587, 5588, 5591, 5594, 5595, 836, 2304, 302,
+		5389, 5390, 5491, 5492, 5493, 5509, 5512, 7044
 	);
 
 	public static final Set<Integer> GHOST_MODERN_ATTACKS = Set.of(422, 423, 5485, 5486);
@@ -95,19 +98,6 @@ public class RetroNpcMapping
 	public static final Set<Integer> CHICKEN_MODERN_ATTACKS = Set.of(5385, 5387, 55);
 	public static final Set<Integer> CHICKEN_MODERN_DEFENDS = Set.of(5388, 56);
 	public static final Set<Integer> CHICKEN_MODERN_DEATHS = Set.of(5389, 5390, 57);
-
-	private static Set<Integer> buildZombieDefends()
-	{
-		Set<Integer> set = new HashSet<>(Arrays.asList(424, 425, 1156, 2303, 300, 301, 303));
-		for (int a = 5567; a <= 5595; a++)
-		{
-			if (a != 5568 && a != 5571 && a != 5573 && a != 5576 && a != 5577 && a != 5578 && a != 5581 && a != 5583 && a != 5585 && a != 5590 && a != 5593 && a != 5575 && a != 5580 && a != 5587 && a != 5588 && a != 5591 && a != 5594)
-			{
-				set.add(a);
-			}
-		}
-		return Collections.unmodifiableSet(set);
-	}
 
 	/**
 	 * Populates mappings dynamically from decoded 2005 cache NPC definitions.
@@ -223,7 +213,7 @@ public class RetroNpcMapping
 					stanceAnim = stanceAnim != -1 ? stanceAnim : 301;
 					walkAnim = walkAnim != -1 ? walkAnim : 298;
 					attackAnim = 299;
-					defendAnim = 303;
+					defendAnim = 300;
 					deathAnim = 302;
 					modernAttacks = ZOMBIE_MODERN_ATTACKS;
 					modernDefends = ZOMBIE_MODERN_DEFENDS;
@@ -378,16 +368,66 @@ public class RetroNpcMapping
 					RetroNpcData skelData = (nameLower.contains("sword") || nameLower.contains("shield") || nameLower.contains("armed")) ? armedSkel : unarmedSkel;
 					NAME_MAPPINGS.put(nameLower, skelData);
 
-					int[] unarmedIds = {70, 71, 73, 90, 91, 459, 1126};
+					int[] unarmedIds = {70, 71, 73, 74, 77, 78, 90, 91, 459, 1126};
 					for (int id : unarmedIds)
 					{
 						ID_MAPPINGS.put(id, unarmedSkel);
 					}
 
-					int[] armedIds = {72, 92, 93, 750, 1127, 1128};
+					int[] armedIds = {72, 75, 76, 92, 93, 750, 1127, 1128};
 					for (int id : armedIds)
 					{
 						ID_MAPPINGS.put(id, armedSkel);
+					}
+				}
+				else if (nameLower.contains("zombie"))
+				{
+					// Unarmed Zombies (NPC 26, 27, 28, 29, 30, 31, 32, 34, 37, 38, 39, 40, 41, 42, 43, 44, 419, 420, 421, 422, 423, 424, 1115, 1433, 1434)
+					RetroNpcData unarmedZombie = RetroNpcData.builder()
+						.category(RetroNpcCategory.ZOMBIES)
+						.retroModelIds(new int[]{2931})
+						.idleAnimationId(301)
+						.walkAnimationId(298)
+						.attackAnimationId(299)
+						.defendAnimationId(300)
+						.deathAnimationId(302)
+						.modernAttackAnims(ZOMBIE_MODERN_ATTACKS)
+						.modernDefendAnims(ZOMBIE_MODERN_DEFENDS)
+						.modernDeathAnims(ZOMBIE_MODERN_DEATHS)
+						.build();
+
+					// Armed Zombies with Axe (NPC 49, 50, 51, 52, 54, 55, 56, 57, 58, 751, 1116)
+					RetroNpcData armedZombie = RetroNpcData.builder()
+						.category(RetroNpcCategory.ZOMBIES)
+						.retroModelIds(new int[]{2931, 2932})
+						.idleAnimationId(301)
+						.walkAnimationId(298)
+						.attackAnimationId(299)
+						.defendAnimationId(300)
+						.deathAnimationId(302)
+						.modernAttackAnims(ZOMBIE_MODERN_ATTACKS)
+						.modernDefendAnims(ZOMBIE_MODERN_DEFENDS)
+						.modernDeathAnims(ZOMBIE_MODERN_DEATHS)
+						.build();
+
+					RetroNpcData zombieData = (nameLower.contains("axe") || nameLower.contains("armed")) ? armedZombie : unarmedZombie;
+					NAME_MAPPINGS.put(nameLower, zombieData);
+
+					int[] unarmedIds = {
+						26, 27, 28, 29, 30, 31, 32, 34, 37, 38, 39, 40, 41, 42, 43, 44,
+						419, 420, 421, 422, 423, 424, 1115, 1433, 1434
+					};
+					for (int id : unarmedIds)
+					{
+						ID_MAPPINGS.put(id, unarmedZombie);
+					}
+
+					int[] armedIds = {
+						49, 50, 51, 52, 54, 55, 56, 57, 58, 751, 1116
+					};
+					for (int id : armedIds)
+					{
+						ID_MAPPINGS.put(id, armedZombie);
 					}
 				}
 				else if (nameLower.equals("guard"))
@@ -444,18 +484,25 @@ public class RetroNpcMapping
 
 	public static RetroNpcData get(int npcId, String npcName)
 	{
-		RetroNpcData data = ID_MAPPINGS.get(npcId);
-		if (data != null)
+		if (npcName == null)
 		{
-			return data;
+			return ID_MAPPINGS.get(npcId);
 		}
 
-		if (npcName != null)
+		String nameLower = npcName.toLowerCase(Locale.ROOT).trim();
+		RetroNpcData byName = NAME_MAPPINGS.get(nameLower);
+		if (byName == null)
 		{
-			return NAME_MAPPINGS.get(npcName.toLowerCase(Locale.ROOT).trim());
+			return null;
 		}
 
-		return null;
+		RetroNpcData byId = ID_MAPPINGS.get(npcId);
+		if (byId != null && byId.getCategory() == byName.getCategory())
+		{
+			return byId;
+		}
+
+		return byName;
 	}
 
 	public static boolean contains(int npcId, String npcName)

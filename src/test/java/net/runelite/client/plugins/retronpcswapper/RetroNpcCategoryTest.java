@@ -223,16 +223,28 @@ public class RetroNpcCategoryTest
 		assertEquals(RetroNpcCategory.SKELETONS, armed.getCategory());
 		assertArrayEquals(new int[]{2944, 2946}, armed.getRetroModelIds());
 
-		int[] unarmedIds = {70, 71, 73, 90, 91, 459, 1126};
+		// Verify Draynor Sewer Skeleton ID 77 maps to SKELETONS category
+		RetroNpcData draynorSkel = RetroNpcMapping.get(77, "Skeleton");
+		assertNotNull("Draynor Sewer Skeleton (ID 77) must exist", draynorSkel);
+		assertEquals(RetroNpcCategory.SKELETONS, draynorSkel.getCategory());
+		assertArrayEquals(new int[]{2944}, draynorSkel.getRetroModelIds());
+
+		int[] unarmedIds = {70, 71, 73, 74, 77, 78, 90, 91, 459, 1126};
 		for (int id : unarmedIds)
 		{
-			assertEquals(1, RetroNpcMapping.get(id, "Skeleton").getRetroModelIds().length);
+			RetroNpcData skel = RetroNpcMapping.get(id, "Skeleton");
+			assertNotNull("Skeleton ID " + id + " must be mapped", skel);
+			assertEquals(RetroNpcCategory.SKELETONS, skel.getCategory());
+			assertEquals(1, skel.getRetroModelIds().length);
 		}
 
-		int[] armedIds = {72, 92, 93, 750, 1127, 1128};
+		int[] armedIds = {72, 75, 76, 92, 93, 750, 1127, 1128};
 		for (int id : armedIds)
 		{
-			assertEquals(2, RetroNpcMapping.get(id, "Skeleton").getRetroModelIds().length);
+			RetroNpcData skel = RetroNpcMapping.get(id, "Skeleton");
+			assertNotNull("Armed skeleton ID " + id + " must be mapped", skel);
+			assertEquals(RetroNpcCategory.SKELETONS, skel.getCategory());
+			assertEquals(2, skel.getRetroModelIds().length);
 		}
 
 		// Verify modern attack animations (unarmed, weapon slash, stab, crush, modern variants)
@@ -274,35 +286,99 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testZombiesCategory()
 	{
+		// Default / unarmed zombie (e.g. Level 13 Zombie IDs 38, 39, 40)
 		RetroNpcData zombie = RetroNpcMapping.get(0, "Zombie");
 		assertNotNull("Zombie mapping must exist", zombie);
 		assertEquals(RetroNpcCategory.ZOMBIES, zombie.getCategory());
+		assertArrayEquals(new int[]{2931}, zombie.getRetroModelIds());
 		assertEquals(301, zombie.getIdleAnimationId());
 		assertEquals(298, zombie.getWalkAnimationId());
 		assertEquals(299, zombie.getAttackAnimationId());
-		assertEquals(303, zombie.getDefendAnimationId());
+		assertEquals(300, zombie.getDefendAnimationId());
 		assertEquals(302, zombie.getDeathAnimationId());
 
-		// Test various modern zombie attack animations
-		int[] attackAnims = {5568, 5571, 5573, 5576, 5577, 5578, 5581, 5583, 5585, 5590, 5593, 422, 423, 412, 299};
+		// Armed zombie with axe (e.g. Level 24 Zombie IDs 55, 56)
+		RetroNpcData armedZombie = RetroNpcMapping.get(55, "Zombie");
+		assertNotNull("Armed zombie mapping must exist", armedZombie);
+		assertEquals(RetroNpcCategory.ZOMBIES, armedZombie.getCategory());
+		assertArrayEquals(new int[]{2931, 2932}, armedZombie.getRetroModelIds());
+		assertEquals(301, armedZombie.getIdleAnimationId());
+		assertEquals(298, armedZombie.getWalkAnimationId());
+		assertEquals(299, armedZombie.getAttackAnimationId());
+		assertEquals(300, armedZombie.getDefendAnimationId());
+		assertEquals(302, armedZombie.getDeathAnimationId());
+
+		// Verify unarmed zombie explicit IDs (including Level 13 IDs 38, 39, 40)
+		int[] unarmedIds = {26, 27, 28, 29, 30, 31, 32, 34, 37, 38, 39, 40, 41, 42, 43, 44, 419, 420, 421, 422, 423, 424, 1115, 1433, 1434};
+		for (int id : unarmedIds)
+		{
+			RetroNpcData data = RetroNpcMapping.get(id, "Zombie");
+			assertNotNull("Unarmed zombie ID " + id + " must be mapped", data);
+			assertEquals(RetroNpcCategory.ZOMBIES, data.getCategory());
+			assertEquals(1, data.getRetroModelIds().length);
+			assertEquals(2931, data.getRetroModelIds()[0]);
+			assertEquals(300, data.getDefendAnimationId());
+		}
+
+		// Verify armed zombie explicit IDs (including Level 24 IDs 55, 56)
+		int[] armedIds = {49, 50, 51, 52, 54, 55, 56, 57, 58, 751, 1116};
+		for (int id : armedIds)
+		{
+			RetroNpcData data = RetroNpcMapping.get(id, "Zombie");
+			assertNotNull("Armed zombie ID " + id + " must be mapped", data);
+			assertEquals(RetroNpcCategory.ZOMBIES, data.getCategory());
+			assertEquals(2, data.getRetroModelIds().length);
+			assertArrayEquals(new int[]{2931, 2932}, data.getRetroModelIds());
+			assertEquals(300, data.getDefendAnimationId());
+		}
+
+		// Test various modern zombie attack animations (unarmed punches, axe chops, weapon slashes)
+		int[] attackAnims = {5568, 5571, 5573, 5576, 5577, 5578, 5581, 5583, 5585, 5590, 5593, 422, 423, 412, 451, 299};
 		for (int anim : attackAnims)
 		{
 			assertTrue("Zombie should match attack anim " + anim, zombie.isAttackAnimation(anim));
+			assertTrue("Armed zombie should match attack anim " + anim, armedZombie.isAttackAnimation(anim));
+			assertFalse("Attack anim " + anim + " must not be defend", zombie.isDefendAnimation(anim));
+			assertFalse("Attack anim " + anim + " must not be death", zombie.isDeathAnimation(anim));
 		}
 
-		// Test various modern zombie defend animations
-		int[] defendAnims = {5567, 5569, 5570, 5572, 5574, 5579, 5582, 5584, 5586, 5589, 5592, 5595, 424, 425, 1156, 2303, 300, 301, 303};
+		// Test various modern zombie defend animations (flinches, blocks)
+		int[] defendAnims = {5567, 5570, 5574, 5579, 5582, 5584, 5586, 5589, 5592, 424, 425, 1156, 2303, 300};
 		for (int anim : defendAnims)
 		{
 			assertTrue("Zombie should match defend anim " + anim, zombie.isDefendAnimation(anim));
+			assertTrue("Armed zombie should match defend anim " + anim, armedZombie.isDefendAnimation(anim));
+			assertFalse("Defend anim " + anim + " must not be death", zombie.isDeathAnimation(anim));
 		}
 
-		// Test various modern zombie death animations
-		int[] deathAnims = {5575, 5580, 5587, 5588, 5591, 5594, 836, 2304, 302};
+		// Verify idle (301) and mammoth walk (303) are not defend animations
+		assertFalse(zombie.isDefendAnimation(301));
+		assertFalse(zombie.isDefendAnimation(303));
+		assertFalse(armedZombie.isDefendAnimation(301));
+		assertFalse(armedZombie.isDefendAnimation(303));
+
+		// Test various modern zombie death animations (including variant deaths 5569, 5572, 5575, 5580, 5587, 5588, 5591, 5594, 5595)
+		int[] deathAnims = {5569, 5572, 5575, 5580, 5587, 5588, 5591, 5594, 5595, 836, 2304, 302};
 		for (int anim : deathAnims)
 		{
 			assertTrue("Zombie should match death anim " + anim, zombie.isDeathAnimation(anim));
+			assertTrue("Armed zombie should match death anim " + anim, armedZombie.isDeathAnimation(anim));
+			assertFalse("Death anim " + anim + " must not be defend", zombie.isDefendAnimation(anim));
 		}
+
+		// Verify name fallback for unmapped Zombie ID
+		RetroNpcData unmappedZombie = RetroNpcMapping.get(99998, "Zombie");
+		assertNotNull(unmappedZombie);
+		assertEquals(RetroNpcCategory.ZOMBIES, unmappedZombie.getCategory());
+		assertEquals(299, unmappedZombie.getAttackAnimationId());
+		assertEquals(300, unmappedZombie.getDefendAnimationId());
+		assertEquals(302, unmappedZombie.getDeathAnimationId());
+		assertTrue(unmappedZombie.isAttackAnimation(5568));
+		assertTrue(unmappedZombie.isDefendAnimation(300));
+		assertTrue(unmappedZombie.isDeathAnimation(5575));
+		assertTrue(unmappedZombie.isDeathAnimation(5569));
+		assertTrue(unmappedZombie.isDeathAnimation(5572));
+		assertTrue(unmappedZombie.isDeathAnimation(5595));
 	}
 
 	@Test
@@ -373,6 +449,118 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(0, "Ogre guard"));
 		assertNull(RetroNpcMapping.get(0, "Khazard Guard"));
 		assertNull(RetroNpcMapping.get(0, "Border Guard"));
+	}
+
+	@Test
+	public void testDraynorSewerSkeletonRegression()
+	{
+		// Draynor Sewer Skeleton is ID 77 in-game
+		RetroNpcData draynorSkel = RetroNpcMapping.get(77, "Skeleton");
+		assertNotNull("Draynor Sewer Skeleton (ID 77) must exist in mapping", draynorSkel);
+		assertEquals("Draynor Sewer Skeleton (ID 77) must be SKELETONS category", RetroNpcCategory.SKELETONS, draynorSkel.getCategory());
+		assertArrayEquals("Draynor Sewer Skeleton must use unarmed skeleton retro model [2944]", new int[]{2944}, draynorSkel.getRetroModelIds());
+		assertEquals("Draynor Sewer Skeleton idle animation must be 262", 262, draynorSkel.getIdleAnimationId());
+		assertEquals("Draynor Sewer Skeleton walk animation must be 259", 259, draynorSkel.getWalkAnimationId());
+		assertEquals("Draynor Sewer Skeleton attack animation must be 260", 260, draynorSkel.getAttackAnimationId());
+		assertEquals("Draynor Sewer Skeleton defend animation must be 261", 261, draynorSkel.getDefendAnimationId());
+		assertEquals("Draynor Sewer Skeleton death animation must be 263", 263, draynorSkel.getDeathAnimationId());
+
+		// Verify entire range of sewer / wilderness skeleton IDs 70-78
+		int[] skeletonRange = {70, 71, 72, 73, 74, 75, 76, 77, 78};
+		for (int id : skeletonRange)
+		{
+			RetroNpcData skel = RetroNpcMapping.get(id, "Skeleton");
+			assertNotNull("Skeleton ID " + id + " must be mapped", skel);
+			assertEquals("Skeleton ID " + id + " must be SKELETONS category", RetroNpcCategory.SKELETONS, skel.getCategory());
+			assertNotEquals("Skeleton ID " + id + " must not use zombie model", 2931, skel.getRetroModelIds()[0]);
+		}
+	}
+
+	@Test
+	public void testZombieDeathVsFlinchAnimations()
+	{
+		// Level 13 Zombies (IDs 38, 39, 40) - Unarmed variant
+		int[] level13Ids = {38, 39, 40};
+		for (int id : level13Ids)
+		{
+			RetroNpcData z = RetroNpcMapping.get(id, "Zombie");
+			assertNotNull("Zombie ID " + id + " must be mapped", z);
+			assertEquals(RetroNpcCategory.ZOMBIES, z.getCategory());
+			assertArrayEquals("Level 13 Zombie " + id + " must use unarmed zombie model [2931]", new int[]{2931}, z.getRetroModelIds());
+			assertEquals("Flinch animation must be sequence 300", 300, z.getDefendAnimationId());
+			assertEquals("Death animation must be sequence 302", 302, z.getDeathAnimationId());
+		}
+
+		// Level 24 Zombies (IDs 55, 56) - Armed axe variant
+		int[] level24Ids = {55, 56};
+		for (int id : level24Ids)
+		{
+			RetroNpcData z = RetroNpcMapping.get(id, "Zombie");
+			assertNotNull("Zombie ID " + id + " must be mapped", z);
+			assertEquals(RetroNpcCategory.ZOMBIES, z.getCategory());
+			assertArrayEquals("Level 24 Zombie " + id + " must use armed zombie models [2931, 2932]", new int[]{2931, 2932}, z.getRetroModelIds());
+			assertEquals("Flinch animation must be sequence 300", 300, z.getDefendAnimationId());
+			assertEquals("Death animation must be sequence 302", 302, z.getDeathAnimationId());
+		}
+
+		RetroNpcData sampleZombie = RetroNpcMapping.get(38, "Zombie");
+
+		// Modern variant death animations MUST match isDeathAnimation and MUST NEVER match isDefendAnimation (which caused the flinch-on-death bug)
+		int[] deathAnims = {5569, 5572, 5575, 5580, 5587, 5588, 5591, 5594, 5595, 836, 2304, 302};
+		for (int death : deathAnims)
+		{
+			assertTrue("Sequence " + death + " must match isDeathAnimation", sampleZombie.isDeathAnimation(death));
+			assertFalse("Sequence " + death + " must NOT match isDefendAnimation (prevents flinch-on-death regression)", sampleZombie.isDefendAnimation(death));
+			assertFalse("Sequence " + death + " must NOT match isAttackAnimation", sampleZombie.isAttackAnimation(death));
+		}
+
+		// Modern variant defend animations MUST match isDefendAnimation and MUST NEVER match isDeathAnimation
+		int[] defendAnims = {5567, 5570, 5574, 5579, 5582, 5584, 5586, 5589, 5592, 424, 425, 1156, 2303, 300};
+		for (int defend : defendAnims)
+		{
+			assertTrue("Sequence " + defend + " must match isDefendAnimation", sampleZombie.isDefendAnimation(defend));
+			assertFalse("Sequence " + defend + " must NOT match isDeathAnimation", sampleZombie.isDeathAnimation(defend));
+			assertFalse("Sequence " + defend + " must NOT match isAttackAnimation", sampleZombie.isAttackAnimation(defend));
+		}
+
+		// Modern variant attack animations MUST match isAttackAnimation and MUST NEVER match isDefendAnimation or isDeathAnimation
+		int[] attackAnims = {5568, 5571, 5573, 5576, 5577, 5578, 5581, 5583, 5585, 5590, 5593, 422, 423, 412, 451, 299};
+		for (int attack : attackAnims)
+		{
+			assertTrue("Sequence " + attack + " must match isAttackAnimation", sampleZombie.isAttackAnimation(attack));
+			assertFalse("Sequence " + attack + " must NOT match isDefendAnimation", sampleZombie.isDefendAnimation(attack));
+			assertFalse("Sequence " + attack + " must NOT match isDeathAnimation", sampleZombie.isDeathAnimation(attack));
+		}
+
+		// Idle (301) and mammoth walk (303) MUST NOT match any combat state
+		assertFalse(sampleZombie.isAttackAnimation(301));
+		assertFalse(sampleZombie.isDefendAnimation(301));
+		assertFalse(sampleZombie.isDeathAnimation(301));
+		assertFalse(sampleZombie.isAttackAnimation(303));
+		assertFalse(sampleZombie.isDefendAnimation(303));
+		assertFalse(sampleZombie.isDeathAnimation(303));
+	}
+
+	@Test
+	public void testCategoryIntegrityAcrossSharedIds()
+	{
+		// ID 55 is a modern Zombie ID, but also Blue Dragon in 2005 cache
+		RetroNpcData dragon = RetroNpcMapping.get(55, "Blue dragon");
+		assertNotNull(dragon);
+		assertEquals(RetroNpcCategory.DRAGONS, dragon.getCategory());
+
+		RetroNpcData zombie = RetroNpcMapping.get(55, "Zombie");
+		assertNotNull(zombie);
+		assertEquals(RetroNpcCategory.ZOMBIES, zombie.getCategory());
+
+		// ID 77 is a modern Skeleton ID
+		RetroNpcData skel = RetroNpcMapping.get(77, "Skeleton");
+		assertNotNull(skel);
+		assertEquals(RetroNpcCategory.SKELETONS, skel.getCategory());
+
+		// Non-matching NPC names with ID collisions must not match swapper
+		assertNull(RetroNpcMapping.get(55, "Guard dog"));
+		assertNull(RetroNpcMapping.get(77, "Ogre guard"));
 	}
 
 	@Test

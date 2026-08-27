@@ -1,6 +1,10 @@
 package net.runelite.client.plugins.retronpcswapper.cache;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -105,7 +109,7 @@ public class RetroCacheTest
 		assertEquals(301, zombieData.getIdleAnimationId());
 		assertEquals(298, zombieData.getWalkAnimationId());
 		assertEquals(299, zombieData.getAttackAnimationId());
-		assertEquals(303, zombieData.getDefendAnimationId());
+		assertEquals(300, zombieData.getDefendAnimationId());
 		assertEquals(302, zombieData.getDeathAnimationId());
 
 		RetroNpcData ghostData = RetroNpcMapping.get(0, "Ghost");
@@ -145,157 +149,5 @@ public class RetroCacheTest
 		assertNull(RetroNpcMapping.get(0, "Ogre guard"));
 		assertNull(RetroNpcMapping.get(0, "Khazard Guard"));
 		assertNull(RetroNpcMapping.get(0, "Border Guard"));
-	}
-
-	@Test
-	public void inspectSequences() throws Exception
-	{
-		File cacheDir = new File("retrocache/2005cache");
-		if (!cacheDir.exists()) return;
-
-		RetroCacheReader reader = new RetroCacheReader(cacheDir);
-		assertTrue(reader.init());
-
-		byte[] archiveData = reader.readFile(0, 2);
-		Map<String, byte[]> files = reader.readArchive(archiveData);
-		byte[] seqDat = files.get(String.valueOf(RetroCacheReader.hashFileName("seq.dat")));
-		assertNotNull(seqDat);
-
-		Buffer stream = new Buffer(seqDat);
-		int totalSeqs = stream.readUnsignedShort();
-		System.out.println("Total 317 sequences in seq.dat: " + totalSeqs);
-
-		for (int j = 0; j < totalSeqs; j++)
-		{
-			// Check opcode loop for seq
-			int frameCount = 0;
-			int frameStep = -1;
-			while (stream.getOffset() < seqDat.length)
-			{
-				int opcode = stream.readUnsignedByte();
-				if (opcode == 0) break;
-				if (opcode == 1)
-				{
-					frameCount = stream.readUnsignedByte();
-					for (int f = 0; f < frameCount; f++)
-					{
-						stream.readUnsignedShort(); // primaryFrame
-						stream.readUnsignedShort(); // secondaryFrame
-						stream.readUnsignedShort(); // duration
-					}
-				}
-				else if (opcode == 2)
-				{
-					frameStep = stream.readUnsignedShort();
-				}
-				else if (opcode == 3)
-				{
-					int count = stream.readUnsignedByte();
-					for (int c = 0; c < count; c++) stream.readUnsignedByte();
-				}
-				else if (opcode == 4)
-				{
-					// stretches
-				}
-				else if (opcode == 5)
-				{
-					stream.readUnsignedByte(); // forcedPriority
-				}
-				else if (opcode == 6)
-				{
-					stream.readUnsignedShort(); // leftHandItem
-				}
-				else if (opcode == 7)
-				{
-					stream.readUnsignedShort(); // rightHandItem
-				}
-				else if (opcode == 8)
-				{
-					stream.readUnsignedByte(); // maxLoops
-				}
-				else if (opcode == 9)
-				{
-					stream.readUnsignedByte(); // animatingPrecedence
-				}
-				else if (opcode == 10)
-				{
-					stream.readUnsignedByte(); // walkingPrecedence
-				}
-				else if (opcode == 11)
-				{
-					stream.readUnsignedByte(); // replayMode
-				}
-				else if (opcode == 12)
-				{
-					stream.readInt();
-				}
-			}
-
-			if ((j >= 50 && j <= 60) || (j >= 125 && j <= 135) || (j >= 165 && j <= 185) || (j >= 255 && j <= 265) || (j >= 295 && j <= 315) || (j >= 420 && j <= 430))
-			{
-				System.out.println("Seq " + j + ": frameCount=" + frameCount + ", frameStep=" + frameStep);
-			}
-		}
-		reader.close();
-	}
-
-	@Test
-	public void inspectAllZombieSequences() throws Exception
-	{
-		File cacheDir = new File("retrocache/2005cache");
-		if (!cacheDir.exists()) return;
-
-		RetroCacheReader reader = new RetroCacheReader(cacheDir);
-		assertTrue(reader.init());
-
-		byte[] archiveData = reader.readFile(0, 2);
-		Map<String, byte[]> files = reader.readArchive(archiveData);
-		byte[] seqDat = files.get(String.valueOf(RetroCacheReader.hashFileName("seq.dat")));
-
-		Buffer stream = new Buffer(seqDat);
-		int totalSeqs = stream.readUnsignedShort();
-
-		for (int j = 0; j < totalSeqs; j++)
-		{
-			int frameCount = 0;
-			int frameStep = -1;
-			int leftHand = -1, rightHand = -1;
-			while (stream.getOffset() < seqDat.length)
-			{
-				int opcode = stream.readUnsignedByte();
-				if (opcode == 0) break;
-				if (opcode == 1)
-				{
-					frameCount = stream.readUnsignedByte();
-					for (int f = 0; f < frameCount; f++)
-					{
-						stream.readUnsignedShort();
-						stream.readUnsignedShort();
-						stream.readUnsignedShort();
-					}
-				}
-				else if (opcode == 2) frameStep = stream.readUnsignedShort();
-				else if (opcode == 3)
-				{
-					int count = stream.readUnsignedByte();
-					for (int c = 0; c < count; c++) stream.readUnsignedByte();
-				}
-				else if (opcode == 4) { /* noop */ }
-				else if (opcode == 5) stream.readUnsignedByte();
-				else if (opcode == 6) leftHand = stream.readUnsignedShort();
-				else if (opcode == 7) rightHand = stream.readUnsignedShort();
-				else if (opcode == 8) stream.readUnsignedByte();
-				else if (opcode == 9) stream.readUnsignedByte();
-				else if (opcode == 10) stream.readUnsignedByte();
-				else if (opcode == 11) stream.readUnsignedByte();
-				else if (opcode == 12) stream.readInt();
-			}
-
-			if (j >= 295 && j <= 305)
-			{
-				System.out.println("317 Zombie Seq " + j + ": frames=" + frameCount + ", leftHand=" + leftHand + ", rightHand=" + rightHand);
-			}
-		}
-		reader.close();
 	}
 }
