@@ -59,9 +59,9 @@ public class RetroNpcMapping
 	public static final Set<Integer> GUARD_MODERN_DEFENDS = Set.of(424, 7043);
 	public static final Set<Integer> GUARD_MODERN_DEATHS = Set.of(836, 7044);
 
-	public static final Set<Integer> IMP_MODERN_ATTACKS = Set.of(169, 422, 423, 5385, 5485, 5486);
-	public static final Set<Integer> IMP_MODERN_DEFENDS = Set.of(170, 424, 5388, 5488, 5489, 5490);
-	public static final Set<Integer> IMP_MODERN_DEATHS = Set.of(172, 173, 836, 5389, 5390, 5491, 5492);
+	public static final Set<Integer> IMP_MODERN_ATTACKS = Set.of(169, 422, 423, 451, 5385, 5485, 5486, 7041, 7042);
+	public static final Set<Integer> IMP_MODERN_DEFENDS = Set.of(170, 424, 425, 5388, 5488, 5489, 5490, 7043);
+	public static final Set<Integer> IMP_MODERN_DEATHS = Set.of(172, 173, 836, 5389, 5390, 5491, 5492, 5493, 5509, 5512, 7044);
 
 	public static final Set<Integer> SKELETON_MODERN_ATTACKS = Set.of(
 		260, 390, 400, 401, 412, 414, 422, 423, 426, 428, 440, 451, 711, 1162, 1167,
@@ -99,7 +99,46 @@ public class RetroNpcMapping
 	public static final Set<Integer> CHICKEN_MODERN_DEFENDS = Set.of(5388, 56);
 	public static final Set<Integer> CHICKEN_MODERN_DEATHS = Set.of(5389, 5390, 57);
 
-	// Pre-instantiated immutable archetypes (Flyweight pattern)
+	// Pre-instantiated immutable archetypes
+	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
+		.category(RetroNpcCategory.LESSER_DEMONS)
+		.retroModelIds(new int[]{2943})
+		.idleAnimationId(66)
+		.walkAnimationId(63)
+		.attackAnimationId(64)
+		.defendAnimationId(65)
+		.deathAnimationId(67)
+		.modernAttackAnims(DEMON_MODERN_ATTACKS)
+		.modernDefendAnims(DEMON_MODERN_DEFENDS)
+		.modernDeathAnims(DEMON_MODERN_DEATHS)
+		.build();
+
+	public static final RetroNpcData GREATER_DEMON_DEFAULT = RetroNpcData.builder()
+		.category(RetroNpcCategory.GREATER_DEMONS)
+		.retroModelIds(new int[]{2942})
+		.idleAnimationId(66)
+		.walkAnimationId(63)
+		.attackAnimationId(64)
+		.defendAnimationId(65)
+		.deathAnimationId(67)
+		.modernAttackAnims(DEMON_MODERN_ATTACKS)
+		.modernDefendAnims(DEMON_MODERN_DEFENDS)
+		.modernDeathAnims(DEMON_MODERN_DEATHS)
+		.build();
+
+	public static final RetroNpcData BLACK_DEMON_DEFAULT = RetroNpcData.builder()
+		.category(RetroNpcCategory.BLACK_DEMONS)
+		.retroModelIds(new int[]{2942})
+		.idleAnimationId(66)
+		.walkAnimationId(63)
+		.attackAnimationId(64)
+		.defendAnimationId(65)
+		.deathAnimationId(67)
+		.modernAttackAnims(DEMON_MODERN_ATTACKS)
+		.modernDefendAnims(DEMON_MODERN_DEFENDS)
+		.modernDeathAnims(DEMON_MODERN_DEATHS)
+		.build();
+
 	public static final RetroNpcData IMP_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.IMPS)
 		.retroModelIds(new int[]{2887})
@@ -236,9 +275,30 @@ public class RetroNpcMapping
 
 	private static void registerStaticOverrides()
 	{
+		// Lesser Demons
+		NAME_MAPPINGS.put("lesser demon", LESSER_DEMON_DEFAULT);
+		registerMapping(LESSER_DEMON_DEFAULT,
+			82, 2005, 2006, 2007, 2008, 2018, 3982, 7247, 7248, 7656, 7657, 7664, 7865, 7866, 7867,
+			12361, 12363, 12365, 12376, 12389
+		);
+
+		// Greater Demons
+		NAME_MAPPINGS.put("greater demon", GREATER_DEMON_DEFAULT);
+		registerMapping(GREATER_DEMON_DEFAULT,
+			83, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 7244, 7245, 7246, 7871, 7872, 7873,
+			12387
+		);
+
+		// Black Demons
+		NAME_MAPPINGS.put("black demon", BLACK_DEMON_DEFAULT);
+		registerMapping(BLACK_DEMON_DEFAULT,
+			84, 240, 1432, 2048, 2049, 2050, 2051, 2052, 5874, 5875, 5876, 5877, 6295, 6357,
+			7242, 7243, 7874, 7875, 7876, 12385
+		);
+
 		// Imps
 		NAME_MAPPINGS.put("imp", IMP_DEFAULT);
-		registerMapping(IMP_DEFAULT, 708, 709, 3080, 3081, 3082, 3083, 3084, 3085, 5007, 5008, 7067, 7068, 7069, 7070, 7071, 7072, 7924);
+		registerMapping(IMP_DEFAULT, 708, 709, 3080, 3081, 3082, 3083, 3084, 3085, 3134, 5007, 5008, 5728, 7067, 7068, 7069, 7070, 7071, 7072, 7924);
 
 		// Skeletons
 		NAME_MAPPINGS.put("skeleton", SKELETON_UNARMED);
@@ -283,8 +343,12 @@ public class RetroNpcMapping
 		Set<Integer> modernDefends = Collections.emptySet();
 		Set<Integer> modernDeaths = Collections.emptySet();
 
-		if (category == RetroNpcCategory.LESSER_DEMONS)
+		if (category == RetroNpcCategory.LESSER_DEMONS
+			|| category == RetroNpcCategory.GREATER_DEMONS
+			|| category == RetroNpcCategory.BLACK_DEMONS)
 		{
+			stanceAnim = stanceAnim != -1 ? stanceAnim : 66;
+			walkAnim = walkAnim != -1 ? walkAnim : 63;
 			attackAnim = 64;
 			defendAnim = 65;
 			deathAnim = 67;
@@ -417,6 +481,14 @@ public class RetroNpcMapping
 		{
 			category = RetroNpcCategory.LESSER_DEMONS;
 		}
+		else if (nameLower.contains("greater demon"))
+		{
+			category = RetroNpcCategory.GREATER_DEMONS;
+		}
+		else if (nameLower.contains("black demon"))
+		{
+			category = RetroNpcCategory.BLACK_DEMONS;
+		}
 		else if (nameLower.contains("dragon") && !(nameLower.contains("baby")) && !(nameLower.contains("king")))
 		{
 			category = RetroNpcCategory.ADULT_DRAGONS;
@@ -429,7 +501,7 @@ public class RetroNpcMapping
 		{
 			category = RetroNpcCategory.GUARDS;
 		}
-		else if (nameLower.contains("imp"))
+		else if (nameLower.contains("imp") && !nameLower.contains("impling") && !nameLower.contains("impaler"))
 		{
 			category = RetroNpcCategory.IMPS;
 		}

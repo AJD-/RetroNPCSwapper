@@ -30,6 +30,8 @@ package net.runelite.client.plugins.retronpcswapper;
 public enum RetroNpcCategory
 {
 	LESSER_DEMONS("Lesser_Demons"),
+	GREATER_DEMONS("Greater_Demons"),
+	BLACK_DEMONS("Black_Demons"),
 	ADULT_DRAGONS("Adult_Dragons"),
 	GOBLINS("Goblins"),
 	GUARDS("Guards"),

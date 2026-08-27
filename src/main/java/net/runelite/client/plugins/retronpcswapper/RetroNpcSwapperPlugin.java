@@ -81,6 +81,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	@Inject
 	private RetroNpcConfig config;
+	
+	@Inject
+	private ConfigManager configManager;
 
 	private final Set<Integer> modifiedNpcIndexes = new HashSet<>();
 	private final Map<Integer, Integer> originalIdleAnims = new HashMap<>();
@@ -158,6 +161,35 @@ public class RetroNpcSwapperPlugin extends Plugin
 		if (!"retronpcswapper".equals(event.getGroup()))
 		{
 			return;
+		}
+
+		if ("swapImps".equals(event.getKey()) && config.swapImps())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapImps", false);
+		}
+		else if ("swapLesserDemons".equals(event.getKey()) && config.swapLesserDemons())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapLesserDemons", false);
+		}
+		else if ("swapGreaterDemons".equals(event.getKey()) && config.swapGreaterDemons())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapGreaterDemons", false);
+		}
+		else if ("swapBlackDemons".equals(event.getKey()) && config.swapBlackDemons())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapBlackDemons", false);
+		}
+		else if ("swapAdultDragons".equals(event.getKey()) && config.swapAdultDragons())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapAdultDragons", false);
+		}
+		else if ("swapMossGiants".equals(event.getKey()) && config.swapMossGiants())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapMossGiants", false);
+		}
+		else if ("swapFireGiants".equals(event.getKey()) && config.swapFireGiants())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapFireGiants", false);
 		}
 
 		// Refresh active NPC visual overrides when configuration options change
@@ -623,15 +655,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 		switch (category)
 		{
 			case LESSER_DEMONS:
-				return config.swapLesserDemons();
+				return false;
+			case GREATER_DEMONS:
+				return false;
+			case BLACK_DEMONS:
+				return false;
 			case ADULT_DRAGONS:
-				return config.swapAdultDragons();
+				return false;
 			case GOBLINS:
 				return config.swapGoblins();
 			case GUARDS:
 				return config.swapGuards();
 			case IMPS:
-				return config.swapImps();
+				return false;
 			case SKELETONS:
 				return config.swapSkeletons();
 			case ZOMBIES:
@@ -641,9 +677,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case HILL_GIANTS:
 				return config.swapHillGiants();
 			case MOSS_GIANTS:
-				return config.swapMossGiants();
+				return false;
 			case FIRE_GIANTS:
-				return config.swapFireGiants();
+				return false;
 			case CHICKENS:
 				return config.swapChickens();
 			default:

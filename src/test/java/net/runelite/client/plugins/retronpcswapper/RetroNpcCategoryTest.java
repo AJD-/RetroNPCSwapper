@@ -66,12 +66,25 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
-	public void testDemonsCategory()
+	public void testLesserDemonsCategory()
 	{
 		RetroNpcData lesserDemon = RetroNpcMapping.get(82, "Lesser demon");
 		assertNotNull("Lesser demon mapping must exist", lesserDemon);
 		assertEquals(RetroNpcCategory.LESSER_DEMONS, lesserDemon.getCategory());
-		assertTrue("Lesser demon should have models", lesserDemon.getRetroModelIds().length > 0);
+		assertArrayEquals(new int[]{2943}, lesserDemon.getRetroModelIds());
+		assertEquals(66, lesserDemon.getIdleAnimationId());
+		assertEquals(63, lesserDemon.getWalkAnimationId());
+		assertEquals(64, lesserDemon.getAttackAnimationId());
+		assertEquals(65, lesserDemon.getDefendAnimationId());
+		assertEquals(67, lesserDemon.getDeathAnimationId());
+
+		int[] lesserIds = {82, 2005, 2006, 2007, 2008, 2018, 3982, 7247, 7248, 7656, 7657, 7664, 7865, 7866, 7867, 12361, 12363, 12365, 12376, 12389};
+		for (int id : lesserIds)
+		{
+			RetroNpcData mapped = RetroNpcMapping.get(id, "Lesser demon");
+			assertNotNull("Lesser demon ID " + id + " must be mapped", mapped);
+			assertEquals(RetroNpcCategory.LESSER_DEMONS, mapped.getCategory());
+		}
 
 		// Verify modern attack animations
 		assertTrue(lesserDemon.isAttackAnimation(5485));
@@ -99,6 +112,58 @@ public class RetroNpcCategoryTest
 		assertTrue(lesserDemon.isDeathAnimation(8005));
 
 		assertFalse(lesserDemon.isAttackAnimation(99999));
+	}
+
+	@Test
+	public void testGreaterDemonsCategory()
+	{
+		RetroNpcData greaterDemon = RetroNpcMapping.get(83, "Greater demon");
+		assertNotNull("Greater demon mapping must exist", greaterDemon);
+		assertEquals(RetroNpcCategory.GREATER_DEMONS, greaterDemon.getCategory());
+		assertArrayEquals(new int[]{2942}, greaterDemon.getRetroModelIds());
+		assertEquals(66, greaterDemon.getIdleAnimationId());
+		assertEquals(63, greaterDemon.getWalkAnimationId());
+		assertEquals(64, greaterDemon.getAttackAnimationId());
+		assertEquals(65, greaterDemon.getDefendAnimationId());
+		assertEquals(67, greaterDemon.getDeathAnimationId());
+
+		int[] greaterIds = {83, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 7244, 7245, 7246, 7871, 7872, 7873, 12387};
+		for (int id : greaterIds)
+		{
+			RetroNpcData mapped = RetroNpcMapping.get(id, "Greater demon");
+			assertNotNull("Greater demon ID " + id + " must be mapped", mapped);
+			assertEquals(RetroNpcCategory.GREATER_DEMONS, mapped.getCategory());
+		}
+
+		assertTrue(greaterDemon.isAttackAnimation(5485));
+		assertTrue(greaterDemon.isDefendAnimation(5488));
+		assertTrue(greaterDemon.isDeathAnimation(5491));
+	}
+
+	@Test
+	public void testBlackDemonsCategory()
+	{
+		RetroNpcData blackDemon = RetroNpcMapping.get(84, "Black demon");
+		assertNotNull("Black demon mapping must exist", blackDemon);
+		assertEquals(RetroNpcCategory.BLACK_DEMONS, blackDemon.getCategory());
+		assertArrayEquals(new int[]{2942}, blackDemon.getRetroModelIds());
+		assertEquals(66, blackDemon.getIdleAnimationId());
+		assertEquals(63, blackDemon.getWalkAnimationId());
+		assertEquals(64, blackDemon.getAttackAnimationId());
+		assertEquals(65, blackDemon.getDefendAnimationId());
+		assertEquals(67, blackDemon.getDeathAnimationId());
+
+		int[] blackIds = {84, 240, 1432, 2048, 2049, 2050, 2051, 2052, 5874, 5875, 5876, 5877, 6295, 6357, 7242, 7243, 7874, 7875, 7876, 12385};
+		for (int id : blackIds)
+		{
+			RetroNpcData mapped = RetroNpcMapping.get(id, "Black demon");
+			assertNotNull("Black demon ID " + id + " must be mapped", mapped);
+			assertEquals(RetroNpcCategory.BLACK_DEMONS, mapped.getCategory());
+		}
+
+		assertTrue(blackDemon.isAttackAnimation(5485));
+		assertTrue(blackDemon.isDefendAnimation(5488));
+		assertTrue(blackDemon.isDeathAnimation(5491));
 	}
 
 	@Test
@@ -193,7 +258,7 @@ public class RetroNpcCategoryTest
 		assertEquals(170, imp.getDefendAnimationId());
 		assertEquals(172, imp.getDeathAnimationId());
 
-		int[] impIds = {708, 709, 3080, 3081, 3082, 3083, 3084, 3085, 5007, 5008, 7067, 7068, 7069, 7070, 7071, 7072, 7924};
+		int[] impIds = {708, 709, 3080, 3081, 3082, 3083, 3084, 3085, 3134, 5007, 5008, 5728, 7067, 7068, 7069, 7070, 7071, 7072, 7924};
 		for (int id : impIds)
 		{
 			RetroNpcData impById = RetroNpcMapping.get(id, "Imp");
@@ -201,10 +266,28 @@ public class RetroNpcCategoryTest
 			assertEquals(RetroNpcCategory.IMPS, impById.getCategory());
 		}
 
-		assertTrue(imp.isAttackAnimation(169));
-		assertTrue(imp.isDefendAnimation(170));
-		assertTrue(imp.isDeathAnimation(172));
-		assertTrue(imp.isDeathAnimation(173));
+		// Verify modern attack animations
+		int[] impAttacks = {169, 422, 423, 451, 5385, 5485, 5486, 7041, 7042};
+		for (int anim : impAttacks)
+		{
+			assertTrue("Imp should match attack animation " + anim, imp.isAttackAnimation(anim));
+		}
+
+		// Verify modern defend animations
+		int[] impDefends = {170, 424, 425, 5388, 5488, 5489, 5490, 7043};
+		for (int anim : impDefends)
+		{
+			assertTrue("Imp should match defend animation " + anim, imp.isDefendAnimation(anim));
+		}
+
+		// Verify modern death animations
+		int[] impDeaths = {172, 173, 836, 5389, 5390, 5491, 5492, 5493, 5509, 5512, 7044};
+		for (int anim : impDeaths)
+		{
+			assertTrue("Imp should match death animation " + anim, imp.isDeathAnimation(anim));
+		}
+
+		assertFalse(imp.isAttackAnimation(99999));
 	}
 
 	@Test
@@ -453,6 +536,10 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(0, "Ogre guard"));
 		assertNull(RetroNpcMapping.get(0, "Khazard Guard"));
 		assertNull(RetroNpcMapping.get(0, "Border Guard"));
+		assertNull(RetroNpcMapping.get(0, "Baby impling"));
+		assertNull(RetroNpcMapping.get(0, "Dragon impling"));
+		assertNull(RetroNpcMapping.get(0, "Lucky impling"));
+		assertNull(RetroNpcMapping.get(0, "Impaler deer"));
 	}
 
 	@Test
@@ -634,6 +721,95 @@ public class RetroNpcCategoryTest
 		assertEquals("disableWilderness", wildyItem.keyName());
 		assertEquals("Disable in Wilderness", wildyItem.name());
 		assertEquals("safetySection", wildyItem.section());
+
+		// Test swapImps defaults to false (disabled/unchecked) with explanation tooltip and warning
+		assertFalse("swapImps must default to false (disabled/unchecked)", config.swapImps());
+		var impMethod = RetroNpcConfig.class.getMethod("swapImps");
+		var impItem = impMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(impItem);
+		assertEquals("swapImps", impItem.keyName());
+		assertEquals("Imps (Disabled)", impItem.name());
+		assertTrue("swapImps description must contain explanation", impItem.description().contains("Disabled"));
+		assertTrue("swapImps description must mention sequence IDs 168-172", impItem.description().contains("168-172"));
+		assertTrue("swapImps warning must be present", impItem.warning().contains("disabled"));
+
+		// Test Demon config items (Lesser, Greater, Black) - all disabled by default
+		assertFalse("swapLesserDemons must default to false (disabled/unchecked)", config.swapLesserDemons());
+		var lesserMethod = RetroNpcConfig.class.getMethod("swapLesserDemons");
+		var lesserItem = lesserMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(lesserItem);
+		assertEquals("swapLesserDemons", lesserItem.keyName());
+		assertEquals("Lesser Demons (Disabled)", lesserItem.name());
+		assertEquals("demonSection", lesserItem.section());
+		assertEquals(1, lesserItem.position());
+		assertTrue("swapLesserDemons description must mention Disabled", lesserItem.description().contains("Disabled"));
+		assertTrue("swapLesserDemons warning must be present", lesserItem.warning().contains("disabled"));
+
+		assertFalse("swapGreaterDemons must default to false (disabled/unchecked)", config.swapGreaterDemons());
+		var greaterMethod = RetroNpcConfig.class.getMethod("swapGreaterDemons");
+		var greaterItem = greaterMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(greaterItem);
+		assertEquals("swapGreaterDemons", greaterItem.keyName());
+		assertEquals("Greater Demons (Disabled)", greaterItem.name());
+		assertEquals("demonSection", greaterItem.section());
+		assertEquals(2, greaterItem.position());
+		assertTrue("swapGreaterDemons description must mention Disabled", greaterItem.description().contains("Disabled"));
+		assertTrue("swapGreaterDemons warning must be present", greaterItem.warning().contains("disabled"));
+
+		assertFalse("swapBlackDemons must default to false (disabled/unchecked)", config.swapBlackDemons());
+		var blackMethod = RetroNpcConfig.class.getMethod("swapBlackDemons");
+		var blackItem = blackMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(blackItem);
+		assertEquals("swapBlackDemons", blackItem.keyName());
+		assertEquals("Black Demons (Disabled)", blackItem.name());
+		assertEquals("demonSection", blackItem.section());
+		assertEquals(3, blackItem.position());
+		assertTrue("swapBlackDemons description must mention Disabled", blackItem.description().contains("Disabled"));
+		assertTrue("swapBlackDemons warning must be present", blackItem.warning().contains("disabled"));
+
+		// Test Dragon config item (Adult Dragons) - disabled by default
+		assertFalse("swapAdultDragons must default to false (disabled/unchecked)", config.swapAdultDragons());
+		var dragonMethod = RetroNpcConfig.class.getMethod("swapAdultDragons");
+		var dragonItem = dragonMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(dragonItem);
+		assertEquals("swapAdultDragons", dragonItem.keyName());
+		assertEquals("Adult Dragons (Disabled)", dragonItem.name());
+		assertEquals("dragonSection", dragonItem.section());
+		assertEquals(1, dragonItem.position());
+		assertTrue("swapAdultDragons description must mention Disabled", dragonItem.description().contains("Disabled"));
+		assertTrue("swapAdultDragons warning must be present", dragonItem.warning().contains("disabled"));
+
+		// Test Moss Giants - disabled by default
+		assertFalse("swapMossGiants must default to false (disabled/unchecked)", config.swapMossGiants());
+		var mossMethod = RetroNpcConfig.class.getMethod("swapMossGiants");
+		var mossItem = mossMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(mossItem);
+		assertEquals("swapMossGiants", mossItem.keyName());
+		assertEquals("Moss Giants (Disabled)", mossItem.name());
+		assertEquals("miscSection", mossItem.section());
+		assertEquals(9, mossItem.position());
+		assertTrue("swapMossGiants description must mention Disabled", mossItem.description().contains("Disabled"));
+		assertTrue("swapMossGiants warning must be present", mossItem.warning().contains("disabled"));
+
+		// Test Fire Giants - disabled by default
+		assertFalse("swapFireGiants must default to false (disabled/unchecked)", config.swapFireGiants());
+		var fireMethod = RetroNpcConfig.class.getMethod("swapFireGiants");
+		var fireItem = fireMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(fireItem);
+		assertEquals("swapFireGiants", fireItem.keyName());
+		assertEquals("Fire Giants (Disabled)", fireItem.name());
+		assertEquals("miscSection", fireItem.section());
+		assertEquals(10, fireItem.position());
+		assertTrue("swapFireGiants description must mention Disabled", fireItem.description().contains("Disabled"));
+		assertTrue("swapFireGiants warning must be present", fireItem.warning().contains("disabled"));
+
+		// Test Ghosts - enabled by default
+		assertTrue("swapGhosts must default to true", config.swapGhosts());
+		var ghostMethod = RetroNpcConfig.class.getMethod("swapGhosts");
+		var ghostItem = ghostMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(ghostItem);
+		assertEquals("swapGhosts", ghostItem.keyName());
+		assertEquals("Ghosts", ghostItem.name());
 	}
 
 	@Test
