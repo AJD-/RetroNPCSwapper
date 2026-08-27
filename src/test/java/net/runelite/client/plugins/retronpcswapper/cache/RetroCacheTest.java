@@ -136,8 +136,6 @@ public class RetroCacheTest
 		assertEquals(55, chickenData.getAttackAnimationId());
 		assertEquals(56, chickenData.getDefendAnimationId());
 		assertEquals(57, chickenData.getDeathAnimationId());
-		assertEquals(-1, chickenData.getWidthScale());
-		assertEquals(-1, chickenData.getHeightScale());
 
 		// Verify Varrock Guard IDs map to GUARDS category
 		assertNotNull(RetroNpcMapping.get(11903, "Guard"));

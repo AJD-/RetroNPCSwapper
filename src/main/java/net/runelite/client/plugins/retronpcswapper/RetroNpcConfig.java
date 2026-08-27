@@ -33,10 +33,177 @@ import net.runelite.client.config.ConfigSection;
 public interface RetroNpcConfig extends Config
 {
 	@ConfigSection(
-			name = "Demons",
-			description = "Retro models and animations for Demon NPCs",
-			position = 0,
-			closedByDefault = false
+		name = "Misc NPCs",
+		description = "Retro models and animations for miscellaneous NPCs",
+		position = 0,
+		closedByDefault = false
+	)
+	String miscSection = "miscSection";
+
+	@ConfigItem(
+		keyName = "swapChickens",
+		name = "Chickens",
+		description = "Swap modern Chicken models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 1
+	)
+	default boolean swapChickens()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapGoblins",
+		name = "Goblins",
+		description = "Swap modern Goblin models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 2
+	)
+	default boolean swapGoblins()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapSkeletons",
+		name = "Skeletons",
+		description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 3
+	)
+	default boolean swapSkeletons()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapZombies",
+		name = "Zombies",
+		description = "Swap modern Zombie models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 4
+	)
+	default boolean swapZombies()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapHillGiants",
+		name = "Hill Giants",
+		description = "Swap modern Hill Giant models and animations to their 2004/2005 retro variants.",
+		section = miscSection,
+		position = 5
+	)
+	default boolean swapHillGiants()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapGhosts",
+		name = "Ghosts (Disabled)",
+		description = "Disabled: In modern OSRS, 2005 ghost models were re-indexed/reworked and cannot be cleanly mapped without custom client model injection.",
+		warning = "Ghost swapping is disabled: Modern OSRS cache does not preserve the 2005 ghost models.",
+		section = miscSection,
+		position = 6
+	)
+	default boolean swapGhosts()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "swapGuards",
+		name = "Guards (Disabled)",
+		description = "Disabled: In modern OSRS, Guard models are multi-part modular meshes and cannot be cleanly mapped without custom client model injection.",
+		warning = "Guard swapping is disabled: Modern OSRS guard models are multi-part modular meshes.",
+		section = miscSection,
+		position = 7
+	)
+	default boolean swapGuards()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "swapImps",
+		name = "Imps (Disabled)",
+		description = "Disabled: In modern OSRS, Imp animation sequence IDs (168-172) are identical to the 2005 cache, but their internal skeletal frames were directly modified in-place by Jagex with no preserved legacy sequence IDs to swap to.",
+		warning = "Imp swapping is disabled: Modern OSRS Imp animations cannot be reverted to 2005 variants because Jagex modified the sequence frames in-place with no legacy sequences preserved.",
+		section = miscSection,
+		position = 8
+	)
+	default boolean swapImps()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "swapMossGiants",
+		name = "Moss Giants (Disabled)",
+		description = "Disabled: In modern OSRS, 2005 moss giant models were re-indexed/reworked with multi-part meshes and cannot be swapped without custom client model injection.",
+		warning = "Moss Giant swapping is disabled: Modern OSRS cache does not preserve the 2005 single-mesh moss giant models.",
+		section = miscSection,
+		position = 9
+	)
+	default boolean swapMossGiants()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "swapFireGiants",
+		name = "Fire Giants (Disabled)",
+		description = "Disabled: In modern OSRS, 2005 fire giant models were re-indexed/reworked with multi-part meshes and cannot be swapped without custom client model injection.",
+		warning = "Fire Giant swapping is disabled: Modern OSRS cache does not preserve the 2005 single-mesh fire giant models.",
+		section = miscSection,
+		position = 10
+	)
+	default boolean swapFireGiants()
+	{
+		return false;
+	}
+
+	@ConfigSection(
+		name = "Dragons",
+		description = "Retro models and animations for Dragon NPCs",
+		position = 1,
+		closedByDefault = false
+	)
+	String dragonSection = "dragonSection";
+
+	@ConfigItem(
+		keyName = "swapAdultDragons",
+		name = "Adult Dragons (Disabled)",
+		description = "Disabled: In modern OSRS, 2005 dragon models (2853, 2854) were re-indexed to scenery objects and cannot be swapped without custom client model injection.",
+		warning = "Adult Dragon swapping is disabled: Modern OSRS cache re-indexed models 2853/2854 to scenery objects and the 2005 dragon meshes are not preserved in the modern cache.",
+		section = dragonSection,
+		position = 1
+	)
+	default boolean swapAdultDragons()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "swapBabyDragons",
+		name = "Baby Dragons (Disabled)",
+		description = "Disabled: In modern OSRS, 2005 baby dragon models were re-indexed/reworked with multi-part meshes and cannot be swapped without custom client model injection.",
+		warning = "Baby Dragon swapping is disabled: Modern OSRS cache does not preserve the 2005 baby dragon models.",
+		section = dragonSection,
+		position = 2
+	)
+	default boolean swapBabyDragons()
+	{
+		return false;
+	}
+
+	@ConfigSection(
+		name = "Demons",
+		description = "Retro models and animations for Demon NPCs",
+		position = 2,
+		closedByDefault = false
 	)
 	String demonSection = "demonSection";
 
@@ -80,171 +247,19 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigSection(
-			name = "Dragons",
-			description = "Retro models and animations for Dragon NPCs",
-			position = 1,
-			closedByDefault = false
-	)
-	String dragonSection = "dragonSection";
-
-	@ConfigItem(
-		keyName = "swapAdultDragons",
-		name = "Adult Dragons (Disabled)",
-		description = "Disabled: In modern OSRS, 2005 dragon models (2853, 2854) were re-indexed to scenery objects and cannot be swapped without custom client model injection.",
-		warning = "Adult Dragon swapping is disabled: Modern OSRS cache re-indexed models 2853/2854 to scenery objects and the 2005 dragon meshes are not preserved in the modern cache.",
-		section = dragonSection,
-		position = 1
-	)
-	default boolean swapAdultDragons()
-	{
-		return false;
-	}
-
-	@ConfigSection(
-			name = "Misc NPCs",
-			description = "Retro models and animations for miscellaneous NPCs",
-			position = 2,
-			closedByDefault = false
-	)
-	String miscSection = "miscSection";
-
-	@ConfigItem(
-			keyName = "swapChickens",
-			name = "Chickens",
-			description = "Swap modern Chicken models and animations to their 2004/2005 retro variants.",
-			section = miscSection,
-			position = 1
-	)
-	default boolean swapChickens()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "swapGoblins",
-		name = "Goblins",
-		description = "Swap modern Goblin models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
-		position = 2
-	)
-	default boolean swapGoblins()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-			keyName = "swapSkeletons",
-			name = "Skeletons",
-			description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants.",
-			section = miscSection,
-			position = 3
-	)
-	default boolean swapSkeletons()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-			keyName = "swapZombies",
-			name = "Zombies",
-			description = "Swap modern Zombie models and animations to their 2004/2005 retro variants.",
-			section = miscSection,
-			position = 4
-	)
-	default boolean swapZombies()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "swapImps",
-		name = "Imps (Disabled)",
-		description = "Disabled: In modern OSRS, Imp animation sequence IDs (168-172) are identical to the 2005 cache, but their internal skeletal frames were directly modified in-place by Jagex with no preserved legacy sequence IDs to swap to.",
-		warning = "Imp swapping is disabled: Modern OSRS Imp animations cannot be reverted to 2005 variants because Jagex modified the sequence frames in-place with no legacy sequences preserved.",
-		section = miscSection,
-		position = 5
-	)
-	default boolean swapImps()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "swapGhosts",
-		name = "Ghosts",
-		description = "Swap modern Ghost models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
-		position = 6
-	)
-	default boolean swapGhosts()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-			keyName = "swapGuards",
-			name = "Guards",
-			description = "Swap modern Guard models and animations to their 2004/2005 retro variants.",
-			section = miscSection,
-			position = 7
-	)
-	default boolean swapGuards()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "swapHillGiants",
-		name = "Hill Giants",
-		description = "Swap modern Hill Giant models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
-		position = 8
-	)
-	default boolean swapHillGiants()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "swapMossGiants",
-		name = "Moss Giants (Disabled)",
-		description = "Disabled: In modern OSRS, 2005 moss giant models were re-indexed/reworked with multi-part meshes and cannot be swapped without custom client model injection.",
-		warning = "Moss Giant swapping is disabled: Modern OSRS cache does not preserve the 2005 single-mesh moss giant models.",
-		section = miscSection,
-		position = 9
-	)
-	default boolean swapMossGiants()
-	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "swapFireGiants",
-		name = "Fire Giants (Disabled)",
-		description = "Disabled: In modern OSRS, 2005 fire giant models were re-indexed/reworked with multi-part meshes and cannot be swapped without custom client model injection.",
-		warning = "Fire Giant swapping is disabled: Modern OSRS cache does not preserve the 2005 single-mesh fire giant models.",
-		section = miscSection,
-		position = 10
-	)
-	default boolean swapFireGiants()
-	{
-		return false;
-	}
-
-	@ConfigSection(
-			name = "Safety",
-			description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
-			position = 4,
-			closedByDefault = true
+		name = "Safety",
+		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
+		position = 3,
+		closedByDefault = true
 	)
 	String safetySection = "safetySection";
 
 	@ConfigItem(
-			keyName = "disablePvpWorld",
-			name = "Disable on PvP worlds",
-			description = "Disable retro NPC swapping for all NPCs when on a PvP world.",
-			section = safetySection,
-			position = 1
+		keyName = "disablePvpWorld",
+		name = "Disable on PvP worlds",
+		description = "Disable retro NPC swapping for all NPCs when on a PvP world.",
+		section = safetySection,
+		position = 1
 	)
 	default boolean disablePvpWorld()
 	{
@@ -252,11 +267,11 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "disableWilderness",
-			name = "Disable in Wilderness",
-			description = "Disable retro NPC swapping for all NPCs while in the Wilderness.",
-			section = safetySection,
-			position = 2
+		keyName = "disableWilderness",
+		name = "Disable in Wilderness",
+		description = "Disable retro NPC swapping for all NPCs while in the Wilderness.",
+		section = safetySection,
+		position = 2
 	)
 	default boolean disableWilderness()
 	{

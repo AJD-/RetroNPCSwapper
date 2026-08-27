@@ -96,8 +96,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private final Map<Integer, Integer> originalWalkRotateRightAnims = new HashMap<>();
 	private final Map<Integer, Integer> originalRunAnims = new HashMap<>();
 	private final Map<Integer, int[]> originalModelsMap = new HashMap<>();
-	private final Map<Integer, Integer> originalWidthScales = new HashMap<>();
-	private final Map<Integer, Integer> originalHeightScales = new HashMap<>();
 
 	@Override
 	protected void startUp() throws Exception
@@ -163,7 +161,15 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		if ("swapImps".equals(event.getKey()) && config.swapImps())
+		if ("swapGhosts".equals(event.getKey()) && config.swapGhosts())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapGhosts", false);
+		}
+		else if ("swapGuards".equals(event.getKey()) && config.swapGuards())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapGuards", false);
+		}
+		else if ("swapImps".equals(event.getKey()) && config.swapImps())
 		{
 			configManager.setConfiguration("retronpcswapper", "swapImps", false);
 		}
@@ -182,6 +188,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 		else if ("swapAdultDragons".equals(event.getKey()) && config.swapAdultDragons())
 		{
 			configManager.setConfiguration("retronpcswapper", "swapAdultDragons", false);
+		}
+		else if ("swapBabyDragons".equals(event.getKey()) && config.swapBabyDragons())
+		{
+			configManager.setConfiguration("retronpcswapper", "swapBabyDragons", false);
 		}
 		else if ("swapMossGiants".equals(event.getKey()) && config.swapMossGiants())
 		{
@@ -453,51 +463,17 @@ public class RetroNpcSwapperPlugin extends Plugin
 			log.debug("SWAPPING MODELS for NPC '{}' (ID: {}, CompID: {}): original={} -> retro={}",
 				npc.getName(), npc.getId(), compId, Arrays.toString(compModels), Arrays.toString(retroModels));
 
-			if (compModels.length >= retroModels.length)
+			for (int i = 0; i < compModels.length; i++)
 			{
-				for (int i = 0; i < compModels.length; i++)
+				if (i < retroModels.length)
 				{
-					if (i < retroModels.length)
-					{
-						compModels[i] = retroModels[i];
-					}
-					else
-					{
-						compModels[i] = -1;
-					}
+					compModels[i] = retroModels[i];
+				}
+				else
+				{
+					compModels[i] = -1;
 				}
 			}
-			else
-			{
-				setCompModels(comp, retroModels.clone());
-			}
-		}
-
-		// Apply scale overrides if specified
-		if (data.getWidthScale() != -1)
-		{
-			if (!originalWidthScales.containsKey(compId))
-			{
-				originalWidthScales.put(compId, comp.getWidthScale());
-			}
-			if (!originalWidthScales.containsKey(npcId))
-			{
-				originalWidthScales.put(npcId, comp.getWidthScale());
-			}
-			setCompWidthScale(comp, data.getWidthScale());
-		}
-
-		if (data.getHeightScale() != -1)
-		{
-			if (!originalHeightScales.containsKey(compId))
-			{
-				originalHeightScales.put(compId, comp.getHeightScale());
-			}
-			if (!originalHeightScales.containsKey(npcId))
-			{
-				originalHeightScales.put(npcId, comp.getHeightScale());
-			}
-			setCompHeightScale(comp, data.getHeightScale());
 		}
 
 		// Apply idle animation override from 2005 cache definition
@@ -556,34 +532,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			if (origModels != null && comp != null && comp.getModels() != null)
 			{
 				int[] compModels = comp.getModels();
-				if (compModels.length == origModels.length)
-				{
-                    System.arraycopy(origModels, 0, compModels, 0, compModels.length);
-				}
-				else
-				{
-					setCompModels(comp, origModels.clone());
-				}
-			}
-
-			Integer origWidth = originalWidthScales.remove(compId);
-			if (origWidth == null)
-			{
-				origWidth = originalWidthScales.remove(npcId);
-			}
-			if (origWidth != null && comp != null)
-			{
-				setCompWidthScale(comp, origWidth);
-			}
-
-			Integer origHeight = originalHeightScales.remove(compId);
-			if (origHeight == null)
-			{
-				origHeight = originalHeightScales.remove(npcId);
-			}
-			if (origHeight != null && comp != null)
-			{
-				setCompHeightScale(comp, origHeight);
+				System.arraycopy(origModels, 0, compModels, 0, Math.min(origModels.length, compModels.length));
 			}
 
 			Integer origIdle = originalIdleAnims.remove(npcIdx);
@@ -662,10 +611,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return false;
 			case ADULT_DRAGONS:
 				return false;
+			case BABY_DRAGONS:
+				return false;
 			case GOBLINS:
 				return config.swapGoblins();
 			case GUARDS:
-				return config.swapGuards();
+				return false;
 			case IMPS:
 				return false;
 			case SKELETONS:
@@ -673,7 +624,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case ZOMBIES:
 				return config.swapZombies();
 			case GHOSTS:
-				return config.swapGhosts();
+				return false;
 			case HILL_GIANTS:
 				return config.swapHillGiants();
 			case MOSS_GIANTS:
@@ -743,32 +694,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			if (comp != null && comp.getModels() != null && origModels != null)
 			{
 				int[] compModels = comp.getModels();
-				if (compModels.length == origModels.length)
-				{
-                    System.arraycopy(origModels, 0, compModels, 0, compModels.length);
-				}
-				else
-				{
-					setCompModels(comp, origModels.clone());
-				}
-			}
-		}
-
-		for (Map.Entry<Integer, Integer> entry : originalWidthScales.entrySet())
-		{
-			NPCComposition comp = client.getNpcDefinition(entry.getKey());
-			if (comp != null)
-			{
-				setCompWidthScale(comp, entry.getValue());
-			}
-		}
-
-		for (Map.Entry<Integer, Integer> entry : originalHeightScales.entrySet())
-		{
-			NPCComposition comp = client.getNpcDefinition(entry.getKey());
-			if (comp != null)
-			{
-				setCompHeightScale(comp, entry.getValue());
+				System.arraycopy(origModels, 0, compModels, 0, Math.min(origModels.length, compModels.length));
 			}
 		}
 
@@ -783,101 +709,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 		originalWalkRotateRightAnims.clear();
 		originalRunAnims.clear();
 		originalModelsMap.clear();
-		originalWidthScales.clear();
-		originalHeightScales.clear();
 
 		resetNpcModelCache();
-	}
-
-	private void setCompModels(NPCComposition comp, int[] newModels)
-	{
-		if (comp == null || newModels == null)
-		{
-			return;
-		}
-
-		try
-		{
-			for (Field field : comp.getClass().getDeclaredFields())
-			{
-				if (!Modifier.isStatic(field.getModifiers()) && field.getType() == int[].class)
-				{
-					field.setAccessible(true);
-					int[] arr = (int[]) field.get(comp);
-					if (arr == comp.getModels())
-					{
-						field.set(comp, newModels);
-						break;
-					}
-				}
-			}
-		}
-		catch (Throwable t)
-		{
-			log.debug("Failed setting models array on NPCComposition: {}", t.getMessage());
-		}
-	}
-
-	private void setCompWidthScale(NPCComposition comp, int widthScale)
-	{
-		if (comp == null)
-		{
-			return;
-		}
-
-		try
-		{
-			for (Field field : comp.getClass().getDeclaredFields())
-			{
-				if (!Modifier.isStatic(field.getModifiers()) && field.getType() == int.class)
-				{
-					field.setAccessible(true);
-					int oldVal = field.getInt(comp);
-					field.setInt(comp, 99999);
-					if (comp.getWidthScale() == 99999)
-					{
-						field.setInt(comp, widthScale);
-						break;
-					}
-					field.setInt(comp, oldVal);
-				}
-			}
-		}
-		catch (Throwable t)
-		{
-			log.debug("Failed setting widthScale on NPCComposition: {}", t.getMessage());
-		}
-	}
-
-	private void setCompHeightScale(NPCComposition comp, int heightScale)
-	{
-		if (comp == null)
-		{
-			return;
-		}
-
-		try
-		{
-			for (Field field : comp.getClass().getDeclaredFields())
-			{
-				if (!Modifier.isStatic(field.getModifiers()) && field.getType() == int.class)
-				{
-					field.setAccessible(true);
-					int oldVal = field.getInt(comp);
-					field.setInt(comp, 99999);
-					if (comp.getHeightScale() == 99999)
-					{
-						field.setInt(comp, heightScale);
-						break;
-					}
-					field.setInt(comp, oldVal);
-				}
-			}
-		}
-		catch (Throwable t)
-		{
-			log.debug("Failed setting heightScale on NPCComposition: {}", t.getMessage());
-		}
 	}
 
 	/**

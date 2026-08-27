@@ -75,18 +75,6 @@ public class RetroNpcData
 	private final int deathAnimationId;
 
 	/**
-	 * Model width scale override (128 = 1.0x).
-	 * Set to -1 if preserving default NPC width scale.
-	 */
-	private final int widthScale;
-
-	/**
-	 * Model height scale override (128 = 1.0x).
-	 * Set to -1 if preserving default NPC height scale.
-	 */
-	private final int heightScale;
-
-	/**
 	 * Modern attack animation IDs to intercept and swap for this NPC category.
 	 */
 	private final Set<Integer> modernAttackAnims;
@@ -109,8 +97,6 @@ public class RetroNpcData
 		int attackAnimationId,
 		int defendAnimationId,
 		int deathAnimationId,
-		int widthScale,
-		int heightScale,
 		Set<Integer> modernAttackAnims,
 		Set<Integer> modernDefendAnims,
 		Set<Integer> modernDeathAnims
@@ -123,8 +109,6 @@ public class RetroNpcData
 		this.attackAnimationId = attackAnimationId;
 		this.defendAnimationId = defendAnimationId;
 		this.deathAnimationId = deathAnimationId;
-		this.widthScale = widthScale;
-		this.heightScale = heightScale;
 		this.modernAttackAnims = modernAttackAnims != null
 			? Collections.unmodifiableSet(new HashSet<>(modernAttackAnims))
 			: Collections.emptySet();
@@ -136,17 +120,7 @@ public class RetroNpcData
 			: Collections.emptySet();
 	}
 
-	public RetroNpcData(
-		RetroNpcCategory category,
-		int[] retroModelIds,
-		int idleAnimationId,
-		int walkAnimationId,
-		int attackAnimationId,
-		int defendAnimationId,
-		int deathAnimationId,
-		int widthScale,
-		int heightScale
-	)
+	public RetroNpcData(RetroNpcCategory category, int[] retroModelIds, int idleAnimationId, int walkAnimationId, int attackAnimationId, int defendAnimationId, int deathAnimationId)
 	{
 		this(
 			category,
@@ -156,22 +130,15 @@ public class RetroNpcData
 			attackAnimationId,
 			defendAnimationId,
 			deathAnimationId,
-			widthScale,
-			heightScale,
 			Collections.emptySet(),
 			Collections.emptySet(),
 			Collections.emptySet()
 		);
 	}
 
-	public RetroNpcData(RetroNpcCategory category, int[] retroModelIds, int idleAnimationId, int walkAnimationId, int attackAnimationId, int defendAnimationId, int deathAnimationId)
-	{
-		this(category, retroModelIds, idleAnimationId, walkAnimationId, attackAnimationId, defendAnimationId, deathAnimationId, -1, -1);
-	}
-
 	public RetroNpcData(RetroNpcCategory category, int[] retroModelIds, int idleAnimationId, int walkAnimationId, int deathAnimationId)
 	{
-		this(category, retroModelIds, idleAnimationId, walkAnimationId, -1, -1, deathAnimationId, -1, -1);
+		this(category, retroModelIds, idleAnimationId, walkAnimationId, -1, -1, deathAnimationId);
 	}
 
 	public static Builder builder()
@@ -229,16 +196,6 @@ public class RetroNpcData
 		return deathAnimationId;
 	}
 
-	public int getWidthScale()
-	{
-		return widthScale;
-	}
-
-	public int getHeightScale()
-	{
-		return heightScale;
-	}
-
 	public Set<Integer> getModernAttackAnims()
 	{
 		return modernAttackAnims;
@@ -265,8 +222,6 @@ public class RetroNpcData
 			attackAnimationId == that.attackAnimationId &&
 			defendAnimationId == that.defendAnimationId &&
 			deathAnimationId == that.deathAnimationId &&
-			widthScale == that.widthScale &&
-			heightScale == that.heightScale &&
 			category == that.category &&
 			Arrays.equals(retroModelIds, that.retroModelIds) &&
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
@@ -284,8 +239,6 @@ public class RetroNpcData
 		result = 31 * result + attackAnimationId;
 		result = 31 * result + defendAnimationId;
 		result = 31 * result + deathAnimationId;
-		result = 31 * result + widthScale;
-		result = 31 * result + heightScale;
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
 		result = 31 * result + (modernDefendAnims != null ? modernDefendAnims.hashCode() : 0);
 		result = 31 * result + (modernDeathAnims != null ? modernDeathAnims.hashCode() : 0);
@@ -301,8 +254,6 @@ public class RetroNpcData
 		private int attackAnimationId = -1;
 		private int defendAnimationId = -1;
 		private int deathAnimationId = -1;
-		private int widthScale = -1;
-		private int heightScale = -1;
 		private final Set<Integer> modernAttackAnims = new HashSet<>();
 		private final Set<Integer> modernDefendAnims = new HashSet<>();
 		private final Set<Integer> modernDeathAnims = new HashSet<>();
@@ -346,18 +297,6 @@ public class RetroNpcData
 		public Builder deathAnimationId(int deathAnimationId)
 		{
 			this.deathAnimationId = deathAnimationId;
-			return this;
-		}
-
-		public Builder widthScale(int widthScale)
-		{
-			this.widthScale = widthScale;
-			return this;
-		}
-
-		public Builder heightScale(int heightScale)
-		{
-			this.heightScale = heightScale;
 			return this;
 		}
 
@@ -434,8 +373,6 @@ public class RetroNpcData
 				attackAnimationId,
 				defendAnimationId,
 				deathAnimationId,
-				widthScale,
-				heightScale,
 				modernAttackAnims,
 				modernDefendAnims,
 				modernDeathAnims

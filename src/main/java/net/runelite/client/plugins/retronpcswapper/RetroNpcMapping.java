@@ -333,8 +333,6 @@ public class RetroNpcMapping
 		int attackAnim = -1;
 		int defendAnim = -1;
 		int deathAnim = -1;
-		int widthScale = -1;
-		int heightScale = -1;
 		int[] models = def.getModels();
 		int stanceAnim = def.getStanceAnimation();
 		int walkAnim = def.getWalkAnimation();
@@ -465,8 +463,6 @@ public class RetroNpcMapping
 			.attackAnimationId(attackAnim)
 			.defendAnimationId(defendAnim)
 			.deathAnimationId(deathAnim)
-			.widthScale(widthScale)
-			.heightScale(heightScale)
 			.modernAttackAnims(modernAttacks)
 			.modernDefendAnims(modernDefends)
 			.modernDeathAnims(modernDeaths)
@@ -492,6 +488,10 @@ public class RetroNpcMapping
 		else if (nameLower.contains("dragon") && !(nameLower.contains("baby")) && !(nameLower.contains("king")))
 		{
 			category = RetroNpcCategory.ADULT_DRAGONS;
+		}
+		else if (nameLower.contains("baby") && nameLower.contains("dragon"))
+		{
+			category = RetroNpcCategory.BABY_DRAGONS;
 		}
 		else if (nameLower.contains("goblin"))
 		{

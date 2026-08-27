@@ -33,6 +33,7 @@ public enum RetroNpcCategory
 	GREATER_DEMONS("Greater_Demons"),
 	BLACK_DEMONS("Black_Demons"),
 	ADULT_DRAGONS("Adult_Dragons"),
+	BABY_DRAGONS("Baby_Dragons"),
 	GOBLINS("Goblins"),
 	GUARDS("Guards"),
 	IMPS("Imps"),
