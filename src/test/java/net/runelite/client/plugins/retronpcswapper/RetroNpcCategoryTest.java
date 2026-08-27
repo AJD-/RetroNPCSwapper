@@ -26,6 +26,9 @@ package net.runelite.client.plugins.retronpcswapper;
 
 import java.io.File;
 import java.util.Map;
+import java.util.Objects;
+
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.retronpcswapper.cache.RetroCacheReader;
 import net.runelite.client.plugins.retronpcswapper.cache.RetroNpcDecoder;
 import net.runelite.client.plugins.retronpcswapper.cache.RetroNpcDefinition;
@@ -37,6 +40,7 @@ public class RetroNpcCategoryTest
 {
 	@BeforeClass
 	public static void setUp()
+
 	{
 		File cacheDir = new File("retrocache/2005cache");
 		if (cacheDir.exists())
@@ -509,7 +513,7 @@ public class RetroNpcCategoryTest
 		int[] deathAnims = {5569, 5572, 5575, 5580, 5587, 5588, 5591, 5594, 5595, 836, 2304, 302};
 		for (int death : deathAnims)
 		{
-			assertTrue("Sequence " + death + " must match isDeathAnimation", sampleZombie.isDeathAnimation(death));
+			assertTrue("Sequence " + death + " must match isDeathAnimation", Objects.requireNonNull(sampleZombie).isDeathAnimation(death));
 			assertFalse("Sequence " + death + " must NOT match isDefendAnimation (prevents flinch-on-death regression)", sampleZombie.isDefendAnimation(death));
 			assertFalse("Sequence " + death + " must NOT match isAttackAnimation", sampleZombie.isAttackAnimation(death));
 		}
@@ -605,5 +609,43 @@ public class RetroNpcCategoryTest
 		assertTrue(data1.isDefendAnimation(6183));
 		assertTrue(data1.isDeathAnimation(6182));
 		assertFalse(data1.isAttackAnimation(999));
+	}
+
+	@Test
+	public void testSafetyConfigDefaultsAndAnnotations() throws NoSuchMethodException
+	{
+		// Test config defaults
+		RetroNpcConfig config = new RetroNpcConfig() {};
+		assertFalse("disablePvpWorld must default to false", config.disablePvpWorld());
+		assertFalse("disableWilderness must default to false", config.disableWilderness());
+
+		// Test annotations on disablePvpWorld
+		var pvpMethod = RetroNpcConfig.class.getMethod("disablePvpWorld");
+		var pvpItem = pvpMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(pvpItem);
+		assertEquals("disablePvpWorld", pvpItem.keyName());
+		assertEquals("Disable on PvP worlds", pvpItem.name());
+		assertEquals("safetySection", pvpItem.section());
+
+		// Test annotations on disableWilderness
+		var wildyMethod = RetroNpcConfig.class.getMethod("disableWilderness");
+		var wildyItem = wildyMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
+		assertNotNull(wildyItem);
+		assertEquals("disableWilderness", wildyItem.keyName());
+		assertEquals("Disable in Wilderness", wildyItem.name());
+		assertEquals("safetySection", wildyItem.section());
+	}
+
+	@Test
+	public void testSafetyPvpAndWildernessDetection()
+	{
+		// Verify WorldType.isPvpWorld detection for various world types
+		assertTrue(net.runelite.api.WorldType.isPvpWorld(java.util.EnumSet.of(net.runelite.api.WorldType.PVP)));
+		assertTrue(net.runelite.api.WorldType.isPvpWorld(java.util.EnumSet.of(net.runelite.api.WorldType.DEADMAN)));
+		assertFalse(net.runelite.api.WorldType.isPvpWorld(java.util.EnumSet.of(net.runelite.api.WorldType.MEMBERS)));
+		assertFalse(net.runelite.api.WorldType.isPvpWorld(java.util.EnumSet.noneOf(net.runelite.api.WorldType.class)));
+
+		// Verify Wilderness Varbit constant
+		assertEquals(5963, VarbitID.INSIDE_WILDERNESS);
 	}
 }

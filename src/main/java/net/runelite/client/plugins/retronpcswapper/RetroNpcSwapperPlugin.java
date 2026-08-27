@@ -34,6 +34,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
+
+import net.runelite.api.gameval.VarbitID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import net.runelite.api.Actor;
@@ -42,12 +44,15 @@ import net.runelite.api.GameState;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
 import net.runelite.api.NodeCache;
+import net.runelite.api.WorldType;
 import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
+import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.events.WorldChanged;
 import net.runelite.client.RuneLite;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -196,6 +201,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onAnimationChanged(AnimationChanged event)
 	{
+		if (isSafetyDisabled())
+		{
+			return;
+		}
+
 		Actor actor = event.getActor();
 		if (!(actor instanceof NPC))
 		{
@@ -265,6 +275,38 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 	}
 
+	@Subscribe
+	public void onVarbitChanged(VarbitChanged event)
+	{
+		if (event.getVarbitId() == VarbitID.INSIDE_WILDERNESS)
+		{
+			clientThread.invoke(this::recheckLoadedNpcs);
+		}
+	}
+
+	@Subscribe
+	public void onWorldChanged(WorldChanged event)
+	{
+		clientThread.invoke(this::recheckLoadedNpcs);
+	}
+
+	/**
+	 * Checks if retro NPC swapping should be disabled due to safety settings
+	 * (e.g. on a PvP world or inside the Wilderness).
+	 */
+	private boolean isSafetyDisabled()
+	{
+		if (config.disablePvpWorld() && client.getWorldType() != null && WorldType.isPvpWorld(client.getWorldType()))
+		{
+			return true;
+		}
+		if (config.disableWilderness() && client.getVarbitValue(VarbitID.INSIDE_WILDERNESS) == 1)
+		{
+			return true;
+		}
+		return false;
+	}
+
 	/**
 	 * Evaluates an NPC to check if it should be swapped to its retro variant.
 	 */
@@ -272,6 +314,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		if (npc == null)
 		{
+			return;
+		}
+
+		if (isSafetyDisabled())
+		{
+			resetNpc(npc);
 			return;
 		}
 

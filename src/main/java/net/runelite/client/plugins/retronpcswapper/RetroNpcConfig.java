@@ -32,14 +32,6 @@ import net.runelite.client.config.ConfigSection;
 @ConfigGroup("retronpcswapper")
 public interface RetroNpcConfig extends Config
 {
-	@ConfigSection(
-		name = "Misc NPCs",
-		description = "Retro models and animations for miscellaneous NPCs",
-		position = 3,
-		closedByDefault = false
-	)
-	String miscSection = "miscSection";
-
 	@ConfigItem(
 		keyName = "swapDemons",
 		name = "Demons",
@@ -62,12 +54,32 @@ public interface RetroNpcConfig extends Config
 		return true;
 	}
 
+	@ConfigSection(
+			name = "Misc NPCs",
+			description = "Retro models and animations for miscellaneous NPCs",
+			position = 3,
+			closedByDefault = false
+	)
+	String miscSection = "miscSection";
+
+	@ConfigItem(
+			keyName = "swapChickens",
+			name = "Chickens",
+			description = "Swap modern Chicken models and animations to their 2004/2005 retro variants.",
+			section = miscSection,
+			position = 1
+	)
+	default boolean swapChickens()
+	{
+		return true;
+	}
+
 	@ConfigItem(
 		keyName = "swapGoblins",
 		name = "Goblins",
 		description = "Swap modern Goblin models and animations to their 2004/2005 retro variants.",
 		section = miscSection,
-		position = 1
+		position = 2
 	)
 	default boolean swapGoblins()
 	{
@@ -75,13 +87,25 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapGuards",
-		name = "Guards",
-		description = "Swap modern Guard models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
-		position = 2
+			keyName = "swapSkeletons",
+			name = "Skeletons",
+			description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants.",
+			section = miscSection,
+			position = 3
 	)
-	default boolean swapGuards()
+	default boolean swapSkeletons()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "swapZombies",
+			name = "Zombies",
+			description = "Swap modern Zombie models and animations to their 2004/2005 retro variants.",
+			section = miscSection,
+			position = 4
+	)
+	default boolean swapZombies()
 	{
 		return true;
 	}
@@ -91,33 +115,9 @@ public interface RetroNpcConfig extends Config
 		name = "Imps",
 		description = "Swap modern Imp models and animations to their 2004/2005 retro variants.",
 		section = miscSection,
-		position = 3
-	)
-	default boolean swapImps()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "swapSkeletons",
-		name = "Skeletons",
-		description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
-		position = 4
-	)
-	default boolean swapSkeletons()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "swapZombies",
-		name = "Zombies",
-		description = "Swap modern Zombie models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
 		position = 5
 	)
-	default boolean swapZombies()
+	default boolean swapImps()
 	{
 		return true;
 	}
@@ -135,26 +135,58 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
+			keyName = "swapGuards",
+			name = "Guards",
+			description = "Swap modern Guard models and animations to their 2004/2005 retro variants.",
+			section = miscSection,
+			position = 7
+	)
+	default boolean swapGuards()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "swapGiants",
 		name = "Giants",
 		description = "Swap modern Giant models and animations to their 2004/2005 retro variants.",
 		section = miscSection,
-		position = 7
+		position = 8
 	)
 	default boolean swapGiants()
 	{
 		return true;
 	}
 
-	@ConfigItem(
-		keyName = "swapChickens",
-		name = "Chickens",
-		description = "Swap modern Chicken models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
-		position = 8
+	@ConfigSection(
+			name = "Safety",
+			description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
+			position = 4,
+			closedByDefault = false
 	)
-	default boolean swapChickens()
+	String safetySection = "safetySection";
+
+	@ConfigItem(
+			keyName = "disablePvpWorld",
+			name = "Disable on PvP worlds",
+			description = "Disable retro NPC swapping for all NPCs when on a PvP world.",
+			section = safetySection,
+			position = 1
+	)
+	default boolean disablePvpWorld()
 	{
-		return true;
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "disableWilderness",
+			name = "Disable in Wilderness",
+			description = "Disable retro NPC swapping for all NPCs while in the Wilderness.",
+			section = safetySection,
+			position = 2
+	)
+	default boolean disableWilderness()
+	{
+		return false;
 	}
 }
