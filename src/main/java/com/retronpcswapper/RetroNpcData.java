@@ -24,6 +24,8 @@
  */
 package com.retronpcswapper;
 
+import lombok.Getter;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +39,7 @@ import java.util.Set;
  */
 public class RetroNpcData
 {
+	@Getter
 	private final RetroNpcCategory category;
 
 	/**
@@ -48,45 +51,53 @@ public class RetroNpcData
 	 * Idle (standing) animation sequence ID.
 	 * Set to -1 if preserving default NPC idle animation.
 	 */
+	@Getter
 	private final int idleAnimationId;
 
 	/**
 	 * Walking animation sequence ID.
 	 * Set to -1 if preserving default NPC walk animation.
 	 */
+	@Getter
 	private final int walkAnimationId;
 
 	/**
 	 * Attack animation sequence ID.
 	 * Set to -1 if preserving default NPC attack animation.
 	 */
+	@Getter
 	private final int attackAnimationId;
 
 	/**
 	 * Defend / block animation sequence ID.
 	 * Set to -1 if preserving default NPC block animation.
 	 */
+	@Getter
 	private final int defendAnimationId;
 
 	/**
 	 * Death animation sequence ID.
 	 * Set to -1 if preserving default NPC death animation.
 	 */
+	@Getter
 	private final int deathAnimationId;
 
 	/**
 	 * Modern attack animation IDs to intercept and swap for this NPC category.
 	 */
+	@Getter
 	private final Set<Integer> modernAttackAnims;
 
 	/**
 	 * Modern defend / hit animation IDs to intercept and swap for this NPC category.
 	 */
+	@Getter
 	private final Set<Integer> modernDefendAnims;
 
 	/**
 	 * Modern death animation IDs to intercept and swap for this NPC category.
 	 */
+	@Getter
 	private final Set<Integer> modernDeathAnims;
 
 	public RetroNpcData(
@@ -140,54 +151,9 @@ public class RetroNpcData
 		return deathAnimationId != -1 && modernDeathAnims.contains(animId);
 	}
 
-	public RetroNpcCategory getCategory()
-	{
-		return category;
-	}
-
 	public int[] getRetroModelIds()
 	{
 		return retroModelIds.clone();
-	}
-
-	public int getIdleAnimationId()
-	{
-		return idleAnimationId;
-	}
-
-	public int getWalkAnimationId()
-	{
-		return walkAnimationId;
-	}
-
-	public int getAttackAnimationId()
-	{
-		return attackAnimationId;
-	}
-
-	public int getDefendAnimationId()
-	{
-		return defendAnimationId;
-	}
-
-	public int getDeathAnimationId()
-	{
-		return deathAnimationId;
-	}
-
-	public Set<Integer> getModernAttackAnims()
-	{
-		return modernAttackAnims;
-	}
-
-	public Set<Integer> getModernDefendAnims()
-	{
-		return modernDefendAnims;
-	}
-
-	public Set<Integer> getModernDeathAnims()
-	{
-		return modernDeathAnims;
 	}
 
 	@Override
