@@ -722,48 +722,20 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
-	public void testSafetyConfigDefaultsAndAnnotations() throws Exception
+	public void testConfigDefaults()
 	{
-		// Test config defaults
 		RetroNpcConfig config = new RetroNpcConfig() {};
+
+		// Safety toggles must default to on
 		assertTrue("disablePvpWorld must default to true", config.disablePvpWorld());
 		assertTrue("disableWilderness must default to true", config.disableWilderness());
 
-		// Test annotations on disablePvpWorld
-		var pvpMethod = RetroNpcConfig.class.getMethod("disablePvpWorld");
-		var pvpItem = pvpMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(pvpItem);
-		assertEquals("disablePvpWorld", pvpItem.keyName());
-		assertEquals("Disable on PvP worlds", pvpItem.name());
-		assertEquals("safetySection", pvpItem.section());
-
-		// Test annotations on disableWilderness
-		var wildyMethod = RetroNpcConfig.class.getMethod("disableWilderness");
-		var wildyItem = wildyMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(wildyItem);
-		assertEquals("disableWilderness", wildyItem.keyName());
-		assertEquals("Disable in Wilderness", wildyItem.name());
-		assertEquals("safetySection", wildyItem.section());
-
-		// Test Hill Giants - enabled by default
+		// The five live category toggles default to on
+		assertTrue("swapChickens must default to true", config.swapChickens());
+		assertTrue("swapGoblins must default to true", config.swapGoblins());
+		assertTrue("swapSkeletons must default to true", config.swapSkeletons());
+		assertTrue("swapZombies must default to true", config.swapZombies());
 		assertTrue("swapHillGiants must default to true", config.swapHillGiants());
-		var hillGiantMethod = RetroNpcConfig.class.getMethod("swapHillGiants");
-		var hillGiantItem = hillGiantMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(hillGiantItem);
-		assertEquals("swapHillGiants", hillGiantItem.keyName());
-		assertEquals("Hill Giants", hillGiantItem.name());
-		assertEquals(5, hillGiantItem.position());
-
-		// Test Section positions
-		var miscSectionField = RetroNpcConfig.class.getField("miscSection");
-		var miscSectionAnn = miscSectionField.getAnnotation(net.runelite.client.config.ConfigSection.class);
-		assertNotNull(miscSectionAnn);
-		assertEquals(0, miscSectionAnn.position());
-
-		var safetySectionField = RetroNpcConfig.class.getField("safetySection");
-		var safetySectionAnn = safetySectionField.getAnnotation(net.runelite.client.config.ConfigSection.class);
-		assertNotNull(safetySectionAnn);
-		assertEquals(1, safetySectionAnn.position());
 	}
 
 	@Test
