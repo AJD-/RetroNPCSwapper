@@ -711,112 +711,6 @@ public class RetroNpcCategoryTest
 		assertEquals("Disable in Wilderness", wildyItem.name());
 		assertEquals("safetySection", wildyItem.section());
 
-		// Test swapGuards defaults to false (disabled/unchecked)
-		assertFalse("swapGuards must default to false (disabled/unchecked)", config.swapGuards());
-		var guardMethod = RetroNpcConfig.class.getMethod("swapGuards");
-		var guardItem = guardMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(guardItem);
-		assertEquals("swapGuards", guardItem.keyName());
-		assertEquals("Guards (Disabled)", guardItem.name());
-		assertEquals("miscSection", guardItem.section());
-		assertEquals(7, guardItem.position());
-		assertTrue("swapGuards description must contain Disabled", guardItem.description().contains("Disabled"));
-		assertTrue("swapGuards warning must be present", guardItem.warning().contains("disabled"));
-
-		// Test swapImps defaults to false (disabled/unchecked) with explanation tooltip and warning
-		assertFalse("swapImps must default to false (disabled/unchecked)", config.swapImps());
-		var impMethod = RetroNpcConfig.class.getMethod("swapImps");
-		var impItem = impMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(impItem);
-		assertEquals("swapImps", impItem.keyName());
-		assertEquals("Imps (Disabled)", impItem.name());
-		assertEquals("miscSection", impItem.section());
-		assertEquals(8, impItem.position());
-		assertTrue("swapImps description must contain explanation", impItem.description().contains("Disabled"));
-		assertTrue("swapImps description must mention sequence IDs 168-172", impItem.description().contains("168-172"));
-		assertTrue("swapImps warning must be present", impItem.warning().contains("disabled"));
-
-		// Test Demon config items (Lesser, Greater, Black) - all disabled by default
-		assertFalse("swapLesserDemons must default to false (disabled/unchecked)", config.swapLesserDemons());
-		var lesserMethod = RetroNpcConfig.class.getMethod("swapLesserDemons");
-		var lesserItem = lesserMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(lesserItem);
-		assertEquals("swapLesserDemons", lesserItem.keyName());
-		assertEquals("Lesser Demons (Disabled)", lesserItem.name());
-		assertEquals("demonSection", lesserItem.section());
-		assertEquals(1, lesserItem.position());
-		assertTrue("swapLesserDemons description must mention Disabled", lesserItem.description().contains("Disabled"));
-		assertTrue("swapLesserDemons warning must be present", lesserItem.warning().contains("disabled"));
-
-		assertFalse("swapGreaterDemons must default to false (disabled/unchecked)", config.swapGreaterDemons());
-		var greaterMethod = RetroNpcConfig.class.getMethod("swapGreaterDemons");
-		var greaterItem = greaterMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(greaterItem);
-		assertEquals("swapGreaterDemons", greaterItem.keyName());
-		assertEquals("Greater Demons (Disabled)", greaterItem.name());
-		assertEquals("demonSection", greaterItem.section());
-		assertEquals(2, greaterItem.position());
-		assertTrue("swapGreaterDemons description must mention Disabled", greaterItem.description().contains("Disabled"));
-		assertTrue("swapGreaterDemons warning must be present", greaterItem.warning().contains("disabled"));
-
-		assertFalse("swapBlackDemons must default to false (disabled/unchecked)", config.swapBlackDemons());
-		var blackMethod = RetroNpcConfig.class.getMethod("swapBlackDemons");
-		var blackItem = blackMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(blackItem);
-		assertEquals("swapBlackDemons", blackItem.keyName());
-		assertEquals("Black Demons (Disabled)", blackItem.name());
-		assertEquals("demonSection", blackItem.section());
-		assertEquals(3, blackItem.position());
-		assertTrue("swapBlackDemons description must mention Disabled", blackItem.description().contains("Disabled"));
-		assertTrue("swapBlackDemons warning must be present", blackItem.warning().contains("disabled"));
-
-		// Test Dragon config items (Adult Dragons, Baby Dragons) - disabled by default
-		assertFalse("swapAdultDragons must default to false (disabled/unchecked)", config.swapAdultDragons());
-		var dragonMethod = RetroNpcConfig.class.getMethod("swapAdultDragons");
-		var dragonItem = dragonMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(dragonItem);
-		assertEquals("swapAdultDragons", dragonItem.keyName());
-		assertEquals("Adult Dragons (Disabled)", dragonItem.name());
-		assertEquals("dragonSection", dragonItem.section());
-		assertEquals(1, dragonItem.position());
-		assertTrue("swapAdultDragons description must mention Disabled", dragonItem.description().contains("Disabled"));
-		assertTrue("swapAdultDragons warning must be present", dragonItem.warning().contains("disabled"));
-
-		assertFalse("swapBabyDragons must default to false (disabled/unchecked)", config.swapBabyDragons());
-		var babyDragonMethod = RetroNpcConfig.class.getMethod("swapBabyDragons");
-		var babyDragonItem = babyDragonMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(babyDragonItem);
-		assertEquals("swapBabyDragons", babyDragonItem.keyName());
-		assertEquals("Baby Dragons (Disabled)", babyDragonItem.name());
-		assertEquals("dragonSection", babyDragonItem.section());
-		assertEquals(2, babyDragonItem.position());
-		assertTrue("swapBabyDragons description must mention Disabled", babyDragonItem.description().contains("Disabled"));
-		assertTrue("swapBabyDragons warning must be present", babyDragonItem.warning().contains("disabled"));
-
-		// Test Moss Giants - disabled by default
-		assertFalse("swapMossGiants must default to false (disabled/unchecked)", config.swapMossGiants());
-		var mossMethod = RetroNpcConfig.class.getMethod("swapMossGiants");
-		var mossItem = mossMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(mossItem);
-		assertEquals("swapMossGiants", mossItem.keyName());
-		assertEquals("Moss Giants (Disabled)", mossItem.name());
-		assertEquals("miscSection", mossItem.section());
-		assertEquals(9, mossItem.position());
-		assertTrue("swapMossGiants description must mention Disabled", mossItem.description().contains("Disabled"));
-		assertTrue("swapMossGiants warning must be present", mossItem.warning().contains("disabled"));
-
-		// Test Fire Giants - disabled by default
-		assertFalse("swapFireGiants must default to false (disabled/unchecked)", config.swapFireGiants());
-		var fireMethod = RetroNpcConfig.class.getMethod("swapFireGiants");
-		var fireItem = fireMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(fireItem);
-		assertEquals("swapFireGiants", fireItem.keyName());
-		assertEquals("Fire Giants (Disabled)", fireItem.name());
-		assertEquals("miscSection", fireItem.section());
-		assertEquals(10, fireItem.position());
-		assertTrue("swapFireGiants description must mention Disabled", fireItem.description().contains("Disabled"));
-		assertTrue("swapFireGiants warning must be present", fireItem.warning().contains("disabled"));
-
 		// Test Hill Giants - enabled by default
 		assertTrue("swapHillGiants must default to true", config.swapHillGiants());
 		var hillGiantMethod = RetroNpcConfig.class.getMethod("swapHillGiants");
@@ -826,38 +720,16 @@ public class RetroNpcCategoryTest
 		assertEquals("Hill Giants", hillGiantItem.name());
 		assertEquals(5, hillGiantItem.position());
 
-		// Test Ghosts - disabled by default
-		assertFalse("swapGhosts must default to false (disabled/unchecked)", config.swapGhosts());
-		var ghostMethod = RetroNpcConfig.class.getMethod("swapGhosts");
-		var ghostItem = ghostMethod.getAnnotation(net.runelite.client.config.ConfigItem.class);
-		assertNotNull(ghostItem);
-		assertEquals("swapGhosts", ghostItem.keyName());
-		assertEquals("Ghosts (Disabled)", ghostItem.name());
-		assertEquals("miscSection", ghostItem.section());
-		assertEquals(6, ghostItem.position());
-		assertTrue("swapGhosts description must mention Disabled", ghostItem.description().contains("Disabled"));
-		assertTrue("swapGhosts warning must be present", ghostItem.warning().contains("disabled"));
-
 		// Test Section positions
 		var miscSectionField = RetroNpcConfig.class.getField("miscSection");
 		var miscSectionAnn = miscSectionField.getAnnotation(net.runelite.client.config.ConfigSection.class);
 		assertNotNull(miscSectionAnn);
 		assertEquals(0, miscSectionAnn.position());
 
-		var dragonSectionField = RetroNpcConfig.class.getField("dragonSection");
-		var dragonSectionAnn = dragonSectionField.getAnnotation(net.runelite.client.config.ConfigSection.class);
-		assertNotNull(dragonSectionAnn);
-		assertEquals(1, dragonSectionAnn.position());
-
-		var demonSectionField = RetroNpcConfig.class.getField("demonSection");
-		var demonSectionAnn = demonSectionField.getAnnotation(net.runelite.client.config.ConfigSection.class);
-		assertNotNull(demonSectionAnn);
-		assertEquals(2, demonSectionAnn.position());
-
 		var safetySectionField = RetroNpcConfig.class.getField("safetySection");
 		var safetySectionAnn = safetySectionField.getAnnotation(net.runelite.client.config.ConfigSection.class);
 		assertNotNull(safetySectionAnn);
-		assertEquals(3, safetySectionAnn.position());
+		assertEquals(1, safetySectionAnn.position());
 	}
 
 	@Test

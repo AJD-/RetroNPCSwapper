@@ -120,27 +120,6 @@ public class RetroNpcData
 			: Collections.emptySet();
 	}
 
-	public RetroNpcData(RetroNpcCategory category, int[] retroModelIds, int idleAnimationId, int walkAnimationId, int attackAnimationId, int defendAnimationId, int deathAnimationId)
-	{
-		this(
-			category,
-			retroModelIds,
-			idleAnimationId,
-			walkAnimationId,
-			attackAnimationId,
-			defendAnimationId,
-			deathAnimationId,
-			Collections.emptySet(),
-			Collections.emptySet(),
-			Collections.emptySet()
-		);
-	}
-
-	public RetroNpcData(RetroNpcCategory category, int[] retroModelIds, int idleAnimationId, int walkAnimationId, int deathAnimationId)
-	{
-		this(category, retroModelIds, idleAnimationId, walkAnimationId, -1, -1, deathAnimationId);
-	}
-
 	public static Builder builder()
 	{
 		return new Builder();

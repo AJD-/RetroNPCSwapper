@@ -84,9 +84,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private RetroNpcConfig config;
 
 	@Inject
-	private ConfigManager configManager;
-
-	@Inject
 	private Gson gson;
 
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
@@ -148,47 +145,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 		if (!"retronpcswapper".equals(event.getGroup()))
 		{
 			return;
-		}
-
-		if ("swapGhosts".equals(event.getKey()) && config.swapGhosts())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapGhosts", false);
-		}
-		else if ("swapGuards".equals(event.getKey()) && config.swapGuards())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapGuards", false);
-		}
-		else if ("swapImps".equals(event.getKey()) && config.swapImps())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapImps", false);
-		}
-		else if ("swapLesserDemons".equals(event.getKey()) && config.swapLesserDemons())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapLesserDemons", false);
-		}
-		else if ("swapGreaterDemons".equals(event.getKey()) && config.swapGreaterDemons())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapGreaterDemons", false);
-		}
-		else if ("swapBlackDemons".equals(event.getKey()) && config.swapBlackDemons())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapBlackDemons", false);
-		}
-		else if ("swapAdultDragons".equals(event.getKey()) && config.swapAdultDragons())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapAdultDragons", false);
-		}
-		else if ("swapBabyDragons".equals(event.getKey()) && config.swapBabyDragons())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapBabyDragons", false);
-		}
-		else if ("swapMossGiants".equals(event.getKey()) && config.swapMossGiants())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapMossGiants", false);
-		}
-		else if ("swapFireGiants".equals(event.getKey()) && config.swapFireGiants())
-		{
-			configManager.setConfiguration("retronpcswapper", "swapFireGiants", false);
 		}
 
 		// Refresh active NPC visual overrides when configuration options change
@@ -496,37 +452,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		switch (category)
 		{
-			case LESSER_DEMONS:
-				return false;
-			case GREATER_DEMONS:
-				return false;
-			case BLACK_DEMONS:
-				return false;
-			case ADULT_DRAGONS:
-				return false;
-			case BABY_DRAGONS:
-				return false;
+			case CHICKENS:
+				return config.swapChickens();
 			case GOBLINS:
 				return config.swapGoblins();
-			case GUARDS:
-				return false;
-			case IMPS:
-				return false;
 			case SKELETONS:
 				return config.swapSkeletons();
 			case ZOMBIES:
 				return config.swapZombies();
-			case GHOSTS:
-				return false;
 			case HILL_GIANTS:
 				return config.swapHillGiants();
-			case MOSS_GIANTS:
-				return false;
-			case FIRE_GIANTS:
-				return false;
-			case CHICKENS:
-				return config.swapChickens();
 			default:
+				// All other categories are disabled: their 2005 model IDs no longer
+				// resolve in the modern cache (see the git history for details)
 				return false;
 		}
 	}

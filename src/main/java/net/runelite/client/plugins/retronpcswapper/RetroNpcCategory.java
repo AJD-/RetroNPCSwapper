@@ -29,31 +29,17 @@ package net.runelite.client.plugins.retronpcswapper;
  */
 public enum RetroNpcCategory
 {
-	LESSER_DEMONS("Lesser_Demons"),
-	GREATER_DEMONS("Greater_Demons"),
-	BLACK_DEMONS("Black_Demons"),
-	ADULT_DRAGONS("Adult_Dragons"),
-	BABY_DRAGONS("Baby_Dragons"),
-	GOBLINS("Goblins"),
-	GUARDS("Guards"),
-	IMPS("Imps"),
-	SKELETONS("Skeletons"),
-	ZOMBIES("Zombies"),
-	GHOSTS("Ghosts"),
-	HILL_GIANTS("Hill_Giants"),
-	MOSS_GIANTS("Moss_Giants"),
-	FIRE_GIANTS("Fire_Giants"),
-	CHICKENS("Chickens");
-
-	private final String name;
-
-	RetroNpcCategory(String name)
-	{
-		this.name = name;
-	}
-
-	public String getName()
-	{
-		return name;
-	}
+	LESSER_DEMONS,
+	GREATER_DEMONS,
+	BLACK_DEMONS,
+	ADULT_DRAGONS,
+	BABY_DRAGONS,
+	GOBLINS,
+	GUARDS,
+	IMPS,
+	SKELETONS,
+	ZOMBIES,
+	GHOSTS,
+	HILL_GIANTS,
+	CHICKENS
 }
