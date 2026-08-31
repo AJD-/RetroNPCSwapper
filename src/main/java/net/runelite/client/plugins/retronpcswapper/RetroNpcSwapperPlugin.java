@@ -35,10 +35,8 @@ import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.inject.Inject;
 
 import net.runelite.api.gameval.VarbitID;
@@ -54,6 +52,7 @@ import net.runelite.api.WorldType;
 import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
@@ -90,17 +89,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Inject
 	private Gson gson;
 
-	private final Set<Integer> modifiedNpcIndexes = new HashSet<>();
-	private final Map<Integer, Integer> originalIdleAnims = new HashMap<>();
-	private final Map<Integer, Integer> originalPoseAnims = new HashMap<>();
-	private final Map<Integer, Integer> originalIdleRotateLeftAnims = new HashMap<>();
-	private final Map<Integer, Integer> originalIdleRotateRightAnims = new HashMap<>();
-	private final Map<Integer, Integer> originalWalkAnims = new HashMap<>();
-	private final Map<Integer, Integer> originalWalkRotate180Anims = new HashMap<>();
-	private final Map<Integer, Integer> originalWalkRotateLeftAnims = new HashMap<>();
-	private final Map<Integer, Integer> originalWalkRotateRightAnims = new HashMap<>();
-	private final Map<Integer, Integer> originalRunAnims = new HashMap<>();
-	private final Map<Integer, int[]> originalModelsMap = new HashMap<>();
+	// Original pose/movement animations per swapped NPC, keyed by NPC index
+	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
+
+	// Original composition model IDs, keyed by composition id
+	private final Map<Integer, int[]> originalCompositionModels = new HashMap<>();
+
+	private boolean pendingModelCacheReset;
 
 	@Override
 	protected void startUp() throws Exception
@@ -204,14 +199,25 @@ public class RetroNpcSwapperPlugin extends Plugin
 	public void onNpcSpawned(NpcSpawned event)
 	{
 		processNpc(event.getNpc());
-		resetNpcModelCache();
+		pendingModelCacheReset = true;
 	}
 
 	@Subscribe
 	public void onNpcChanged(NpcChanged event)
 	{
 		processNpc(event.getNpc());
-		resetNpcModelCache();
+		pendingModelCacheReset = true;
+	}
+
+	@Subscribe
+	public void onGameTick(GameTick event)
+	{
+		// Coalesce cache resets requested by spawn/change events into at most one per tick
+		if (pendingModelCacheReset)
+		{
+			pendingModelCacheReset = false;
+			resetNpcModelCache();
+		}
 	}
 
 	@Subscribe
@@ -220,17 +226,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 		NPC npc = event.getNpc();
 		if (npc != null)
 		{
-			int npcIdx = npc.getIndex();
-			modifiedNpcIndexes.remove(npcIdx);
-			originalIdleAnims.remove(npcIdx);
-			originalPoseAnims.remove(npcIdx);
-			originalIdleRotateLeftAnims.remove(npcIdx);
-			originalIdleRotateRightAnims.remove(npcIdx);
-			originalWalkAnims.remove(npcIdx);
-			originalWalkRotate180Anims.remove(npcIdx);
-			originalWalkRotateLeftAnims.remove(npcIdx);
-			originalWalkRotateRightAnims.remove(npcIdx);
-			originalRunAnims.remove(npcIdx);
+			// Only drop per-NPC bookkeeping. The composition model swap is NOT
+			// reverted here - compositions are shared by every NPC of that id,
+			// so reverting on one despawn would visually break live instances.
+			// Composition models are restored in resetNpc (toggle-off/safety)
+			// and resetAllModifiedNpcs (shutdown).
+			originalNpcState.remove(npc.getIndex());
 		}
 	}
 
@@ -294,16 +295,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		if (gameStateChanged.getGameState() == GameState.LOGGING_IN
 			|| gameStateChanged.getGameState() == GameState.HOPPING)
 		{
-			modifiedNpcIndexes.clear();
-			originalIdleAnims.clear();
-			originalPoseAnims.clear();
-			originalIdleRotateLeftAnims.clear();
-			originalIdleRotateRightAnims.clear();
-			originalWalkAnims.clear();
-			originalWalkRotate180Anims.clear();
-			originalWalkRotateLeftAnims.clear();
-			originalWalkRotateRightAnims.clear();
-			originalRunAnims.clear();
+			originalNpcState.clear();
 		}
 		else if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
@@ -398,61 +390,23 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		int npcIdx = npc.getIndex();
-		int npcId = npc.getId();
 		int compId = comp.getId();
 
 		// Save original animation states before overriding
-		if (!modifiedNpcIndexes.contains(npcIdx))
-		{
-			originalIdleAnims.put(npcIdx, npc.getIdlePoseAnimation());
-			originalPoseAnims.put(npcIdx, npc.getPoseAnimation());
-			originalIdleRotateLeftAnims.put(npcIdx, npc.getIdleRotateLeft());
-			originalIdleRotateRightAnims.put(npcIdx, npc.getIdleRotateRight());
-			originalWalkAnims.put(npcIdx, npc.getWalkAnimation());
-			originalWalkRotate180Anims.put(npcIdx, npc.getWalkRotate180());
-			originalWalkRotateLeftAnims.put(npcIdx, npc.getWalkRotateLeft());
-			originalWalkRotateRightAnims.put(npcIdx, npc.getWalkRotateRight());
-			originalRunAnims.put(npcIdx, npc.getRunAnimation());
-			modifiedNpcIndexes.add(npcIdx);
-		}
+		originalNpcState.computeIfAbsent(npcIdx, idx -> OriginalNpcState.capture(npc));
 
 		int[] compModels = comp.getModels();
 		log.debug("INTERCEPTED NPC: name='{}', id={}, compId={}, index={}, category={}, origModels={}",
 			npc.getName(), npc.getId(), compId, npcIdx, data.getCategory(), Arrays.toString(compModels));
 
 		int[] retroModels = data.getRetroModelIds();
-		// Swap models for Guards (exact name "Guard") using classic guard models (from NPC 3269 / 3010), excluding ranged guards (3274, 3273)
-		if (data.getCategory() == RetroNpcCategory.GUARDS && (retroModels == null || retroModels.length == 0))
-		{
-			if (npcId != 3274 && npcId != 3273 && npc.getName() != null && npc.getName().equalsIgnoreCase("Guard"))
-			{
-				NPCComposition classicGuard = client.getNpcDefinition(3269);
-				if (classicGuard == null || classicGuard.getModels() == null)
-				{
-					classicGuard = client.getNpcDefinition(3010);
-				}
-				if (classicGuard == null || classicGuard.getModels() == null)
-				{
-					classicGuard = client.getNpcDefinition(3270);
-				}
-				if (classicGuard != null && classicGuard.getModels() != null)
-				{
-					retroModels = classicGuard.getModels().clone();
-				}
-			}
-		}
 
 		// Swap model IDs array on NPCComposition
 		if (compModels != null && retroModels != null && retroModels.length > 0)
 		{
-			if (!originalModelsMap.containsKey(compId))
-			{
-				originalModelsMap.put(compId, compModels.clone());
-			}
-			if (!originalModelsMap.containsKey(npcId))
-			{
-				originalModelsMap.put(npcId, compModels.clone());
-			}
+			// Key by composition id only; the composition may already hold swapped
+			// models when another NPC of the same type was processed first
+			originalCompositionModels.putIfAbsent(compId, compModels.clone());
 
 			log.debug("SWAPPING MODELS for NPC '{}' (ID: {}, CompID: {}): original={} -> retro={}",
 				npc.getName(), npc.getId(), compId, Arrays.toString(compModels), Arrays.toString(retroModels));
@@ -499,90 +453,35 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void resetNpc(NPC npc)
 	{
-		int npcIdx = npc.getIndex();
-		int npcId = npc.getId();
-
-		if (modifiedNpcIndexes.remove(npcIdx))
+		OriginalNpcState state = originalNpcState.remove(npc.getIndex());
+		if (state == null)
 		{
-			log.debug("Resetting NPC visuals for: {} (ID: {})", npc.getName(), npc.getId());
+			return;
+		}
 
-			NPCComposition comp = npc.getTransformedComposition();
-			if (comp == null)
-			{
-				comp = npc.getComposition();
-			}
-			if (comp == null)
-			{
-				comp = client.getNpcDefinition(npcId);
-			}
+		log.debug("Resetting NPC visuals for: {} (ID: {})", npc.getName(), npc.getId());
 
-			int compId = comp != null ? comp.getId() : npcId;
-			int[] origModels = originalModelsMap.get(compId);
-			if (origModels == null)
-			{
-				origModels = originalModelsMap.get(npcId);
-			}
+		NPCComposition comp = npc.getTransformedComposition();
+		if (comp == null)
+		{
+			comp = npc.getComposition();
+		}
+		if (comp == null)
+		{
+			comp = client.getNpcDefinition(npc.getId());
+		}
 
-			if (origModels != null && comp != null && comp.getModels() != null)
+		if (comp != null && comp.getModels() != null)
+		{
+			int[] origModels = originalCompositionModels.get(comp.getId());
+			if (origModels != null)
 			{
 				int[] compModels = comp.getModels();
 				System.arraycopy(origModels, 0, compModels, 0, Math.min(origModels.length, compModels.length));
 			}
-
-			Integer origIdle = originalIdleAnims.remove(npcIdx);
-			if (origIdle != null && origIdle != -1)
-			{
-				npc.setIdlePoseAnimation(origIdle);
-			}
-
-			Integer origPose = originalPoseAnims.remove(npcIdx);
-			if (origPose != null && origPose != -1)
-			{
-				npc.setPoseAnimation(origPose);
-			}
-
-			Integer origIdleRotL = originalIdleRotateLeftAnims.remove(npcIdx);
-			if (origIdleRotL != null && origIdleRotL != -1)
-			{
-				npc.setIdleRotateLeft(origIdleRotL);
-			}
-
-			Integer origIdleRotR = originalIdleRotateRightAnims.remove(npcIdx);
-			if (origIdleRotR != null && origIdleRotR != -1)
-			{
-				npc.setIdleRotateRight(origIdleRotR);
-			}
-
-			Integer origWalk = originalWalkAnims.remove(npcIdx);
-			if (origWalk != null && origWalk != -1)
-			{
-				npc.setWalkAnimation(origWalk);
-			}
-
-			Integer origWalk180 = originalWalkRotate180Anims.remove(npcIdx);
-			if (origWalk180 != null && origWalk180 != -1)
-			{
-				npc.setWalkRotate180(origWalk180);
-			}
-
-			Integer origWalkRotL = originalWalkRotateLeftAnims.remove(npcIdx);
-			if (origWalkRotL != null && origWalkRotL != -1)
-			{
-				npc.setWalkRotateLeft(origWalkRotL);
-			}
-
-			Integer origWalkRotR = originalWalkRotateRightAnims.remove(npcIdx);
-			if (origWalkRotR != null && origWalkRotR != -1)
-			{
-				npc.setWalkRotateRight(origWalkRotR);
-			}
-
-			Integer origRun = originalRunAnims.remove(npcIdx);
-			if (origRun != null && origRun != -1)
-			{
-				npc.setRunAnimation(origRun);
-			}
 		}
+
+		state.restore(npc);
 	}
 
 	/**
@@ -656,6 +555,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			}
 		}
 
+		pendingModelCacheReset = false;
 		resetNpcModelCache();
 	}
 
@@ -671,7 +571,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			{
 				for (NPC npc : worldView.npcs())
 				{
-					if (npc != null && modifiedNpcIndexes.contains(npc.getIndex()))
+					if (npc != null && originalNpcState.containsKey(npc.getIndex()))
 					{
 						resetNpc(npc);
 					}
@@ -680,11 +580,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		// Also restore all cached NPC compositions that were modified, ensuring no stale models remain
-		for (Map.Entry<Integer, int[]> entry : originalModelsMap.entrySet())
+		for (Map.Entry<Integer, int[]> entry : originalCompositionModels.entrySet())
 		{
-			int id = entry.getKey();
 			int[] origModels = entry.getValue();
-			NPCComposition comp = client.getNpcDefinition(id);
+			NPCComposition comp = client.getNpcDefinition(entry.getKey());
 			if (comp != null && comp.getModels() != null && origModels != null)
 			{
 				int[] compModels = comp.getModels();
@@ -692,18 +591,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 			}
 		}
 
-		modifiedNpcIndexes.clear();
-		originalIdleAnims.clear();
-		originalPoseAnims.clear();
-		originalIdleRotateLeftAnims.clear();
-		originalIdleRotateRightAnims.clear();
-		originalWalkAnims.clear();
-		originalWalkRotate180Anims.clear();
-		originalWalkRotateLeftAnims.clear();
-		originalWalkRotateRightAnims.clear();
-		originalRunAnims.clear();
-		originalModelsMap.clear();
+		originalNpcState.clear();
+		originalCompositionModels.clear();
 
+		pendingModelCacheReset = false;
 		resetNpcModelCache();
 	}
 
