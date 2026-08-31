@@ -39,9 +39,8 @@ import java.util.List;
 import java.util.Map;
 import javax.inject.Inject;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -65,6 +64,7 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
+@Slf4j
 @PluginDescriptor(
 	name = "Retro NPC Swapper",
 	description = "Swaps modern NPC models and animations to their retro 2004/2005 variants from the 2005 cache.",
@@ -72,8 +72,6 @@ import net.runelite.client.plugins.PluginDescriptor;
 )
 public class RetroNpcSwapperPlugin extends Plugin
 {
-	private static final Logger log = LoggerFactory.getLogger(RetroNpcSwapperPlugin.class);
-
 	@Inject
 	private Client client;
 

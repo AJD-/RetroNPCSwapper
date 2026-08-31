@@ -27,17 +27,15 @@ package com.retronpcswapper.cache;
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Pure Java BZip2 & GZip decompressor for RS2 2005 cache blocks.
  * Matched to standard 317 RS2 client BZip2Decompressor logic.
  */
+@Slf4j
 public class BZip2Decompressor
 {
-	private static final Logger log = LoggerFactory.getLogger(BZip2Decompressor.class);
-
 	private static final BZip2State STATE = new BZip2State();
 
 	public static synchronized byte[] decompress(byte[] compressed, int decompressedLen) throws Exception

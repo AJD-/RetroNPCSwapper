@@ -28,16 +28,14 @@ import java.io.File;
 import java.io.RandomAccessFile;
 import java.util.HashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Reader for RS2 2005 cache format (main_file_cache.dat & idx files).
  */
+@Slf4j
 public class RetroCacheReader
 {
-	private static final Logger log = LoggerFactory.getLogger(RetroCacheReader.class);
-
 	private final File cacheDir;
 	private RandomAccessFile datFile;
 	private final RandomAccessFile[] idxFiles = new RandomAccessFile[5];
