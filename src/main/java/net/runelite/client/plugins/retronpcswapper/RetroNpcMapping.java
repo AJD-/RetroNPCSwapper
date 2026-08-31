@@ -26,12 +26,10 @@ package net.runelite.client.plugins.retronpcswapper;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import net.runelite.client.plugins.retronpcswapper.cache.RetroNpcDefinition;
-
-import javax.annotation.Nullable;
 
 /**
  * Registry class that maps Modern NPC IDs and Names to Retro (2004/2005) model & animation data,
@@ -231,10 +229,11 @@ public class RetroNpcMapping
 		.build();
 
 	/**
-	 * Populates mappings dynamically from decoded 2005 cache NPC definitions,
-	 * while preserving explicit static archetype overrides and modern OSRS ID mappings.
+	 * Populates mappings from the bundled npc-mappings.json entries (generated
+	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
+	 * preserving explicit static archetype overrides and modern OSRS ID mappings.
 	 */
-	public static void loadFrom2005Cache(Map<Integer, RetroNpcDefinition> retroDefs)
+	public static void load(List<RetroNpcMappingEntry> entries)
 	{
 		ID_MAPPINGS.clear();
 		NAME_MAPPINGS.clear();
@@ -242,26 +241,23 @@ public class RetroNpcMapping
 		// 1. Register base static archetype overrides and modern OSRS ID mappings
 		registerStaticOverrides();
 
-		if (retroDefs == null || retroDefs.isEmpty())
+		if (entries == null)
 		{
 			return;
 		}
 
-		// 2. Populate dynamic mappings from decoded 2005 cache NPC definitions
-		for (RetroNpcDefinition def : retroDefs.values())
+		// 2. Populate mappings from the generated 2005 cache entries
+		for (RetroNpcMappingEntry entry : entries)
 		{
-			if (def == null || def.getName() == null || def.getName().isEmpty())
+			if (entry == null || entry.getName() == null || entry.getName().isEmpty()
+				|| entry.getCategory() == null
+				|| entry.getModelIds() == null || entry.getModelIds().length == 0)
 			{
 				continue;
 			}
 
-			String nameLower = def.getName().toLowerCase(Locale.ROOT).trim();
-			RetroNpcCategory category = getNpcCategory(nameLower);
-
-			if (category != null && def.getModels() != null && def.getModels().length > 0)
-			{
-				NAME_MAPPINGS.putIfAbsent(nameLower, createDynamicCacheData(category, def));
-			}
+			String nameLower = entry.getName().toLowerCase(Locale.ROOT).trim();
+			NAME_MAPPINGS.putIfAbsent(nameLower, createMappingData(entry));
 		}
 	}
 
@@ -328,14 +324,15 @@ public class RetroNpcMapping
 		registerMapping(HILL_GIANT_DEFAULT, 117, 2098, 2099, 2100, 2101, 2102, 2103, 3144, 7261, 7262);
 	}
 
-	private static RetroNpcData createDynamicCacheData(RetroNpcCategory category, RetroNpcDefinition def)
+	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
 	{
+		RetroNpcCategory category = entry.getCategory();
 		int attackAnim = -1;
 		int defendAnim = -1;
 		int deathAnim = -1;
-		int[] models = def.getModels();
-		int stanceAnim = def.getStanceAnimation();
-		int walkAnim = def.getWalkAnimation();
+		int[] models = entry.getModelIds();
+		int stanceAnim = entry.getIdleAnim();
+		int walkAnim = entry.getWalkAnim();
 
 		Set<Integer> modernAttacks = Collections.emptySet();
 		Set<Integer> modernDefends = Collections.emptySet();
@@ -469,65 +466,6 @@ public class RetroNpcMapping
 			.build();
 	}
 
-	@Nullable
-	private static RetroNpcCategory getNpcCategory(String nameLower) {
-		RetroNpcCategory category = null;
-
-		if (nameLower.contains("lesser demon"))
-		{
-			category = RetroNpcCategory.LESSER_DEMONS;
-		}
-		else if (nameLower.contains("greater demon"))
-		{
-			category = RetroNpcCategory.GREATER_DEMONS;
-		}
-		else if (nameLower.contains("black demon"))
-		{
-			category = RetroNpcCategory.BLACK_DEMONS;
-		}
-		else if (nameLower.contains("dragon") && !(nameLower.contains("baby")) && !(nameLower.contains("king")))
-		{
-			category = RetroNpcCategory.ADULT_DRAGONS;
-		}
-		else if (nameLower.contains("baby") && nameLower.contains("dragon"))
-		{
-			category = RetroNpcCategory.BABY_DRAGONS;
-		}
-		else if (nameLower.contains("goblin"))
-		{
-			category = RetroNpcCategory.GOBLINS;
-		}
-		else if (nameLower.equals("guard"))
-		{
-			category = RetroNpcCategory.GUARDS;
-		}
-		else if (nameLower.contains("imp") && !nameLower.contains("impling") && !nameLower.contains("impaler"))
-		{
-			category = RetroNpcCategory.IMPS;
-		}
-		else if (nameLower.contains("skeleton"))
-		{
-			category = RetroNpcCategory.SKELETONS;
-		}
-		else if (nameLower.contains("zombie"))
-		{
-			category = RetroNpcCategory.ZOMBIES;
-		}
-		else if (nameLower.contains("ghost"))
-		{
-			category = RetroNpcCategory.GHOSTS;
-		}
-		else if (nameLower.contains("hill giant"))
-		{
-			category = RetroNpcCategory.HILL_GIANTS;
-		}
-		else if (nameLower.contains("chicken"))
-		{
-			category = RetroNpcCategory.CHICKENS;
-		}
-		return category;
-	}
-
 	public static RetroNpcData get(int npcId, String npcName)
 	{
 		if (npcName == null)
@@ -537,22 +475,20 @@ public class RetroNpcMapping
 
 		String nameLower = npcName.toLowerCase(Locale.ROOT).trim();
 		RetroNpcData byName = NAME_MAPPINGS.get(nameLower);
+		RetroNpcData byId = ID_MAPPINGS.get(npcId);
+
 		if (byName == null)
 		{
-			return null;
+			// Modern NPCs whose names no longer match a 2005 name are still
+			// swappable when their ID was explicitly registered.
+			return byId;
 		}
 
-		RetroNpcData byId = ID_MAPPINGS.get(npcId);
 		if (byId != null && byId.getCategory() == byName.getCategory())
 		{
 			return byId;
 		}
 
 		return byName;
-	}
-
-	public static boolean contains(int npcId, String npcName)
-	{
-		return get(npcId, npcName) != null;
 	}
 }

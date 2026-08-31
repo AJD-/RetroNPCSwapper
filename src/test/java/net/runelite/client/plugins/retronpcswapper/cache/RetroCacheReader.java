@@ -222,10 +222,6 @@ public class RetroCacheReader
 					{
 						byte[] comp = new byte[compressedLens[i]];
 						System.arraycopy(decompressed, fileOffsets[i], comp, 0, compressedLens[i]);
-						if (nameHashes[i] == 1489108188 || nameHashes[i] == 1489126980)
-						{
-							System.out.println("Sub-file hash " + nameHashes[i] + " comp len=" + compressedLens[i] + ", uncomp len=" + uncompressedLens[i] + ", first 6 bytes: " + (comp[0]&0xFF) + " " + (comp[1]&0xFF) + " " + (comp[2]&0xFF) + " " + (comp[3]&0xFF) + " " + (comp[4]&0xFF) + " " + (comp[5]&0xFF));
-						}
 						fileBuffer = BZip2Decompressor.decompress(comp, uncompressedLens[i]);
 					}
 					else
@@ -248,72 +244,6 @@ public class RetroCacheReader
 			log.error("Failed to unpack Jag archive", e);
 			return files;
 		}
-	}
-
-	public byte[] getRawSubFile(byte[] archiveData, int targetHash)
-	{
-		if (archiveData == null || archiveData.length < 6) return null;
-		try
-		{
-			Buffer header = new Buffer(archiveData);
-			int uncompressedSize = header.read24BitInt();
-			int compressedSize = header.read24BitInt();
-
-			byte[] decompressed;
-			boolean archiveExtracted;
-
-			if (compressedSize != uncompressedSize)
-			{
-				byte[] compData = new byte[archiveData.length - 6];
-				System.arraycopy(archiveData, 6, compData, 0, compData.length);
-				decompressed = BZip2Decompressor.decompress(compData, uncompressedSize);
-				archiveExtracted = true;
-			}
-			else
-			{
-				decompressed = archiveData;
-				archiveExtracted = false;
-			}
-
-			Buffer archiveStream = new Buffer(decompressed);
-			if (archiveExtracted)
-			{
-				archiveStream.setOffset(0);
-			}
-			else
-			{
-				archiveStream.setOffset(6);
-			}
-
-			int totalFiles = archiveStream.readUnsignedShort();
-
-			int[] nameHashes = new int[totalFiles];
-			int[] uncompressedLens = new int[totalFiles];
-			int[] compressedLens = new int[totalFiles];
-			int[] fileOffsets = new int[totalFiles];
-
-			int dataStartOffset = archiveStream.getOffset() + totalFiles * 10;
-			for (int i = 0; i < totalFiles; i++)
-			{
-				nameHashes[i] = archiveStream.readInt();
-				uncompressedLens[i] = archiveStream.read24BitInt();
-				compressedLens[i] = archiveStream.read24BitInt();
-				fileOffsets[i] = dataStartOffset;
-				dataStartOffset += compressedLens[i];
-			}
-
-			for (int i = 0; i < totalFiles; i++)
-			{
-				if (nameHashes[i] == targetHash)
-				{
-					byte[] comp = new byte[compressedLens[i]];
-					System.arraycopy(decompressed, fileOffsets[i], comp, 0, compressedLens[i]);
-					return comp;
-				}
-			}
-		}
-		catch (Exception ignored) {}
-		return null;
 	}
 
 	public static int hashFileName(String name)

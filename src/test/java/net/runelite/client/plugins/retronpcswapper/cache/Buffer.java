@@ -37,11 +37,6 @@ public class Buffer
 		this.offset = 0;
 	}
 
-	public byte[] getArray()
-	{
-		return array;
-	}
-
 	public int getOffset()
 	{
 		return offset;

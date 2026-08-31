@@ -27,6 +27,8 @@ package net.runelite.client.plugins.retronpcswapper.cache;
 import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.zip.GZIPInputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Pure Java BZip2 & GZip decompressor for RS2 2005 cache blocks.
@@ -34,6 +36,8 @@ import java.util.zip.GZIPInputStream;
  */
 public class BZip2Decompressor
 {
+	private static final Logger log = LoggerFactory.getLogger(BZip2Decompressor.class);
+
 	private static final BZip2State STATE = new BZip2State();
 
 	public static synchronized byte[] decompress(byte[] compressed, int decompressedLen) throws Exception
@@ -512,7 +516,7 @@ public class BZip2Decompressor
 
 		if (s.origPtr < 0 || s.origPtr >= s.tt.length)
 		{
-			System.out.println("BZip2 ERROR: origPtr " + s.origPtr + " out of bounds for tt length " + s.tt.length + ", nblock=" + nblock);
+			log.warn("BZip2 origPtr {} out of bounds for tt length {}, nblock={}", s.origPtr, s.tt.length, nblock);
 			return;
 		}
 

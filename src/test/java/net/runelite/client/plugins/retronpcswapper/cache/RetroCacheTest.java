@@ -1,46 +1,29 @@
 package net.runelite.client.plugins.retronpcswapper.cache;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
-import net.runelite.client.RuneLite;
-import net.runelite.client.plugins.retronpcswapper.RetroNpcCategory;
-import net.runelite.client.plugins.retronpcswapper.RetroNpcData;
-import net.runelite.client.plugins.retronpcswapper.RetroNpcMapping;
+import net.runelite.client.plugins.retronpcswapper.RetroNpcMappingEntry;
+import net.runelite.client.plugins.retronpcswapper.RetroNpcSwapperPlugin;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class RetroCacheTest
 {
-	public static void main(String[] args) throws Exception
-	{
-		RuneLite.main(args);
-	}
+	private static final File CACHE_DIR = new File("retrocache/2005cache");
 
 	@Test
 	public void test317NpcDecoder() throws Exception
 	{
-		File cacheDir = new File("retrocache/2005cache");
-		if (!cacheDir.exists()) return;
+		if (!CACHE_DIR.exists()) return;
 
-		RetroCacheReader reader = new RetroCacheReader(cacheDir);
-		assertTrue(reader.init());
-
-		byte[] archiveData = reader.readFile(0, 2);
-		assertNotNull(archiveData);
-
-		Map<String, byte[]> files = reader.readArchive(archiveData);
-		byte[] npcDat = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.dat")));
-		byte[] npcIdx = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.idx")));
-		assertNotNull(npcDat);
-		assertNotNull(npcIdx);
-
-		Map<Integer, RetroNpcDefinition> defs = RetroNpcDecoder.decodeAll(npcDat, npcIdx);
+		Map<Integer, RetroNpcDefinition> defs = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
 		assertTrue(defs.size() > 1000);
 
 		RetroNpcDefinition lesserDemon = defs.get(82);
@@ -62,91 +45,33 @@ public class RetroCacheTest
 		assertEquals("Imp", imp708.getName());
 		assertEquals(171, imp708.getStanceAnimation());
 		assertEquals(168, imp708.getWalkAnimation());
+	}
 
-		reader.close();
+	/**
+	 * Regenerates the mapping entries from the local 2005 cache and verifies they
+	 * match the committed npc-mappings.json resource, catching a stale resource
+	 * after decoder or category-matching changes. Skipped when no local cache is
+	 * present (the cache is intentionally not committed).
+	 */
+	@Test
+	public void testCommittedMappingsMatchGenerator() throws Exception
+	{
+		if (!CACHE_DIR.exists()) return;
 
-		// Load mappings and verify skeleton and imp animations
-		RetroNpcMapping.loadFrom2005Cache(defs);
-		RetroNpcData skelData = RetroNpcMapping.get(90, "Skeleton");
-		assertNotNull(skelData);
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.SKELETONS, skelData.getCategory());
-		assertEquals(262, skelData.getIdleAnimationId());
-		assertEquals(259, skelData.getWalkAnimationId());
-		assertEquals(260, skelData.getAttackAnimationId());
-		assertEquals(261, skelData.getDefendAnimationId());
-		assertEquals(263, skelData.getDeathAnimationId());
+		List<RetroNpcMappingEntry> generated =
+			NpcMappingGenerator.buildEntries(NpcMappingGenerator.decodeDefinitions(CACHE_DIR));
 
-		RetroNpcData impData = RetroNpcMapping.get(708, "Imp");
-		assertNotNull(impData);
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.IMPS, impData.getCategory());
-		assertEquals(171, impData.getIdleAnimationId());
-		assertEquals(168, impData.getWalkAnimationId());
-		assertEquals(169, impData.getAttackAnimationId());
-		assertEquals(170, impData.getDefendAnimationId());
-		assertEquals(172, impData.getDeathAnimationId());
+		List<RetroNpcMappingEntry> committed;
+		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("npc-mappings.json"))
+		{
+			assertNotNull("npc-mappings.json resource missing - run ./gradlew generateNpcMappings", in);
+			committed = new Gson().fromJson(
+				new InputStreamReader(in, StandardCharsets.UTF_8),
+				new TypeToken<List<RetroNpcMappingEntry>>() {}.getType());
+		}
 
-		RetroNpcData goblinData = RetroNpcMapping.get(0, "Goblin");
-		assertNotNull(goblinData);
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GOBLINS, goblinData.getCategory());
-		assertEquals(311, goblinData.getIdleAnimationId());
-		assertEquals(308, goblinData.getWalkAnimationId());
-		assertEquals(309, goblinData.getAttackAnimationId());
-		assertEquals(312, goblinData.getDefendAnimationId());
-		assertEquals(313, goblinData.getDeathAnimationId());
-
-		RetroNpcData guardData = RetroNpcMapping.get(0, "Guard");
-		assertNotNull(guardData);
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, guardData.getCategory());
-		assertArrayEquals(new int[0], guardData.getRetroModelIds());
-		assertEquals(808, guardData.getIdleAnimationId());
-		assertEquals(819, guardData.getWalkAnimationId());
-		assertEquals(422, guardData.getAttackAnimationId());
-		assertEquals(424, guardData.getDefendAnimationId());
-		assertEquals(836, guardData.getDeathAnimationId());
-
-		RetroNpcData zombieData = RetroNpcMapping.get(0, "Zombie");
-		assertNotNull(zombieData);
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.ZOMBIES, zombieData.getCategory());
-		assertEquals(301, zombieData.getIdleAnimationId());
-		assertEquals(298, zombieData.getWalkAnimationId());
-		assertEquals(299, zombieData.getAttackAnimationId());
-		assertEquals(300, zombieData.getDefendAnimationId());
-		assertEquals(302, zombieData.getDeathAnimationId());
-
-		RetroNpcData ghostData = RetroNpcMapping.get(0, "Ghost");
-		assertNotNull(ghostData);
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GHOSTS, ghostData.getCategory());
-
-		RetroNpcData hillGiantData = RetroNpcMapping.get(0, "Hill giant");
-		assertNotNull(hillGiantData);
-		assertEquals(RetroNpcCategory.HILL_GIANTS, hillGiantData.getCategory());
-		assertArrayEquals(new int[]{2870, 2866}, hillGiantData.getRetroModelIds());
-		assertEquals(130, hillGiantData.getIdleAnimationId());
-		assertEquals(127, hillGiantData.getWalkAnimationId());
-		assertEquals(128, hillGiantData.getAttackAnimationId());
-		assertEquals(129, hillGiantData.getDefendAnimationId());
-		assertEquals(131, hillGiantData.getDeathAnimationId());
-
-		RetroNpcData chickenData = RetroNpcMapping.get(0, "Chicken");
-		assertNotNull(chickenData);
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.CHICKENS, chickenData.getCategory());
-		assertArrayEquals(new int[]{2849}, chickenData.getRetroModelIds());
-		assertEquals(54, chickenData.getIdleAnimationId());
-		assertEquals(53, chickenData.getWalkAnimationId());
-		assertEquals(55, chickenData.getAttackAnimationId());
-		assertEquals(56, chickenData.getDefendAnimationId());
-		assertEquals(57, chickenData.getDeathAnimationId());
-
-		// Verify Varrock Guard IDs map to GUARDS category
-		assertNotNull(RetroNpcMapping.get(11903, "Guard"));
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, Objects.requireNonNull(RetroNpcMapping.get(11903, "Guard")).getCategory());
-		assertNotNull(RetroNpcMapping.get(3244, "Guard"));
-		assertEquals(net.runelite.client.plugins.retronpcswapper.RetroNpcCategory.GUARDS, Objects.requireNonNull(RetroNpcMapping.get(3244, "Guard")).getCategory());
-
-		// Verify non-guard NPCs are excluded from GUARDS category
-		assertNull(RetroNpcMapping.get(0, "Guard dog"));
-		assertNull(RetroNpcMapping.get(0, "Ogre guard"));
-		assertNull(RetroNpcMapping.get(0, "Khazard Guard"));
-		assertNull(RetroNpcMapping.get(0, "Border Guard"));
+		Gson gson = new Gson();
+		assertEquals("Committed npc-mappings.json is stale - run ./gradlew generateNpcMappings",
+			gson.toJson(generated), gson.toJson(committed));
 	}
 }

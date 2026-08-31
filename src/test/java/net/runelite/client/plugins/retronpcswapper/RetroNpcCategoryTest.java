@@ -24,14 +24,15 @@
  */
 package net.runelite.client.plugins.retronpcswapper;
 
-import java.io.File;
-import java.util.Map;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 
 import net.runelite.api.gameval.VarbitID;
-import net.runelite.client.plugins.retronpcswapper.cache.RetroCacheReader;
-import net.runelite.client.plugins.retronpcswapper.cache.RetroNpcDecoder;
-import net.runelite.client.plugins.retronpcswapper.cache.RetroNpcDefinition;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -39,36 +40,17 @@ import static org.junit.Assert.*;
 public class RetroNpcCategoryTest
 {
 	@BeforeClass
-	public static void setUp()
+	public static void setUp() throws Exception
 	{
-		File cacheDir = new File("retrocache/2005cache");
-
-
-
-
-
-
-
-
-		if (cacheDir.exists())
+		// Load mappings from the bundled JSON resource, exactly as the plugin does
+		// at startup - no local 2005 cache needed to run this suite.
+		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("npc-mappings.json"))
 		{
-			RetroCacheReader reader = new RetroCacheReader(cacheDir);
-			if (reader.init())
-			{
-				byte[] archiveData = reader.readFile(0, 2);
-				if (archiveData != null)
-				{
-					Map<String, byte[]> files = reader.readArchive(archiveData);
-					byte[] npcDat = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.dat")));
-					byte[] npcIdx = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.idx")));
-					if (npcDat != null && npcIdx != null)
-					{
-						Map<Integer, RetroNpcDefinition> defs = RetroNpcDecoder.decodeAll(npcDat, npcIdx);
-						RetroNpcMapping.loadFrom2005Cache(defs);
-					}
-				}
-				reader.close();
-			}
+			assertNotNull("npc-mappings.json resource missing - run ./gradlew generateNpcMappings", in);
+			List<RetroNpcMappingEntry> entries = new Gson().fromJson(
+				new InputStreamReader(in, StandardCharsets.UTF_8),
+				new TypeToken<List<RetroNpcMappingEntry>>() {}.getType());
+			RetroNpcMapping.load(entries);
 		}
 	}
 
@@ -656,9 +638,15 @@ public class RetroNpcCategoryTest
 		assertNotNull(skel);
 		assertEquals(RetroNpcCategory.SKELETONS, skel.getCategory());
 
-		// Non-matching NPC names with ID collisions must not match swapper
-		assertNull(RetroNpcMapping.get(55, "Guard dog"));
-		assertNull(RetroNpcMapping.get(77, "Ogre guard"));
+		// An explicitly registered ID swaps even when the modern name no longer
+		// matches a 2005 name (the ID fallback in RetroNpcMapping.get)
+		RetroNpcData byIdOnly = RetroNpcMapping.get(55, "Guard dog");
+		assertNotNull(byIdOnly);
+		assertEquals(RetroNpcCategory.ZOMBIES, byIdOnly.getCategory());
+
+		// Unregistered IDs with non-matching names still return nothing
+		assertNull(RetroNpcMapping.get(99997, "Guard dog"));
+		assertNull(RetroNpcMapping.get(99997, "Ogre guard"));
 	}
 
 	@Test

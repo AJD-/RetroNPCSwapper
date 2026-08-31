@@ -24,13 +24,19 @@
  */
 package net.runelite.client.plugins.retronpcswapper;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
@@ -53,16 +59,12 @@ import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WorldChanged;
-import net.runelite.client.RuneLite;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.retronpcswapper.cache.RetroCacheReader;
-import net.runelite.client.plugins.retronpcswapper.cache.RetroNpcDecoder;
-import net.runelite.client.plugins.retronpcswapper.cache.RetroNpcDefinition;
 
 @PluginDescriptor(
 	name = "Retro NPC Swapper",
@@ -81,9 +83,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	@Inject
 	private RetroNpcConfig config;
-	
+
 	@Inject
 	private ConfigManager configManager;
+
+	@Inject
+	private Gson gson;
 
 	private final Set<Integer> modifiedNpcIndexes = new HashSet<>();
 	private final Map<Integer, Integer> originalIdleAnims = new HashMap<>();
@@ -101,7 +106,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		log.info("Retro NPC Swapper started");
-		initRetroCache();
+		loadMappings();
 		clientThread.invoke(this::recheckLoadedNpcs);
 	}
 
@@ -112,38 +117,27 @@ public class RetroNpcSwapperPlugin extends Plugin
 		clientThread.invoke(this::resetAllModifiedNpcs);
 	}
 
-	private void initRetroCache()
+	private void loadMappings() throws IOException
 	{
-		File cacheDir = new File("retrocache/2005cache");
-		if (!cacheDir.exists())
+		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("npc-mappings.json"))
 		{
-			cacheDir = new File(RuneLite.RUNELITE_DIR, "retro-npc-swapper/2005cache");
-		}
-
-		if (cacheDir.exists())
-		{
-			RetroCacheReader reader = new RetroCacheReader(cacheDir);
-			if (reader.init())
+			// The resource is bundled with the plugin, so a miss is a build defect;
+			// fail startup loudly rather than silently swapping nothing.
+			if (in == null)
 			{
-				byte[] archiveData = reader.readFile(0, 2); // Archive 0 file 2 (config.jag)
-				if (archiveData != null)
-				{
-					Map<String, byte[]> files = reader.readArchive(archiveData);
-					byte[] npcDat = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.dat")));
-					byte[] npcIdx = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.idx")));
-					if (npcDat != null && npcIdx != null)
-					{
-						Map<Integer, RetroNpcDefinition> defs = RetroNpcDecoder.decodeAll(npcDat, npcIdx);
-						RetroNpcMapping.loadFrom2005Cache(defs);
-						log.info("Successfully loaded {} 2005 cache NPC definitions into RetroNpcMapping", defs.size());
-					}
-				}
-				reader.close();
+				throw new IOException("npc-mappings.json resource is missing");
 			}
-		}
-		else
-		{
-			log.warn("2005 retro cache directory not found at: {}", cacheDir.getAbsolutePath());
+
+			List<RetroNpcMappingEntry> entries = gson.fromJson(
+				new InputStreamReader(in, StandardCharsets.UTF_8),
+				new TypeToken<List<RetroNpcMappingEntry>>() {}.getType());
+			if (entries == null || entries.isEmpty())
+			{
+				throw new IOException("npc-mappings.json resource is empty or malformed");
+			}
+
+			RetroNpcMapping.load(entries);
+			log.info("Loaded {} retro NPC mappings", entries.size());
 		}
 	}
 
