@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
+import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.VarbitID;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -57,7 +58,7 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testLesserDemonsCategory()
 	{
-		RetroNpcData lesserDemon = RetroNpcMapping.get(82, "Lesser demon");
+		RetroNpcData lesserDemon = RetroNpcMapping.get(NpcID.LESSER_DEMON, "Lesser demon");
 		assertNotNull("Lesser demon mapping must exist", lesserDemon);
 		assertEquals(RetroNpcCategory.LESSER_DEMONS, lesserDemon.getCategory());
 		assertArrayEquals(new int[]{2943}, lesserDemon.getRetroModelIds());
@@ -67,7 +68,13 @@ public class RetroNpcCategoryTest
 		assertEquals(65, lesserDemon.getDefendAnimationId());
 		assertEquals(67, lesserDemon.getDeathAnimationId());
 
-		int[] lesserIds = {82, 2005, 2006, 2007, 2008, 2018, 3982, 7247, 7248, 7656, 7657, 7664, 7865, 7866, 7867, 12361, 12363, 12365, 12376, 12389};
+		int[] lesserIds = {
+			NpcID.LESSER_DEMON, NpcID.LESSER_DEMON2, NpcID.LESSER_DEMON3, NpcID.LESSER_DEMON4, NpcID.LESSER_DEMON5,
+			NpcID.DRAGONSLAYER_DEMON, NpcID.KOUREND_LESSER_DEMON1, NpcID.KOUREND_LESSER_DEMON2,
+			NpcID.LESSER_DEMON_SLAYERCAVE_1, NpcID.LESSER_DEMON_SLAYERCAVE_2, NpcID.LESSER_DEMON_SLAYERCAVE_3,
+			NpcID.WILD_CAVE_LESSER_DEMON, NpcID.WILD_CAVE_LESSER_DEMON2, NpcID.WILD_CAVE_LESSER_DEMON3,
+			NpcID.DT2_SCAR_MAZE_MAGE_DEMON_NORMAL, NpcID.DT2_SCAR_MAZE_MELEE_DEMON_NORMAL,
+			NpcID.DT2_SCAR_MAZE_RANGED_DEMON_NORMAL, NpcID.DT2_SCAR_LESSER_DEMON_1};
 		for (int id : lesserIds)
 		{
 			RetroNpcData mapped = RetroNpcMapping.get(id, "Lesser demon");
@@ -106,7 +113,7 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testGreaterDemonsCategory()
 	{
-		RetroNpcData greaterDemon = RetroNpcMapping.get(83, "Greater demon");
+		RetroNpcData greaterDemon = RetroNpcMapping.get(NpcID.GREATER_DEMON, "Greater demon");
 		assertNotNull("Greater demon mapping must exist", greaterDemon);
 		assertEquals(RetroNpcCategory.GREATER_DEMONS, greaterDemon.getCategory());
 		assertArrayEquals(new int[]{2942}, greaterDemon.getRetroModelIds());
@@ -116,7 +123,12 @@ public class RetroNpcCategoryTest
 		assertEquals(65, greaterDemon.getDefendAnimationId());
 		assertEquals(67, greaterDemon.getDeathAnimationId());
 
-		int[] greaterIds = {83, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 7244, 7245, 7246, 7871, 7872, 7873, 12387};
+		int[] greaterIds = {
+			NpcID.GREATER_DEMON, NpcID.GREATER_DEMON2, NpcID.GREATER_DEMON3, NpcID.GREATER_DEMON4, NpcID.GREATER_DEMON5,
+			NpcID.GREATER_DEMON_STRONGHOLDCAVE_1, NpcID.GREATER_DEMON_STRONGHOLDCAVE_2, NpcID.GREATER_DEMON_STRONGHOLDCAVE_3,
+			NpcID.KOUREND_GREATER_DEMON1, NpcID.KOUREND_GREATER_DEMON2, NpcID.KOUREND_GREATER_DEMON3,
+			NpcID.WILD_CAVE_GREATER_DEMON, NpcID.WILD_CAVE_GREATER_DEMON2, NpcID.WILD_CAVE_GREATER_DEMON3,
+			NpcID.DT2_SCAR_GREATER_DEMON_1};
 		for (int id : greaterIds)
 		{
 			RetroNpcData mapped = RetroNpcMapping.get(id, "Greater demon");
@@ -132,7 +144,7 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testBlackDemonsCategory()
 	{
-		RetroNpcData blackDemon = RetroNpcMapping.get(84, "Black demon");
+		RetroNpcData blackDemon = RetroNpcMapping.get(NpcID.BLACK_DEMON, "Black demon");
 		assertNotNull("Black demon mapping must exist", blackDemon);
 		assertEquals(RetroNpcCategory.BLACK_DEMONS, blackDemon.getCategory());
 		assertArrayEquals(new int[]{2942}, blackDemon.getRetroModelIds());
@@ -142,7 +154,14 @@ public class RetroNpcCategoryTest
 		assertEquals(65, blackDemon.getDefendAnimationId());
 		assertEquals(67, blackDemon.getDeathAnimationId());
 
-		int[] blackIds = {84, 240, 1432, 2048, 2049, 2050, 2051, 2052, 5874, 5875, 5876, 5877, 6295, 6357, 7242, 7243, 7874, 7875, 7876, 12385};
+		int[] blackIds = {
+			NpcID.BLACK_DEMON, NpcID.BLACK_DEMON2, NpcID.BLACK_DEMON3, NpcID.BLACK_DEMON4, NpcID.BLACK_DEMON5,
+			NpcID.BLACK_DEMON_STRONGHOLDCAVE_1, NpcID.BLACK_DEMON_STRONGHOLDCAVE_2, NpcID.BLACK_DEMON_STRONGHOLDCAVE_3,
+			NpcID.BLACK_DEMON_STRONGHOLDCAVE_4, NpcID.BLACK_DEMON_STRONGHOLDCAVE_5,
+			NpcID.GRANDTREE_BLACKDEMON, NpcID.NZONE_GRANDTREE_BLACKDEMON_HARD, NpcID.NZONE_GRANDTREE_BLACKDEMON_NORMAL,
+			NpcID.KOUREND_BLACK_DEMON_1, NpcID.KOUREND_BLACK_DEMON_2,
+			NpcID.WILD_CAVE_BLACK_DEMON, NpcID.WILD_CAVE_BLACK_DEMON2, NpcID.WILD_CAVE_BLACK_DEMON3,
+			NpcID.DT2_SCAR_BLACK_DEMON_1};
 		for (int id : blackIds)
 		{
 			RetroNpcData mapped = RetroNpcMapping.get(id, "Black demon");
@@ -213,8 +232,11 @@ public class RetroNpcCategoryTest
 		assertEquals(424, guardByName.getDefendAnimationId());
 		assertEquals(836, guardByName.getDeathAnimationId());
 
-		// Verify Varrock Guard explicit ID mappings
-		int[] guardIds = {3244, 3245, 11903, 11904, 11911, 11922, 11937, 11942, 11947};
+		// Verify Varrock/Falador/Ardougne Guard explicit ID mappings
+		int[] guardIds = {
+			NpcID.BIM_FAI_VARROCK_GUARD02, NpcID.BIM_FAI_VARROCK_GUARD02_F, NpcID.FAI_VARROCK_GUARD02,
+			NpcID.GUARD1_VARIANT01, NpcID.ARDOUGNE_GUARD_VARIANT01,
+			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD4_F};
 		for (int id : guardIds)
 		{
 			RetroNpcData guardById = RetroNpcMapping.get(id, "Guard");
@@ -237,7 +259,7 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testImpsCategory()
 	{
-		RetroNpcData imp = RetroNpcMapping.get(708, "Imp");
+		RetroNpcData imp = RetroNpcMapping.get(NpcID.IMP, "Imp");
 		assertNotNull("Imp mapping must exist", imp);
 		assertEquals(RetroNpcCategory.IMPS, imp.getCategory());
 		assertArrayEquals(new int[]{2887}, imp.getRetroModelIds());
@@ -247,7 +269,7 @@ public class RetroNpcCategoryTest
 		assertEquals(170, imp.getDefendAnimationId());
 		assertEquals(172, imp.getDeathAnimationId());
 
-		int[] impIds = {708, 709, 3080, 3081, 3082, 3083, 3084, 3085, 3134, 5007, 5008, 5728, 7067, 7068, 7069, 7070, 7071, 7072, 7924};
+		int[] impIds = {NpcID.IMP, NpcID.GODWARS_ANCIENT_IMP, NpcID.CASTLEWARS_IMP};
 		for (int id : impIds)
 		{
 			RetroNpcData impById = RetroNpcMapping.get(id, "Imp");
@@ -283,7 +305,7 @@ public class RetroNpcCategoryTest
 	public void testSkeletonsCategory()
 	{
 		// Unarmed skeleton
-		RetroNpcData unarmed = RetroNpcMapping.get(90, "Skeleton");
+		RetroNpcData unarmed = RetroNpcMapping.get(NpcID.SKELETON_UNARMED, "Skeleton");
 		assertNotNull("Unarmed skeleton must exist", unarmed);
 		assertEquals(RetroNpcCategory.SKELETONS, unarmed.getCategory());
 		assertArrayEquals(new int[]{2944}, unarmed.getRetroModelIds());
@@ -293,8 +315,8 @@ public class RetroNpcCategoryTest
 		assertEquals(261, unarmed.getDefendAnimationId());
 		assertEquals(263, unarmed.getDeathAnimationId());
 
-		// Armed skeleton
-		RetroNpcData armed = RetroNpcMapping.get(92, "Skeleton");
+		// Armed skeleton (gameval names invert armed/unarmed for 72/77/78 - see registerStaticOverrides)
+		RetroNpcData armed = RetroNpcMapping.get(NpcID.SKELETON_UNARMED3, "Skeleton");
 		assertNotNull("Armed skeleton must exist", armed);
 		assertEquals(RetroNpcCategory.SKELETONS, armed.getCategory());
 		assertArrayEquals(new int[]{2944, 2946}, armed.getRetroModelIds());
@@ -305,7 +327,9 @@ public class RetroNpcCategoryTest
 		assertEquals(RetroNpcCategory.SKELETONS, draynorSkel.getCategory());
 		assertArrayEquals(new int[]{2944}, draynorSkel.getRetroModelIds());
 
-		int[] unarmedIds = {70, 71, 73, 74, 77, 78, 90, 91, 459, 1126};
+		int[] unarmedIds = {
+			NpcID.SKELETON_UNARMED, NpcID.SKELETON_UNARMED2, NpcID.SKELETON_UNARMED4,
+			NpcID.SKELETON_UNAGRESSIVE, NpcID.SKELETON_ARMED, NpcID.SKELETON_ARMED2};
 		for (int id : unarmedIds)
 		{
 			RetroNpcData skel = RetroNpcMapping.get(id, "Skeleton");
@@ -314,7 +338,7 @@ public class RetroNpcCategoryTest
 			assertEquals(1, skel.getRetroModelIds().length);
 		}
 
-		int[] armedIds = {72, 75, 76, 92, 93, 750, 1127, 1128};
+		int[] armedIds = {NpcID.SKELETON_UNARMED3, NpcID.SKELETON_UNAGRESSIVE2, NpcID.SKELETON_UNAGRESSIVE3};
 		for (int id : armedIds)
 		{
 			RetroNpcData skel = RetroNpcMapping.get(id, "Skeleton");
@@ -374,7 +398,7 @@ public class RetroNpcCategoryTest
 		assertEquals(302, zombie.getDeathAnimationId());
 
 		// Armed zombie with axe (e.g. Level 24 Zombie IDs 55, 56)
-		RetroNpcData armedZombie = RetroNpcMapping.get(55, "Zombie");
+		RetroNpcData armedZombie = RetroNpcMapping.get(NpcID.ZOMBIE_ARMED_SEWER1, "Zombie");
 		assertNotNull("Armed zombie mapping must exist", armedZombie);
 		assertEquals(RetroNpcCategory.ZOMBIES, armedZombie.getCategory());
 		assertArrayEquals(new int[]{2931, 2932}, armedZombie.getRetroModelIds());
@@ -384,8 +408,13 @@ public class RetroNpcCategoryTest
 		assertEquals(300, armedZombie.getDefendAnimationId());
 		assertEquals(302, armedZombie.getDeathAnimationId());
 
-		// Verify unarmed zombie explicit IDs (including Level 13 IDs 38, 39, 40)
-		int[] unarmedIds = {26, 27, 28, 29, 30, 31, 32, 34, 37, 38, 39, 40, 41, 42, 43, 44, 419, 420, 421, 422, 423, 424, 1115, 1433, 1434};
+		// Verify unarmed zombie explicit IDs (including Level 13 sewer zombies)
+		int[] unarmedIds = {
+			NpcID.ZOMBIE_UNARMED, NpcID.ZOMBIE_UNARMED2, NpcID.ZOMBIE_UNARMED3, NpcID.ZOMBIE_UNARMED4,
+			NpcID.ZOMBIE_UNARMED5, NpcID.ZOMBIE_UNARMED6, NpcID.ZOMBIE_UNARMED_CITY1, NpcID.ZOMBIE_UNARMED_CITY3,
+			NpcID.ZOMBIE_UNARMED_CITY6, NpcID.ZOMBIE_UNARMED_SEWER1, NpcID.ZOMBIE_UNARMED_SEWER2,
+			NpcID.ZOMBIE_UNARMED_SEWER3, NpcID.ZOMBIE_UNARMED_SEWER4,
+			NpcID.ZOMBIE2, NpcID.ZOMBIE2_B, NpcID.ZOMBIE2_C};
 		for (int id : unarmedIds)
 		{
 			RetroNpcData data = RetroNpcMapping.get(id, "Zombie");
@@ -396,8 +425,11 @@ public class RetroNpcCategoryTest
 			assertEquals(300, data.getDefendAnimationId());
 		}
 
-		// Verify armed zombie explicit IDs (including Level 24 IDs 55, 56)
-		int[] armedIds = {49, 50, 51, 52, 54, 55, 56, 57, 58, 751, 1116};
+		// Verify armed zombie explicit IDs (including Level 24 sewer zombies)
+		int[] armedIds = {
+			NpcID.ZOMBIE_ARMED, NpcID.ZOMBIE_ARMED2, NpcID.ZOMBIE_ARMED3, NpcID.ZOMBIE_ARMED_CITY1,
+			NpcID.ZOMBIE_ARMED_CITY3, NpcID.ZOMBIE_ARMED_SEWER1, NpcID.ZOMBIE_ARMED_SEWER2,
+			NpcID.ZOMBIE_ARMED_SEWER3, NpcID.ZOMBIE_ARMED_SEWER4};
 		for (int id : armedIds)
 		{
 			RetroNpcData data = RetroNpcMapping.get(id, "Zombie");
@@ -478,7 +510,9 @@ public class RetroNpcCategoryTest
 		assertEquals(129, hillGiant.getDefendAnimationId());
 		assertEquals(131, hillGiant.getDeathAnimationId());
 
-		int[] hillGiantIds = {117, 2098, 2099, 2100, 2101, 2102, 2103, 3144, 7261, 7262};
+		int[] hillGiantIds = {
+			NpcID.GIANT, NpcID.GIANT2, NpcID.GIANT3, NpcID.GIANT4, NpcID.GIANT5, NpcID.GIANT6,
+			NpcID.KOUREND_HILLGIANT};
 		for (int id : hillGiantIds)
 		{
 			RetroNpcData giantById = RetroNpcMapping.get(id, "Hill giant");
