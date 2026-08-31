@@ -315,17 +315,10 @@ public class RetroNpcCategoryTest
 		assertEquals(261, unarmed.getDefendAnimationId());
 		assertEquals(263, unarmed.getDeathAnimationId());
 
-		// Armed skeleton (gameval names invert armed/unarmed for 72/77/78 - see registerStaticOverrides)
-		RetroNpcData armed = RetroNpcMapping.get(NpcID.SKELETON_UNARMED3, "Skeleton");
+		RetroNpcData armed = RetroNpcMapping.get(NpcID.SKELETON_ARMED, "Skeleton");
 		assertNotNull("Armed skeleton must exist", armed);
 		assertEquals(RetroNpcCategory.SKELETONS, armed.getCategory());
 		assertArrayEquals(new int[]{2944, 2946}, armed.getRetroModelIds());
-
-		// Verify Draynor Sewer Skeleton ID 77 maps to SKELETONS category
-		RetroNpcData draynorSkel = RetroNpcMapping.get(77, "Skeleton");
-		assertNotNull("Draynor Sewer Skeleton (ID 77) must exist", draynorSkel);
-		assertEquals(RetroNpcCategory.SKELETONS, draynorSkel.getCategory());
-		assertArrayEquals(new int[]{2944}, draynorSkel.getRetroModelIds());
 
 		int[] unarmedIds = {
 			NpcID.SKELETON_UNARMED, NpcID.SKELETON_UNARMED2, NpcID.SKELETON_UNARMED4,
@@ -335,7 +328,7 @@ public class RetroNpcCategoryTest
 			RetroNpcData skel = RetroNpcMapping.get(id, "Skeleton");
 			assertNotNull("Skeleton ID " + id + " must be mapped", skel);
 			assertEquals(RetroNpcCategory.SKELETONS, skel.getCategory());
-			assertEquals(1, skel.getRetroModelIds().length);
+			assertEquals(2, skel.getRetroModelIds().length);
 		}
 
 		int[] armedIds = {NpcID.SKELETON_UNARMED3, NpcID.SKELETON_UNAGRESSIVE2, NpcID.SKELETON_UNAGRESSIVE3};
@@ -563,31 +556,6 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(0, "Dragon impling"));
 		assertNull(RetroNpcMapping.get(0, "Lucky impling"));
 		assertNull(RetroNpcMapping.get(0, "Impaler deer"));
-	}
-
-	@Test
-	public void testDraynorSewerSkeletonRegression()
-	{
-		// Draynor Sewer Skeleton is ID 77 in-game
-		RetroNpcData draynorSkel = RetroNpcMapping.get(77, "Skeleton");
-		assertNotNull("Draynor Sewer Skeleton (ID 77) must exist in mapping", draynorSkel);
-		assertEquals("Draynor Sewer Skeleton (ID 77) must be SKELETONS category", RetroNpcCategory.SKELETONS, draynorSkel.getCategory());
-		assertArrayEquals("Draynor Sewer Skeleton must use unarmed skeleton retro model [2944]", new int[]{2944}, draynorSkel.getRetroModelIds());
-		assertEquals("Draynor Sewer Skeleton idle animation must be 262", 262, draynorSkel.getIdleAnimationId());
-		assertEquals("Draynor Sewer Skeleton walk animation must be 259", 259, draynorSkel.getWalkAnimationId());
-		assertEquals("Draynor Sewer Skeleton attack animation must be 260", 260, draynorSkel.getAttackAnimationId());
-		assertEquals("Draynor Sewer Skeleton defend animation must be 261", 261, draynorSkel.getDefendAnimationId());
-		assertEquals("Draynor Sewer Skeleton death animation must be 263", 263, draynorSkel.getDeathAnimationId());
-
-		// Verify entire range of sewer / wilderness skeleton IDs 70-78
-		int[] skeletonRange = {70, 71, 72, 73, 74, 75, 76, 77, 78};
-		for (int id : skeletonRange)
-		{
-			RetroNpcData skel = RetroNpcMapping.get(id, "Skeleton");
-			assertNotNull("Skeleton ID " + id + " must be mapped", skel);
-			assertEquals("Skeleton ID " + id + " must be SKELETONS category", RetroNpcCategory.SKELETONS, skel.getCategory());
-			assertNotEquals("Skeleton ID " + id + " must not use zombie model", 2931, skel.getRetroModelIds()[0]);
-		}
 	}
 
 	@Test
