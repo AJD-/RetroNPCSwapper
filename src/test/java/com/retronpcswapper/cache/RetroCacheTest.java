@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.retronpcswapper.cache;
+package com.retronpcswapper.cache;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -9,8 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import net.runelite.client.plugins.retronpcswapper.RetroNpcMappingEntry;
-import net.runelite.client.plugins.retronpcswapper.RetroNpcSwapperPlugin;
+import com.retronpcswapper.RetroNpcMappingEntry;
+import com.retronpcswapper.RetroNpcSwapperPlugin;
 import org.junit.Test;
 import static org.junit.Assert.*;
 

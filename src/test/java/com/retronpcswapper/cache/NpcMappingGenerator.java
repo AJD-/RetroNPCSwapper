@@ -22,7 +22,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.runelite.client.plugins.retronpcswapper.cache;
+package com.retronpcswapper.cache;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -40,8 +40,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import net.runelite.client.plugins.retronpcswapper.RetroNpcCategory;
-import net.runelite.client.plugins.retronpcswapper.RetroNpcMappingEntry;
+import com.retronpcswapper.RetroNpcCategory;
+import com.retronpcswapper.RetroNpcMappingEntry;
 
 /**
  * Dev-only tool that regenerates the bundled npc-mappings.json resource from a
@@ -55,7 +55,7 @@ import net.runelite.client.plugins.retronpcswapper.RetroNpcMappingEntry;
 public class NpcMappingGenerator
 {
 	private static final Path OUTPUT_PATH =
-		Paths.get("src/main/resources/net/runelite/client/plugins/retronpcswapper/npc-mappings.json");
+		Paths.get("src/main/resources/com/retronpcswapper/npc-mappings.json");
 
 	public static void main(String[] args) throws IOException
 	{
