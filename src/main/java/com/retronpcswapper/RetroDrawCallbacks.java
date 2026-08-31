@@ -47,7 +47,7 @@ import net.runelite.api.hooks.DrawCallbacks;
  * <p>Only {@link #drawTemp} does anything other than forward: temporary entities (NPCs, players,
  * projectiles, spotanims) are drawn through it, and the {@code Model} arrives as a parameter, so
  * handing the delegate a different one is enough to change what is rendered. The delegate keeps
- * doing all of the actual upload work.
+ * doing all the actual upload work.
  *
  * <p>Every other method forwards verbatim. This is deliberate and load bearing: the methods on
  * {@link DrawCallbacks} are {@code default} no-ops, so any method left un-overridden here would
@@ -56,7 +56,9 @@ import net.runelite.api.hooks.DrawCallbacks;
  *
  * <p>Note the clickbox is unaffected by substitution. Under the ZBUF path the client resolves the
  * model, culls clickboxes and registers the hit target before invoking these callbacks, so the
- * clickbox continues to describe the original model.
+ * clickbox continues to describe the original model. This is especially obvious with the
+ * "Interact Highlight" plugin enabled, and addresses the "modifying, moving, or resizing the
+ * clickboxes of in-game elements is strictly prohibited" rule.
  */
 @Slf4j
 public class RetroDrawCallbacks implements DrawCallbacks

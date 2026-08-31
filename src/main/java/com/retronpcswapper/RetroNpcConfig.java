@@ -32,10 +32,25 @@ import net.runelite.client.config.ConfigSection;
 @ConfigGroup("retronpcswapper")
 public interface RetroNpcConfig extends Config
 {
+	/**
+	 * Read-only notice for users, not a setting.
+	 */
+	@ConfigItem(
+		keyName = "gpuRequiredNotice",
+		name = "<html><body style='width:170px'>This plugin requires the <b>GPU</b> plugin to be"
+			+ " enabled. Models are swapped as the scene is drawn, so nothing changes while GPU"
+			+ " rendering is off, or while another renderer such as 117 HD is in use.</body></html>",
+		description = "Retro models are substituted while the GPU plugin renders the scene, so it must be enabled.",
+		position = 0
+	)
+	default void gpuRequiredNotice()
+	{
+	}
+
 	@ConfigSection(
 		name = "Misc NPCs",
 		description = "Retro models and animations for miscellaneous NPCs",
-		position = 0,
+		position = 1,
 		closedByDefault = false
 	)
 	String miscSection = "miscSection";
@@ -103,7 +118,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigSection(
 		name = "Safety",
 		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
-		position = 1,
+		position = 2,
 		closedByDefault = true
 	)
 	String safetySection = "safetySection";

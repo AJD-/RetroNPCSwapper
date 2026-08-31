@@ -42,10 +42,6 @@ import net.runelite.api.ModelData;
  * <p>The draw callback runs per entity per frame, so it must do a map lookup and nothing else.
  * Everything expensive - decoding model data, merging and lighting - happens here, driven from
  * NPC spawn and transform events rather than from the render path.
- *
- * <p>Not synchronised, and does not need to be: both the builds (dispatched through
- * {@code ClientThread}) and the lookups (from {@code drawTemp}, which the GPU plugin services on
- * the client thread's own render context) happen on the client thread.
  */
 @Singleton
 @Slf4j

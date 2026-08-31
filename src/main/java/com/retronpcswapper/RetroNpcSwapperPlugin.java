@@ -353,9 +353,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	/**
 	 * Applies retro animation overrides to the given NPC.
 	 *
-	 * <p>Models are no longer swapped here. The shared {@code NPCComposition} is left untouched,
-	 * and geometry is substituted per NPC at draw time by {@link RetroDrawCallbacks} instead -
-	 * which is what removes the need to reach into the client's model cache.
+	 * <p>Geometry is substituted per NPC at draw time by {@link RetroDrawCallbacks}
 	 */
 	private void applyRetroSwap(NPC npc, RetroNpcData data)
 	{
@@ -499,7 +497,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		// We are not the registered callbacks any more; drop the stale reference before
+		// We are not the registered callbacks anymore; drop the stale reference before
 		// deciding whether we can retake the slot
 		boolean wasAttached = wrapper != null;
 		wrapper = null;
@@ -515,7 +513,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		// Only on a real transition - the per-tick guard calls this repeatedly while detached,
 		// and re-processing the whole scene every tick would be wasteful
-		if (wasAttached != (wrapper != null))
+		if (wasAttached == (wrapper == null))
 		{
 			recheckLoadedNpcs();
 		}
