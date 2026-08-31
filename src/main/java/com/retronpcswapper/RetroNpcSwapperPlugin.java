@@ -30,23 +30,22 @@ import com.google.inject.Provides;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Inject;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.Actor;
+import net.runelite.api.Animation;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
+import net.runelite.api.Model;
 import net.runelite.api.NPC;
-import net.runelite.api.NPCComposition;
-import net.runelite.api.NodeCache;
 import net.runelite.api.WorldType;
 import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
@@ -57,12 +56,16 @@ import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WorldChanged;
+import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.PluginChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.plugins.gpu.GpuPlugin;
 
 @Slf4j
 @PluginDescriptor(
@@ -84,27 +87,47 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Inject
 	private Gson gson;
 
+	@Inject
+	private PluginManager pluginManager;
+
+	@Inject
+	private RetroModelCache modelCache;
+
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
 
-	// Original composition model IDs, keyed by composition id
-	private final Map<Integer, int[]> originalCompositionModels = new HashMap<>();
+	// NPC ids currently eligible for model substitution. Maintained by processNpc so the
+	// render path never has to evaluate mappings, config toggles or safety settings.
+	private final Set<Integer> substitutedNpcIds = new HashSet<>();
 
-	private boolean pendingModelCacheReset;
+	// Our decorator, while it owns the client's draw callbacks slot
+	private RetroDrawCallbacks wrapper;
+
+	// Resolved once - the plugin list does not change identity, and attach() is polled per tick
+	private Plugin gpuPlugin;
 
 	@Override
 	protected void startUp() throws Exception
 	{
 		log.info("Retro NPC Swapper started");
 		loadMappings();
-		clientThread.invoke(this::recheckLoadedNpcs);
+		clientThread.invoke(() ->
+		{
+			recheckLoadedNpcs();
+			attach();
+		});
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
 		log.info("Retro NPC Swapper stopped");
-		clientThread.invoke(this::resetAllModifiedNpcs);
+		clientThread.invoke(() ->
+		{
+			detach();
+			resetAllModifiedNpcs();
+			modelCache.clear();
+		});
 	}
 
 	private void loadMappings() throws IOException
@@ -153,24 +176,34 @@ public class RetroNpcSwapperPlugin extends Plugin
 	public void onNpcSpawned(NpcSpawned event)
 	{
 		processNpc(event.getNpc());
-		pendingModelCacheReset = true;
 	}
 
 	@Subscribe
 	public void onNpcChanged(NpcChanged event)
 	{
+		// A transform gives the NPC a different id, which the spawn-time build never saw.
+		// Without reprocessing here the substitution silently stops for that NPC.
 		processNpc(event.getNpc());
-		pendingModelCacheReset = true;
 	}
 
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
-		// Coalesce cache resets requested by spawn/change events into at most one per tick
-		if (pendingModelCacheReset)
+		// Cheap guard: the GPU plugin sets and clears the draw callbacks slot unconditionally,
+		// so re-take it whenever we have lost it. Covers orderings PluginChanged misses.
+		if (wrapper == null || client.getDrawCallbacks() != wrapper)
 		{
-			pendingModelCacheReset = false;
-			resetNpcModelCache();
+			attach();
+		}
+	}
+
+	@Subscribe
+	public void onPluginChanged(PluginChanged event)
+	{
+		if (event.getPlugin() instanceof GpuPlugin)
+		{
+			// attach() declines on its own when the GPU plugin is no longer holding the slot
+			clientThread.invoke(this::attach);
 		}
 	}
 
@@ -180,11 +213,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 		NPC npc = event.getNpc();
 		if (npc != null)
 		{
-			// Only drop per-NPC bookkeeping. The composition model swap is NOT
-			// reverted here - compositions are shared by every NPC of that id,
-			// so reverting on one despawn would visually break live instances.
-			// Composition models are restored in resetNpc (toggle-off/safety)
-			// and resetAllModifiedNpcs (shutdown).
+			// Only per-NPC bookkeeping is dropped. substitutedNpcIds is keyed by NPC id, not
+			// index, and is shared by every instance of that type, so it is left alone here.
 			originalNpcState.remove(npc.getIndex());
 		}
 	}
@@ -299,84 +329,39 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		if (isSafetyDisabled())
-		{
-			resetNpc(npc);
-			return;
-		}
-
 		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName());
-		if (data == null)
+
+		// Animation overrides are gated on substitution being live. Without the wrapper the
+		// model stays vanilla, and a modern-rigged model playing a 2005 sequence - which is
+		// keyed to 2005 framemaps - renders distorted rather than retro.
+		//
+		// Verify if category toggle is enabled in configuration
+		if (wrapper == null || isSafetyDisabled() || data == null || !isCategoryEnabled(data.getCategory()))
 		{
+			substitutedNpcIds.remove(npc.getId());
 			resetNpc(npc);
 			return;
 		}
 
-		// Verify if category toggle is enabled in configuration
-		if (isCategoryEnabled(data.getCategory()))
-		{
-			applyRetroSwap(npc, data);
-		}
-		else
-		{
-			resetNpc(npc);
-		}
+		// Build the replacement geometry here, on the client thread, so the draw callback
+		// only ever does a map lookup
+		modelCache.ensureBuilt(npc.getId(), data);
+		substitutedNpcIds.add(npc.getId());
+		applyRetroSwap(npc, data);
 	}
 
 	/**
-	 * Applies retro model and animation overrides to the given NPC.
+	 * Applies retro animation overrides to the given NPC.
+	 *
+	 * <p>Geometry is substituted per NPC at draw time by {@link RetroDrawCallbacks}
 	 */
 	private void applyRetroSwap(NPC npc, RetroNpcData data)
 	{
-		NPCComposition comp = npc.getTransformedComposition();
-		if (comp == null)
-		{
-			comp = npc.getComposition();
-		}
-		if (comp == null)
-		{
-			comp = client.getNpcDefinition(npc.getId());
-		}
-
-		if (comp == null)
-		{
-			return;
-		}
-
-		int npcIdx = npc.getIndex();
-		int compId = comp.getId();
-
 		// Save original animation states before overriding
-		originalNpcState.computeIfAbsent(npcIdx, idx -> OriginalNpcState.capture(npc));
+		originalNpcState.computeIfAbsent(npc.getIndex(), idx -> OriginalNpcState.capture(npc));
 
-		int[] compModels = comp.getModels();
-		log.debug("INTERCEPTED NPC: name='{}', id={}, compId={}, index={}, category={}, origModels={}",
-			npc.getName(), npc.getId(), compId, npcIdx, data.getCategory(), Arrays.toString(compModels));
-
-		int[] retroModels = data.getRetroModelIds();
-
-		// Swap model IDs array on NPCComposition
-		if (compModels != null && retroModels != null && retroModels.length > 0)
-		{
-			// Key by composition id only; the composition may already hold swapped
-			// models when another NPC of the same type was processed first
-			originalCompositionModels.putIfAbsent(compId, compModels.clone());
-
-			log.debug("SWAPPING MODELS for NPC '{}' (ID: {}, CompID: {}): original={} -> retro={}",
-				npc.getName(), npc.getId(), compId, Arrays.toString(compModels), Arrays.toString(retroModels));
-
-			for (int i = 0; i < compModels.length; i++)
-			{
-				if (i < retroModels.length)
-				{
-					compModels[i] = retroModels[i];
-				}
-				else
-				{
-					compModels[i] = -1;
-				}
-			}
-		}
+		log.debug("INTERCEPTED NPC: name='{}', id={}, index={}, category={}",
+			npc.getName(), npc.getId(), npc.getIndex(), data.getCategory());
 
 		// Apply idle animation override from 2005 cache definition
 		if (data.getIdleAnimationId() != -1)
@@ -415,26 +400,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		log.debug("Resetting NPC visuals for: {} (ID: {})", npc.getName(), npc.getId());
 
-		NPCComposition comp = npc.getTransformedComposition();
-		if (comp == null)
-		{
-			comp = npc.getComposition();
-		}
-		if (comp == null)
-		{
-			comp = client.getNpcDefinition(npc.getId());
-		}
-
-		if (comp != null && comp.getModels() != null)
-		{
-			int[] origModels = originalCompositionModels.get(comp.getId());
-			if (origModels != null)
-			{
-				int[] compModels = comp.getModels();
-				System.arraycopy(origModels, 0, compModels, 0, Math.min(origModels.length, compModels.length));
-			}
-		}
-
+		// Only animations need restoring - the composition was never modified, and dropping the
+		// NPC id from substitutedNpcIds is what reverts its models on the next frame drawn.
 		state.restore(npc);
 	}
 
@@ -490,9 +457,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 				processNpc(npc);
 			}
 		}
-
-		pendingModelCacheReset = false;
-		resetNpcModelCache();
 	}
 
 	/**
@@ -515,54 +479,103 @@ public class RetroNpcSwapperPlugin extends Plugin
 			}
 		}
 
-		// Also restore all cached NPC compositions that were modified, ensuring no stale models remain
-		for (Map.Entry<Integer, int[]> entry : originalCompositionModels.entrySet())
-		{
-			int[] origModels = entry.getValue();
-			NPCComposition comp = client.getNpcDefinition(entry.getKey());
-			if (comp != null && comp.getModels() != null && origModels != null)
-			{
-				int[] compModels = comp.getModels();
-				System.arraycopy(origModels, 0, compModels, 0, Math.min(origModels.length, compModels.length));
-			}
-		}
-
 		originalNpcState.clear();
-		originalCompositionModels.clear();
-
-		pendingModelCacheReset = false;
-		resetNpcModelCache();
+		substitutedNpcIds.clear();
 	}
 
 	/**
-	 * Resets the client's internal NPCComposition and NPC model caches so that model ID
-	 * changes to NPCComposition.getModels() take effect immediately on screen.
+	 * Takes over the client's draw callbacks slot by wrapping whatever the GPU plugin registered.
+	 *
+	 * <p>Declines when the GPU plugin is not holding the slot - either it is disabled, or another
+	 * renderer such as 117HD owns it. Must be called on the client thread.
 	 */
-	private void resetNpcModelCache()
+	private void attach()
 	{
-		try
+		DrawCallbacks current = client.getDrawCallbacks();
+		if (wrapper != null && current == wrapper)
 		{
-			NPCComposition sampleComp = client.getNpcDefinition(0);
-			if (sampleComp != null)
+			return;
+		}
+
+		// We are not the registered callbacks anymore; drop the stale reference before
+		// deciding whether we can retake the slot
+		boolean wasAttached = wrapper != null;
+		wrapper = null;
+
+		Plugin gpu = findGpuPlugin();
+		if (gpu != null && current == gpu)
+		{
+			RetroDrawCallbacks callbacks = new RetroDrawCallbacks((DrawCallbacks) gpu, this::substitute);
+			client.setDrawCallbacks(callbacks);
+			wrapper = callbacks;
+			log.debug("Attached retro draw callbacks over the GPU plugin");
+		}
+
+		// Only on a real transition - the per-tick guard calls this repeatedly while detached,
+		// and re-processing the whole scene every tick would be wasteful
+		if (wasAttached == (wrapper == null))
+		{
+			recheckLoadedNpcs();
+		}
+	}
+
+	/**
+	 * Hands the draw callbacks slot back to the GPU plugin. Must be called on the client thread.
+	 */
+	private void detach()
+	{
+		if (wrapper != null && client.getDrawCallbacks() == wrapper)
+		{
+			// Restore the delegate, never null - nulling the slot would leave the GPU plugin
+			// running with no callbacks registered
+			client.setDrawCallbacks(wrapper.getDelegate());
+			log.debug("Detached retro draw callbacks");
+		}
+		wrapper = null;
+	}
+
+	private Plugin findGpuPlugin()
+	{
+		if (gpuPlugin == null)
+		{
+			for (Plugin plugin : pluginManager.getPlugins())
 			{
-				Class<?> compClass = sampleComp.getClass();
-				for (Field field : compClass.getDeclaredFields())
+				if (plugin instanceof GpuPlugin)
 				{
-					if (Modifier.isStatic(field.getModifiers()) && NodeCache.class.isAssignableFrom(field.getType()))
-					{
-						field.setAccessible(true);
-						NodeCache cache = (NodeCache) field.get(null);
-						if (cache != null)
-						{
-							cache.reset();
-						}
-					}
+					gpuPlugin = plugin;
+					break;
 				}
 			}
 		}
-		catch (Throwable t)
+		return gpuPlugin;
+	}
+
+	/**
+	 * Supplies retro geometry for an NPC being drawn, or null to let the vanilla model through.
+	 *
+	 * <p>Runs per NPC per frame, so it does map lookups only - eligibility is decided in
+	 * {@link #processNpc} and the geometry is built by {@link RetroModelCache} ahead of time.
+	 */
+	private Model substitute(NPC npc, Model vanilla)
+	{
+		int npcId = npc.getId();
+		if (!substitutedNpcIds.contains(npcId))
 		{
-			log.debug("Failed to reset NPC model cache: {}", t.getMessage());
+			return null;
 		}
+
+		Model base = modelCache.get(npcId);
+		if (base == null)
+		{
+			return null;
+		}
+
+		Animation action = modelCache.animation(npc.getAnimation());
+		Animation pose = modelCache.animation(npc.getPoseAnimation());
+
+		// The returned model is shared and is invalidated by the next applyTransformations call,
+		// including the client's own - it is handed straight to the delegate and uploaded before
+		// anything else can run, which is what makes that safe here.
+		return client.applyTransformations(base, action, npc.getAnimationFrame(), pose, npc.getPoseAnimationFrame());
 	}
 }

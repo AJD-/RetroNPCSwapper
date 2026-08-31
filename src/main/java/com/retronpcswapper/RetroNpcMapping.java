@@ -270,8 +270,6 @@ public class RetroNpcMapping
 		}
 	}
 
-	// Stale 2005-era IDs (which now belong to unrelated modern NPCs) were pruned
-	// after checking every registered ID against the gameval NpcID constants.
 	private static void registerStaticOverrides()
 	{
 		// Lesser Demons
@@ -311,9 +309,6 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("imp", IMP_DEFAULT);
 		registerMapping(IMP_DEFAULT, NpcID.IMP, NpcID.GODWARS_ANCIENT_IMP, NpcID.CASTLEWARS_IMP);
 
-		// Skeletons. Note: the gameval names for 72/77/78 invert armed/unarmed
-		// relative to their in-game appearance; the grouping below follows visual
-		// verification (see testDraynorSewerSkeletonRegression).
 		NAME_MAPPINGS.put("skeleton", SKELETON_UNARMED);
 		registerMapping(SKELETON_UNARMED,
 			NpcID.SKELETON_UNARMED, NpcID.SKELETON_UNARMED2, NpcID.SKELETON_UNARMED3,
@@ -374,6 +369,7 @@ public class RetroNpcMapping
 		Set<Integer> modernDefends = Collections.emptySet();
 		Set<Integer> modernDeaths = Collections.emptySet();
 
+		// These guys were removed from the cache when they removed the Realm of Memories
 		if (category == RetroNpcCategory.LESSER_DEMONS
 			|| category == RetroNpcCategory.GREATER_DEMONS
 			|| category == RetroNpcCategory.BLACK_DEMONS)
@@ -420,6 +416,7 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.CHICKENS)
 		{
+			// These are really tiny compared to modern chickens
 			models = new int[]{2849};
 			stanceAnim = 54;
 			walkAnim = 53;
@@ -432,7 +429,7 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.HILL_GIANTS)
 		{
-			// TODO: Find the 'real' Hill Giant Head (currently set to a Jogre head)
+			// TODO: Maybe we can find the 'real' Hill Giant Head (currently set to a Jogre head, which looks 'OK')
 			models = new int[] {2870, 2866};
 			stanceAnim = 130;
 			walkAnim = 127;
@@ -445,7 +442,7 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.GUARDS)
 		{
-			// TODO: Replace retro models for guards (they are multi-part models)
+			// Currently unused, they are multi-part models and I couldn't find the correct head/arms in the cache
 			models = null;
 			stanceAnim = 808;
 			walkAnim = 819;
@@ -458,6 +455,7 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.IMPS)
 		{
+			// Animations no longer exist in the official game cache, so these are disabled
 			stanceAnim = stanceAnim != -1 ? stanceAnim : 171;
 			walkAnim = walkAnim != -1 ? walkAnim : 168;
 			attackAnim = 169;
@@ -480,6 +478,7 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.GHOSTS)
 		{
+			// Had issues with animations (again, appear to have been removed), so ghosts are disabled
 			attackAnim = 422;
 			defendAnim = 424;
 			deathAnim = 836;
