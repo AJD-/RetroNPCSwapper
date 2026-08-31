@@ -1,0 +1,234 @@
+[
+  {
+    "name": "baby blue dragon",
+    "category": "BABY_DRAGONS",
+    "modelIds": [
+      2998
+    ],
+    "idleAnim": 27,
+    "walkAnim": 21
+  },
+  {
+    "name": "baby dragon",
+    "category": "BABY_DRAGONS",
+    "modelIds": [
+      2998
+    ],
+    "idleAnim": 27,
+    "walkAnim": 21
+  },
+  {
+    "name": "black demon",
+    "category": "BLACK_DEMONS",
+    "modelIds": [
+      2942
+    ],
+    "idleAnim": 66,
+    "walkAnim": 63
+  },
+  {
+    "name": "black dragon",
+    "category": "ADULT_DRAGONS",
+    "modelIds": [
+      2853,
+      2854
+    ],
+    "idleAnim": 90,
+    "walkAnim": 79
+  },
+  {
+    "name": "blue dragon",
+    "category": "ADULT_DRAGONS",
+    "modelIds": [
+      2853,
+      2854
+    ],
+    "idleAnim": 90,
+    "walkAnim": 79
+  },
+  {
+    "name": "chicken",
+    "category": "CHICKENS",
+    "modelIds": [
+      2849
+    ],
+    "idleAnim": 54,
+    "walkAnim": 53
+  },
+  {
+    "name": "ghost",
+    "category": "GHOSTS",
+    "modelIds": [
+      2961,
+      2964,
+      2965
+    ],
+    "idleAnim": 125,
+    "walkAnim": 119
+  },
+  {
+    "name": "goblin",
+    "category": "GOBLINS",
+    "modelIds": [
+      2951,
+      2953,
+      2955,
+      2956
+    ],
+    "idleAnim": 311,
+    "walkAnim": 308
+  },
+  {
+    "name": "goblin guard",
+    "category": "GOBLINS",
+    "modelIds": [
+      2951,
+      2953,
+      2955,
+      2956,
+      2957
+    ],
+    "idleAnim": 311,
+    "walkAnim": 308
+  },
+  {
+    "name": "greater demon",
+    "category": "GREATER_DEMONS",
+    "modelIds": [
+      2942
+    ],
+    "idleAnim": 66,
+    "walkAnim": 63
+  },
+  {
+    "name": "green dragon",
+    "category": "ADULT_DRAGONS",
+    "modelIds": [
+      2853,
+      2854
+    ],
+    "idleAnim": 90,
+    "walkAnim": 79
+  },
+  {
+    "name": "guard",
+    "category": "GUARDS",
+    "modelIds": [
+      233,
+      246,
+      294,
+      151,
+      176,
+      254,
+      185,
+      519,
+      541
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819
+  },
+  {
+    "name": "hill giant",
+    "category": "HILL_GIANTS",
+    "modelIds": [
+      2870,
+      2862
+    ],
+    "idleAnim": 130,
+    "walkAnim": 127
+  },
+  {
+    "name": "hobgoblin",
+    "category": "GOBLINS",
+    "modelIds": [
+      2994
+    ],
+    "idleAnim": 166,
+    "walkAnim": 162
+  },
+  {
+    "name": "imp",
+    "category": "IMPS",
+    "modelIds": [
+      2887
+    ],
+    "idleAnim": 171,
+    "walkAnim": 168
+  },
+  {
+    "name": "lesser demon",
+    "category": "LESSER_DEMONS",
+    "modelIds": [
+      2943
+    ],
+    "idleAnim": 66,
+    "walkAnim": 63
+  },
+  {
+    "name": "red dragon",
+    "category": "ADULT_DRAGONS",
+    "modelIds": [
+      2853,
+      2854
+    ],
+    "idleAnim": 90,
+    "walkAnim": 79
+  },
+  {
+    "name": "restless ghost",
+    "category": "GHOSTS",
+    "modelIds": [
+      224,
+      310,
+      275,
+      168,
+      179,
+      181,
+      186,
+      245
+    ],
+    "idleAnim": 15,
+    "walkAnim": 13
+  },
+  {
+    "name": "skeleton",
+    "category": "SKELETONS",
+    "modelIds": [
+      2944
+    ],
+    "idleAnim": 262,
+    "walkAnim": 259
+  },
+  {
+    "name": "skeleton mage",
+    "category": "SKELETONS",
+    "modelIds": [
+      209,
+      251,
+      292,
+      170,
+      256,
+      325
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819
+  },
+  {
+    "name": "summoned zombie",
+    "category": "ZOMBIES",
+    "modelIds": [
+      2931
+    ],
+    "idleAnim": 301,
+    "walkAnim": 298
+  },
+  {
+    "name": "zombie",
+    "category": "ZOMBIES",
+    "modelIds": [
+      2931
+    ],
+    "idleAnim": 301,
+    "walkAnim": 298
+  }
+]

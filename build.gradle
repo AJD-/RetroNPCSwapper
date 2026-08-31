@@ -20,7 +20,7 @@ repositories {
 }
 
 def runeLiteVersion = 'latest.release'
-def pluginMainClass = 'net.runelite.client.plugins.retronpcswapper.cache.RetroCacheTest'
+def pluginMainClass = 'net.runelite.client.plugins.retronpcswapper.RetroNpcSwapperPluginTest'
 
 dependencies {
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
@@ -49,6 +49,12 @@ tasks.register('run', JavaExec) {
 			"--add-exports=java.desktop/sun.font=ALL-UNNAMED",
 			"-ea"
 	args "--developer-mode", "--debug"
+}
+
+tasks.register('generateNpcMappings', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'net.runelite.client.plugins.retronpcswapper.cache.NpcMappingGenerator'
+	workingDir = rootDir
 }
 
 tasks.register('shadowJar', Jar) {
