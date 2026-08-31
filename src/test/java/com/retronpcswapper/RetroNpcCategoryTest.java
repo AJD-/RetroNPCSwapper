@@ -321,17 +321,21 @@ public class RetroNpcCategoryTest
 		assertArrayEquals(new int[]{2944, 2946}, armed.getRetroModelIds());
 
 		int[] unarmedIds = {
-			NpcID.SKELETON_UNARMED, NpcID.SKELETON_UNARMED2, NpcID.SKELETON_UNARMED4,
-			NpcID.SKELETON_UNAGRESSIVE, NpcID.SKELETON_ARMED, NpcID.SKELETON_ARMED2};
+				NpcID.SKELETON_UNARMED, NpcID.SKELETON_UNARMED2, NpcID.SKELETON_UNARMED3,
+				NpcID.SKELETON_UNARMED4, NpcID.SKELETON_UNAGRESSIVE
+		};
 		for (int id : unarmedIds)
 		{
 			RetroNpcData skel = RetroNpcMapping.get(id, "Skeleton");
 			assertNotNull("Skeleton ID " + id + " must be mapped", skel);
 			assertEquals(RetroNpcCategory.SKELETONS, skel.getCategory());
-			assertEquals(2, skel.getRetroModelIds().length);
+			assertEquals(1, skel.getRetroModelIds().length);
 		}
 
-		int[] armedIds = {NpcID.SKELETON_UNARMED3, NpcID.SKELETON_UNAGRESSIVE2, NpcID.SKELETON_UNAGRESSIVE3};
+		int[] armedIds = {
+				NpcID.SKELETON_ARMED, NpcID.SKELETON_ARMED2, NpcID.SKELETON_UNAGRESSIVE2,
+				NpcID.SKELETON_UNAGRESSIVE3
+		};
 		for (int id : armedIds)
 		{
 			RetroNpcData skel = RetroNpcMapping.get(id, "Skeleton");
