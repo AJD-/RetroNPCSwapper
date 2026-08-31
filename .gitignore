@@ -7,3 +7,5 @@ build
 nbactions.xml
 nb-configuration.xml
 nbproject/
+# 2005 game cache (local generator input only - never commit)
+retrocache/
