@@ -437,10 +437,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case GHOSTS:
 				return config.swapGhosts();
 			default:
-				// The remaining categories (demons, imps, guards, dragons) are disabled: their
-				// 2005 model IDs still resolve in the modern cache, but the result no longer
-				// looks right - the matching animations were removed (e.g. with the Realm of
-				// Memories), or the multi-part models are missing pieces.
+				// The remaining categories (demons, imps, guards, dragons) are disabled. Their
+				// 2005 model IDs still resolve in the modern cache, but resolving is not the same
+				// as being the same mesh: for dragons and demons the geometry at those IDs was
+				// replaced outright, and the retro meshes are not in the live cache at any ID.
+				// See the archetype comments in RetroNpcMapping for the per-category blocker.
 				return false;
 		}
 	}
