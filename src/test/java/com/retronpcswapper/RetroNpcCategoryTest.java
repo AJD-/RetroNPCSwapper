@@ -56,6 +56,14 @@ public class RetroNpcCategoryTest
 		}
 	}
 
+	/**
+	 * Lesser demons stay disabled permanently, and not for the reason the code used to give. The
+	 * 2005 sequences survive under DEMON_* gameval names; it is the mesh that is gone. Model 2943
+	 * resolves in the live cache but holds a 1000-vertex asset where the 2005 lesser demon is 428,
+	 * and a scan of all 61874 live models finds the retro mesh at no id - the 29 August 2006
+	 * graphical update replaced it, before the snapshot OSRS descends from. The mapping is still
+	 * asserted here because it resolves by name and must stay internally correct.
+	 */
 	@Test
 	public void testLesserDemonsCategory()
 	{
@@ -63,11 +71,11 @@ public class RetroNpcCategoryTest
 		assertNotNull("Lesser demon mapping must exist", lesserDemon);
 		assertEquals(RetroNpcCategory.LESSER_DEMONS, lesserDemon.getCategory());
 		assertArrayEquals(new int[]{2943}, lesserDemon.getRetroModelIds());
-		assertEquals(66, lesserDemon.getIdleAnimationId());
-		assertEquals(63, lesserDemon.getWalkAnimationId());
-		assertEquals(64, lesserDemon.getAttackAnimationId());
-		assertEquals(65, lesserDemon.getDefendAnimationId());
-		assertEquals(67, lesserDemon.getDeathAnimationId());
+		assertEquals(AnimationID.DEMON_READY, lesserDemon.getIdleAnimationId());
+		assertEquals(AnimationID.DEMON_WALK, lesserDemon.getWalkAnimationId());
+		assertEquals(AnimationID.DEMON_ATTACK, lesserDemon.getAttackAnimationId());
+		assertEquals(AnimationID.DEMON_BLOCK, lesserDemon.getDefendAnimationId());
+		assertEquals(AnimationID.DEMON_DEATH, lesserDemon.getDeathAnimationId());
 
 		int[] lesserIds = {
 			NpcID.LESSER_DEMON, NpcID.LESSER_DEMON2, NpcID.LESSER_DEMON3, NpcID.LESSER_DEMON4, NpcID.LESSER_DEMON5,
@@ -83,22 +91,30 @@ public class RetroNpcCategoryTest
 			assertEquals(RetroNpcCategory.LESSER_DEMONS, mapped.getCategory());
 		}
 
-		// Verify modern attack animations (64/1528 classic, 4644 greater, 4678-4680 demon-update)
-		assertTrue(lesserDemon.isAttackAnimation(64));
+		// Only the DEMON_UPDATE_* rig and the DEMONS_* set are modern. The plain Lesser demon
+		// definitions (2005-2008, 2018) still carry standingAnim 66 / walkingAnim 63, so the
+		// 2005 sequences are what the live game already plays; the update rig belongs to the
+		// Lesser Demon Champion and its kin.
 		assertTrue(lesserDemon.isAttackAnimation(1528));
 		assertTrue(lesserDemon.isAttackAnimation(4644));
 		assertTrue(lesserDemon.isAttackAnimation(4678));
 		assertTrue(lesserDemon.isAttackAnimation(4679));
 		assertTrue(lesserDemon.isAttackAnimation(4680));
-
-		// Verify modern defend animations
-		assertTrue(lesserDemon.isDefendAnimation(65));
 		assertTrue(lesserDemon.isDefendAnimation(4676));
-
-		// Verify modern death animations
-		assertTrue(lesserDemon.isDeathAnimation(67));
-		assertTrue(lesserDemon.isDeathAnimation(68));
+		assertTrue(lesserDemon.isDeathAnimation(AnimationID.DEMON_UPDATE_DEATH));
 		assertTrue(lesserDemon.isDeathAnimation(1530));
+
+		// The DT2_SCAR_MAZE mage and ranged demons register to this archetype, so their cast
+		// and swipe must be intercepted too
+		assertTrue(lesserDemon.isAttackAnimation(AnimationID.DEMON_UPDATE_SWIPE));
+		assertTrue(lesserDemon.isAttackAnimation(AnimationID.DEMON_UPDATE_FIREBALL_CAST));
+
+		// The retro sequences are the swap targets, never anims to intercept. Listing them made
+		// the plugin re-swap its own output - the bug the ghost sets carried before PR #3.
+		assertFalse(lesserDemon.isAttackAnimation(AnimationID.DEMON_ATTACK));
+		assertFalse(lesserDemon.isDefendAnimation(AnimationID.DEMON_BLOCK));
+		assertFalse(lesserDemon.isDeathAnimation(AnimationID.DEMON_DEATH));
+		assertFalse(lesserDemon.isDeathAnimation(AnimationID.DEMON_DEATH_GREATER));
 
 		// Walk/ready/casting sequences (63, 66, 69, 1526, 1527) must not be
 		// intercepted, and skeleton-update anims (5485/5489/5491) no longer
@@ -121,11 +137,11 @@ public class RetroNpcCategoryTest
 		assertNotNull("Greater demon mapping must exist", greaterDemon);
 		assertEquals(RetroNpcCategory.GREATER_DEMONS, greaterDemon.getCategory());
 		assertArrayEquals(new int[]{2942}, greaterDemon.getRetroModelIds());
-		assertEquals(66, greaterDemon.getIdleAnimationId());
-		assertEquals(63, greaterDemon.getWalkAnimationId());
-		assertEquals(64, greaterDemon.getAttackAnimationId());
-		assertEquals(65, greaterDemon.getDefendAnimationId());
-		assertEquals(67, greaterDemon.getDeathAnimationId());
+		assertEquals(AnimationID.DEMON_READY, greaterDemon.getIdleAnimationId());
+		assertEquals(AnimationID.DEMON_WALK, greaterDemon.getWalkAnimationId());
+		assertEquals(AnimationID.DEMON_ATTACK, greaterDemon.getAttackAnimationId());
+		assertEquals(AnimationID.DEMON_BLOCK, greaterDemon.getDefendAnimationId());
+		assertEquals(AnimationID.DEMON_DEATH, greaterDemon.getDeathAnimationId());
 
 		int[] greaterIds = {
 			NpcID.GREATER_DEMON, NpcID.GREATER_DEMON2, NpcID.GREATER_DEMON3, NpcID.GREATER_DEMON4, NpcID.GREATER_DEMON5,
@@ -142,7 +158,9 @@ public class RetroNpcCategoryTest
 
 		assertTrue(greaterDemon.isAttackAnimation(4679));
 		assertTrue(greaterDemon.isDefendAnimation(4676));
-		assertTrue(greaterDemon.isDeathAnimation(68));
+		assertTrue(greaterDemon.isDeathAnimation(AnimationID.DEMON_UPDATE_DEATH));
+		// 68 is DEMON_DEATH_GREATER, a surviving 2005 sequence, not a modern one
+		assertFalse(greaterDemon.isDeathAnimation(AnimationID.DEMON_DEATH_GREATER));
 	}
 
 	@Test
@@ -152,11 +170,11 @@ public class RetroNpcCategoryTest
 		assertNotNull("Black demon mapping must exist", blackDemon);
 		assertEquals(RetroNpcCategory.BLACK_DEMONS, blackDemon.getCategory());
 		assertArrayEquals(new int[]{2942}, blackDemon.getRetroModelIds());
-		assertEquals(66, blackDemon.getIdleAnimationId());
-		assertEquals(63, blackDemon.getWalkAnimationId());
-		assertEquals(64, blackDemon.getAttackAnimationId());
-		assertEquals(65, blackDemon.getDefendAnimationId());
-		assertEquals(67, blackDemon.getDeathAnimationId());
+		assertEquals(AnimationID.DEMON_READY, blackDemon.getIdleAnimationId());
+		assertEquals(AnimationID.DEMON_WALK, blackDemon.getWalkAnimationId());
+		assertEquals(AnimationID.DEMON_ATTACK, blackDemon.getAttackAnimationId());
+		assertEquals(AnimationID.DEMON_BLOCK, blackDemon.getDefendAnimationId());
+		assertEquals(AnimationID.DEMON_DEATH, blackDemon.getDeathAnimationId());
 
 		int[] blackIds = {
 			NpcID.BLACK_DEMON, NpcID.BLACK_DEMON2, NpcID.BLACK_DEMON3, NpcID.BLACK_DEMON4, NpcID.BLACK_DEMON5,
@@ -174,8 +192,10 @@ public class RetroNpcCategoryTest
 		}
 
 		assertTrue(blackDemon.isAttackAnimation(4678));
-		assertTrue(blackDemon.isDefendAnimation(65));
-		assertTrue(blackDemon.isDeathAnimation(67));
+		assertTrue(blackDemon.isDefendAnimation(AnimationID.DEMON_UPDATE_DEFEND));
+		assertTrue(blackDemon.isDeathAnimation(AnimationID.DEMON_UPDATE_DEATH));
+		assertFalse(blackDemon.isDefendAnimation(AnimationID.DEMON_BLOCK));
+		assertFalse(blackDemon.isDeathAnimation(AnimationID.DEMON_DEATH));
 	}
 
 	@Test

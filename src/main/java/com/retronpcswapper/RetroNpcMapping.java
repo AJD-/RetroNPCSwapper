@@ -51,18 +51,30 @@ public class RetroNpcMapping
 	// the name (attack/defend/block/death) decides which set an ID belongs to, and IDs whose
 	// names carry no combat role (walks, readys, idles, chatheads) were dropped - they would
 	// never correctly trigger a combat-animation swap.
+
+	// Demons kept their 2005 sequences, the same way dragons did: DEMON_WALK/ATTACK/BLOCK/READY/
+	// DEATH are 63/64/65/66/67, the very IDs the 2005 cache uses. Confirmed against the live
+	// cache - every plain Lesser demon definition (2005-2008, 2018) still has standingAnim 66 and
+	// walkingAnim 63. The DEMON_UPDATE_* family (4674-4681) is a second rig, used by the Lesser
+	// Demon Champion and its kin, and it is the only thing here that needs intercepting.
+	//
+	// DEMON_ATTACK/DEMON_BLOCK/DEMON_DEATH (64/65/67) and DEMON_DEATH_GREATER (68) are
+	// deliberately absent: they are the surviving 2005 sequences themselves - the swap targets,
+	// not modern anims to replace. Listing them made the plugin re-swap its own output, the same
+	// bug the ghost sets carried before PR #3.
 	public static final Set<Integer> DEMON_MODERN_ATTACKS = Set.of(
-		AnimationID.DEMON_ATTACK, AnimationID.DEMON_ATTACK_GREATER,
+		AnimationID.DEMON_ATTACK_GREATER,
 		AnimationID.DEMON_UPDATE_ATTACK, AnimationID.DEMON_UPDATE_ATTACK_GREATER,
-		AnimationID.DEMON_UPDATE_ATTACK_LESSER, AnimationID.DEMONS_ATTACK
+		AnimationID.DEMON_UPDATE_ATTACK_LESSER, AnimationID.DEMONS_ATTACK,
+		// The DT2_SCAR_MAZE mage and ranged demons are registered to LESSER_DEMON_DEFAULT, so
+		// their cast and swipe belong here too or they would play un-intercepted
+		AnimationID.DEMON_UPDATE_SWIPE, AnimationID.DEMON_UPDATE_FIREBALL_CAST
 	);
 	public static final Set<Integer> DEMON_MODERN_DEFENDS = Set.of(
-		AnimationID.DEMON_UPDATE_DEFEND,
-		AnimationID.DEMON_BLOCK
+		AnimationID.DEMON_UPDATE_DEFEND
 	);
 	public static final Set<Integer> DEMON_MODERN_DEATHS = Set.of(
-		AnimationID.DEMON_DEATH, AnimationID.DEMON_DEATH_GREATER,
-		AnimationID.DEMONS_DEATH
+		AnimationID.DEMON_UPDATE_DEATH, AnimationID.DEMONS_DEATH
 	);
 
 	// Dragons kept their 2005 sequences: DRAGON_WALK/ATTACK/BLOCK/READY/HEAD_ATTACK/DEATH are
@@ -207,11 +219,11 @@ public class RetroNpcMapping
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
 		.retroModelIds(new int[]{2943})
-		.idleAnimationId(66)
-		.walkAnimationId(63)
-		.attackAnimationId(64)
-		.defendAnimationId(65)
-		.deathAnimationId(67)
+		.idleAnimationId(AnimationID.DEMON_READY)
+		.walkAnimationId(AnimationID.DEMON_WALK)
+		.attackAnimationId(AnimationID.DEMON_ATTACK)
+		.defendAnimationId(AnimationID.DEMON_BLOCK)
+		.deathAnimationId(AnimationID.DEMON_DEATH)
 		.modernAttackAnims(DEMON_MODERN_ATTACKS)
 		.modernDefendAnims(DEMON_MODERN_DEFENDS)
 		.modernDeathAnims(DEMON_MODERN_DEATHS)
@@ -220,11 +232,11 @@ public class RetroNpcMapping
 	public static final RetroNpcData GREATER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.GREATER_DEMONS)
 		.retroModelIds(new int[]{2942})
-		.idleAnimationId(66)
-		.walkAnimationId(63)
-		.attackAnimationId(64)
-		.defendAnimationId(65)
-		.deathAnimationId(67)
+		.idleAnimationId(AnimationID.DEMON_READY)
+		.walkAnimationId(AnimationID.DEMON_WALK)
+		.attackAnimationId(AnimationID.DEMON_ATTACK)
+		.defendAnimationId(AnimationID.DEMON_BLOCK)
+		.deathAnimationId(AnimationID.DEMON_DEATH)
 		.modernAttackAnims(DEMON_MODERN_ATTACKS)
 		.modernDefendAnims(DEMON_MODERN_DEFENDS)
 		.modernDeathAnims(DEMON_MODERN_DEATHS)
@@ -233,11 +245,11 @@ public class RetroNpcMapping
 	public static final RetroNpcData BLACK_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.BLACK_DEMONS)
 		.retroModelIds(new int[]{2942})
-		.idleAnimationId(66)
-		.walkAnimationId(63)
-		.attackAnimationId(64)
-		.defendAnimationId(65)
-		.deathAnimationId(67)
+		.idleAnimationId(AnimationID.DEMON_READY)
+		.walkAnimationId(AnimationID.DEMON_WALK)
+		.attackAnimationId(AnimationID.DEMON_ATTACK)
+		.defendAnimationId(AnimationID.DEMON_BLOCK)
+		.deathAnimationId(AnimationID.DEMON_DEATH)
 		.modernAttackAnims(DEMON_MODERN_ATTACKS)
 		.modernDefendAnims(DEMON_MODERN_DEFENDS)
 		.modernDeathAnims(DEMON_MODERN_DEATHS)
@@ -478,16 +490,32 @@ public class RetroNpcMapping
 		Set<Integer> modernDefends = Collections.emptySet();
 		Set<Integer> modernDeaths = Collections.emptySet();
 
-		// These guys were removed from the cache when they removed the Realm of Memories
+		// Permanently inert, like adult dragons: the 2005 demon meshes are not in the live cache
+		// at all. Model ids 2942 and 2943 both resolve, but to unrelated geometry - 2943 holds a
+		// 1000-vertex mesh where the 2005 lesser demon is 428, and 2942 holds a 68-vertex one
+		// where the 2005 greater/black demon is 479 - and a scan of all 61874 live models finds
+		// neither retro mesh at any id. Measure it yourself with
+		// `./gradlew compareRetroModels -Pmodels=2942,2943 -Pfindmoved`.
+		//
+		// That scan matches on exact geometry, so read a REPLACED verdict by its magnitude rather
+		// than as a yes/no: the chicken drifted by a single face between 2005 and today and still
+		// reports REPLACED, while these are 2.3x and 0.14x the vertex count. Wholly different
+		// meshes, not drift.
+		//
+		// The 2005 lesser demon was replaced by the 29 August 2006 graphical update, which
+		// predates the August 2007 snapshot OSRS descends from, so the retro mesh was gone before
+		// this game's lineage began. An earlier revision blamed the Realm of Memories removal for
+		// taking the animations; that was backwards. The sequences are alive and well - the
+		// wiring below is kept correct because the mapping still resolves by name.
 		if (category == RetroNpcCategory.LESSER_DEMONS
 			|| category == RetroNpcCategory.GREATER_DEMONS
 			|| category == RetroNpcCategory.BLACK_DEMONS)
 		{
-			stanceAnim = stanceAnim != -1 ? stanceAnim : 66;
-			walkAnim = walkAnim != -1 ? walkAnim : 63;
-			attackAnim = 64;
-			defendAnim = 65;
-			deathAnim = 67;
+			stanceAnim = stanceAnim != -1 ? stanceAnim : AnimationID.DEMON_READY;
+			walkAnim = walkAnim != -1 ? walkAnim : AnimationID.DEMON_WALK;
+			attackAnim = AnimationID.DEMON_ATTACK;
+			defendAnim = AnimationID.DEMON_BLOCK;
+			deathAnim = AnimationID.DEMON_DEATH;
 			modernAttacks = DEMON_MODERN_ATTACKS;
 			modernDefends = DEMON_MODERN_DEFENDS;
 			modernDeaths = DEMON_MODERN_DEATHS;

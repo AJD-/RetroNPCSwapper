@@ -47,9 +47,15 @@ import net.runelite.cache.fs.Store;
  *
  * <p>Model ids were append-only across the RS2 lineage, so every 2005 id still resolves in the live
  * cache - but resolving is not the same as being the same mesh. This decodes the geometry from both
- * caches and compares vertex count, face count and the palette, which is decisive: where the retro
- * asset survived (the chicken, the skeleton) all three match exactly, and where the id was reused
- * they do not match at all.
+ * caches and compares vertex count, face count and the palette.
+ *
+ * <p>The comparison is exact, so read a REPLACED verdict by its magnitude rather than as a yes/no.
+ * Some shipped, working categories were touched up in place and report REPLACED on a hair: the
+ * chicken (2849) is 87 verts either way but 134 faces against 135, and the hill giant torso (2870)
+ * is 177 verts against 355 faces vs 347. A genuinely reused id looks nothing like that - model 2943
+ * went from 428 verts to 1000, and 2942 from 479 to 68. Equal vertex counts with a near-equal face
+ * count and a superset palette mean preserved-and-touched-up; a different vertex count means the id
+ * was reused. The skeleton (2944) is the exact-match reference.
  *
  * <p>Byte comparison cannot answer this. Jagex re-encoded every model when the format gained v2/v3
  * markers, so the preserved chicken differs byte-for-byte from its 2005 self while being the same
