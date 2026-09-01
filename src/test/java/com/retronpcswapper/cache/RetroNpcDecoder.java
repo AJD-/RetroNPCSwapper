@@ -180,11 +180,11 @@ public class RetroNpcDecoder
 			}
 			else if (opcode == 97)
 			{
-				stream.readUnsignedShort(); // scaleXZ
+				def.setScaleXZ(stream.readUnsignedShort());
 			}
 			else if (opcode == 98)
 			{
-				stream.readUnsignedShort(); // scaleY
+				def.setScaleY(stream.readUnsignedShort());
 			}
 			else if (opcode == 99)
 			{

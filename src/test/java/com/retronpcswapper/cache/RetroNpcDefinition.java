@@ -40,6 +40,9 @@ public class RetroNpcDefinition
 	private int turnLeftAnimation = -1;
 	private int turnRightAnimation = -1;
 	private int combatLevel = -1;
+	// Model resize in 1/128ths, as the 2005 client applied it (opcodes 97 and 98)
+	private int scaleXZ = 128;
+	private int scaleY = 128;
 	private String[] actions = new String[5];
 	private short[] originalColors;
 	private short[] replacementColors;
@@ -122,6 +125,26 @@ public class RetroNpcDefinition
 	public void setWalkAnimation(int walkAnimation)
 	{
 		this.walkAnimation = walkAnimation;
+	}
+
+	public int getScaleXZ()
+	{
+		return scaleXZ;
+	}
+
+	public void setScaleXZ(int scaleXZ)
+	{
+		this.scaleXZ = scaleXZ;
+	}
+
+	public int getScaleY()
+	{
+		return scaleY;
+	}
+
+	public void setScaleY(int scaleY)
+	{
+		this.scaleY = scaleY;
 	}
 
 	public int getCombatLevel()
