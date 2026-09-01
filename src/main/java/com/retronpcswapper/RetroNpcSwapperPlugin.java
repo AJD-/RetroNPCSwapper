@@ -434,11 +434,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return config.swapZombies();
 			case HILL_GIANTS:
 				return config.swapHillGiants();
+			case GHOSTS:
+				return config.swapGhosts();
 			default:
-				// All other categories are disabled: their 2005 model IDs still resolve in the
-				// modern cache, but the result no longer looks right - the matching animations
-				// were removed (e.g. with the Realm of Memories), or the multi-part models are
-				// missing pieces.
+				// The remaining categories (demons, imps, guards, dragons) are disabled: their
+				// 2005 model IDs still resolve in the modern cache, but the result no longer
+				// looks right - the matching animations were removed (e.g. with the Realm of
+				// Memories), or the multi-part models are missing pieces.
 				return false;
 		}
 	}

@@ -12,8 +12,10 @@ Each category can be toggled individually in the plugin config:
 - **Skeletons** (armed and unarmed)
 - **Zombies** (armed and unarmed)
 - **Hill Giants (albeit with a Jogre head)**
+- **Ghosts** (the Restless ghost swaps its model and idle/walk poses only, as its retro combat
+  animations no longer exist — it never fights anyway)
 
-Other retro-era NPCs (dragons, demons, imps, ghosts, guards) are not yet supported: their 2005
+Other retro-era NPCs (dragons, demons, imps, guards) are not yet supported: their 2005
 model IDs still resolve in the live cache, but the matching animations were removed or the
 multi-part models are missing pieces, so the result no longer looks right. The groundwork for them
 is staged in the code and may be enabled if that changes.

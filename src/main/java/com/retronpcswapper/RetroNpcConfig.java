@@ -115,6 +115,19 @@ public interface RetroNpcConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "swapGhosts",
+		name = "Ghosts",
+		description = "Swap modern Ghost models and animations to their 2004/2005 retro variants."
+			+ " The Restless ghost swaps its model and idle/walk poses only.",
+		section = miscSection,
+		position = 6
+	)
+	default boolean swapGhosts()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Safety",
 		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
