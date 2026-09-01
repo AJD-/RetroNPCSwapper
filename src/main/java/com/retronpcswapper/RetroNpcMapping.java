@@ -43,8 +43,9 @@ public class RetroNpcMapping
 	private static final Map<String, RetroNpcData> NAME_MAPPINGS = new HashMap<>();
 
 	// Category-Scoped Modern Animation Sets. Values are gameval AnimationID constants where the
-	// modern cache has them; the retro 2005 sequence IDs used elsewhere in this class have no
-	// gameval names and stay numeric.
+	// modern cache has them; retro 2005 sequence IDs used elsewhere in this class stay numeric
+	// where no gameval name exists (several survive under gameval names - the ghost branch in
+	// createMappingData uses the GHOST_* constants directly).
 	//
 	// Membership is curated against the gameval names as the source of truth: the role word in
 	// the name (attack/defend/block/death) decides which set an ID belongs to, and IDs whose
@@ -152,17 +153,16 @@ public class RetroNpcMapping
 		AnimationID.HUMAN_DEATH, AnimationID.ZOMBIE_DEATH
 	);
 
+	// GHOST_ATTACK/GHOST_BLOCK/GHOST_DEATH (123/124/126) are deliberately absent here: they are
+	// the surviving 2005 sequences themselves - the retro targets, not modern anims to intercept.
 	public static final Set<Integer> GHOST_MODERN_ATTACKS = Set.of(
-		AnimationID.GHOST_ATTACK, AnimationID.GHOST_UPDATE_NORMAL_ATTACK,
-			AnimationID.BOSSGHOST_ATTACK
+		AnimationID.GHOST_UPDATE_NORMAL_ATTACK, AnimationID.BOSSGHOST_ATTACK
 	);
 	public static final Set<Integer> GHOST_MODERN_DEFENDS = Set.of(
-		AnimationID.GHOST_BLOCK, AnimationID.GHOST_UPDATE_NORMAL_DEFEND,
-			AnimationID.BOSSGHOST_FADE_OUT
+		AnimationID.GHOST_UPDATE_NORMAL_DEFEND, AnimationID.BOSSGHOST_FADE_OUT
 	);
 	public static final Set<Integer> GHOST_MODERN_DEATHS = Set.of(
-		AnimationID.GHOST_DEATH, AnimationID.GHOST_UPDATE_NORMAL_DEATH,
-			AnimationID.BOSSGHOST_DEATH
+		AnimationID.GHOST_UPDATE_NORMAL_DEATH, AnimationID.BOSSGHOST_DEATH
 	);
 
 	public static final Set<Integer> GIANT_MODERN_ATTACKS = Set.of(
@@ -194,7 +194,7 @@ public class RetroNpcMapping
 	// Pre-instantiated immutable archetypes.
 	//
 	// Archetypes for categories outside RetroNpcSwapperPlugin.isCategoryEnabled (demons, imps,
-	// guards, dragons, ghosts) are currently inert: their mappings resolve but processNpc never
+	// guards, dragons) are currently inert: their mappings resolve but processNpc never
 	// activates them. They are kept, along with their JSON entries, as staged data for when the
 	// blocking issues resolve (missing 2005 animations, incomplete multi-part models).
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
@@ -584,10 +584,20 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.GHOSTS)
 		{
-			// Had issues with animations (again, appear to have been removed), so ghosts are disabled
-			attackAnim = 422;
-			defendAnim = 424;
-			deathAnim = 836;
+			// The 2005 ghost sequences survive in the modern cache at their original IDs, under
+			// gameval GHOST_* names. (An earlier revision assumed they had been removed and parked
+			// human placeholder anims here, which distorted on the ghost mesh.)
+			if (!"restless ghost".equalsIgnoreCase(entry.getName()))
+			{
+				stanceAnim = stanceAnim != -1 ? stanceAnim : AnimationID.GHOST_READY;
+				walkAnim = walkAnim != -1 ? walkAnim : AnimationID.GHOST_WALK;
+				attackAnim = AnimationID.GHOST_ATTACK;
+				defendAnim = AnimationID.GHOST_BLOCK;
+				deathAnim = AnimationID.GHOST_DEATH;
+			}
+			// The Restless ghost is a non-combat quest NPC: only its GHOSTHUMAN_READY/
+			// GHOSTHUMAN_WALK_FORWARD poses survive (carried in the JSON), so its combat
+			// anims stay -1 and isAttack/Defend/DeathAnimation short-circuit.
 			modernAttacks = GHOST_MODERN_ATTACKS;
 			modernDefends = GHOST_MODERN_DEFENDS;
 			modernDeaths = GHOST_MODERN_DEATHS;
