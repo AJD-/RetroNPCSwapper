@@ -84,6 +84,26 @@ tasks.register('dumpNpcDefinitions', JavaExec) {
 	}
 }
 
+// Compares 2005 model geometry against the live cache, to tell a preserved retro asset from an
+// id that was reused, eg:
+//   ./gradlew compareRetroModels -Pmodels=2853,2854
+//   ./gradlew compareRetroModels -Pmodels=2942,2943 -Pfindmoved
+tasks.register('compareRetroModels', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.retronpcswapper.cache.RetroModelComparator'
+	workingDir = rootDir
+
+	if (project.hasProperty('models')) {
+		args project.property('models').toString().split(',')
+	}
+	if (project.hasProperty('findmoved')) {
+		systemProperty 'retronpcswapper.findmoved', 'true'
+	}
+	if (project.hasProperty('cacheDir')) {
+		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+}
+
 tasks.register('shadowJar', Jar) {
 	dependsOn configurations.testRuntimeClasspath
 	manifest {
