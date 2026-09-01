@@ -82,31 +82,34 @@ public class RetroNpcCategoryTest
 			assertEquals(RetroNpcCategory.LESSER_DEMONS, mapped.getCategory());
 		}
 
-		// Verify modern attack animations
-		assertTrue(lesserDemon.isAttackAnimation(5485));
-		assertTrue(lesserDemon.isAttackAnimation(5486));
-		assertTrue(lesserDemon.isAttackAnimation(5487));
-		assertTrue(lesserDemon.isAttackAnimation(5507));
-		assertTrue(lesserDemon.isAttackAnimation(5510));
-		assertTrue(lesserDemon.isAttackAnimation(8002));
+		// Verify modern attack animations (64/1528 classic, 4644 greater, 4678-4680 demon-update)
+		assertTrue(lesserDemon.isAttackAnimation(64));
+		assertTrue(lesserDemon.isAttackAnimation(1528));
+		assertTrue(lesserDemon.isAttackAnimation(4644));
+		assertTrue(lesserDemon.isAttackAnimation(4678));
+		assertTrue(lesserDemon.isAttackAnimation(4679));
+		assertTrue(lesserDemon.isAttackAnimation(4680));
 
 		// Verify modern defend animations
-		assertTrue(lesserDemon.isDefendAnimation(5488));
-		assertTrue(lesserDemon.isDefendAnimation(5489));
-		assertTrue(lesserDemon.isDefendAnimation(5490));
-		assertTrue(lesserDemon.isDefendAnimation(5508));
-		assertTrue(lesserDemon.isDefendAnimation(5511));
-		assertTrue(lesserDemon.isDefendAnimation(8003));
+		assertTrue(lesserDemon.isDefendAnimation(65));
+		assertTrue(lesserDemon.isDefendAnimation(4676));
 
 		// Verify modern death animations
-		assertTrue(lesserDemon.isDeathAnimation(5491));
-		assertTrue(lesserDemon.isDeathAnimation(5492));
-		assertTrue(lesserDemon.isDeathAnimation(5493));
-		assertTrue(lesserDemon.isDeathAnimation(5509));
-		assertTrue(lesserDemon.isDeathAnimation(5512));
-		assertTrue(lesserDemon.isDeathAnimation(8004));
-		assertTrue(lesserDemon.isDeathAnimation(8005));
+		assertTrue(lesserDemon.isDeathAnimation(67));
+		assertTrue(lesserDemon.isDeathAnimation(68));
+		assertTrue(lesserDemon.isDeathAnimation(1530));
 
+		// Walk/ready/casting sequences (63, 66, 69, 1526, 1527) must not be
+		// intercepted, and skeleton-update anims (5485/5489/5491) no longer
+		// bleed into the demon sets after the gameval re-curation
+		assertFalse(lesserDemon.isAttackAnimation(63));
+		assertFalse(lesserDemon.isAttackAnimation(66));
+		assertFalse(lesserDemon.isAttackAnimation(69));
+		assertFalse(lesserDemon.isAttackAnimation(1527));
+		assertFalse(lesserDemon.isDefendAnimation(1526));
+		assertFalse(lesserDemon.isAttackAnimation(5485));
+		assertFalse(lesserDemon.isDefendAnimation(5489));
+		assertFalse(lesserDemon.isDeathAnimation(5491));
 		assertFalse(lesserDemon.isAttackAnimation(99999));
 	}
 
@@ -136,9 +139,9 @@ public class RetroNpcCategoryTest
 			assertEquals(RetroNpcCategory.GREATER_DEMONS, mapped.getCategory());
 		}
 
-		assertTrue(greaterDemon.isAttackAnimation(5485));
-		assertTrue(greaterDemon.isDefendAnimation(5488));
-		assertTrue(greaterDemon.isDeathAnimation(5491));
+		assertTrue(greaterDemon.isAttackAnimation(4679));
+		assertTrue(greaterDemon.isDefendAnimation(4676));
+		assertTrue(greaterDemon.isDeathAnimation(68));
 	}
 
 	@Test
@@ -169,9 +172,9 @@ public class RetroNpcCategoryTest
 			assertEquals(RetroNpcCategory.BLACK_DEMONS, mapped.getCategory());
 		}
 
-		assertTrue(blackDemon.isAttackAnimation(5485));
-		assertTrue(blackDemon.isDefendAnimation(5488));
-		assertTrue(blackDemon.isDeathAnimation(5491));
+		assertTrue(blackDemon.isAttackAnimation(4678));
+		assertTrue(blackDemon.isDefendAnimation(65));
+		assertTrue(blackDemon.isDeathAnimation(67));
 	}
 
 	@Test
@@ -182,10 +185,22 @@ public class RetroNpcCategoryTest
 		assertEquals(RetroNpcCategory.ADULT_DRAGONS, blueDragon.getCategory());
 		assertTrue("Blue dragon should have models", blueDragon.getRetroModelIds().length > 0);
 
-		// Verify dragon animations
-		assertTrue(blueDragon.isAttackAnimation(240));
-		assertTrue(blueDragon.isDefendAnimation(1827));
-		assertTrue(blueDragon.isDeathAnimation(1828));
+		// Verify dragon animations (80 melee, 91 head attack, 81-83 KBD firebreath, 1990 ranged)
+		assertTrue(blueDragon.isAttackAnimation(80));
+		assertTrue(blueDragon.isAttackAnimation(91));
+		assertTrue(blueDragon.isAttackAnimation(81));
+		assertTrue(blueDragon.isAttackAnimation(82));
+		assertTrue(blueDragon.isAttackAnimation(83));
+		assertTrue(blueDragon.isAttackAnimation(1990));
+		assertTrue(blueDragon.isDefendAnimation(89));
+		assertTrue(blueDragon.isDefendAnimation(4638));
+		assertTrue(blueDragon.isDeathAnimation(92));
+		// Walk (79) and ready (90) sequences are not combat anims, and the stale
+		// skeleton-update IDs (5489/5491) are gone after the gameval re-curation
+		assertFalse(blueDragon.isAttackAnimation(79));
+		assertFalse(blueDragon.isDefendAnimation(90));
+		assertFalse(blueDragon.isDefendAnimation(5489));
+		assertFalse(blueDragon.isDeathAnimation(5491));
 		assertFalse(blueDragon.isAttackAnimation(99999));
 	}
 
@@ -201,23 +216,36 @@ public class RetroNpcCategoryTest
 		assertEquals(312, goblin.getDefendAnimationId());
 		assertEquals(313, goblin.getDeathAnimationId());
 
-		// Verify modern goblin attack animations
+		// Verify modern goblin attack animations (6154 is the sergeant attack)
 		assertTrue(goblin.isAttackAnimation(6184));
 		assertTrue(goblin.isAttackAnimation(6185));
-		assertTrue(goblin.isAttackAnimation(6186));
 		assertTrue(goblin.isAttackAnimation(6188));
-		assertTrue(goblin.isAttackAnimation(6190));
-		assertTrue(goblin.isAttackAnimation(6191));
+		assertTrue(goblin.isAttackAnimation(6154));
 		assertTrue(goblin.isAttackAnimation(309));
+		assertTrue(goblin.isAttackAnimation(310));
 
-		// Verify modern goblin defend animation
+		// Verify modern goblin defend animations (6189 spear defend, 6155 sergeant defend)
 		assertTrue(goblin.isDefendAnimation(6183));
+		assertTrue(goblin.isDefendAnimation(6189));
+		assertTrue(goblin.isDefendAnimation(6155));
 		assertTrue(goblin.isDefendAnimation(312));
-		assertTrue(goblin.isDefendAnimation(310));
 
-		// Verify modern goblin death animation
+		// Verify modern goblin death animations (6190/6191 are spear/arrow death
+		// sequences, 6156 the sergeant death)
 		assertTrue(goblin.isDeathAnimation(6182));
 		assertTrue(goblin.isDeathAnimation(313));
+		assertTrue(goblin.isDeathAnimation(6190));
+		assertTrue(goblin.isDeathAnimation(6191));
+		assertTrue(goblin.isDeathAnimation(6156));
+
+		// 6186/6153 are ready stances and death sequences must never register as
+		// attacks or flinches
+		assertFalse(goblin.isAttackAnimation(6186));
+		assertFalse(goblin.isAttackAnimation(6153));
+		assertFalse(goblin.isAttackAnimation(6190));
+		assertFalse(goblin.isAttackAnimation(6191));
+		assertFalse(goblin.isAttackAnimation(6156));
+		assertFalse(goblin.isDefendAnimation(6156));
 	}
 
 	@Test
@@ -247,13 +275,13 @@ public class RetroNpcCategoryTest
 		// Verify modern guard animations
 		assertTrue(guardByName.isAttackAnimation(422));
 		assertTrue(guardByName.isAttackAnimation(423));
-		assertTrue(guardByName.isAttackAnimation(451));
-		assertTrue(guardByName.isAttackAnimation(7041));
-		assertTrue(guardByName.isAttackAnimation(7042));
 		assertTrue(guardByName.isDefendAnimation(424));
-		assertTrue(guardByName.isDefendAnimation(7043));
 		assertTrue(guardByName.isDeathAnimation(836));
-		assertTrue(guardByName.isDeathAnimation(7044));
+		// 451 (chathead), 7041 (crawl), 7043 (run) and 7044 (turn) are not combat sequences
+		assertFalse(guardByName.isAttackAnimation(451));
+		assertFalse(guardByName.isAttackAnimation(7041));
+		assertFalse(guardByName.isDefendAnimation(7043));
+		assertFalse(guardByName.isDeathAnimation(7044));
 	}
 
 	@Test
@@ -277,27 +305,18 @@ public class RetroNpcCategoryTest
 			assertEquals(RetroNpcCategory.IMPS, impById.getCategory());
 		}
 
-		// Verify modern attack animations
-		int[] impAttacks = {169, 422, 423, 451, 5385, 5485, 5486, 7041, 7042};
-		for (int anim : impAttacks)
-		{
-			assertTrue("Imp should match attack animation " + anim, imp.isAttackAnimation(anim));
-		}
+		// The gameval re-curation trimmed the imp sets to the actual imp
+		// sequences - human/skeleton/chicken anims no longer belong to them
+		assertTrue(imp.isAttackAnimation(169));
+		assertTrue(imp.isDefendAnimation(170));
+		assertTrue(imp.isDeathAnimation(172));
 
-		// Verify modern defend animations
-		int[] impDefends = {170, 424, 425, 5388, 5488, 5489, 5490, 7043};
-		for (int anim : impDefends)
-		{
-			assertTrue("Imp should match defend animation " + anim, imp.isDefendAnimation(anim));
-		}
-
-		// Verify modern death animations
-		int[] impDeaths = {172, 173, 836, 5389, 5390, 5491, 5492, 5493, 5509, 5512, 7044};
-		for (int anim : impDeaths)
-		{
-			assertTrue("Imp should match death animation " + anim, imp.isDeathAnimation(anim));
-		}
-
+		assertFalse(imp.isAttackAnimation(422));
+		assertFalse(imp.isAttackAnimation(5485));
+		assertFalse(imp.isDefendAnimation(424));
+		assertFalse(imp.isDefendAnimation(5388));
+		assertFalse(imp.isDeathAnimation(836));
+		assertFalse(imp.isDeathAnimation(5389));
 		assertFalse(imp.isAttackAnimation(99999));
 	}
 
@@ -345,7 +364,7 @@ public class RetroNpcCategoryTest
 		}
 
 		// Verify modern attack animations (unarmed, weapon slash, stab, crush, modern variants)
-		int[] skeletonAttacks = {260, 422, 423, 412, 451, 390, 401, 428, 440, 7041, 7042, 5485};
+		int[] skeletonAttacks = {260, 422, 423, 412, 390, 400, 401, 414, 426, 428, 440, 5485, 5486, 5487, 5488, 5507, 5512};
 		for (int anim : skeletonAttacks)
 		{
 			assertTrue("Skeleton should match attack anim " + anim, unarmed.isAttackAnimation(anim));
@@ -353,20 +372,36 @@ public class RetroNpcCategoryTest
 		}
 
 		// Verify modern defend / flinch animations (block, flinch, hit, shield)
-		int[] skeletonDefends = {261, 424, 425, 1156, 7043, 5488, 5489, 5490, 300, 310, 312};
+		int[] skeletonDefends = {261, 424, 425, 1156, 5489, 5490, 5508};
 		for (int anim : skeletonDefends)
 		{
 			assertTrue("Skeleton should match defend anim " + anim, unarmed.isDefendAnimation(anim));
 			assertTrue("Armed skeleton should match defend anim " + anim, armed.isDefendAnimation(anim));
 		}
 
-		// Verify modern death animations (collapse, guard death, generic humanoid death)
-		int[] skeletonDeaths = {263, 836, 7044, 5491, 5492, 5493, 5509, 5512};
+		// Verify modern death animations (collapse, generic humanoid death, skeleton-update deaths)
+		int[] skeletonDeaths = {263, 836, 5491, 5492, 5509, 7042};
 		for (int anim : skeletonDeaths)
 		{
 			assertTrue("Skeleton should match death anim " + anim, unarmed.isDeathAnimation(anim));
 			assertTrue("Armed skeleton should match death anim " + anim, armed.isDeathAnimation(anim));
 		}
+
+		// Non-combat sequences (chathead 451, crawl 7041, run 7043, turn 7044, ready 5493)
+		// must not be intercepted
+		assertFalse(unarmed.isAttackAnimation(451));
+		assertFalse(unarmed.isAttackAnimation(7041));
+		assertFalse(unarmed.isDefendAnimation(7043));
+		assertFalse(unarmed.isDeathAnimation(7044));
+		assertFalse(unarmed.isDeathAnimation(5493));
+		// Goblin/zombie anims (310, 300, 312, 302, 313) and the spider death 8005
+		// were dropped from the skeleton sets in the gameval re-curation
+		assertFalse(unarmed.isAttackAnimation(310));
+		assertFalse(unarmed.isDefendAnimation(300));
+		assertFalse(unarmed.isDefendAnimation(312));
+		assertFalse(unarmed.isDeathAnimation(302));
+		assertFalse(unarmed.isDeathAnimation(313));
+		assertFalse(unarmed.isDeathAnimation(8005));
 
 		// Verify name fallback for unmapped Skeleton ID
 		RetroNpcData unmappedSkel = RetroNpcMapping.get(4491, "Skeleton");
@@ -438,7 +473,7 @@ public class RetroNpcCategoryTest
 		}
 
 		// Test various modern zombie attack animations (unarmed punches, axe chops, weapon slashes)
-		int[] attackAnims = {5568, 5571, 5573, 5576, 5577, 5578, 5581, 5583, 5585, 5590, 5593, 422, 423, 412, 451, 299};
+		int[] attackAnims = {5568, 5571, 5578, 5581, 5512, 422, 423, 412, 299};
 		for (int anim : attackAnims)
 		{
 			assertTrue("Zombie should match attack anim " + anim, zombie.isAttackAnimation(anim));
@@ -448,7 +483,7 @@ public class RetroNpcCategoryTest
 		}
 
 		// Test various modern zombie defend animations (flinches, blocks)
-		int[] defendAnims = {5567, 5570, 5574, 5579, 5582, 5584, 5586, 5589, 5592, 424, 425, 1156, 2303, 300};
+		int[] defendAnims = {5567, 5574, 5579, 424, 425, 1156, 300};
 		for (int anim : defendAnims)
 		{
 			assertTrue("Zombie should match defend anim " + anim, zombie.isDefendAnimation(anim));
@@ -462,14 +497,25 @@ public class RetroNpcCategoryTest
 		assertFalse(armedZombie.isDefendAnimation(301));
 		assertFalse(armedZombie.isDefendAnimation(303));
 
-		// Test various modern zombie death animations (including variant deaths 5569, 5572, 5575, 5580, 5587, 5588, 5591, 5594, 5595)
-		int[] deathAnims = {5569, 5572, 5575, 5580, 5587, 5588, 5591, 5594, 5595, 836, 2304, 302};
+		// Test various modern zombie death animations
+		int[] deathAnims = {5569, 5575, 5580, 5587, 836, 302};
 		for (int anim : deathAnims)
 		{
 			assertTrue("Zombie should match death anim " + anim, zombie.isDeathAnimation(anim));
 			assertTrue("Armed zombie should match death anim " + anim, armedZombie.isDeathAnimation(anim));
 			assertFalse("Death anim " + anim + " must not be defend", zombie.isDefendAnimation(anim));
 		}
+
+		// Ready/walk sequences (5572, 5594, 5595) are not deaths and must not be
+		// intercepted; the Tarn's Lair anims (log swing 5588, pickaxe 5590-5592)
+		// no longer belong to the zombie sets
+		assertFalse(zombie.isDeathAnimation(5572));
+		assertFalse(zombie.isDeathAnimation(5594));
+		assertFalse(zombie.isDeathAnimation(5595));
+		assertFalse(zombie.isAttackAnimation(5588));
+		assertFalse(zombie.isDefendAnimation(5590));
+		assertFalse(zombie.isAttackAnimation(5591));
+		assertFalse(zombie.isDeathAnimation(5592));
 
 		// Verify name fallback for unmapped Zombie ID
 		RetroNpcData unmappedZombie = RetroNpcMapping.get(99998, "Zombie");
@@ -482,8 +528,7 @@ public class RetroNpcCategoryTest
 		assertTrue(unmappedZombie.isDefendAnimation(300));
 		assertTrue(unmappedZombie.isDeathAnimation(5575));
 		assertTrue(unmappedZombie.isDeathAnimation(5569));
-		assertTrue(unmappedZombie.isDeathAnimation(5572));
-		assertTrue(unmappedZombie.isDeathAnimation(5595));
+		assertTrue(unmappedZombie.isDeathAnimation(5587));
 	}
 
 	@Test
@@ -520,13 +565,20 @@ public class RetroNpcCategoryTest
 		// Test modern giant animations
 		assertTrue(hillGiant.isAttackAnimation(4652));
 		assertTrue(hillGiant.isAttackAnimation(4658));
-		assertTrue(hillGiant.isAttackAnimation(7002));
+		assertTrue(hillGiant.isAttackAnimation(4666));
+		assertTrue(hillGiant.isAttackAnimation(4667));
 		assertTrue(hillGiant.isDefendAnimation(4651));
 		assertTrue(hillGiant.isDefendAnimation(4657));
-		assertTrue(hillGiant.isDefendAnimation(7001));
+		assertTrue(hillGiant.isDefendAnimation(4665));
 		assertTrue(hillGiant.isDeathAnimation(4653));
 		assertTrue(hillGiant.isDeathAnimation(4659));
-		assertTrue(hillGiant.isDeathAnimation(7004));
+		assertTrue(hillGiant.isDeathAnimation(4668));
+		// Unrelated sequences (hydra idle 7002, snowdrops 7001, godsword 7004) are not giant anims
+		assertFalse(hillGiant.isAttackAnimation(7002));
+		assertFalse(hillGiant.isDefendAnimation(7001));
+		assertFalse(hillGiant.isDeathAnimation(7004));
+		// 4667 is the fire giant sword ATTACK and must never register as a death
+		assertFalse(hillGiant.isDeathAnimation(4667));
 	}
 
 	@Test
@@ -542,11 +594,15 @@ public class RetroNpcCategoryTest
 		assertEquals(56, chicken.getDefendAnimationId());
 		assertEquals(57, chicken.getDeathAnimationId());
 
-		assertTrue(chicken.isAttackAnimation(5385));
+		assertTrue(chicken.isAttackAnimation(55));
 		assertTrue(chicken.isAttackAnimation(5387));
+		assertTrue(chicken.isDefendAnimation(56));
 		assertTrue(chicken.isDefendAnimation(5388));
+		assertTrue(chicken.isDeathAnimation(57));
 		assertTrue(chicken.isDeathAnimation(5389));
-		assertTrue(chicken.isDeathAnimation(5390));
+		// 5385 is the chicken walk and 5390 an unrelated sequence - neither is combat
+		assertFalse(chicken.isAttackAnimation(5385));
+		assertFalse(chicken.isDeathAnimation(5390));
 	}
 
 	@Test
@@ -592,7 +648,7 @@ public class RetroNpcCategoryTest
 		RetroNpcData sampleZombie = RetroNpcMapping.get(38, "Zombie");
 
 		// Modern variant death animations MUST match isDeathAnimation and MUST NEVER match isDefendAnimation (which caused the flinch-on-death bug)
-		int[] deathAnims = {5569, 5572, 5575, 5580, 5587, 5588, 5591, 5594, 5595, 836, 2304, 302};
+		int[] deathAnims = {5569, 5575, 5580, 5587, 836, 302};
 		for (int death : deathAnims)
 		{
 			assertTrue("Sequence " + death + " must match isDeathAnimation", Objects.requireNonNull(sampleZombie).isDeathAnimation(death));
@@ -601,7 +657,7 @@ public class RetroNpcCategoryTest
 		}
 
 		// Modern variant defend animations MUST match isDefendAnimation and MUST NEVER match isDeathAnimation
-		int[] defendAnims = {5567, 5570, 5574, 5579, 5582, 5584, 5586, 5589, 5592, 424, 425, 1156, 2303, 300};
+		int[] defendAnims = {5567, 5574, 5579, 424, 425, 1156, 300};
 		for (int defend : defendAnims)
 		{
 			assertTrue("Sequence " + defend + " must match isDefendAnimation", sampleZombie.isDefendAnimation(defend));
@@ -610,7 +666,7 @@ public class RetroNpcCategoryTest
 		}
 
 		// Modern variant attack animations MUST match isAttackAnimation and MUST NEVER match isDefendAnimation or isDeathAnimation
-		int[] attackAnims = {5568, 5571, 5573, 5576, 5577, 5578, 5581, 5583, 5585, 5590, 5593, 422, 423, 412, 451, 299};
+		int[] attackAnims = {5568, 5571, 5578, 5581, 5512, 422, 423, 412, 299};
 		for (int attack : attackAnims)
 		{
 			assertTrue("Sequence " + attack + " must match isAttackAnimation", sampleZombie.isAttackAnimation(attack));

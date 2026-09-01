@@ -29,7 +29,7 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 
-@ConfigGroup("retronpcswapper")
+@ConfigGroup(RetroNpcSwapperPlugin.CONFIG_GROUP)
 public interface RetroNpcConfig extends Config
 {
 	/**

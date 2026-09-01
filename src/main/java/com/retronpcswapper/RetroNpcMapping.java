@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.NpcID;
 
 /**
@@ -41,64 +42,161 @@ public class RetroNpcMapping
 	private static final Map<Integer, RetroNpcData> ID_MAPPINGS = new HashMap<>();
 	private static final Map<String, RetroNpcData> NAME_MAPPINGS = new HashMap<>();
 
-	// Category-Scoped Modern Animation Sets
-	public static final Set<Integer> DEMON_MODERN_ATTACKS = Set.of(5485, 5486, 5487, 5507, 5510, 8002);
-	public static final Set<Integer> DEMON_MODERN_DEFENDS = Set.of(5488, 5489, 5490, 5508, 5511, 8003);
-	public static final Set<Integer> DEMON_MODERN_DEATHS = Set.of(5491, 5492, 5493, 5509, 5512, 8004, 8005);
+	// Category-Scoped Modern Animation Sets. Values are gameval AnimationID constants where the
+	// modern cache has them; the retro 2005 sequence IDs used elsewhere in this class have no
+	// gameval names and stay numeric.
+	//
+	// Membership is curated against the gameval names as the source of truth: the role word in
+	// the name (attack/defend/block/death) decides which set an ID belongs to, and IDs whose
+	// names carry no combat role (walks, readys, idles, chatheads) were dropped - they would
+	// never correctly trigger a combat-animation swap.
+	public static final Set<Integer> DEMON_MODERN_ATTACKS = Set.of(
+		AnimationID.DEMON_ATTACK, AnimationID.DEMON_ATTACK_GREATER,
+		AnimationID.DEMON_UPDATE_ATTACK, AnimationID.DEMON_UPDATE_ATTACK_GREATER,
+		AnimationID.DEMON_UPDATE_ATTACK_LESSER, AnimationID.DEMONS_ATTACK
+	);
+	public static final Set<Integer> DEMON_MODERN_DEFENDS = Set.of(
+		AnimationID.DEMON_UPDATE_DEFEND,
+		AnimationID.DEMON_BLOCK
+	);
+	public static final Set<Integer> DEMON_MODERN_DEATHS = Set.of(
+		AnimationID.DEMON_DEATH, AnimationID.DEMON_DEATH_GREATER,
+		AnimationID.DEMONS_DEATH
+	);
 
-	public static final Set<Integer> DRAGON_MODERN_ATTACKS = Set.of(240, 5485, 5486, 5487, 5507, 5510, 8002);
-	public static final Set<Integer> DRAGON_MODERN_DEFENDS = Set.of(1827, 5488, 5489, 5490, 5508, 5511, 8003);
-	public static final Set<Integer> DRAGON_MODERN_DEATHS = Set.of(1828, 5491, 5492, 5493, 5509, 5512, 8004, 8005);
+	public static final Set<Integer> DRAGON_MODERN_ATTACKS = Set.of(
+		AnimationID.DRAGON_ATTACK,
+		AnimationID.DRAGON_RANGED_ATTACKS, AnimationID.DRAGON_HEAD_ATTACK,
+		// I'm assuming these are KBD animations
+		AnimationID.DRAGON_FIREBREATH_ALL_ATTACK, AnimationID.DRAGON_FIREBREATH_LEFT_ATTACK,
+		AnimationID.DRAGON_FIREBREATH_RIGHT_ATTACK
+	);
+	public static final Set<Integer> DRAGON_MODERN_DEFENDS = Set.of(
+		AnimationID.DRAGON_BLOCK, AnimationID.DRAGON_BLOCK_KBD
+	);
+	public static final Set<Integer> DRAGON_MODERN_DEATHS = Set.of(
+		AnimationID.DRAGON_DEATH
+	);
 
-	public static final Set<Integer> GOBLIN_MODERN_ATTACKS = Set.of(6184, 6185, 6186, 6188, 6190, 6191, 309);
-	public static final Set<Integer> GOBLIN_MODERN_DEFENDS = Set.of(6183, 312, 310);
-	public static final Set<Integer> GOBLIN_MODERN_DEATHS = Set.of(6182, 313);
+	public static final Set<Integer> GOBLIN_MODERN_ATTACKS = Set.of(
+		AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_UNARMED_ATTACK, AnimationID.SLICE_SURFACE_GOBLIN_ARMED_ATTACK,
+			AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_ATTACK_SPEAR, AnimationID.SLICE_SURFACE_GOBLIN_SERGENT_ATTACK,
+			AnimationID.GOBLIN_ATTACK_UNARMED, AnimationID.GOBLIN_ATTACK_ARMED
+	);
+	public static final Set<Integer> GOBLIN_MODERN_DEFENDS = Set.of(
+		AnimationID.SLICE_SURFACE_GOBLIN_DEFEND, AnimationID.GOBLIN_BLOCK,
+			AnimationID.SLICE_SURFACE_GOBLIN_DEFEND_SPEAR, AnimationID.SLICE_SURFACE_GOBLIN_SERGENT_DEFEND
+	);
+	public static final Set<Integer> GOBLIN_MODERN_DEATHS = Set.of(
+		AnimationID.SLICE_SURFACE_GOBLIN_DEATH, AnimationID.SLICE_SURFACE_GOBLIN_DEATH_SPEAR,
+			AnimationID.SLICE_ARROW_DEATH, AnimationID.GOBLIN_DEATH, AnimationID.SLICE_SURFACE_GOBLIN_SERGENT_DEATH
+	);
 
-	public static final Set<Integer> GUARD_MODERN_ATTACKS = Set.of(422, 423, 451, 7041, 7042);
-	public static final Set<Integer> GUARD_MODERN_DEFENDS = Set.of(424, 7043);
-	public static final Set<Integer> GUARD_MODERN_DEATHS = Set.of(836, 7044);
+	public static final Set<Integer> GUARD_MODERN_ATTACKS = Set.of(
+		AnimationID.HUMAN_UNARMEDPUNCH, AnimationID.HUMAN_UNARMEDKICK
+	);
+	public static final Set<Integer> GUARD_MODERN_DEFENDS = Set.of(
+		AnimationID.HUMAN_UNARMEDBLOCK
+	);
+	public static final Set<Integer> GUARD_MODERN_DEATHS = Set.of(
+		AnimationID.HUMAN_DEATH
+	);
 
-	public static final Set<Integer> IMP_MODERN_ATTACKS = Set.of(169, 422, 423, 451, 5385, 5485, 5486, 7041, 7042);
-	public static final Set<Integer> IMP_MODERN_DEFENDS = Set.of(170, 424, 425, 5388, 5488, 5489, 5490, 7043);
-	public static final Set<Integer> IMP_MODERN_DEATHS = Set.of(172, 173, 836, 5389, 5390, 5491, 5492, 5493, 5509, 5512, 7044);
+	public static final Set<Integer> IMP_MODERN_ATTACKS = Set.of(
+		AnimationID.IMP_ATTACK
+	);
+	public static final Set<Integer> IMP_MODERN_DEFENDS = Set.of(
+		AnimationID.IMP_BLOCK
+	);
+	public static final Set<Integer> IMP_MODERN_DEATHS = Set.of(
+		AnimationID.IMP_DEATH
+	);
 
 	public static final Set<Integer> SKELETON_MODERN_ATTACKS = Set.of(
-		260, 390, 400, 401, 412, 414, 422, 423, 426, 428, 440, 451, 711, 1162, 1167,
-		240, 309, 169, 5385, 5485, 5486, 5487, 5507, 5510, 7041, 7042, 8002
+		AnimationID.SKELETON_ATTACK, AnimationID.HUMAN_SWORD_SLASH, AnimationID.HUMAN_BLUNT_SPIKE,
+		AnimationID.HUMAN_BLUNT_POUND, AnimationID.HUMAN_STAFF_SPIKE, AnimationID.HUMAN_STAFF_PUMMEL,
+		AnimationID.HUMAN_UNARMEDPUNCH, AnimationID.HUMAN_UNARMEDKICK, AnimationID.HUMAN_BOW,
+		AnimationID.HUMAN_SPEAR_SPIKE, AnimationID.HUMAN_SCYTHE_SWEEP,
+		AnimationID.SKELETON_UPDATE_ATTACK_WEAPON, AnimationID.SKELETON_UPDATE_ATTACK_WEAPON_TRANSPARENT,
+		AnimationID.SKELETON_UPDATE_ATTACK_SWORD, AnimationID.SKELETON_UPDATE_ATTACK_SWORD_TRANSPARENT,
+		AnimationID.SKELETON_UPDATE_GIANT_VARY3_ATTACK, AnimationID.SKELETON_UPDATE_CHAMPION_ATTACK
 	);
 	public static final Set<Integer> SKELETON_MODERN_DEFENDS = Set.of(
-		170, 261, 300, 310, 312, 424, 425, 1156, 1588, 1827, 2303, 5388,
-		5488, 5489, 5490, 5508, 5511, 7043, 8003
+		AnimationID.SKELETON_BLOCK,
+		AnimationID.HUMAN_UNARMEDBLOCK, AnimationID.HUMAN_UNARMED_DEF, AnimationID.HUMAN_SHIELD_DEFENCE,
+		AnimationID.SKELETON_UPDATE_DEFEND, AnimationID.SKELETON_UPDATE_DEFEND_TRANSPARENT,
+		AnimationID.SKELETON_UPDATE_GIANT_VARY3_DEFEND
 	);
 	public static final Set<Integer> SKELETON_MODERN_DEATHS = Set.of(
-		172, 173, 263, 302, 313, 836, 1589, 1828, 2304, 5389, 5390,
-		5491, 5492, 5493, 5509, 5512, 7044, 8004, 8005
+		 AnimationID.SKELETON_DEATH, AnimationID.HUMAN_DEATH,
+		AnimationID.SKELETON_UPDATE_DEATH, AnimationID.SKELETON_UPDATE_DEATH_TRANSPARENT,
+		AnimationID.SKELETON_UPDATE_GIANT_VARY3_DEATH,
+		AnimationID.GODWARS_GOBLIN_UPDATE_BANNER_DEATH
 	);
 
 	public static final Set<Integer> ZOMBIE_MODERN_ATTACKS = Set.of(
-		5568, 5571, 5573, 5576, 5577, 5578, 5581, 5583, 5585, 5590, 5593, 422, 423, 412, 451, 299
+		AnimationID.ZOMBIE_UPDATE_ATTACK_NORMAL, AnimationID.ZOMBIE_UPDATE_ATTACK_WEAPON,
+		AnimationID.ZOMBIE_UPDATE_ATTACK_DRAGGING, AnimationID.ZOMBIE_UPDATE_ATTACK_CHAMPION,
+		AnimationID.HUMAN_UNARMEDPUNCH, AnimationID.HUMAN_UNARMEDKICK, AnimationID.HUMAN_STAFF_SPIKE,
+		AnimationID.SKELETON_UPDATE_CHAMPION_ATTACK, AnimationID.ZOMBIE_ATTACK
 	);
 	public static final Set<Integer> ZOMBIE_MODERN_DEFENDS = Set.of(
-		5567, 5570, 5574, 5579, 5582, 5584, 5586, 5589, 5592, 424, 425, 1156, 2303, 300
+		AnimationID.ZOMBIE_UPDATE_DEFEND_NORMAL, AnimationID.ZOMBIE_UPDATE_DEFEND_WEAPON,
+		AnimationID.ZOMBIE_UPDATE_DEFEND_DRAGGING,
+		AnimationID.HUMAN_UNARMEDBLOCK, AnimationID.HUMAN_UNARMED_DEF, AnimationID.HUMAN_SHIELD_DEFENCE,
+		AnimationID.ZOMBIE_BLOCK
 	);
 	public static final Set<Integer> ZOMBIE_MODERN_DEATHS = Set.of(
-		5569, 5572, 5575, 5580, 5587, 5588, 5591, 5594, 5595, 836, 2304, 302,
-		5389, 5390, 5491, 5492, 5493, 5509, 5512, 7044
+		AnimationID.ZOMBIE_UPDATE_DEATH_NORMAL, AnimationID.ZOMBIE_UPDATE_DEATH_WEAPON,
+		AnimationID.ZOMBIE_UPDATE_DEATH_DRAGGING, AnimationID.ZOMBIE_UPDATE_DESPAWN,
+		AnimationID.HUMAN_DEATH, AnimationID.ZOMBIE_DEATH
 	);
 
-	public static final Set<Integer> GHOST_MODERN_ATTACKS = Set.of(422, 423, 5485, 5486);
-	public static final Set<Integer> GHOST_MODERN_DEFENDS = Set.of(424, 5488, 5489, 5490);
-	public static final Set<Integer> GHOST_MODERN_DEATHS = Set.of(836, 5491, 5492, 5493);
+	public static final Set<Integer> GHOST_MODERN_ATTACKS = Set.of(
+		AnimationID.GHOST_ATTACK, AnimationID.GHOST_UPDATE_NORMAL_ATTACK,
+			AnimationID.BOSSGHOST_ATTACK
+	);
+	public static final Set<Integer> GHOST_MODERN_DEFENDS = Set.of(
+		AnimationID.GHOST_BLOCK, AnimationID.GHOST_UPDATE_NORMAL_DEFEND,
+			AnimationID.BOSSGHOST_FADE_OUT
+	);
+	public static final Set<Integer> GHOST_MODERN_DEATHS = Set.of(
+		AnimationID.GHOST_DEATH, AnimationID.GHOST_UPDATE_NORMAL_DEATH,
+			AnimationID.BOSSGHOST_DEATH
+	);
 
-	public static final Set<Integer> GIANT_MODERN_ATTACKS = Set.of(4652, 4658, 4666, 4672, 7002, 7003, 128);
-	public static final Set<Integer> GIANT_MODERN_DEFENDS = Set.of(4651, 4657, 4665, 4671, 7001, 129);
-	public static final Set<Integer> GIANT_MODERN_DEATHS = Set.of(4653, 4659, 4667, 4673, 7004, 131);
+	public static final Set<Integer> GIANT_MODERN_ATTACKS = Set.of(
+		AnimationID.GIANT_UPDATE_BASIC_ATTACK, AnimationID.GIANT_UPDATE_MOSS_ATTACK,
+		AnimationID.GIANT_UPDATE_FIRE_ATTACK, AnimationID.GIANT_UPDATE_FIRE_SWORD_ATTACK,
+		AnimationID.GIANT_UPDATE_ICE_ATTACK, AnimationID.GIANT_ATTACK
+	);
+	public static final Set<Integer> GIANT_MODERN_DEFENDS = Set.of(
+		AnimationID.GIANT_UPDATE_BASIC_DEFEND, AnimationID.GIANT_UPDATE_MOSS_DEFEND,
+		AnimationID.GIANT_UPDATE_FIRE_SWORD_DEFEND, AnimationID.GIANT_UPDATE_ICE_DEFEND,
+		AnimationID.GIANT_BLOCK
+	);
+	public static final Set<Integer> GIANT_MODERN_DEATHS = Set.of(
+		AnimationID.GIANT_UPDATE_BASIC_DEATH, AnimationID.GIANT_UPDATE_MOSS_DEATH,
+		AnimationID.GIANT_UPDATE_FIRE_DEATH, AnimationID.GIANT_UPDATE_ICE_DEATH,
+		AnimationID.GIANT_DEATH
+	);
 
-	public static final Set<Integer> CHICKEN_MODERN_ATTACKS = Set.of(5385, 5387, 55);
-	public static final Set<Integer> CHICKEN_MODERN_DEFENDS = Set.of(5388, 56);
-	public static final Set<Integer> CHICKEN_MODERN_DEATHS = Set.of(5389, 5390, 57);
+	public static final Set<Integer> CHICKEN_MODERN_ATTACKS = Set.of(
+		AnimationID.LORE_CHICKEN_ATTACK, AnimationID.CHICKEN_ATTACK
+	);
+	public static final Set<Integer> CHICKEN_MODERN_DEFENDS = Set.of(
+		AnimationID.LORE_CHICKEN_DEFEND, AnimationID.CHICKEN_BLOCK
+	);
+	public static final Set<Integer> CHICKEN_MODERN_DEATHS = Set.of(
+		AnimationID.LORE_CHICKEN_DEATH, AnimationID.CHICKEN_DEATH
+	);
 
-	// Pre-instantiated immutable archetypes
+	// Pre-instantiated immutable archetypes.
+	//
+	// Archetypes for categories outside RetroNpcSwapperPlugin.isCategoryEnabled (demons, imps,
+	// guards, dragons, ghosts) are currently inert: their mappings resolve but processNpc never
+	// activates them. They are kept, along with their JSON entries, as staged data for when the
+	// blocking issues resolve (missing 2005 animations, incomplete multi-part models).
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
 		.retroModelIds(new int[]{2943})

@@ -75,6 +75,8 @@ import net.runelite.client.plugins.gpu.GpuPlugin;
 )
 public class RetroNpcSwapperPlugin extends Plugin
 {
+	static final String CONFIG_GROUP = "retronpcswapper";
+
 	@Inject
 	private Client client;
 
@@ -163,7 +165,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if (!"retronpcswapper".equals(event.getGroup()))
+		if (!CONFIG_GROUP.equals(event.getGroup()))
 		{
 			return;
 		}
@@ -222,11 +224,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onAnimationChanged(AnimationChanged event)
 	{
-		if (isSafetyDisabled())
-		{
-			return;
-		}
-
 		Actor actor = event.getActor();
 		if (!(actor instanceof NPC))
 		{
@@ -234,8 +231,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		NPC npc = (NPC) actor;
+
+		// Eligibility (wrapper attached, safety settings, category toggles) is decided in
+		// processNpc, which maintains substitutedNpcIds. Gating on the same set keeps animation
+		// overrides tied to the model actually being substituted - a vanilla model playing a
+		// 2005 sequence renders distorted, since those sequences are keyed to 2005 framemaps.
+		if (!substitutedNpcIds.contains(npc.getId()))
+		{
+			return;
+		}
+
 		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName());
-		if (data == null || !isCategoryEnabled(data.getCategory()))
+		if (data == null)
 		{
 			return;
 		}
@@ -428,8 +435,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case HILL_GIANTS:
 				return config.swapHillGiants();
 			default:
-				// All other categories are disabled: their 2005 model IDs no longer
-				// resolve in the modern cache (see the git history for details)
+				// All other categories are disabled: their 2005 model IDs still resolve in the
+				// modern cache, but the result no longer looks right - the matching animations
+				// were removed (e.g. with the Realm of Memories), or the multi-part models are
+				// missing pieces.
 				return false;
 		}
 	}
@@ -530,6 +539,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 			// running with no callbacks registered
 			client.setDrawCallbacks(wrapper.getDelegate());
 			log.debug("Detached retro draw callbacks");
+		}
+		else if (wrapper != null)
+		{
+			// Something else holds the slot. If it wrapped our wrapper, that stale decorator
+			// stays in its chain - harmless once substitutedNpcIds is cleared (every
+			// substitution then falls through to the vanilla model), but worth a trace.
+			log.debug("Draw callbacks slot no longer ours at detach; leaving it untouched");
 		}
 		wrapper = null;
 	}
