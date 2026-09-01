@@ -65,19 +65,19 @@ public class RetroNpcMapping
 		AnimationID.DEMONS_DEATH
 	);
 
+	// Dragons kept their 2005 sequences: DRAGON_WALK/ATTACK/BLOCK/READY/HEAD_ATTACK/DEATH are
+	// 79/80/89/90/91/92, the very IDs the 2005 cache uses, and there is no DRAGON_UPDATE_* rework
+	// family of the kind skeletons, zombies and giants got. Confirmed against the live cache: every
+	// adult dragon definition still has standingAnim 90 and walkingAnim 79.
+	//
+	// So almost nothing here needs intercepting - those sequences are the retro look already, and
+	// an earlier revision rewrote every melee and firebreath attack into a head attack by listing
+	// them. Only the post-2005 ranged attack has no retro counterpart.
 	public static final Set<Integer> DRAGON_MODERN_ATTACKS = Set.of(
-		AnimationID.DRAGON_ATTACK,
-		AnimationID.DRAGON_RANGED_ATTACKS, AnimationID.DRAGON_HEAD_ATTACK,
-		// I'm assuming these are KBD animations
-		AnimationID.DRAGON_FIREBREATH_ALL_ATTACK, AnimationID.DRAGON_FIREBREATH_LEFT_ATTACK,
-		AnimationID.DRAGON_FIREBREATH_RIGHT_ATTACK
+		AnimationID.DRAGON_RANGED_ATTACKS
 	);
-	public static final Set<Integer> DRAGON_MODERN_DEFENDS = Set.of(
-		AnimationID.DRAGON_BLOCK, AnimationID.DRAGON_BLOCK_KBD
-	);
-	public static final Set<Integer> DRAGON_MODERN_DEATHS = Set.of(
-		AnimationID.DRAGON_DEATH
-	);
+	public static final Set<Integer> DRAGON_MODERN_DEFENDS = Set.of();
+	public static final Set<Integer> DRAGON_MODERN_DEATHS = Set.of();
 
 	public static final Set<Integer> GOBLIN_MODERN_ATTACKS = Set.of(
 		AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_UNARMED_ATTACK, AnimationID.SLICE_SURFACE_GOBLIN_ARMED_ATTACK,
@@ -195,8 +195,15 @@ public class RetroNpcMapping
 	//
 	// Archetypes for categories outside RetroNpcSwapperPlugin.isCategoryEnabled (demons, imps,
 	// guards, dragons) are currently inert: their mappings resolve but processNpc never
-	// activates them. They are kept, along with their JSON entries, as staged data for when the
-	// blocking issues resolve (missing 2005 animations, incomplete multi-part models).
+	// activates them. They are kept, along with their JSON entries, as staged data.
+	//
+	// The blockers are not all the same, and are no longer guesses - compareRetroModels decodes
+	// both caches and compares geometry, which settles whether an id still holds its 2005 asset:
+	//   - dragons, demons: the 2005 meshes were replaced at their ids and exist nowhere in the
+	//     live cache. Nothing can unblock these short of an asset-injection API.
+	//   - imps: mesh 2887 is preserved exactly. The remaining doubt is about the animation frames,
+	//     which model comparison cannot answer.
+	//   - guards: multi-part modular meshes whose retro head and arm pieces were never located.
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
 		.retroModelIds(new int[]{2943})
@@ -487,9 +494,17 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.ADULT_DRAGONS)
 		{
-			attackAnim = 91;
-			defendAnim = 89;
-			deathAnim = 92;
+			// Permanently inert, unlike the other disabled categories: the 2005 adult dragon
+			// meshes are not in the live cache at all. Model ids 2853 and 2854 both resolve, but
+			// to one 174-vertex asset that is neither of them, and a scan of all 61874 live models
+			// finds the 2005 body (303 verts) and head (84 verts) nowhere. Measure it yourself
+			// with `./gradlew compareRetroModels -Pmodels=2853,2854 -Pfindmoved`.
+			//
+			// The animation wiring below is kept correct anyway, since the mapping still resolves
+			// by name and the retro sequences themselves are alive and well.
+			attackAnim = AnimationID.DRAGON_ATTACK;
+			// Block (89) and death (92) need no swap - modern dragons already play the 2005 ones,
+			// so these stay -1 and isDefend/DeathAnimation short-circuit.
 			modernAttacks = DRAGON_MODERN_ATTACKS;
 			modernDefends = DRAGON_MODERN_DEFENDS;
 			modernDeaths = DRAGON_MODERN_DEATHS;

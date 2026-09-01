@@ -186,22 +186,29 @@ public class RetroNpcCategoryTest
 		assertEquals(RetroNpcCategory.ADULT_DRAGONS, blueDragon.getCategory());
 		assertTrue("Blue dragon should have models", blueDragon.getRetroModelIds().length > 0);
 
-		// Verify dragon animations (80 melee, 91 head attack, 81-83 KBD firebreath, 1990 ranged)
-		assertTrue(blueDragon.isAttackAnimation(80));
-		assertTrue(blueDragon.isAttackAnimation(91));
-		assertTrue(blueDragon.isAttackAnimation(81));
-		assertTrue(blueDragon.isAttackAnimation(82));
-		assertTrue(blueDragon.isAttackAnimation(83));
+		// The ranged attack (1990) is the one post-2005 sequence, so it is the only one swapped,
+		// and it swaps to the 2005 melee attack (80)
 		assertTrue(blueDragon.isAttackAnimation(1990));
-		assertTrue(blueDragon.isDefendAnimation(89));
-		assertTrue(blueDragon.isDefendAnimation(4638));
-		assertTrue(blueDragon.isDeathAnimation(92));
-		// Walk (79) and ready (90) sequences are not combat anims, and the stale
-		// skeleton-update IDs (5489/5491) are gone after the gameval re-curation
+		assertEquals(AnimationID.DRAGON_ATTACK, blueDragon.getAttackAnimationId());
+
+		// Dragons kept their 2005 sequences, so these must play through untouched. Rewriting them
+		// turned every melee and firebreath attack into a head attack.
+		assertFalse("melee attack is already the retro sequence", blueDragon.isAttackAnimation(80));
+		assertFalse("head attack is already the retro sequence", blueDragon.isAttackAnimation(91));
+		assertFalse(blueDragon.isAttackAnimation(81));
+		assertFalse(blueDragon.isAttackAnimation(82));
+		assertFalse(blueDragon.isAttackAnimation(83));
+
+		// Block and death need no swap at all, so both slots are -1 and short-circuit
+		assertEquals(-1, blueDragon.getDefendAnimationId());
+		assertEquals(-1, blueDragon.getDeathAnimationId());
+		assertFalse(blueDragon.isDefendAnimation(89));
+		assertFalse(blueDragon.isDefendAnimation(4638));
+		assertFalse(blueDragon.isDeathAnimation(92));
+
+		// Walk (79) and ready (90) are pose sequences, never combat anims
 		assertFalse(blueDragon.isAttackAnimation(79));
 		assertFalse(blueDragon.isDefendAnimation(90));
-		assertFalse(blueDragon.isDefendAnimation(5489));
-		assertFalse(blueDragon.isDeathAnimation(5491));
 		assertFalse(blueDragon.isAttackAnimation(99999));
 	}
 
