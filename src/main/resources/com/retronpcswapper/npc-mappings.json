@@ -6,7 +6,9 @@
       2998
     ],
     "idleAnim": 27,
-    "walkAnim": 21
+    "walkAnim": 21,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "baby dragon",
@@ -15,7 +17,9 @@
       2998
     ],
     "idleAnim": 27,
-    "walkAnim": 21
+    "walkAnim": 21,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "black demon",
@@ -24,7 +28,9 @@
       2942
     ],
     "idleAnim": 66,
-    "walkAnim": 63
+    "walkAnim": 63,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "black dragon",
@@ -34,7 +40,9 @@
       2854
     ],
     "idleAnim": 90,
-    "walkAnim": 79
+    "walkAnim": 79,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "blue dragon",
@@ -44,7 +52,9 @@
       2854
     ],
     "idleAnim": 90,
-    "walkAnim": 79
+    "walkAnim": 79,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "chicken",
@@ -53,7 +63,9 @@
       2849
     ],
     "idleAnim": 54,
-    "walkAnim": 53
+    "walkAnim": 53,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "ghost",
@@ -64,7 +76,9 @@
       2965
     ],
     "idleAnim": 125,
-    "walkAnim": 119
+    "walkAnim": 119,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "goblin",
@@ -76,7 +90,9 @@
       2956
     ],
     "idleAnim": 311,
-    "walkAnim": 308
+    "walkAnim": 308,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "goblin guard",
@@ -89,7 +105,9 @@
       2957
     ],
     "idleAnim": 311,
-    "walkAnim": 308
+    "walkAnim": 308,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "greater demon",
@@ -98,7 +116,9 @@
       2942
     ],
     "idleAnim": 66,
-    "walkAnim": 63
+    "walkAnim": 63,
+    "scaleXZ": 110,
+    "scaleY": 110
   },
   {
     "name": "green dragon",
@@ -108,7 +128,9 @@
       2854
     ],
     "idleAnim": 90,
-    "walkAnim": 79
+    "walkAnim": 79,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "guard",
@@ -125,7 +147,9 @@
       541
     ],
     "idleAnim": 808,
-    "walkAnim": 819
+    "walkAnim": 819,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "hill giant",
@@ -135,7 +159,9 @@
       2862
     ],
     "idleAnim": 130,
-    "walkAnim": 127
+    "walkAnim": 127,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "hobgoblin",
@@ -144,7 +170,9 @@
       2994
     ],
     "idleAnim": 166,
-    "walkAnim": 162
+    "walkAnim": 162,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "imp",
@@ -153,7 +181,9 @@
       2887
     ],
     "idleAnim": 171,
-    "walkAnim": 168
+    "walkAnim": 168,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "lesser demon",
@@ -162,7 +192,9 @@
       2943
     ],
     "idleAnim": 66,
-    "walkAnim": 63
+    "walkAnim": 63,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "red dragon",
@@ -172,7 +204,9 @@
       2854
     ],
     "idleAnim": 90,
-    "walkAnim": 79
+    "walkAnim": 79,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "restless ghost",
@@ -188,7 +222,9 @@
       245
     ],
     "idleAnim": 15,
-    "walkAnim": 13
+    "walkAnim": 13,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "skeleton",
@@ -197,7 +233,9 @@
       2944
     ],
     "idleAnim": 262,
-    "walkAnim": 259
+    "walkAnim": 259,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "skeleton mage",
@@ -211,7 +249,9 @@
       325
     ],
     "idleAnim": 808,
-    "walkAnim": 819
+    "walkAnim": 819,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "summoned zombie",
@@ -220,7 +260,9 @@
       2931
     ],
     "idleAnim": 301,
-    "walkAnim": 298
+    "walkAnim": 298,
+    "scaleXZ": 128,
+    "scaleY": 128
   },
   {
     "name": "zombie",
@@ -229,6 +271,8 @@
       2931
     ],
     "idleAnim": 301,
-    "walkAnim": 298
+    "walkAnim": 298,
+    "scaleXZ": 128,
+    "scaleY": 128
   }
 ]

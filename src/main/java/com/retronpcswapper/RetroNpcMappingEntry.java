@@ -40,18 +40,27 @@ public class RetroNpcMappingEntry
 	private int idleAnim = -1;
 	private int walkAnim = -1;
 
+	// Model resize in 1/128ths, as the 2005 client applied it. The modern client scales an NPC
+	// from its own composition, which does not apply to substituted geometry, so the retro
+	// values have to be carried and applied by hand.
+	private int scaleXZ = 128;
+	private int scaleY = 128;
+
 	// No-arg constructor for Gson
 	public RetroNpcMappingEntry()
 	{
 	}
 
-	public RetroNpcMappingEntry(String name, RetroNpcCategory category, int[] modelIds, int idleAnim, int walkAnim)
+	public RetroNpcMappingEntry(String name, RetroNpcCategory category, int[] modelIds, int idleAnim, int walkAnim,
+		int scaleXZ, int scaleY)
 	{
 		this.name = name;
 		this.category = category;
 		this.modelIds = modelIds;
 		this.idleAnim = idleAnim;
 		this.walkAnim = walkAnim;
+		this.scaleXZ = scaleXZ;
+		this.scaleY = scaleY;
 	}
 
 }

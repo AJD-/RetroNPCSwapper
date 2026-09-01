@@ -145,6 +145,20 @@ public class RetroModelCache
 		}
 
 		ModelData merged = found == 1 ? parts[0] : client.mergeModels(parts, found);
-		return merged == null ? null : merged.light();
+		if (merged == null)
+		{
+			return null;
+		}
+
+		int scaleXZ = data.getScaleXZ();
+		int scaleY = data.getScaleY();
+		if (scaleXZ != 128 || scaleY != 128)
+		{
+			// cloneVertices first - loadModelData hands back the client's shared arrays, and
+			// scaling in place would resize the cached model for everything else using it
+			merged = merged.cloneVertices().scale(scaleXZ, scaleY, scaleXZ);
+		}
+
+		return merged.light();
 	}
 }

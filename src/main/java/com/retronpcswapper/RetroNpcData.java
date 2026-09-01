@@ -83,6 +83,23 @@ public class RetroNpcData
 	private final int deathAnimationId;
 
 	/**
+	 * Horizontal resize of the retro model, in 1/128ths.
+	 *
+	 * <p>Seeded from the 2005 definition, then corrected per category where the 2005 and modern
+	 * meshes are simply different sizes. The modern composition's own widthScale/heightScale is
+	 * deliberately not used: it was authored for the modern mesh and means nothing applied to
+	 * retro geometry (the live Chicken composition, for instance, is 80 - it shrinks its model).
+	 */
+	@Getter
+	private final int scaleXZ;
+
+	/**
+	 * Vertical resize of the retro model, in 1/128ths. See {@link #scaleXZ}.
+	 */
+	@Getter
+	private final int scaleY;
+
+	/**
 	 * Modern attack animation IDs to intercept and swap for this NPC category.
 	 */
 	@Getter
@@ -108,6 +125,8 @@ public class RetroNpcData
 		int attackAnimationId,
 		int defendAnimationId,
 		int deathAnimationId,
+		int scaleXZ,
+		int scaleY,
 		Set<Integer> modernAttackAnims,
 		Set<Integer> modernDefendAnims,
 		Set<Integer> modernDeathAnims
@@ -120,6 +139,8 @@ public class RetroNpcData
 		this.attackAnimationId = attackAnimationId;
 		this.defendAnimationId = defendAnimationId;
 		this.deathAnimationId = deathAnimationId;
+		this.scaleXZ = scaleXZ;
+		this.scaleY = scaleY;
 		this.modernAttackAnims = modernAttackAnims != null
 			? Collections.unmodifiableSet(new HashSet<>(modernAttackAnims))
 			: Collections.emptySet();
@@ -167,6 +188,8 @@ public class RetroNpcData
 			attackAnimationId == that.attackAnimationId &&
 			defendAnimationId == that.defendAnimationId &&
 			deathAnimationId == that.deathAnimationId &&
+			scaleXZ == that.scaleXZ &&
+			scaleY == that.scaleY &&
 			category == that.category &&
 			Arrays.equals(retroModelIds, that.retroModelIds) &&
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
@@ -184,6 +207,8 @@ public class RetroNpcData
 		result = 31 * result + attackAnimationId;
 		result = 31 * result + defendAnimationId;
 		result = 31 * result + deathAnimationId;
+		result = 31 * result + scaleXZ;
+		result = 31 * result + scaleY;
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
 		result = 31 * result + (modernDefendAnims != null ? modernDefendAnims.hashCode() : 0);
 		result = 31 * result + (modernDeathAnims != null ? modernDeathAnims.hashCode() : 0);
@@ -199,6 +224,8 @@ public class RetroNpcData
 		private int attackAnimationId = -1;
 		private int defendAnimationId = -1;
 		private int deathAnimationId = -1;
+		private int scaleXZ = 128;
+		private int scaleY = 128;
 		private final Set<Integer> modernAttackAnims = new HashSet<>();
 		private final Set<Integer> modernDefendAnims = new HashSet<>();
 		private final Set<Integer> modernDeathAnims = new HashSet<>();
@@ -242,6 +269,18 @@ public class RetroNpcData
 		public Builder deathAnimationId(int deathAnimationId)
 		{
 			this.deathAnimationId = deathAnimationId;
+			return this;
+		}
+
+		public Builder scaleXZ(int scaleXZ)
+		{
+			this.scaleXZ = scaleXZ;
+			return this;
+		}
+
+		public Builder scaleY(int scaleY)
+		{
+			this.scaleY = scaleY;
 			return this;
 		}
 
@@ -318,6 +357,8 @@ public class RetroNpcData
 				attackAnimationId,
 				defendAnimationId,
 				deathAnimationId,
+				scaleXZ,
+				scaleY,
 				modernAttackAnims,
 				modernDefendAnims,
 				modernDeathAnims

@@ -145,7 +145,8 @@ public class NpcMappingGenerator
 			}
 
 			byName.putIfAbsent(nameLower, new RetroNpcMappingEntry(
-				nameLower, category, def.getModels(), def.getStanceAnimation(), def.getWalkAnimation()));
+				nameLower, category, def.getModels(), def.getStanceAnimation(), def.getWalkAnimation(),
+				def.getScaleXZ(), def.getScaleY()));
 		}
 
 		return new ArrayList<>(new TreeMap<>(byName).values());

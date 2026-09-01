@@ -364,6 +364,10 @@ public class RetroNpcMapping
 		int[] models = entry.getModelIds();
 		int stanceAnim = entry.getIdleAnim();
 		int walkAnim = entry.getWalkAnim();
+		// Seeded from the 2005 definition; categories below correct it where the retro and
+		// modern meshes are different sizes
+		int scaleXZ = entry.getScaleXZ();
+		int scaleY = entry.getScaleY();
 
 		Set<Integer> modernAttacks = Collections.emptySet();
 		Set<Integer> modernDefends = Collections.emptySet();
@@ -416,7 +420,11 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.CHICKENS)
 		{
-			// These are really tiny compared to modern chickens
+			// These are really tiny compared to modern chickens. The 2005 definition asked for no
+			// resize at all (128), and the modern composition's own scale is 80, so neither
+			// source gets us there - this is a hand-matched value.
+			scaleXZ = 204;
+			scaleY = 204;
 			models = new int[]{2849};
 			stanceAnim = 54;
 			walkAnim = 53;
@@ -495,6 +503,8 @@ public class RetroNpcMapping
 			.attackAnimationId(attackAnim)
 			.defendAnimationId(defendAnim)
 			.deathAnimationId(deathAnim)
+			.scaleXZ(scaleXZ)
+			.scaleY(scaleY)
 			.modernAttackAnims(modernAttacks)
 			.modernDefendAnims(modernDefends)
 			.modernDeathAnims(modernDeaths)
