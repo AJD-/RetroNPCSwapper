@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.VarbitID;
 import org.junit.BeforeClass;
@@ -534,9 +535,41 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testGhostsCategory()
 	{
+		// The 2005 ghost sequences survive in the modern cache at their original IDs,
+		// under gameval GHOST_* names (READY=125, WALK=119, ATTACK=123, BLOCK=124, DEATH=126)
 		RetroNpcData ghost = RetroNpcMapping.get(0, "Ghost");
 		assertNotNull("Ghost mapping must exist", ghost);
 		assertEquals(RetroNpcCategory.GHOSTS, ghost.getCategory());
+		assertArrayEquals(new int[]{2961, 2964, 2965}, ghost.getRetroModelIds());
+		assertEquals(AnimationID.GHOST_READY, ghost.getIdleAnimationId());
+		assertEquals(AnimationID.GHOST_WALK, ghost.getWalkAnimationId());
+		assertEquals(AnimationID.GHOST_ATTACK, ghost.getAttackAnimationId());
+		assertEquals(AnimationID.GHOST_BLOCK, ghost.getDefendAnimationId());
+		assertEquals(AnimationID.GHOST_DEATH, ghost.getDeathAnimationId());
+
+		// Modern ghost combat anims are intercepted and swapped to the retro sequences
+		assertTrue(ghost.isAttackAnimation(AnimationID.GHOST_UPDATE_NORMAL_ATTACK));
+		assertTrue(ghost.isAttackAnimation(AnimationID.BOSSGHOST_ATTACK));
+		assertTrue(ghost.isDefendAnimation(AnimationID.GHOST_UPDATE_NORMAL_DEFEND));
+		assertTrue(ghost.isDeathAnimation(AnimationID.GHOST_UPDATE_NORMAL_DEATH));
+		assertTrue(ghost.isDeathAnimation(AnimationID.BOSSGHOST_DEATH));
+
+		// The retro sequences themselves are targets, not modern anims to intercept
+		assertFalse(ghost.isAttackAnimation(AnimationID.GHOST_ATTACK));
+		assertFalse(ghost.isDefendAnimation(AnimationID.GHOST_BLOCK));
+		assertFalse(ghost.isDeathAnimation(AnimationID.GHOST_DEATH));
+
+		// The Restless ghost is non-combat: model + idle/walk (GHOSTHUMAN poses) only,
+		// combat anims stay -1 so combat interception short-circuits
+		RetroNpcData restless = RetroNpcMapping.get(0, "Restless ghost");
+		assertNotNull("Restless ghost mapping must exist", restless);
+		assertEquals(RetroNpcCategory.GHOSTS, restless.getCategory());
+		assertEquals(AnimationID.GHOSTHUMAN_READY, restless.getIdleAnimationId());
+		assertEquals(AnimationID.GHOSTHUMAN_WALK_FORWARD, restless.getWalkAnimationId());
+		assertEquals(-1, restless.getAttackAnimationId());
+		assertEquals(-1, restless.getDefendAnimationId());
+		assertEquals(-1, restless.getDeathAnimationId());
+		assertFalse(restless.isAttackAnimation(AnimationID.GHOST_UPDATE_NORMAL_ATTACK));
 	}
 
 	@Test
