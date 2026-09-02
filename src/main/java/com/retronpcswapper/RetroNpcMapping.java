@@ -44,30 +44,14 @@ public class RetroNpcMapping
 
 	// Category-Scoped Modern Animation Sets. Values are gameval AnimationID constants where the
 	// modern cache has them; retro 2005 sequence IDs used elsewhere in this class stay numeric
-	// where no gameval name exists (several survive under gameval names - the ghost branch in
-	// createMappingData uses the GHOST_* constants directly).
-	//
-	// Membership is curated against the gameval names as the source of truth: the role word in
-	// the name (attack/defend/block/death) decides which set an ID belongs to, and IDs whose
-	// names carry no combat role (walks, readys, idles, chatheads) were dropped - they would
-	// never correctly trigger a combat-animation swap.
+	// where no gameval name exists
 
-	// Demons kept their 2005 sequences, the same way dragons did: DEMON_WALK/ATTACK/BLOCK/READY/
-	// DEATH are 63/64/65/66/67, the very IDs the 2005 cache uses. Confirmed against the live
-	// cache - every plain Lesser demon definition (2005-2008, 2018) still has standingAnim 66 and
-	// walkingAnim 63. The DEMON_UPDATE_* family (4674-4681) is a second rig, used by the Lesser
-	// Demon Champion and its kin, and it is the only thing here that needs intercepting.
-	//
-	// DEMON_ATTACK/DEMON_BLOCK/DEMON_DEATH (64/65/67) and DEMON_DEATH_GREATER (68) are
-	// deliberately absent: they are the surviving 2005 sequences themselves - the swap targets,
-	// not modern anims to replace. Listing them made the plugin re-swap its own output, the same
-	// bug the ghost sets carried before PR #3.
 	public static final Set<Integer> DEMON_MODERN_ATTACKS = Set.of(
 		AnimationID.DEMON_ATTACK_GREATER,
 		AnimationID.DEMON_UPDATE_ATTACK, AnimationID.DEMON_UPDATE_ATTACK_GREATER,
 		AnimationID.DEMON_UPDATE_ATTACK_LESSER, AnimationID.DEMONS_ATTACK,
 		// The DT2_SCAR_MAZE mage and ranged demons are registered to LESSER_DEMON_DEFAULT, so
-		// their cast and swipe belong here too or they would play un-intercepted
+		// their cast and swipe belong here too, or they would play un-intercepted
 		AnimationID.DEMON_UPDATE_SWIPE, AnimationID.DEMON_UPDATE_FIREBALL_CAST
 	);
 	public static final Set<Integer> DEMON_MODERN_DEFENDS = Set.of(
@@ -209,13 +193,13 @@ public class RetroNpcMapping
 	// guards, dragons) are currently inert: their mappings resolve but processNpc never
 	// activates them. They are kept, along with their JSON entries, as staged data.
 	//
-	// The blockers are not all the same, and are no longer guesses - compareRetroModels decodes
+	// The blockers are not all the same - compareRetroModels decodes
 	// both caches and compares geometry, which settles whether an id still holds its 2005 asset:
-	//   - dragons, demons: the 2005 meshes were replaced at their ids and exist nowhere in the
+	//   - adult dragons, demons: the 2005 meshes were replaced at their ids and exist nowhere in the
 	//     live cache. Nothing can unblock these short of an asset-injection API.
-	//   - imps: mesh 2887 is preserved exactly. The remaining doubt is about the animation frames,
-	//     which model comparison cannot answer.
-	//   - guards: multi-part modular meshes whose retro head and arm pieces were never located.
+	//   - baby dragons: while the model exists, animation frames have been overwritten by the new model
+	//   - imps: mesh 2887 is preserved exactly. Animation frames have been overwritten by ones that match
+	//     the new model
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
 		.retroModelIds(new int[]{2943})
@@ -490,23 +474,6 @@ public class RetroNpcMapping
 		Set<Integer> modernDefends = Collections.emptySet();
 		Set<Integer> modernDeaths = Collections.emptySet();
 
-		// Permanently inert, like adult dragons: the 2005 demon meshes are not in the live cache
-		// at all. Model ids 2942 and 2943 both resolve, but to unrelated geometry - 2943 holds a
-		// 1000-vertex mesh where the 2005 lesser demon is 428, and 2942 holds a 68-vertex one
-		// where the 2005 greater/black demon is 479 - and a scan of all 61874 live models finds
-		// neither retro mesh at any id. Measure it yourself with
-		// `./gradlew compareRetroModels -Pmodels=2942,2943 -Pfindmoved`.
-		//
-		// That scan matches on exact geometry, so read a REPLACED verdict by its magnitude rather
-		// than as a yes/no: the chicken drifted by a single face between 2005 and today and still
-		// reports REPLACED, while these are 2.3x and 0.14x the vertex count. Wholly different
-		// meshes, not drift.
-		//
-		// The 2005 lesser demon was replaced by the 29 August 2006 graphical update, which
-		// predates the August 2007 snapshot OSRS descends from, so the retro mesh was gone before
-		// this game's lineage began. An earlier revision blamed the Realm of Memories removal for
-		// taking the animations; that was backwards. The sequences are alive and well - the
-		// wiring below is kept correct because the mapping still resolves by name.
 		if (category == RetroNpcCategory.LESSER_DEMONS
 			|| category == RetroNpcCategory.GREATER_DEMONS
 			|| category == RetroNpcCategory.BLACK_DEMONS)
@@ -522,17 +489,7 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.ADULT_DRAGONS)
 		{
-			// Permanently inert, unlike the other disabled categories: the 2005 adult dragon
-			// meshes are not in the live cache at all. Model ids 2853 and 2854 both resolve, but
-			// to one 174-vertex asset that is neither of them, and a scan of all 61874 live models
-			// finds the 2005 body (303 verts) and head (84 verts) nowhere. Measure it yourself
-			// with `./gradlew compareRetroModels -Pmodels=2853,2854 -Pfindmoved`.
-			//
-			// The animation wiring below is kept correct anyway, since the mapping still resolves
-			// by name and the retro sequences themselves are alive and well.
 			attackAnim = AnimationID.DRAGON_ATTACK;
-			// Block (89) and death (92) need no swap - modern dragons already play the 2005 ones,
-			// so these stay -1 and isDefend/DeathAnimation short-circuit.
 			modernAttacks = DRAGON_MODERN_ATTACKS;
 			modernDefends = DRAGON_MODERN_DEFENDS;
 			modernDeaths = DRAGON_MODERN_DEATHS;
@@ -627,9 +584,7 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.GHOSTS)
 		{
-			// The 2005 ghost sequences survive in the modern cache at their original IDs, under
-			// gameval GHOST_* names. (An earlier revision assumed they had been removed and parked
-			// human placeholder anims here, which distorted on the ghost mesh.)
+			// Avoid putting the kibosh on the restless ghost
 			if (!"restless ghost".equalsIgnoreCase(entry.getName()))
 			{
 				stanceAnim = stanceAnim != -1 ? stanceAnim : AnimationID.GHOST_READY;
@@ -638,9 +593,6 @@ public class RetroNpcMapping
 				defendAnim = AnimationID.GHOST_BLOCK;
 				deathAnim = AnimationID.GHOST_DEATH;
 			}
-			// The Restless ghost is a non-combat quest NPC: only its GHOSTHUMAN_READY/
-			// GHOSTHUMAN_WALK_FORWARD poses survive (carried in the JSON), so its combat
-			// anims stay -1 and isAttack/Defend/DeathAnimation short-circuit.
 			modernAttacks = GHOST_MODERN_ATTACKS;
 			modernDefends = GHOST_MODERN_DEFENDS;
 			modernDeaths = GHOST_MODERN_DEATHS;
