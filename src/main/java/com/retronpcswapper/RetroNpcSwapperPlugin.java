@@ -70,7 +70,7 @@ import net.runelite.client.plugins.gpu.GpuPlugin;
 @Slf4j
 @PluginDescriptor(
 	name = "Retro NPC Swapper",
-	description = "Swaps modern NPC models and animations to their retro 2004/2005 variants from the 2005 cache.",
+	description = "Swaps modern NPC models and animations to their 2004/2005 retro variants from the Old School RuneScape cache.",
 	tags = {"npc", "retro", "swapper", "model", "animation", "cache"}
 )
 public class RetroNpcSwapperPlugin extends Plugin
