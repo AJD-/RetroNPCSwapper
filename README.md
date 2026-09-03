@@ -18,13 +18,12 @@ Each category can be toggled individually in the plugin config:
 Other retro-era NPCs are not supported. Every 2005 model ID still resolves in the live cache, but
 resolving is not the same as still being the 2005 asset, and the reason differs per NPC:
 
-- **Dragons and demons** — the retro meshes are *gone*. The IDs were reused for unrelated
-  geometry, and a scan of all 61,874 models in the live cache finds the 2005 dragon and demon
-  meshes at no ID at all. Nothing short of an asset-injection API could bring these back, and no
-  such API exists.
-- **Imps** — the retro mesh is preserved exactly, but the 2005 animation frames appear to have
-  been modified in place, with no legacy sequence left to swap to.
-- **Guards** — multi-part modular meshes whose retro head and arm pieces were never located.
+- **Dragons and demons** — the retro meshes have been removed from the OSRS cache. The IDs were 
+  reused for unrelated geometry, and a scan of all 61,874 models in the live cache finds the 2005 
+  dragon and demon meshes at no ID at all. An asset-injection API could bring these back, but utilizing
+  something like that would require the plugin to ship Jagex copyrighted assets.
+- **Imps** — the retro mesh still exists, but the 2005 animation frames were modified in place, 
+  with no 2005-era sequence left to swap to.
 
 The groundwork is staged in the code either way. `./gradlew compareRetroModels -Pmodels=<ids>
 -Pfindmoved` is the tool that settles which case an NPC falls into.
