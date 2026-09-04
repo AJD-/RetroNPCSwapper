@@ -18,9 +18,9 @@ Other retro-era NPCs are not supported. Every 2005 model ID still resolves in th
 in every case some aspect of the 2005 asset is incompatible, and the reason differs per NPC:
 
 - **Dragons and demons** — the retro meshes have been removed from the OSRS cache. The IDs were 
-  reused for unrelated geometry, and a scan of all 61,874 models in the live cache finds the 2005 
-  dragon and demon meshes at no ID at all. An asset-injection API could bring these back, but utilizing
-  something like that would require the plugin to ship Jagex copyrighted assets.
+  reused for unrelated geometry (statues, skulls, and other environment assets) An asset-injection
+  API could bring these back, but utilizing something like that would require the plugin to ship
+  Jagex copyrighted assets.
 - **Imps** — the retro mesh still exists, but the 2005 animation frames were modified in place, 
   with no 2005-era sequence left to swap to.
 
