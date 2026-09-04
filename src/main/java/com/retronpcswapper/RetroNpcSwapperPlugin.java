@@ -32,10 +32,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import javax.inject.Inject;
 
 import com.retronpcswapper.compatibility.*;
@@ -80,8 +78,6 @@ import net.runelite.client.ui.overlay.OverlayManager;
 )
 public class RetroNpcSwapperPlugin extends Plugin
 {
-	public static final String CONFIG_GROUP = "retronpcswapper";
-
 	@Inject
 	private Client client;
 
@@ -117,10 +113,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
-
-	// NPC ids currently eligible for model substitution. Maintained by processNpc so the
-	// render path never has to evaluate mappings, config toggles or safety settings.
-	private final Set<Integer> substitutedNpcIds = new HashSet<>();
 
 	// Our decorator, while it owns the client's draw callbacks slot
 	private RetroDrawCallbacks wrapper;
@@ -208,7 +200,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		if (!CONFIG_GROUP.equals(event.getGroup()) || InteractHighlightCompat.isStashKey(event.getKey()))
+		if (!RetroNpcConfig.GROUP.equals(event.getGroup()) || InteractHighlightCompat.isStashKey(event.getKey()))
 		{
 			// Stash keys are our own bookkeeping, not a setting the user changed
 			return;
@@ -314,8 +306,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 		targetTracker.onActorDespawned(npc);
 		if (npc != null)
 		{
-			// Only per-NPC bookkeeping is dropped. substitutedNpcIds is keyed by NPC id, not
-			// index, and is shared by every instance of that type, so it is left alone here.
+			// Only per-NPC bookkeeping is dropped. The cache's substitution memo is keyed by NPC
+			// id, not index, and is shared by every instance of that type, so it is left alone.
 			originalNpcState.remove(npc.getIndex());
 		}
 	}
@@ -332,10 +324,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 		NPC npc = (NPC) actor;
 
 		// Eligibility (wrapper attached, safety settings, category toggles) is decided in
-		// processNpc, which maintains substitutedNpcIds. Gating on the same set keeps animation
+		// processNpc, which maintains the cache's memo. Gating on the same memo keeps animation
 		// overrides tied to the model actually being substituted - a vanilla model playing a
 		// 2005 sequence renders distorted, since those sequences are keyed to 2005 framemaps.
-		if (!substitutedNpcIds.contains(npc.getId()))
+		if (!modelCache.isSubstituted(npc.getId()))
 		{
 			return;
 		}
@@ -445,7 +437,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Verify if category toggle is enabled in configuration
 		if (wrapper == null || isSafetyDisabled() || data == null || !isCategoryEnabled(data.getCategory()))
 		{
-			substitutedNpcIds.remove(npc.getId());
+			modelCache.clearSubstituted(npc.getId());
 			resetNpc(npc);
 			return;
 		}
@@ -453,7 +445,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Build the replacement geometry here, on the client thread, so the draw callback
 		// only ever does a map lookup
 		modelCache.ensureBuilt(npc.getId(), data);
-		substitutedNpcIds.add(npc.getId());
+		modelCache.setSubstituted(npc.getId());
 		applyRetroSwap(npc, data);
 	}
 
@@ -508,7 +500,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		log.debug("Resetting NPC visuals for: {} (ID: {})", npc.getName(), npc.getId());
 
 		// Only animations need restoring - the composition was never modified, and dropping the
-		// NPC id from substitutedNpcIds is what reverts its models on the next frame drawn.
+		// NPC id from the cache's memo is what reverts its models on the next frame drawn.
 		state.restore(npc);
 	}
 
@@ -592,7 +584,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		originalNpcState.clear();
-		substitutedNpcIds.clear();
 	}
 
 	/**
@@ -647,7 +638,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		else if (wrapper != null)
 		{
 			// Something else holds the slot. If it wrapped our wrapper, that stale decorator
-			// stays in its chain - harmless once substitutedNpcIds is cleared (every
+			// stays in its chain - harmless once the cache's memo is cleared (every
 			// substitution then falls through to the vanilla model), but worth a trace.
 			log.debug("Draw callbacks slot no longer ours at detach; leaving it untouched");
 		}
@@ -671,15 +662,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 			}
 		}
 		return gpuPlugin;
-	}
-
-	/**
-	 * Whether an NPC is currently having its geometry substituted. Read from the render and overlay
-	 * paths, which must not re-evaluate mappings or config toggles.
-	 */
-    public boolean isSubstituted(NPC npc)
-	{
-		return npc != null && substitutedNpcIds.contains(npc.getId());
 	}
 
 	/**
@@ -727,7 +709,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		// The posed model is shared and only valid until the next applyTransformations call. It is
 		// handed straight to the delegate and uploaded before anything else can run, which is what
-		// makes that safe here.
-		return isSubstituted(npc) ? modelCache.pose(npc) : null;
+		// makes that safe here. Returns null for an NPC that is not being substituted.
+		return modelCache.pose(npc);
 	}
 }

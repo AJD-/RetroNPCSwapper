@@ -28,7 +28,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import com.retronpcswapper.RetroNpcSwapperPlugin;
+import com.retronpcswapper.RetroNpcConfig;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
@@ -115,7 +115,7 @@ public class InteractHighlightCompat
 			return live;
 		}
 
-		String stashed = configManager.getConfiguration(RetroNpcSwapperPlugin.CONFIG_GROUP, STASH_PREFIX + key);
+		String stashed = configManager.getConfiguration(RetroNpcConfig.GROUP, STASH_PREFIX + key);
 		if (stashed == null)
 		{
 			return live;
@@ -178,7 +178,7 @@ public class InteractHighlightCompat
 		// over the user's real ones
 		suppressing = true;
 
-		if (configManager.getConfiguration(RetroNpcSwapperPlugin.CONFIG_GROUP, STASH_PREFIX + SHOW_HOVER) == null)
+		if (configManager.getConfiguration(RetroNpcConfig.GROUP, STASH_PREFIX + SHOW_HOVER) == null)
 		{
 			stash(SHOW_HOVER);
 			stash(SHOW_INTERACT);
@@ -208,7 +208,7 @@ public class InteractHighlightCompat
 	 */
 	public void restoreStaleStash()
 	{
-		if (configManager.getConfiguration(RetroNpcSwapperPlugin.CONFIG_GROUP, STASH_PREFIX + SHOW_HOVER) == null)
+		if (configManager.getConfiguration(RetroNpcConfig.GROUP, STASH_PREFIX + SHOW_HOVER) == null)
 		{
 			return;
 		}
@@ -276,13 +276,13 @@ public class InteractHighlightCompat
 	private void stash(String key)
 	{
 		String current = configManager.getConfiguration(GROUP, key);
-		configManager.setConfiguration(RetroNpcSwapperPlugin.CONFIG_GROUP, STASH_PREFIX + key,
+		configManager.setConfiguration(RetroNpcConfig.GROUP, STASH_PREFIX + key,
 			current == null ? STASH_UNSET : current);
 	}
 
 	private void unstash(String key)
 	{
-		String stashed = configManager.getConfiguration(RetroNpcSwapperPlugin.CONFIG_GROUP, STASH_PREFIX + key);
+		String stashed = configManager.getConfiguration(RetroNpcConfig.GROUP, STASH_PREFIX + key);
 		if (stashed == null)
 		{
 			// Nothing was ever stashed, so there is nothing to put back
@@ -324,6 +324,6 @@ public class InteractHighlightCompat
 
 	private void discard(String key)
 	{
-		configManager.unsetConfiguration(RetroNpcSwapperPlugin.CONFIG_GROUP, STASH_PREFIX + key);
+		configManager.unsetConfiguration(RetroNpcConfig.GROUP, STASH_PREFIX + key);
 	}
 }

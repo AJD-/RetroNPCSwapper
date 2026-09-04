@@ -61,6 +61,31 @@ public class RetroModelCache
 	private final Set<Integer> unbuildable = new HashSet<>();
 
 	/**
+	 * NPC ids currently eligible for substitution. The eligibility decision itself stays in the
+	 * plugin, which weighs mappings, config toggles and safety settings; this is only the memo of
+	 * it, so the render path is a lookup and nothing more.
+	 */
+	private final Set<Integer> substituted = new HashSet<>();
+
+	/**
+	 * Marks an NPC id as being substituted, so {@link #pose(NPC)} will supply geometry for it.
+	 */
+	public void setSubstituted(int npcId)
+	{
+		substituted.add(npcId);
+	}
+
+	public void clearSubstituted(int npcId)
+	{
+		substituted.remove(npcId);
+	}
+
+	public boolean isSubstituted(int npcId)
+	{
+		return substituted.contains(npcId);
+	}
+
+	/**
 	 * Returns the cached retro model for an NPC id, or null if none has been built.
 	 * Safe to call from the render path.
 	 */
@@ -124,7 +149,13 @@ public class RetroModelCache
 	 */
 	public Model pose(NPC npc)
 	{
-		Model base = baseModels.get(npc.getId());
+		int npcId = npc.getId();
+		if (!substituted.contains(npcId))
+		{
+			return null;
+		}
+
+		Model base = baseModels.get(npcId);
 		if (base == null)
 		{
 			return null;
@@ -137,6 +168,7 @@ public class RetroModelCache
 
 	public void clear()
 	{
+		substituted.clear();
 		baseModels.clear();
 		animations.clear();
 		unbuildable.clear();

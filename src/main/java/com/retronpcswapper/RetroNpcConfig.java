@@ -29,9 +29,11 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 
-@ConfigGroup(RetroNpcSwapperPlugin.CONFIG_GROUP)
+@ConfigGroup(RetroNpcConfig.GROUP)
 public interface RetroNpcConfig extends Config
 {
+	String GROUP = "retronpcswapper";
+
 	/**
 	 * Read-only notice for users, not a setting.
 	 */

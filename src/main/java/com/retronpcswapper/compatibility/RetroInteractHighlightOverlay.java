@@ -30,7 +30,6 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.util.Objects;
 import javax.inject.Inject;
-import com.retronpcswapper.RetroNpcSwapperPlugin;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
 import net.runelite.api.MenuAction;
@@ -64,19 +63,17 @@ public class RetroInteractHighlightOverlay extends Overlay
 	private static final Color INTERACT_CLICK_COLOR = new Color(0x90ffffff);
 
 	private final Client client;
-	private final RetroNpcSwapperPlugin plugin;
 	private final InteractTargetTracker tracker;
 	private final RetroNpcOutliner outliner;
 	private final ModelOutlineRenderer modelOutlineRenderer;
 	private final InteractHighlightCompat compat;
 
 	@Inject
-	private RetroInteractHighlightOverlay(Client client, RetroNpcSwapperPlugin plugin,
+	private RetroInteractHighlightOverlay(Client client,
 		InteractTargetTracker tracker, RetroNpcOutliner outliner,
 		ModelOutlineRenderer modelOutlineRenderer, InteractHighlightCompat compat)
 	{
 		this.client = client;
-		this.plugin = plugin;
 		this.tracker = tracker;
 		this.outliner = outliner;
 		this.modelOutlineRenderer = modelOutlineRenderer;
@@ -165,8 +162,9 @@ public class RetroInteractHighlightOverlay extends Overlay
 		int borderWidth = appearance.borderWidth();
 		int feather = appearance.outlineFeather();
 
-		// Retro geometry when this is an NPC we swap, so the outline traces what is on screen
-		if (plugin.isSubstituted(npc) && outliner.drawOutline(npc, borderWidth, color, feather))
+		// Retro geometry when this is an NPC we swap, so the outline traces what is on screen.
+		// Declines for anything else, which is what falls through to the vanilla outline below.
+		if (outliner.drawOutline(npc, borderWidth, color, feather))
 		{
 			return;
 		}
