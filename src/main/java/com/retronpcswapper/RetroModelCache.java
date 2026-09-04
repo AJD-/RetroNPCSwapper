@@ -35,6 +35,7 @@ import net.runelite.api.Animation;
 import net.runelite.api.Client;
 import net.runelite.api.Model;
 import net.runelite.api.ModelData;
+import net.runelite.api.NPC;
 
 /**
  * Holds the retro replacement geometry, built once per NPC id and reused every frame.
@@ -111,6 +112,27 @@ public class RetroModelCache
 		Animation animation = client.loadAnimation(animationId);
 		animations.put(animationId, animation);
 		return animation;
+	}
+
+	/**
+	 * Poses the cached retro model for an NPC, or null when nothing has been built for its id.
+	 *
+	 * <p>The returned model is shared and is invalidated by the next applyTransformations call,
+	 * including the client's own, so it has to be consumed before anything else runs. Both callers
+	 * do: the draw callback hands it straight to the renderer, and the outline renderer projects
+	 * and rasterizes it before returning. Must be called on the client thread.
+	 */
+	public Model pose(NPC npc)
+	{
+		Model base = baseModels.get(npc.getId());
+		if (base == null)
+		{
+			return null;
+		}
+
+		Animation action = animation(npc.getAnimation());
+		Animation pose = animation(npc.getPoseAnimation());
+		return client.applyTransformations(base, action, npc.getAnimationFrame(), pose, npc.getPoseAnimationFrame());
 	}
 
 	public void clear()

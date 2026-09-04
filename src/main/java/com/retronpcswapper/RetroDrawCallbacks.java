@@ -56,9 +56,14 @@ import net.runelite.api.hooks.DrawCallbacks;
  *
  * <p>Note the clickbox is unaffected by substitution. Under the ZBUF path the client resolves the
  * model, culls clickboxes and registers the hit target before invoking these callbacks, so the
- * clickbox continues to describe the original model. This is especially obvious with the
- * "Interact Highlight" plugin enabled, and addresses the "modifying, moving, or resizing the
- * clickboxes of in-game elements is strictly prohibited" rule.
+ * clickbox continues to describe the original model. That addresses the "modifying, moving, or
+ * resizing the clickboxes of in-game elements is strictly prohibited" rule.
+ *
+ * <p>The same split is why anything that outlines an NPC through the API - {@code Actor#getModel()}
+ * is read-only and never routes through here - traces the original silhouette rather than the one
+ * on screen. {@link com.retronpcswapper.compatibility.RetroInteractHighlightOverlay} redraws
+ * those outlines around the substituted geometry, so the highlight follows what is rendered while
+ * the clickbox still follows the original model, and the two can disagree at the edges.
  */
 @Slf4j
 public class RetroDrawCallbacks implements DrawCallbacks

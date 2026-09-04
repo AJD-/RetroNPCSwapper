@@ -38,10 +38,10 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 
+import com.retronpcswapper.compatibility.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.Actor;
-import net.runelite.api.Animation;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
@@ -51,9 +51,12 @@ import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.InteractingChanged;
+import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
+import net.runelite.api.events.PlayerDespawned;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WorldChanged;
 import net.runelite.api.hooks.DrawCallbacks;
@@ -62,10 +65,12 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.PluginChanged;
+import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.gpu.GpuPlugin;
+import net.runelite.client.ui.overlay.OverlayManager;
 
 @Slf4j
 @PluginDescriptor(
@@ -75,7 +80,7 @@ import net.runelite.client.plugins.gpu.GpuPlugin;
 )
 public class RetroNpcSwapperPlugin extends Plugin
 {
-	static final String CONFIG_GROUP = "retronpcswapper";
+	public static final String CONFIG_GROUP = "retronpcswapper";
 
 	@Inject
 	private Client client;
@@ -95,6 +100,21 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Inject
 	private RetroModelCache modelCache;
 
+	@Inject
+	private OverlayManager overlayManager;
+
+	@Inject
+	private InteractHighlightCompat interactHighlight;
+
+	@Inject
+	private RetroInteractHighlightOverlay interactHighlightOverlay;
+
+	@Inject
+	private InteractTargetTracker targetTracker;
+
+	@Inject
+	private RetroNpcOutliner outliner;
+
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
 
@@ -108,6 +128,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 	// Resolved once - the plugin list does not change identity, and attach() is polled per tick
 	private Plugin gpuPlugin;
 
+	// Whether we are currently drawing Interact Highlight's NPC outlines in its place
+	private boolean outlineTakeover;
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -115,6 +138,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 		loadMappings();
 		clientThread.invoke(() ->
 		{
+			// A session that died while suppressing left Interact Highlight's NPC outlines off.
+			// Put them back before attach() decides whether to suppress again.
+			interactHighlight.restoreStaleStash();
 			recheckLoadedNpcs();
 			attach();
 		});
@@ -126,6 +152,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		log.info("Retro NPC Swapper stopped");
 		clientThread.invoke(() ->
 		{
+			// detach() stands the Interact Highlight takeover down as part of dropping the wrapper
 			detach();
 			resetAllModifiedNpcs();
 			modelCache.clear();
@@ -165,13 +192,40 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if (!CONFIG_GROUP.equals(event.getGroup()))
+		if (interactHighlight.isUserOverride(event))
 		{
+			// The user turned Interact Highlight's NPC outlines back on themselves. Hand them back
+			// rather than fighting over the setting.
+			log.debug("Interact Highlight NPC outlines re-enabled by the user; standing down");
+			// Deferred rather than done here: standing down writes config, and doing that from
+			// inside a ConfigChanged dispatch would post a nested one
+			final String changedKey = event.getKey();
+			clientThread.invoke(() ->
+			{
+				interactHighlight.optOut(changedKey);
+				syncInteractHighlight();
+			});
 			return;
 		}
 
+		if (!CONFIG_GROUP.equals(event.getGroup()) || InteractHighlightCompat.isStashKey(event.getKey()))
+		{
+			// Stash keys are our own bookkeeping, not a setting the user changed
+			return;
+		}
+
+		if ("overrideInteractHighlight".equals(event.getKey()))
+		{
+			// Setting it again is the user asking for the takeover back after opting out
+			interactHighlight.clearOptOut();
+		}
+
 		// Refresh active NPC visual overrides when configuration options change
-		clientThread.invoke(this::recheckLoadedNpcs);
+		clientThread.invoke(() ->
+		{
+			recheckLoadedNpcs();
+			syncInteractHighlight();
+		});
 	}
 
 	@Subscribe
@@ -191,6 +245,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
+		targetTracker.onGameTick();
+
 		// Cheap guard: the GPU plugin sets and clears the draw callbacks slot unconditionally,
 		// so re-take it whenever we have lost it. Covers orderings PluginChanged misses.
 		if (wrapper == null || client.getDrawCallbacks() != wrapper)
@@ -207,12 +263,55 @@ public class RetroNpcSwapperPlugin extends Plugin
 			// attach() declines on its own when the GPU plugin is no longer holding the slot
 			clientThread.invoke(this::attach);
 		}
+		else if (interactHighlight.isInteractHighlightPlugin(event.getPlugin()))
+		{
+			// Its startUp re-registers its overlay, so the suppression has to be re-applied
+			clientThread.invoke(this::syncInteractHighlight);
+		}
+	}
+
+	@Subscribe
+	public void onProfileChanged(ProfileChanged event)
+	{
+		// Config is per profile, so the new profile has its own Interact Highlight settings and
+		// none of the stash written under the old one. Drop the takeover outright rather than
+		// letting syncInteractHighlight see no change and leave the new profile unsuppressed -
+		// that would put its outlines back while ours were still drawing.
+		clientThread.invoke(() ->
+		{
+			interactHighlight.forget();
+			overlayManager.remove(interactHighlightOverlay);
+			outliner.clear();
+			outlineTakeover = false;
+
+			interactHighlight.restoreStaleStash();
+			syncInteractHighlight();
+		});
+	}
+
+	@Subscribe
+	public void onMenuOptionClicked(MenuOptionClicked event)
+	{
+		targetTracker.onMenuOptionClicked(event);
+	}
+
+	@Subscribe
+	public void onInteractingChanged(InteractingChanged event)
+	{
+		targetTracker.onInteractingChanged(event);
+	}
+
+	@Subscribe
+	public void onPlayerDespawned(PlayerDespawned event)
+	{
+		targetTracker.onActorDespawned(event.getPlayer());
 	}
 
 	@Subscribe
 	public void onNpcDespawned(NpcDespawned event)
 	{
 		NPC npc = event.getNpc();
+		targetTracker.onActorDespawned(npc);
 		if (npc != null)
 		{
 			// Only per-NPC bookkeeping is dropped. substitutedNpcIds is keyed by NPC id, not
@@ -287,6 +386,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			|| gameStateChanged.getGameState() == GameState.HOPPING)
 		{
 			originalNpcState.clear();
+			targetTracker.reset();
 		}
 		else if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
@@ -528,6 +628,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		if (wasAttached == (wrapper == null))
 		{
 			recheckLoadedNpcs();
+			syncInteractHighlight();
 		}
 	}
 
@@ -551,6 +652,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			log.debug("Draw callbacks slot no longer ours at detach; leaving it untouched");
 		}
 		wrapper = null;
+
+		// Nothing is being swapped any more, so Interact Highlight's own outlines are correct again
+		syncInteractHighlight();
 	}
 
 	private Plugin findGpuPlugin()
@@ -570,6 +674,50 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
+	 * Whether an NPC is currently having its geometry substituted. Read from the render and overlay
+	 * paths, which must not re-evaluate mappings or config toggles.
+	 */
+    public boolean isSubstituted(NPC npc)
+	{
+		return npc != null && substitutedNpcIds.contains(npc.getId());
+	}
+
+	/**
+	 * Takes over Interact Highlight's NPC outlines, or hands them back.
+	 *
+	 * <p>Only worth doing while geometry is actually being substituted - with no wrapper attached
+	 * the vanilla model is what gets drawn, and that plugin's own outline already fits it. Must be
+	 * called on the client thread.
+	 */
+	private void syncInteractHighlight()
+	{
+		boolean takeOver = config.overrideInteractHighlight()
+			&& wrapper != null
+			&& !interactHighlight.isUserOptedOut()
+			&& interactHighlight.isInteractHighlightActive();
+
+		if (takeOver == outlineTakeover)
+		{
+			return;
+		}
+
+		if (takeOver)
+		{
+			interactHighlight.suppress();
+			overlayManager.add(interactHighlightOverlay);
+		}
+		else
+		{
+			interactHighlight.restore();
+			overlayManager.remove(interactHighlightOverlay);
+			outliner.clear();
+		}
+
+		// Last, so a failure to write config does not leave us recorded as having taken over
+		outlineTakeover = takeOver;
+	}
+
+	/**
 	 * Supplies retro geometry for an NPC being drawn, or null to let the vanilla model through.
 	 *
 	 * <p>Runs per NPC per frame, so it does map lookups only - eligibility is decided in
@@ -577,24 +725,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private Model substitute(NPC npc, Model vanilla)
 	{
-		int npcId = npc.getId();
-		if (!substitutedNpcIds.contains(npcId))
-		{
-			return null;
-		}
-
-		Model base = modelCache.get(npcId);
-		if (base == null)
-		{
-			return null;
-		}
-
-		Animation action = modelCache.animation(npc.getAnimation());
-		Animation pose = modelCache.animation(npc.getPoseAnimation());
-
-		// The returned model is shared and is invalidated by the next applyTransformations call,
-		// including the client's own - it is handed straight to the delegate and uploaded before
-		// anything else can run, which is what makes that safe here.
-		return client.applyTransformations(base, action, npc.getAnimationFrame(), pose, npc.getPoseAnimationFrame());
+		// The posed model is shared and only valid until the next applyTransformations call. It is
+		// handed straight to the delegate and uploaded before anything else can run, which is what
+		// makes that safe here.
+		return isSubstituted(npc) ? modelCache.pose(npc) : null;
 	}
 }
