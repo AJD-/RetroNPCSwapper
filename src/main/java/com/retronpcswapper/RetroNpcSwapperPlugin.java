@@ -88,6 +88,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private RetroNpcConfig config;
 
 	@Inject
+	private ConfigManager configManager;
+
+	@Inject
 	private Gson gson;
 
 	@Inject
@@ -188,13 +191,20 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			// The user turned Interact Highlight's NPC outlines back on themselves. Hand them back
 			// rather than fighting over the setting.
-			log.debug("Interact Highlight NPC outlines re-enabled by the user; standing down");
+			log.debug("Interact Highlight NPC outlines re-enabled by the user; turning the fix off");
 			// Deferred rather than done here: standing down writes config, and doing that from
 			// inside a ConfigChanged dispatch would post a nested one
 			final String changedKey = event.getKey();
 			clientThread.invoke(() ->
 			{
+				// optOut() has to clear the suppression before the write below, or
+				// the ConfigChanged it posts comes back through syncInteractHighlight() into
+				// restore(), which would put the stash back over the value the user just chose.
 				interactHighlight.optOut(changedKey);
+
+				// Untick the compatibility checkbox when user wants `Interact Highlight` plugin settings re-enabled
+				configManager.setConfiguration(RetroNpcConfig.GROUP,
+					RetroNpcConfig.OVERRIDE_INTERACT_HIGHLIGHT, false);
 				syncInteractHighlight();
 			});
 			return;
@@ -204,12 +214,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			// Stash keys are our own bookkeeping, not a setting the user changed
 			return;
-		}
-
-		if ("overrideInteractHighlight".equals(event.getKey()))
-		{
-			// Setting it again is the user asking for the takeover back after opting out
-			interactHighlight.clearOptOut();
 		}
 
 		// Refresh active NPC visual overrides when configuration options change
@@ -675,7 +679,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		boolean takeOver = config.overrideInteractHighlight()
 			&& wrapper != null
-			&& !interactHighlight.isUserOptedOut()
 			&& interactHighlight.isInteractHighlightActive();
 
 		if (takeOver == outlineTakeover)

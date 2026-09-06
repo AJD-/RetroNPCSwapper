@@ -34,6 +34,9 @@ public interface RetroNpcConfig extends Config
 {
 	String GROUP = "retronpcswapper";
 
+	/** Also written programmatically, so the key is named rather than repeated as a literal. */
+	String OVERRIDE_INTERACT_HIGHLIGHT = "overrideInteractHighlight";
+
 	/**
 	 * Read-only notice for users, not a setting.
 	 */
@@ -171,7 +174,7 @@ public interface RetroNpcConfig extends Config
 	String compatibilitySection = "compatibilitySection";
 
 	@ConfigItem(
-		keyName = "overrideInteractHighlight",
+		keyName = OVERRIDE_INTERACT_HIGHLIGHT,
 		name = "Fix Interact Highlight outlines",
 		description = "<html><body style='width:170px'>Draw the Interact Highlight plugin's NPC "
 			+ "outlines around the retro model instead of the modern one.<br><br>While this is on "

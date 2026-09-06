@@ -26,7 +26,6 @@ package com.retronpcswapper.compatibility;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import com.retronpcswapper.RetroNpcConfig;
 import net.runelite.client.config.ConfigManager;
@@ -83,10 +82,6 @@ public class InteractHighlightCompat
 	// Set while our own writes are in flight. ConfigChanged is posted synchronously from
 	// setConfiguration, so this is enough to tell our writes from the user's.
 	private boolean selfWrite;
-
-	/** Latched when the user turns the NPC outlines back on themselves. */
-	@Getter
-	private boolean userOptedOut;
 
 	/**
 	 * Whether the user wants NPC hover outlines, ignoring our own suppression of the setting.
@@ -232,16 +227,20 @@ public class InteractHighlightCompat
 	}
 
 	/**
-	 * Stands down for the rest of the session after the user re-enabled one of the settings
+	 * Hands Interact Highlight's NPC outlines back after the user re-enabled one of the settings
 	 * themselves.
 	 *
 	 * <p>The key they just set keeps their value - writing the stash back over it would undo the
 	 * choice they made. The other one is restored normally, so turning "show on hover" back on does
 	 * not silently leave "show on interact" off.
+	 *
+	 * <p>This gives up the two foreign keys and nothing else: the caller must turn
+	 * {@code overrideInteractHighlight} off afterward, which is what actually ends the takeover.
+	 * Left on, the config still asks for a takeover this object is no longer suppressing for, and
+	 * both plugins draw their outlines.
 	 */
 	public void optOut(String changedKey)
 	{
-		userOptedOut = true;
 		discard(changedKey);
 
 		String other = SHOW_HOVER.equals(changedKey) ? SHOW_INTERACT : SHOW_HOVER;
@@ -260,12 +259,6 @@ public class InteractHighlightCompat
 	public void forget()
 	{
 		suppressing = false;
-		userOptedOut = false;
-	}
-
-	public void clearOptOut()
-	{
-		userOptedOut = false;
 	}
 
 	public static boolean isStashKey(String key)
