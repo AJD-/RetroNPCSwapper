@@ -29,9 +29,14 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 
-@ConfigGroup(RetroNpcSwapperPlugin.CONFIG_GROUP)
+@ConfigGroup(RetroNpcConfig.GROUP)
 public interface RetroNpcConfig extends Config
 {
+	String GROUP = "retronpcswapper";
+
+	/** Also written programmatically, so the key is named rather than repeated as a literal. */
+	String OVERRIDE_INTERACT_HIGHLIGHT = "overrideInteractHighlight";
+
 	/**
 	 * Read-only notice for users, not a setting.
 	 */
@@ -158,5 +163,30 @@ public interface RetroNpcConfig extends Config
 	default boolean disableWilderness()
 	{
 		return true;
+	}
+
+	@ConfigSection(
+		name = "Compatibility",
+		description = "Settings for working alongside other plugins",
+		position = 3,
+		closedByDefault = true
+	)
+	String compatibilitySection = "compatibilitySection";
+
+	@ConfigItem(
+		keyName = OVERRIDE_INTERACT_HIGHLIGHT,
+		name = "Fix Interact Highlight outlines",
+		description = "<html><body style='width:170px'>Draw the Interact Highlight plugin's NPC "
+			+ "outlines around the retro model instead of the modern one.<br><br>While this is on "
+			+ "and models are being swapped, Interact Highlight's own <b>NPCs: Show on hover</b> "
+			+ "and <b>Show on interact</b> are turned off and this plugin draws those outlines in "
+			+ "their place, using that plugin's own colours and border settings.  Both are turned back "
+			+ "on when this plugin stops.</body></html>",
+		section = compatibilitySection,
+		position = 1
+	)
+	default boolean overrideInteractHighlight()
+	{
+		return false;
 	}
 }
