@@ -31,6 +31,9 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
 
 	testImplementation 'junit:junit:4.12'
+	// Test-only. The config migrations are the one piece of behaviour with no cache or client to
+	// drive it from - they are pure ConfigManager calls - so a mock is the only way to cover them.
+	testImplementation 'org.mockito:mockito-core:4.11.0'
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
 	// Dev tooling only - decodes the live OSRS cache for ModernNpcDumper. Never shipped: the

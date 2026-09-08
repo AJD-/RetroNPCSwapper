@@ -158,9 +158,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void migrateLegacyToggles()
 	{
-		migrateLegacyToggle(RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS,
+		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS,
 			RetroNpcConfig.SWAP_DRAGONS, RetroNpcConfig.SWAP_DEMONS);
-		migrateLegacyToggle(RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_HILL_GIANTS,
+			RetroNpcConfig.SWAP_GIANTS);
 	}
 
 	/**
@@ -171,8 +172,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 * who has already set the new toggles is never overwritten - which also makes this safe to run
 	 * on every start. The old key is cleared afterwards, so the migration happens once and leaves no
 	 * orphan behind.
+	 *
+	 * <p>Takes the manager rather than reading the field so it can be driven directly from a test.
+	 * There is no cache or client involved here, only ConfigManager calls, so that is the whole of
+	 * what the behaviour needs to be checked against.
 	 */
-	private void migrateLegacyToggle(String legacyKey, String... newKeys)
+	static void migrateLegacyToggle(ConfigManager configManager, String legacyKey, String... newKeys)
 	{
 		String legacy = configManager.getConfiguration(RetroNpcConfig.GROUP, legacyKey);
 
