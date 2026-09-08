@@ -49,14 +49,19 @@ public class RetroClipReachTest
 	 * with a full player animation can approach the skeleton's 96%. Measured against the modern rig
 	 * these same meshes score 48-63%, against the 2005 rig 65-80%, so the 2005 clips are the better
 	 * fit on every sequence - but reach cannot prove the pairing is right here, only an in-game look
-	 * can. Walk (819) has the thinnest margin of the five, 65% against 60%.
+	 * can. Walk (819) has the thinnest margin, 65% against 60%.
+ *
+ * <p>All ten measured: 808 79%, 819 65%, 422 80%, 423 70%, 424 76%, 836 70%, 386 75%, 389 76%,
+ * 390 70%, 1156 70%. The sword-and-shield half of that set is the newer half - 386, 389 and 390
+ * shipped unmeasured for a while, and 1156 could not be decoded at all until seq.dat stopped being
+ * truncated - but they sit in the same band as the unarmed clips, which is the result wanted.
 	 */
 	private static final Map<Integer, Integer> CLIP_FLOORS = new HashMap<>();
 
 	static
 	{
 		CLIP_FLOORS.put(130, 80);
-		for (int guardClip : new int[]{808, 819, 422, 424, 836})
+		for (int guardClip : new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156})
 		{
 			CLIP_FLOORS.put(guardClip, 60);
 		}
@@ -84,8 +89,15 @@ public class RetroClipReachTest
 		{808, 233, 246, 294, 151, 176, 254, 185, 519, 541},
 		{819, 233, 246, 294, 151, 176, 254, 185, 519, 541},
 		{422, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{423, 233, 246, 294, 151, 176, 254, 185, 519, 541},
 		{424, 233, 246, 294, 151, 176, 254, 185, 519, 541},
-		{836, 233, 246, 294, 151, 176, 254, 185, 519, 541}
+		{836, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		// The sword and shield set a guard actually fights with. 386, 389 and 390 shipped
+		// unmeasured until now; 1156 is the shield block, which could not be decoded before.
+		{386, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{389, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{390, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{1156, 233, 246, 294, 151, 176, 254, 185, 519, 541}
 	};
 
 	@Test

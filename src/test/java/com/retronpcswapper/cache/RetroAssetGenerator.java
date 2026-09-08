@@ -126,12 +126,12 @@ public class RetroAssetGenerator
 		// the right geometry off the wrong bones.
 		new Spec("Guards", Source.RETRO, Source.RETRO,
 			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
-			// 386 sword stab is what a guard actually plays in a fight; 422/423/424 are the unarmed
-			// set. All are classic ids the live game still uses, so they need the 2005 frames rather
-			// than any interception. 1156, the shield block a guard also plays, is deliberately
-			// absent: RetroSeqDecoder cannot decode it - 1155 to 1157 are all missing while the
-			// table reaches 1662 - so it is intercepted onto the unarmed block instead.
-			new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390})
+			// 386 sword stab and 1156 shield block are what a guard actually plays in a fight;
+			// 422/423/424 are the unarmed set. All are classic ids the live game still uses, so they
+			// need the 2005 frames rather than any interception. 1156 was once left out as
+			// undecodable, which was a truncated seq.dat rather than anything about the sequence - it
+			// ships like the rest now, and its 17 frames resolve to rig 100083 with the others.
+			new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156})
 	);
 
 	private enum Source

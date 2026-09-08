@@ -323,6 +323,12 @@ public class RetroNpcCategoryTest
 		assertTrue(guardByName.isAttackAnimation(423));
 		assertTrue(guardByName.isDefendAnimation(424));
 		assertTrue(guardByName.isDeathAnimation(836));
+		// A guard fights with a sword and shield, so it blocks with HUMAN_SHIELD_DEFENCE. That is
+		// shipped as its own 2005 clip now and must pass straight through: intercepting it onto
+		// the unarmed block 424 is what left a guard blocking with no shield raise, and nothing
+		// used to fail if the interception came back.
+		assertFalse("1156 ships as a 2005 clip and must not be rewritten onto the unarmed block",
+			guardByName.isDefendAnimation(1156));
 		// 451 (chathead), 7041 (crawl), 7043 (run) and 7044 (turn) are not combat sequences
 		assertFalse(guardByName.isAttackAnimation(451));
 		assertFalse(guardByName.isAttackAnimation(7041));

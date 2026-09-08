@@ -94,14 +94,20 @@ public class RetroNpcMapping
 		AnimationID.HUMAN_UNARMEDPUNCH, AnimationID.HUMAN_UNARMEDKICK
 	);
 	/**
-	 * A guard fights with a sword and shield, so it blocks with {@code HUMAN_SHIELD_DEFENCE} rather
-	 * than the unarmed block. That sequence is one {@code RetroSeqDecoder} cannot read - 1155 to
-	 * 1157 are all absent from its output while the table reaches 1662 - so unlike the sword attack,
-	 * which ships its own 2005 clip and passes straight through, this one is rewritten onto the
-	 * unarmed block. A block without the shield raise, rather than a guard standing still.
+	 * A guard fights with a sword and shield, so it blocks with {@code HUMAN_SHIELD_DEFENCE}
+	 * rather than the unarmed block. That used to be rewritten onto the unarmed block 424,
+	 * because 1156 would not decode from the 2005 cache - a block with no shield raise. The cause
+	 * was a bzip2 decompressor that stopped after one block and truncated {@code seq.dat}, not
+	 * anything about the sequence, so 1156 now ships as its own 2005 clip and passes straight
+	 * through with no interception, exactly like the 386 sword stab.
+	 *
+	 * <p>What is left is the unarmed block on its own, which equals the guard's own
+	 * {@code defendAnimationId}, so {@code onAnimationChanged} short-circuits before this set is
+	 * ever consulted. It is kept rather than emptied so the archetype still answers
+	 * {@code isDefendAnimation(424)} the way every other category does.
 	 */
 	public static final Set<Integer> GUARD_MODERN_DEFENDS = Set.of(
-		AnimationID.HUMAN_UNARMEDBLOCK, AnimationID.HUMAN_SHIELD_DEFENCE
+		AnimationID.HUMAN_UNARMEDBLOCK
 	);
 	public static final Set<Integer> GUARD_MODERN_DEATHS = Set.of(
 		AnimationID.HUMAN_DEATH
