@@ -152,13 +152,22 @@ public class RetroModelCache
 	/**
 	 * Builds and caches the retro model for an NPC id if it is not already present.
 	 * Must be called on the client thread.
+	 *
+	 * @return whether geometry is available for this id, either just built or already cached.
+	 *     A false is the caller's signal to leave the NPC alone entirely: the retro animation
+	 *     overrides are only safe on top of a retro model, so an NPC with no geometry must not be
+	 *     marked substituted either.
 	 */
-	public void ensureBuilt(int npcId, RetroNpcData data)
+	public boolean ensureBuilt(int npcId, RetroNpcData data)
 	{
-		if (data == null || baseModels.containsKey(npcId) || injectedModels.containsKey(npcId)
-			|| unbuildable.contains(npcId))
+		if (data == null || unbuildable.contains(npcId))
 		{
-			return;
+			return false;
+		}
+
+		if (baseModels.containsKey(npcId) || injectedModels.containsKey(npcId))
+		{
+			return true;
 		}
 
 		// Injected geometry first, when the pipeline is on: for the categories this exists for, the
@@ -179,7 +188,7 @@ public class RetroModelCache
 			log.debug("Built injected model for NPC id {} from mesh {} ({} verts, {} faces)",
 				npcId, injectedModel.mesh.getId(),
 				injectedModel.mesh.getVerticesCount(), injectedModel.mesh.getFaceCount());
-			return;
+			return true;
 		}
 
 		if (!liveGeometry && RetroNpcMapping.requiresInjectedGeometry(data.getCategory()))
@@ -190,7 +199,7 @@ public class RetroModelCache
 			unbuildable.add(npcId);
 			log.debug("No injected geometry for NPC id {} ({}), and it has no cache-backed fallback",
 				npcId, data.getCategory());
-			return;
+			return false;
 		}
 
 		Model model = build(data);
@@ -199,7 +208,7 @@ public class RetroModelCache
 			// Remember the failure so every subsequent spawn does not repeat the work
 			unbuildable.add(npcId);
 			log.debug("Could not build retro model for NPC id {}", npcId);
-			return;
+			return false;
 		}
 
 		baseModels.put(npcId, model);
@@ -216,6 +225,7 @@ public class RetroModelCache
 		}
 
 		log.debug("Built retro model for NPC id {} from {} model ids", npcId, modelIds.length);
+		return true;
 	}
 
 	/**

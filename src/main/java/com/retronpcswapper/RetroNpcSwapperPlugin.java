@@ -502,8 +502,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		// Build the replacement geometry here, on the client thread, so the draw callback
-		// only ever does a map lookup
-		modelCache.ensureBuilt(npc.getId(), data);
+		// only ever does a map lookup. Nothing else happens if that fails: an NPC left on its
+		// vanilla model must keep its vanilla animations too, for the reason above. The bundle
+		// loads off-thread, so this is not a rare path - every giant, guard, dragon and demon
+		// already on screen when the plugin starts comes through here before it lands, and
+		// recheckLoadedNpcs picks them up once it does.
+		if (!modelCache.ensureBuilt(npc.getId(), data))
+		{
+			modelCache.clearSubstituted(npc.getId());
+			resetNpc(npc);
+			return;
+		}
+
 		modelCache.setSubstituted(npc.getId());
 		applyRetroSwap(npc, data);
 	}
