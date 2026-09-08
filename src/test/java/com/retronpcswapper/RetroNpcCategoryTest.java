@@ -776,6 +776,23 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
+	 * The bundle carries mesh 2944 so the skinner can be checked against the client's own animation
+	 * of it, and only its idle and walk clips - drawing a skeleton from the bundle would cost it
+	 * every combat animation it has. Which path a category takes is therefore a decision the
+	 * mapping makes, not one read off the bundle's contents.
+	 */
+	@Test
+	public void testTheSkeletonIsNotDrawnFromTheBundle()
+	{
+		assertFalse("the skeleton is bundled to be measured, not to be drawn",
+			RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SKELETONS));
+		assertTrue("hill giants have a cache-backed render, but a better head in the bundle",
+			RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.HILL_GIANTS));
+		assertFalse("and only the bundle can supply that head",
+			RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.HILL_GIANTS));
+	}
+
+	/**
 	 * The same graft must reach every NPC id registered against the archetype, not just the name
 	 * lookup - both maps hold the same instance, so replacing one and not the other would leave
 	 * most black demons uncolored.

@@ -699,6 +699,24 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.GUARDS;
 	}
 
+	/**
+	 * Whether a category is drawn from injected geometry when the pipeline is on.
+	 *
+	 * <p>Wider than {@link #requiresInjectedGeometry} by exactly one category: hill giants have a
+	 * cache-backed render to fall back to, but the bundle carries their real 2005 head, so they are
+	 * better injected when it is available.
+	 *
+	 * <p>The point of asking the category rather than asking the bundle what it holds is the
+	 * skeleton. Mesh 2944 is bundled as the skinner's test subject, so "is this mesh in the bundle"
+	 * would answer yes for it and route unarmed skeletons through the injected path - where the
+	 * bundle carries only its idle and walk clips, leaving it standing in its idle while it attacks
+	 * and while it dies. Nothing that is bundled to be measured should be drawn from the bundle.
+	 */
+	public static boolean usesInjectedGeometry(RetroNpcCategory category)
+	{
+		return requiresInjectedGeometry(category) || category == RetroNpcCategory.HILL_GIANTS;
+	}
+
 	private static boolean categoryUsesRecolors(RetroNpcCategory category)
 	{
 		return category == RetroNpcCategory.ADULT_DRAGONS
