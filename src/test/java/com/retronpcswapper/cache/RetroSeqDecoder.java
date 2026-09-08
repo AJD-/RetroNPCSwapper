@@ -24,7 +24,9 @@
  */
 package com.retronpcswapper.cache;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * <p>The container is the same shape as {@code npc.dat}/{@code npc.idx}: a count, then a per-entry
  * length table, then concatenated opcode streams. Only opcode 1 carries anything this needs - the
  * frame list - but the rest are still walked, because an unrecognised opcode means the stream
- * position is lost and everything after it decodes as garbage.
+ * position is lost and everything after it in that entry decodes as garbage.
  *
  * <h2>Two ways this differs from the modern format</h2>
  *
@@ -50,15 +52,31 @@ import lombok.extern.slf4j.Slf4j;
  * modern format is always zero - so a sequence says nothing about which of the 411 index 2 files
  * holds its frames. {@link RetroFrameIndex} resolves that, by reading every file's directory.
  *
+ * <h2>The length table is an oracle, not just a seek table</h2>
+ *
+ * A correctly decoded entry consumes <b>exactly</b> its declared length and ends on the opcode 0
+ * terminator. That makes the table self-checking: a wrong field width, an opcode this does not
+ * know, and a truncated payload all show up as a residue against the declared end, on the entry
+ * where they happen. Anything that fails is dropped rather than stored - a definition that looks
+ * decoded but is not is far worse than a missing one. Keeping the frames read before a failure is
+ * what once let fabricated sequences into the table with nothing flagging them.
+ *
  * <h2>Status</h2>
  *
- * Decodes 1162 of the 1670 declared sequences, including every one this project needs. The
- * shortfall is unfinished opcode coverage rather than a container problem: an unknown opcode stops
- * that sequence and leaves the rest untouched. Worth finishing before relying on the whole table.
+ * All 1670 declared sequences decode and land exactly on their boundary. If that number falls, the
+ * payload is the first thing to suspect rather than this decoder: {@code seq.dat} is a multi-block
+ * bzip2 stream, and a decompressor that stops after one block returns a buffer that is correct up
+ * to the block boundary and garbage after it.
  */
 @Slf4j
 public class RetroSeqDecoder
 {
+	/**
+	 * How many failing ids to name in the summary before trailing off. Enough to show whether the
+	 * failures cluster - one contiguous run points at the payload, scattered ids at the opcodes.
+	 */
+	private static final int FAILURES_TO_NAME = 10;
+
 	public static Map<Integer, RetroSeqDefinition> decodeAll(byte[] seqDat, byte[] seqIdx)
 	{
 		Map<Integer, RetroSeqDefinition> defs = new HashMap<>();
@@ -72,36 +90,68 @@ public class RetroSeqDecoder
 		{
 			Buffer idxBuffer = new Buffer(seqIdx);
 			int total = idxBuffer.readUnsignedShort();
-			int[] streamIndices = new int[total];
+			int[] starts = new int[total];
+			int[] ends = new int[total];
 			int offset = 2;
 			for (int i = 0; i < total; i++)
 			{
-				streamIndices[i] = offset;
+				starts[i] = offset;
 				if (idxBuffer.getOffset() < seqIdx.length)
 				{
 					offset += idxBuffer.readUnsignedShort();
 				}
+				ends[i] = offset;
+			}
+
+			if (offset != seqDat.length)
+			{
+				log.warn("seq.idx accounts for {} bytes but seq.dat is {} - the payload is "
+					+ "truncated, or the index is being misread", offset, seqDat.length);
 			}
 
 			Buffer datBuffer = new Buffer(seqDat);
+			List<Integer> failed = new ArrayList<>();
+			int frameless = 0;
 			for (int i = 0; i < total; i++)
 			{
-				int seqOffset = streamIndices[i];
-				if (seqOffset <= 0 || seqOffset >= seqDat.length)
+				if (starts[i] <= 0 || ends[i] > seqDat.length || ends[i] < starts[i])
 				{
+					log.debug("2005 sequence {} spans {}..{}, outside seq.dat", i, starts[i], ends[i]);
+					failed.add(i);
 					continue;
 				}
 
-				datBuffer.setOffset(seqOffset);
-				RetroSeqDefinition def = decodeSequence(i, datBuffer);
-				if (def != null && def.getFrameIds() != null)
+				datBuffer.setOffset(starts[i]);
+				RetroSeqDefinition def = decodeSequence(i, datBuffer, ends[i]);
+				if (def == null)
+				{
+					failed.add(i);
+				}
+				else if (def.getFrameIds() == null)
+				{
+					// Read cleanly, it just carries no frame list. Nothing here can use it, but it
+					// is not a decode failure and must not be reported as one
+					frameless++;
+				}
+				else
 				{
 					defs.put(i, def);
 				}
 			}
 
-			log.info("Successfully decoded {} 2005 sequence definitions of {} declared",
-				defs.size(), total);
+			if (failed.isEmpty())
+			{
+				log.info("Decoded all {} declared 2005 sequence definitions ({} carry no frames)",
+					total, frameless);
+			}
+			else
+			{
+				log.warn("Decoded {} of {} declared 2005 sequence definitions - {} failed, {} carry"
+						+ " no frames. First failures: {}{}",
+					defs.size(), total, failed.size(), frameless,
+					failed.subList(0, Math.min(FAILURES_TO_NAME, failed.size())),
+					failed.size() > FAILURES_TO_NAME ? " ..." : "");
+			}
 		}
 		catch (Exception e)
 		{
@@ -111,18 +161,25 @@ public class RetroSeqDecoder
 		return defs;
 	}
 
-	private static RetroSeqDefinition decodeSequence(int id, Buffer stream)
+	/**
+	 * Reads one entry, which must end on an opcode 0 terminator at exactly {@code end}.
+	 *
+	 * @return the definition, or null if the entry did not decode cleanly
+	 */
+	private static RetroSeqDefinition decodeSequence(int id, Buffer stream, int end)
 	{
 		RetroSeqDefinition def = new RetroSeqDefinition();
 		def.setId(id);
 
 		try
 		{
-			while (true)
+			boolean terminated = false;
+			while (stream.getOffset() < end)
 			{
 				int opcode = stream.readUnsignedByte();
 				if (opcode == 0)
 				{
+					terminated = true;
 					break;
 				}
 
@@ -203,17 +260,32 @@ public class RetroSeqDecoder
 				}
 				else
 				{
-					// Everything after an unknown opcode is garbage, so stop rather than produce a
-					// definition that looks decoded but is not
+					// Everything after an unknown opcode is garbage, so drop the entry rather than
+					// keep however much of it was read before the stream position was lost
 					log.debug("Unknown opcode {} in 2005 sequence {}", opcode, id);
-					return def.getFrameIds() == null ? null : def;
+					return null;
 				}
+			}
+
+			if (!terminated)
+			{
+				log.debug("2005 sequence {} reached its declared end at {} with no terminator",
+					id, end);
+				return null;
+			}
+
+			int residue = stream.getOffset() - end;
+			if (residue != 0)
+			{
+				log.debug("2005 sequence {} ended {} bytes {} its declared end at {}",
+					id, Math.abs(residue), residue > 0 ? "past" : "short of", end);
+				return null;
 			}
 		}
 		catch (RuntimeException e)
 		{
 			log.debug("Ran off the end of 2005 sequence {}", id);
-			return def.getFrameIds() == null ? null : def;
+			return null;
 		}
 
 		return def;
