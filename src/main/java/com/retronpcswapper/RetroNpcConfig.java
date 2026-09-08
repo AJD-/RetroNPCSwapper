@@ -232,4 +232,20 @@ public interface RetroNpcConfig extends Config
 	{
 		return false;
 	}
+
+	@ConfigItem(
+		keyName = "swapImps",
+		name = "Imps",
+		description = "<html><body style='width:170px'>Restore the 2005 imp animation. The imp "
+			+ "<b>mesh</b> survived the 2006 update untouched, but the frames behind the sequences "
+			+ "it plays were re-authored for the modern rig, so the 2005 animation can only be "
+			+ "applied through injected geometry.<br><br>Requires <b>Use the injection pipeline</b> "
+			+ "above.</body></html>",
+		section = experimentalSection,
+		position = 3
+	)
+	default boolean swapImps()
+	{
+		return false;
+	}
 }

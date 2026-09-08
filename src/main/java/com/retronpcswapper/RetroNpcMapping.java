@@ -195,13 +195,18 @@ public class RetroNpcMapping
 	//     the live cache. This used to say nothing short of an asset-injection API could unblock
 	//     them - that turned out to be the thing to build. They now render from injected geometry
 	//     driven by the surviving 2005 sequences, gated behind the injection pipeline toggle.
-	//   - baby dragons: the model exists, but the animation frames behind the surviving sequence
-	//     ids were re-authored for the modern mesh. Injection does not help; the frames would have
-	//     to be bundled too, and were not, because the mesh needs no replacing.
-	//   - imps: mesh 2887 is preserved exactly, with the same re-authored-frames problem.
+	//   - imps: mesh 2887 is preserved exactly, but the animation frames behind the surviving
+	//     sequence ids were re-authored for the modern rig. This used to say injection did not
+	//     help, on the reasoning that a mesh needing no replacement gains nothing from it - which
+	//     was wrong. Injection is what makes it possible to skin the model against the 2005 frames
+	//     rather than the client's, so imps now ship the same way, behind their own toggle.
+	//   - baby dragons: the same re-authored-frames problem, and the same fix should apply. Not
+	//     bundled yet, and unverified in game.
+	//   - guards: an animation-only swap with no retro model at all, so there is no geometry to
+	//     inject and nowhere to hang 2005 frames. Still blocked.
 	//
-	// Imp and guard archetypes stay inert: their mappings resolve but processNpc never activates
-	// them. They are kept, along with their JSON entries, as staged data.
+	// The guard archetype stays inert: its mapping resolves but processNpc never activates it. It
+	// is kept, along with its JSON entries, as staged data.
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
 		.retroModelIds(new int[]{2943})

@@ -552,10 +552,16 @@ public class RetroNpcSwapperPlugin extends Plugin
 				// the bundle actually carries them
 				return config.useInjectionPipeline() && config.swapDragonsAndDemons()
 					&& modelCache.isInjectionPipelineEnabled();
+			case IMPS:
+				// The imp mesh survives, so this is not about geometry: the frames behind its
+				// sequence ids were re-authored for the modern rig, and applying the 2005 ones
+				// means skinning the model ourselves
+				return config.useInjectionPipeline() && config.swapImps()
+					&& modelCache.isInjectionPipelineEnabled();
 			default:
-				// Imps and guards remain disabled. Their meshes survive, but the animation frames
-				// behind the surviving sequence ids were re-authored for the modern rig, which only
-				// an in-game look can confirm. See the archetype comments in RetroNpcMapping.
+				// Guards remain disabled. They are an animation-only swap with no mesh to inject,
+				// so there is nowhere to hang the 2005 frames their sequences no longer carry.
+				// See the archetype comments in RetroNpcMapping.
 				return false;
 		}
 	}

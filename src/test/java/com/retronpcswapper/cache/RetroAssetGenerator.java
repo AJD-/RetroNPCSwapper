@@ -101,7 +101,11 @@ public class RetroAssetGenerator
 		new Spec("Skeleton", Source.LIVE, Source.LIVE, new int[]{2944}, new int[]{262, 259}),
 		new Spec("Adult dragons", Source.RETRO, Source.RETRO, new int[]{2853, 2854}, new int[]{79, 80, 89, 90, 91, 92}),
 		new Spec("Lesser demons", Source.RETRO, Source.RETRO, new int[]{2943}, new int[]{63, 64, 65, 66, 67, 69}),
-		new Spec("Greater and black demons", Source.RETRO, Source.RETRO, new int[]{2942}, new int[]{63, 64, 65, 66, 67, 68, 69})
+		new Spec("Greater and black demons", Source.RETRO, Source.RETRO, new int[]{2942}, new int[]{63, 64, 65, 66, 67, 68, 69}),
+		// The imp mesh survived the 2006 update untouched - only its frames were re-authored. The
+		// geometry still comes from 2005, because identical geometry is no guarantee of an identical
+		// rig, and it is the vertex groups that have to match the 2005 framemap.
+		new Spec("Imps", Source.RETRO, Source.RETRO, new int[]{2887}, new int[]{168, 169, 170, 171, 172})
 	);
 
 	private enum Source
