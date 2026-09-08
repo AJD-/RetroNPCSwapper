@@ -119,7 +119,14 @@ public class RetroAssetGenerator
 		new Spec("Fire giants", Source.RETRO, Source.LIVE, new int[]{2870, 2864, 4991, 4990}, new int[]{127, 128, 129, 130, 131}),
 		new Spec("Ice giants", Source.RETRO, Source.LIVE, new int[]{2870, 2868}, new int[]{127, 128, 129, 130, 131}),
 		new Spec("Moss giants", Source.RETRO, Source.LIVE, new int[]{2870, 2865, 4990}, new int[]{127, 128, 129, 130, 131}),
-		new Spec("Cyclopes", Source.RETRO, Source.LIVE, new int[]{2870, 2867}, new int[]{127, 128, 129, 130, 131})
+		new Spec("Cyclopes", Source.RETRO, Source.LIVE, new int[]{2870, 2867}, new int[]{127, 128, 129, 130, 131}),
+		// Guards are the first subject needing 2005 clips for a reason other than re-authored frames:
+		// the human meshes are byte-identical in both caches but their vertex groups were RENUMBERED.
+		// 2005 bindings all sit in [0..34]; live framemap 0 is a 218-group rig. Live clips would drive
+		// the right geometry off the wrong bones.
+		new Spec("Guards", Source.RETRO, Source.RETRO,
+			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			new int[]{808, 819, 422, 424, 836})
 	);
 
 	private enum Source

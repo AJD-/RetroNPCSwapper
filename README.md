@@ -20,6 +20,7 @@ Under **Experimental**, behind the *Use the injection pipeline* toggle:
 - **Demons** — lesser, greater and black
 - **Imps**
 - **Cyclopes**
+- **Guards**
 
 These need the injection pipeline because swapping IDs is not enough for them. The adult dragon and
 demon meshes were removed from the OSRS cache outright — the IDs were reused for unrelated geometry
@@ -37,8 +38,19 @@ carries the real 2005 head), and the rest need the injection pipeline to get a h
 animations were never the problem: sequences 127-131 still resolve to framemap 302 and still fit the
 2005 body, so the clips come from the live cache.
 
-**Guards** remain unsupported. They are an animation-only swap with no retro model, so there is no
-geometry to inject and nowhere to hang the 2005 frames their sequences no longer carry.
+**Guards** are the odd one out, and the reason is worth stating. The 2005 definition builds them
+from nine parts of generic human kit, and six of the nine survive in the live cache byte for byte —
+but head 294, arms 151 and hands 254 had their ids reused, which is why the cache-backed path could
+never assemble a whole guard. The six that did survive turn out to need the 2005 animation anyway:
+they are geometrically identical in both caches, but their vertex groups were **renumbered**, from a
+roughly 35-group 2005 human rig to the 218 groups of the modern framemap 0. Same mesh, different
+bones — so a live sequence would drive the right geometry off the wrong joints.
+
+Note that rig *reach* cannot validate guards the way it validates the other categories. Their rig is
+the full 2005 player rig, which addresses every equipment slot a player can wear, while a guard
+wears nine parts using about 32 groups — so a large share of the ops in any player animation target
+slots this NPC does not have. The 2005 clips score 65-80% where the modern rig scores 48-63% on the
+same meshes, which says the 2005 pairing is the better one, but not that it is right.
 
 `./gradlew compareRetroModels -Pmodels=<ids> -Pfindmoved` is the tool that settles whether an ID
 still holds its 2005 mesh; `./gradlew verifyRetroRigs` settles whether its animation still fits.
@@ -77,7 +89,7 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
   cache. Resolving an ID is not the same as it still being the 2005 asset, which is what separates
   those categories from the experimental ones.
 - **The injected categories ship their assets.** Dragons, demons, imps, the cyclops and the giant
-  heads have no usable 2005 asset left in the live cache, so `retro-assets.dat` (~41 KB) is bundled
+  heads have no usable 2005 asset left in the live cache, so `retro-assets.dat` (~46 KB) is bundled
   in the jar and carries their meshes, rigs and animation clips, extracted from the February 2005
   cache. This is the one thing the plugin distributes rather than reads from your own installation,
   which is why those categories are gated behind a toggle that is off by default. Parts are stored

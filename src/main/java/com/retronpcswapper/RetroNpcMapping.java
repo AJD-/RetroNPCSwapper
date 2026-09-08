@@ -208,8 +208,13 @@ public class RetroNpcMapping
 	//     the fire giant's survived. Hill giants render either way, wearing a Jogre head on the
 	//     cache path and their real one when injected; the rest have no head in the live cache at
 	//     all, so requiresInjectedGeometry keeps the cache path from drawing them wrong.
-	//   - guards: an animation-only swap with no retro model at all, so there is no geometry to
-	//     inject and nowhere to hang 2005 frames. Still blocked.
+	//   - guards: this used to say an animation-only swap with no retro model at all. That was
+	//     wrong twice over. The 2005 definition names nine parts and every one of them decodes;
+	//     three of the nine (head 294, arms 151, hands 254) had their ids reused, which is what
+	//     made the cache-backed path unable to assemble a whole guard. And they need the 2005
+	//     clips for a reason no other category has: the surviving parts are byte-identical in both
+	//     caches but their vertex groups were RENUMBERED, from a ~35 group 2005 human rig to
+	//     framemap 0's 218. Same geometry, different bones.
 	//
 	// The guard archetype stays inert: its mapping resolves but processNpc never activates it. It
 	// is kept, along with its JSON entries, as staged data.
@@ -358,9 +363,19 @@ public class RetroNpcMapping
 		.modernDeathAnims(ZOMBIE_MODERN_DEATHS)
 		.build();
 
+	/**
+	 * The nine 2005 parts of a guard's kit, in the order the definition lists them: torso, a strap,
+	 * the head, arms, legs, hands, boots, and the two held items.
+	 *
+	 * <p>Six of the nine survive in the live cache byte for byte. Head 294, arms 151 and hands 254
+	 * do not - their ids were reused - which is what "I couldn't find the correct head/arms" meant,
+	 * and why the cache-backed path could never assemble a whole guard.
+	 */
+	private static final int[] GUARD_PARTS = {233, 246, 294, 151, 176, 254, 185, 519, 541};
+
 	public static final RetroNpcData GUARD_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.GUARDS)
-		.retroModelIds(null)
+		.retroModelIds(GUARD_PARTS)
 		.idleAnimationId(808)
 		.walkAnimationId(819)
 		.attackAnimationId(422)
@@ -538,7 +553,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.FIRE_GIANTS
 			|| category == RetroNpcCategory.ICE_GIANTS
 			|| category == RetroNpcCategory.MOSS_GIANTS
-			|| category == RetroNpcCategory.CYCLOPS;
+			|| category == RetroNpcCategory.CYCLOPS
+			|| category == RetroNpcCategory.GUARDS;
 	}
 
 	private static boolean categoryUsesRecolors(RetroNpcCategory category)
@@ -552,7 +568,11 @@ public class RetroNpcMapping
 			// their 2005 opcode 40 pairs. Hill giants and the cyclops carry none and are left alone.
 			|| category == RetroNpcCategory.FIRE_GIANTS
 			|| category == RetroNpcCategory.ICE_GIANTS
-			|| category == RetroNpcCategory.MOSS_GIANTS;
+			|| category == RetroNpcCategory.MOSS_GIANTS
+			// A guard's parts are generic 2005 human kit shared with everything else that wears it,
+			// so the opcode 40 pairs are what make the kit a guard's colours rather than a
+			// townsperson's. The pairs come from the definition the parts come from.
+			|| category == RetroNpcCategory.GUARDS;
 	}
 
 	private static void registerMapping(RetroNpcData data, int... npcIds)
@@ -655,6 +675,12 @@ public class RetroNpcMapping
 		// Guards
 		NAME_MAPPINGS.put("guard", GUARD_DEFAULT);
 		registerMapping(GUARD_DEFAULT,
+			// The base rows of each family. Anything still literally named "Guard" already resolves
+			// by name, so these are belt and braces - but the list below enumerates the _F and
+			// _VARIANT derivatives of exactly these NPCs and simply never included them.
+			NpcID.GUARD1, NpcID.FAI_VARROCK_GUARD, NpcID.ARDOUGNE_GUARD,
+			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD2, NpcID.FAI_FALADOR_GUARD3,
+			NpcID.FAI_FALADOR_GUARD4, NpcID.FAI_FALADOR_GUARD5, NpcID.FAI_FALADOR_GUARD6,
 			NpcID.BIM_FAI_VARROCK_GUARD02, NpcID.BIM_FAI_VARROCK_GUARD02_F, NpcID.BIM_FAI_VARROCK_GUARD02_VARIANT02,
 			NpcID.FAI_VARROCK_GUARD02, NpcID.FAI_VARROCK_GUARD02_VARIANT01, NpcID.FAI_VARROCK_GUARD02_VARIANT02,
 			NpcID.FAI_VARROCK_GUARD02_F, NpcID.FAI_VARROCK_GUARD02_F_VARIANT01, NpcID.FAI_VARROCK_GUARD02_F_VARIANT02,
@@ -838,8 +864,7 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.GUARDS)
 		{
-			// Currently unused, they are multi-part models and I couldn't find the correct head/arms in the cache
-			models = null;
+			models = GUARD_PARTS;
 			stanceAnim = 808;
 			walkAnim = 819;
 			attackAnim = 422;

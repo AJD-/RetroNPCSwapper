@@ -2,7 +2,7 @@ package com.retronpcswapper.inject;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,12 +35,32 @@ public class RetroClipReachTest
 	private static final int MINIMUM_PERCENT = 85;
 
 	/**
-	 * Clips whose op count is too small for a percentage to mean anything. Giant sequence 130 is
-	 * four frames and twelve ops in total, so two ops landing elsewhere reads as 83% - noise, not
-	 * the 47-68% signature of a rig mismatch. Excluded by name rather than by lowering
-	 * {@link #MINIMUM_PERCENT}, which would weaken the check for every other clip.
+	 * Clips the default floor does not fit, and why. Each of these is a structural property of the
+	 * subject rather than a weak result, so the number is a regression tripwire - it says "this got
+	 * worse" - and never a validation.
+	 *
+	 * <p>Giant sequence 130 is four frames and twelve ops in total, so two ops landing elsewhere
+	 * reads as 83%. That is noise on a tiny sample, not the 47-68% signature of a rig mismatch.
+	 *
+	 * <p>The guard sequences are the harder case. Their rig is the 2005 <em>player</em> rig, which
+	 * addresses every equipment slot a player can wear - hair, beard, cape, weapon, shield - while a
+	 * guard wears nine parts using about 32 groups. A large share of the ops in any player animation
+	 * therefore targets slots this NPC simply does not have, and no correct pairing of a partial kit
+	 * with a full player animation can approach the skeleton's 96%. Measured against the modern rig
+	 * these same meshes score 48-63%, against the 2005 rig 65-80%, so the 2005 clips are the better
+	 * fit on every sequence - but reach cannot prove the pairing is right here, only an in-game look
+	 * can. Walk (819) has the thinnest margin of the five, 65% against 60%.
 	 */
-	private static final Set<Integer> SMALL_SAMPLE_CLIPS = new HashSet<>(Arrays.asList(130));
+	private static final Map<Integer, Integer> CLIP_FLOORS = new HashMap<>();
+
+	static
+	{
+		CLIP_FLOORS.put(130, 80);
+		for (int guardClip : new int[]{808, 819, 422, 424, 836})
+		{
+			CLIP_FLOORS.put(guardClip, 60);
+		}
+	}
 
 	/**
 	 * Which mesh each clip animates. A clip is only meaningful against the mesh it was built for,
@@ -57,7 +77,15 @@ public class RetroClipReachTest
 		{21, 2998}, {25, 2998}, {26, 2998}, {27, 2998}, {28, 2998},
 		// The giant family: one shared body, a variant head, and props on the fire and moss giants
 		{127, 2870, 2862}, {128, 2870, 2862}, {129, 2870, 2862},
-		{130, 2870, 2862}, {131, 2870, 2862}
+		{130, 2870, 2862}, {131, 2870, 2862},
+		// A full 2005 guard kit against the 2005 human rig. Measured against the LIVE rig these
+		// score 60-63%, which looks like a mismatch but is not: framemap 0 addresses 218 groups for
+		// every equipment slot, and a nine-part kit only ever uses about 35 of them.
+		{808, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{819, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{422, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{424, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{836, 233, 246, 294, 151, 176, 254, 185, 519, 541}
 	};
 
 	@Test
@@ -124,11 +152,9 @@ public class RetroClipReachTest
 				+ "): reach=" + reach + "% (" + landedOps + "/" + totalOps + " ops)"
 				+ " coverage=" + coverage + "% (" + moved.size() + "/" + meshGroups.size() + " groups)");
 
-			if (!SMALL_SAMPLE_CLIPS.contains(sequenceId))
-			{
-				assertTrue("clip " + sequenceId + " reaches only " + reach + "% of mesh " + meshId,
-					reach >= MINIMUM_PERCENT);
-			}
+			int floor = CLIP_FLOORS.getOrDefault(sequenceId, MINIMUM_PERCENT);
+			assertTrue("clip " + sequenceId + " reaches only " + reach + "% of mesh " + meshId
+				+ ", below its " + floor + "% floor", reach >= floor);
 		}
 	}
 

@@ -298,4 +298,20 @@ public interface RetroNpcConfig extends Config
 	{
 		return false;
 	}
+
+	@ConfigItem(
+		keyName = "swapGuards",
+		name = "Guards",
+		description = "<html><body style='width:170px'>Restore the 2005 guard. Three of the nine "
+			+ "parts of its kit had their ids reused in the live cache, so it can only be assembled "
+			+ "from injected geometry - and the parts that did survive were re-bound to a different "
+			+ "rig, so it needs the 2005 animation too.<br><br>Requires <b>Use the injection "
+			+ "pipeline</b> above.</body></html>",
+		section = experimentalSection,
+		position = 6
+	)
+	default boolean swapGuards()
+	{
+		return false;
+	}
 }

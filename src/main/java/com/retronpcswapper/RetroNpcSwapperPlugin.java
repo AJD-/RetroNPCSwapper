@@ -599,6 +599,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case CYCLOPS:
 				return config.swapCyclops() && config.useInjectionPipeline()
 					&& modelCache.isInjectionPipelineEnabled();
+			case GUARDS:
+				// Three of the nine kit parts are gone from the live cache, and the six that remain
+				// were re-bound to a different rig, so both the geometry and the animation have to
+				// come from the bundle
+				return config.swapGuards() && config.useInjectionPipeline()
+					&& modelCache.isInjectionPipelineEnabled();
 			case GHOSTS:
 				return config.swapGhosts();
 			case ADULT_DRAGONS:
@@ -620,9 +626,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return config.useInjectionPipeline() && config.swapImps()
 					&& modelCache.isInjectionPipelineEnabled();
 			default:
-				// Guards remain disabled. They are an animation-only swap with no mesh to inject,
-				// so there is nowhere to hang the 2005 frames their sequences no longer carry.
-				// See the archetype comments in RetroNpcMapping.
 				return false;
 		}
 	}
@@ -661,7 +664,16 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return;
 			}
 
-			clientThread.invoke(() -> modelCache.setBundle(bundle));
+			clientThread.invoke(() ->
+			{
+				modelCache.setBundle(bundle);
+
+				// The load is off-thread, so NPCs are usually already on screen by the time it
+				// lands - and setBundle only drops what was built, it does not rebuild. Without
+				// this they stay vanilla until they happen to respawn, which for the guards
+				// standing where you log in could be a long time.
+				recheckLoadedNpcs();
+			});
 		});
 	}
 

@@ -289,6 +289,13 @@ public class RetroNpcCategoryTest
 		RetroNpcData guardByName = RetroNpcMapping.get(0, "Guard");
 		assertNotNull("Guard by name must exist", guardByName);
 		assertEquals(RetroNpcCategory.GUARDS, guardByName.getCategory());
+
+		// Nine parts of 2005 human kit. Head 294, arms 151 and hands 254 no longer resolve to their
+		// 2005 geometry in the live cache, which is what makes this category injection-only.
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			guardByName.getRetroModelIds());
+		assertArrayEquals(guardByName.getRetroModelIds(), guardByName.getInjectedModelIds());
+
 		assertEquals(808, guardByName.getIdleAnimationId());
 		assertEquals(819, guardByName.getWalkAnimationId());
 		assertEquals(422, guardByName.getAttackAnimationId());
@@ -299,7 +306,11 @@ public class RetroNpcCategoryTest
 		int[] guardIds = {
 			NpcID.BIM_FAI_VARROCK_GUARD02, NpcID.BIM_FAI_VARROCK_GUARD02_F, NpcID.FAI_VARROCK_GUARD02,
 			NpcID.GUARD1_VARIANT01, NpcID.ARDOUGNE_GUARD_VARIANT01,
-			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD4_F};
+			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD4_F,
+			// The base row of each family. The list above enumerates the _F and _VARIANT
+			// derivatives of exactly these NPCs and used to skip the NPCs themselves.
+			NpcID.GUARD1, NpcID.FAI_VARROCK_GUARD, NpcID.ARDOUGNE_GUARD,
+			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD6};
 		for (int id : guardIds)
 		{
 			RetroNpcData guardById = RetroNpcMapping.get(id, "Guard");
@@ -699,10 +710,23 @@ public class RetroNpcCategoryTest
 	public void testNoCategoryForwardsRecolorsByDefault()
 	{
 		assertFalse(RetroNpcMapping.get(0, "Goblin").hasRecolors());
-		assertFalse(RetroNpcMapping.get(0, "Guard").hasRecolors());
 		assertFalse(RetroNpcMapping.get(0, "Skeleton mage").hasRecolors());
 		assertFalse(RetroNpcMapping.get(0, "Restless ghost").hasRecolors());
 		assertFalse(RetroNpcMapping.get(0, "Chicken").hasRecolors());
+	}
+
+	@Test
+	public void testGuardsDoCarryTheirRecolors()
+	{
+		// Guards are the exception to the rule above, and deliberately so. Their parts are generic
+		// 2005 human kit shared with every other NPC that wears it, so without the opcode 40 pairs
+		// a guard renders in a townsperson's colours. The pairs and the parts come from the same
+		// definition, which is what makes this safe where forwarding a goblin variant's would not.
+		RetroNpcData guard = RetroNpcMapping.get(0, "Guard");
+		assertNotNull(guard);
+		assertTrue("guards must carry their 2005 recolours", guard.hasRecolors());
+		assertEquals("recolour arrays must stay parallel",
+			guard.getOriginalColors().length, guard.getReplacementColors().length);
 	}
 
 	/**
