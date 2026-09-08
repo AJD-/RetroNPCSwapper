@@ -14,18 +14,24 @@ Each category can be toggled individually in the plugin config:
 - **Hill Giants** (albeit with a Jogre head)
 - **Ghosts**
 
-Other retro-era NPCs are not supported. Every 2005 model ID still resolves in the live cache, but
-in every case some aspect of the 2005 asset is incompatible, and the reason differs per NPC:
+Under **Experimental**, behind the *Use the injection pipeline* toggle:
 
-- **Dragons and demons** — the retro meshes have been removed from the OSRS cache. The IDs were 
-  reused for unrelated geometry (statues, skulls, and other environment assets) An asset-injection
-  API could bring these back, but utilizing something like that would require the plugin to ship
-  Jagex copyrighted assets.
-- **Imps** — the retro mesh still exists, but the 2005 animation frames were modified in place, 
-  with no 2005-era sequence left to swap to.
+- **Dragons** — adult and baby, in all four colours
+- **Demons** — lesser, greater and black
+- **Imps**
 
- `./gradlew compareRetroModels -Pmodels=<ids>
--Pfindmoved` is the tool that settles which case an NPC falls into.
+These four need the injection pipeline because swapping IDs is not enough for them. The adult
+dragon and demon meshes were removed from the OSRS cache outright — the IDs were reused for
+unrelated geometry such as statues and skulls — so there is nothing to swap to. The imp and baby
+dragon meshes survived, but for all of them the animation *frames* behind the surviving sequence
+IDs were re-authored for the modern skeletons, so the sequences no longer drive the retro meshes.
+Both the geometry and the animation therefore come from the 2005 data instead of the live cache.
+
+**Guards** remain unsupported. They are an animation-only swap with no retro model, so there is no
+geometry to inject and nowhere to hang the 2005 frames their sequences no longer carry.
+
+`./gradlew compareRetroModels -Pmodels=<ids> -Pfindmoved` is the tool that settles whether an ID
+still holds its 2005 mesh; `./gradlew verifyRetroRigs` settles whether its animation still fits.
 
 ## Requirements
 
@@ -52,10 +58,15 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
   back on yourself in the `Interact Highlight` config while retro compatibility is enabled hands the
   outlines straight back to the `Interact Highlight` plugin and unticks the compatibility checkbox in
   this plugin.
-- **No assets are bundled or downloaded.** The plugin ships only a table of numeric model and
-  animation IDs; every asset it displays already exists in your own game cache. All 2005-era model
-  IDs still resolve at the same IDs in the live cache — though resolving is not the same as
-  still being the 2005 asset, which is why only some categories are supported (see above).
+- **Nothing is downloaded.** For the categories in the first list, the plugin ships only a table of
+  numeric model and animation IDs, and every asset it displays already comes from your own game
+  cache. Resolving an ID is not the same as it still being the 2005 asset, which is what separates
+  those categories from the experimental ones.
+- **The experimental categories ship their assets.** Dragons, demons and imps have no usable 2005
+  asset left in the live cache, so `retro-assets.dat` (~32 KB) is bundled in the jar and carries
+  their meshes, rigs and animation clips, extracted from the February 2005 cache. This is the one
+  thing the plugin distributes rather than reads from your own installation, which is why those
+  categories are gated behind a toggle that is off by default.
 - Safety settings (on by default) disable all swapping on PvP worlds and in the Wilderness.
 
 There is currently no sanctioned RuneLite API for overriding NPC models, which is why the plugin
@@ -75,3 +86,11 @@ utilizes the GPU plugin's draw callbacks.
   drifted by one face and reports `REPLACED` while rendering perfectly.
 - `./gradlew dumpNpcDefinitions -Pnpc=1173` prints live-cache NPC definitions (IDs or a name
   substring) — models, scales and pose animations, for comparing against the retro definition.
+- `./gradlew generateRetroAssets` rebuilds `retro-assets.dat` from the same local 2005 cache. It
+  bundles the meshes the live cache no longer has, the rigs those meshes are skinned to, and the
+  2005 animation clips, resampled onto the live sequences' frame counts so the frame index the
+  client drives still lines up.
+- `./gradlew verifyRetroRigs` measures *reach* — the share of a clip's transform ops that land on
+  vertex groups the mesh actually has. A rig authored for a different mesh scores 47-68%; a
+  matching one scores 96-100%. This is what separates "the sequence ID survived" from "the frames
+  behind it still fit".
