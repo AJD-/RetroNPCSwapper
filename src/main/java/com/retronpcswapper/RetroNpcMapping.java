@@ -93,8 +93,15 @@ public class RetroNpcMapping
 	public static final Set<Integer> GUARD_MODERN_ATTACKS = Set.of(
 		AnimationID.HUMAN_UNARMEDPUNCH, AnimationID.HUMAN_UNARMEDKICK
 	);
+	/**
+	 * A guard fights with a sword and shield, so it blocks with {@code HUMAN_SHIELD_DEFENCE} rather
+	 * than the unarmed block. That sequence is one {@code RetroSeqDecoder} cannot read - 1155 to
+	 * 1157 are all absent from its output while the table reaches 1662 - so unlike the sword attack,
+	 * which ships its own 2005 clip and passes straight through, this one is rewritten onto the
+	 * unarmed block. A block without the shield raise, rather than a guard standing still.
+	 */
 	public static final Set<Integer> GUARD_MODERN_DEFENDS = Set.of(
-		AnimationID.HUMAN_UNARMEDBLOCK
+		AnimationID.HUMAN_UNARMEDBLOCK, AnimationID.HUMAN_SHIELD_DEFENCE
 	);
 	public static final Set<Integer> GUARD_MODERN_DEATHS = Set.of(
 		AnimationID.HUMAN_DEATH

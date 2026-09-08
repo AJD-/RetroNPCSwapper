@@ -126,7 +126,12 @@ public class RetroAssetGenerator
 		// the right geometry off the wrong bones.
 		new Spec("Guards", Source.RETRO, Source.RETRO,
 			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
-			new int[]{808, 819, 422, 424, 836})
+			// 386 sword stab is what a guard actually plays in a fight; 422/423/424 are the unarmed
+			// set. All are classic ids the live game still uses, so they need the 2005 frames rather
+			// than any interception. 1156, the shield block a guard also plays, is deliberately
+			// absent: RetroSeqDecoder cannot decode it - 1155 to 1157 are all missing while the
+			// table reaches 1662 - so it is intercepted onto the unarmed block instead.
+			new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390})
 	);
 
 	private enum Source
@@ -599,9 +604,16 @@ public class RetroAssetGenerator
 	 * Maps each live frame onto the 2005 frame at the same point in the cycle, so a 2005 clip plays
 	 * over the live sequence's duration however many frames it actually has.
 	 *
-	 * <p>Weighted by duration where both sides declare one, since neither cache holds frames of
-	 * uniform length; proportional by index otherwise, which is the same answer when they are
-	 * uniform.
+	 * <p>Weighted by duration only when <em>every</em> frame on both sides declares one; otherwise
+	 * proportional by index, which is the same answer when frames are uniform.
+	 *
+	 * <p>Requiring every frame rather than a positive total is load-bearing, and getting it wrong
+	 * broke every death animation the bundle ships. A 2005 death sequence declares lengths like
+	 * {@code [0, 0, 0, 0, 0, 0, 0, 0, 0, 20000]} - no duration at all for the frames that do the
+	 * dying, then an enormous hold on the corpse. That sums to a positive total, so a total-only
+	 * check runs the weighted path over data where nine of ten frames occupy zero time, and every
+	 * live frame's midpoint lands in the tenth. The result maps the whole animation to its final
+	 * frame: the NPC snaps to a corpse instead of falling. Partial duration data is absent data.
 	 */
 	static int[] resample(int[] liveLengths, int[] retroLengths, int liveCount, int retroCount)
 	{
@@ -610,7 +622,9 @@ public class RetroAssetGenerator
 		long liveTotal = total(liveLengths, liveCount);
 		long retroTotal = total(retroLengths, retroCount);
 
-		if (liveTotal <= 0 || retroTotal <= 0)
+		if (liveTotal <= 0 || retroTotal <= 0
+			|| !everyFrameHasADuration(liveLengths, liveCount)
+			|| !everyFrameHasADuration(retroLengths, retroCount))
 		{
 			for (int i = 0; i < liveCount; i++)
 			{
@@ -644,6 +658,28 @@ public class RetroAssetGenerator
 		}
 
 		return mapping;
+	}
+
+	/**
+	 * Whether every frame declares a duration, which is what makes weighting by duration meaningful.
+	 * A single zero means the timeline has frames that occupy no time, and any weighted mapping
+	 * skips straight past them.
+	 */
+	private static boolean everyFrameHasADuration(int[] lengths, int count)
+	{
+		if (lengths == null || lengths.length < count)
+		{
+			return false;
+		}
+
+		for (int i = 0; i < count; i++)
+		{
+			if (lengths[i] <= 0)
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static long total(int[] lengths, int count)
