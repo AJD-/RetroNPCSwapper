@@ -43,7 +43,11 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
 
 - The plugin wraps the GPU plugin's draw callbacks and hands the renderer a prebuilt retro model
   whenever an eligible NPC is drawn. Retro pose and combat animations are applied through the
-  standard `Actor` animation setters.
+  standard `Actor` animation setters, and the client animates the model as usual.
+- **The experimental categories take a second path.** Their geometry never existed in the live
+  cache, so the client cannot animate it — `applyTransformations` only accepts the client's own
+  model type. The plugin therefore skins and lights those models itself, in Java, reading the frame
+  index the client is already driving so the two stay in step.
 - **Clickboxes are untouched.** The client resolves clickboxes from the original model before the
   draw callback runs, so interaction hitboxes stay exactly vanilla.
 - `Interact Highlight` plugin compatibility: the **Compatibility** section provides a `Fix Interact 
