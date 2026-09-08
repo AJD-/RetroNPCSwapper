@@ -32,10 +32,26 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Pure Java BZip2 & GZip decompressor for RS2 2005 cache blocks.
  * Matched to standard 317 RS2 client BZip2Decompressor logic.
+ *
+ * <p><b>The larger subfiles in config.jag span more than one bzip2 block</b> - seq.dat (141,873 B)
+ * and npc.dat (161,282 B) take two at this cache's 100,000-byte block size, obj.dat and loc.dat
+ * three. Decoding only the first block is not a partial answer that fails loudly: the BWT chain is
+ * a permutation cycle, so a walk that runs past the end of a block wraps around and re-emits that
+ * block's own bytes over the rest of the buffer. The result reads as correct data followed by
+ * plausible-looking garbage. That cost 545 of the 1,670 sequences and 661 of the 1,709 NPC
+ * definitions, and was misread for a long time as unfinished opcode coverage in the decoders
+ * downstream. Hence the block loop, the per-block symbol bound on the output walk, and the refusal
+ * to return a buffer whose length does not match the one declared.
  */
 @Slf4j
 public class BZip2Decompressor
 {
+	/** 48-bit '1AY&SY' marker that opens each compressed block. */
+	private static final long BLOCK_MAGIC = 0x314159265359L;
+
+	/** 48-bit sqrt(pi) marker that closes the stream. */
+	private static final long STREAM_END_MAGIC = 0x177245385090L;
+
 	private static final BZip2State STATE = new BZip2State();
 
 	public static synchronized byte[] decompress(byte[] compressed, int decompressedLen) throws Exception
@@ -75,7 +91,41 @@ public class BZip2Decompressor
 		s.cftabCount = 0;
 		s.eof = false;
 
-		decompressState(s);
+		// A bzip2 stream is a sequence of blocks, and seq.dat, npc.dat, obj.dat and loc.dat in the
+		// 2005 config.jag all use more than one. Decoding only the first returns a buffer that is
+		// correct up to the block boundary and garbage after it, with nothing to say so.
+		while (true)
+		{
+			long magic = ((long) s.getBits(24) << 24) | s.getBits(24);
+			if (s.eof)
+			{
+				throw new IllegalStateException(
+					"BZip2 stream ended without an end-of-stream marker");
+			}
+
+			if (magic == BLOCK_MAGIC)
+			{
+				decompressState(s);
+			}
+			else if (magic == STREAM_END_MAGIC)
+			{
+				break;
+			}
+			else
+			{
+				throw new IllegalStateException(
+					String.format("Unexpected BZip2 block magic %012x after %d of %d bytes",
+						magic, s.decompressedOffset, decompressedLen));
+			}
+		}
+
+		// A short buffer returned in silence is how a one-block decode went unnoticed for so long
+		if (s.decompressedOffset != decompressedLen)
+		{
+			throw new IllegalStateException(String.format(
+				"BZip2 produced %d bytes but %d were declared", s.decompressedOffset, decompressedLen));
+		}
+
 		return output;
 	}
 
@@ -206,13 +256,8 @@ public class BZip2Decompressor
 			s.unRLE[i] = 0;
 		}
 
-		// RS2 BZip2 header: 6 bytes block header '1AY&SY' (0x31 0x41 0x59 0x26 0x53 0x59)
-		s.getBits(8); // '1'
-		s.getBits(8); // 'A'
-		s.getBits(8); // 'Y'
-		s.getBits(8); // '&'
-		s.getBits(8); // 'S'
-		s.getBits(8); // 'Y'
+		// The 48-bit block magic has already been read by the caller, which needed it to tell a
+		// block from the end of the stream.
 
 		// 4 bytes CRC/Header bits
 		s.getBits(8);
@@ -528,11 +573,26 @@ public class BZip2Decompressor
 		int runLength = 0;
 		int state = 0;
 
-		while (s.decompressedOffset < s.decompressedLength && p >= 0 && p < s.tt.length)
+		// This walk is bounded by the block's own symbol count, not by how much output is still
+		// wanted. Bounding it by the latter is what made a truncated stream invisible: the BWT
+		// chain is a permutation cycle, so on reaching the end of the block it wraps to origPtr
+		// and re-emits the same bytes until the buffer happens to be full. Count tt entries
+		// rather than output bytes - the run-length step expands, so the two are not the same.
+		int consumed = 1;
+
+		// A run in progress still has to be flushed once the last symbol has been read, so state 1
+		// keeps going after the symbol budget is spent
+		while (state == 1 || (consumed < nblock && p >= 0 && p < s.tt.length))
 		{
+			if (s.decompressedOffset >= s.decompressedLength)
+			{
+				break;
+			}
+
 			if (state == 0)
 			{
 				entry = s.tt[p];
+				consumed++;
 				byte b = (byte) (entry & 0xFF);
 				p = entry >>> 8;
 
@@ -549,6 +609,7 @@ public class BZip2Decompressor
 					{
 						s.decompressed[s.decompressedOffset++] = b;
 						entry = s.tt[p];
+						consumed++;
 						byte repeat = (byte) (entry & 0xFF);
 						p = entry >>> 8;
 

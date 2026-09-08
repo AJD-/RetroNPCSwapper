@@ -28,6 +28,23 @@
     "scaleY": 128
   },
   {
+    "name": "baby red dragon",
+    "category": "BABY_DRAGONS",
+    "modelIds": [
+      2998
+    ],
+    "idleAnim": 27,
+    "walkAnim": 21,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      61
+    ],
+    "replacementColors": [
+      687
+    ]
+  },
+  {
     "name": "black demon",
     "category": "BLACK_DEMONS",
     "modelIds": [
@@ -85,6 +102,29 @@
     ]
   },
   {
+    "name": "bronze dragon",
+    "category": "ADULT_DRAGONS",
+    "modelIds": [
+      4986,
+      5022,
+      4987
+    ],
+    "idleAnim": 90,
+    "walkAnim": 79,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      61,
+      33,
+      41
+    ],
+    "replacementColors": [
+      8107,
+      6055,
+      6061
+    ]
+  },
+  {
     "name": "chicken",
     "category": "CHICKENS",
     "modelIds": [
@@ -132,6 +172,39 @@
     ]
   },
   {
+    "name": "gardener ghost",
+    "category": "GHOSTS",
+    "modelIds": [
+      5182,
+      5180,
+      5181,
+      5183,
+      5184,
+      5185,
+      496
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819,
+    "scaleXZ": 130,
+    "scaleY": 135,
+    "originalColors": [
+      25238,
+      4550,
+      6040,
+      -22464,
+      4626,
+      61
+    ],
+    "replacementColors": [
+      10004,
+      6579,
+      10004,
+      6579,
+      10004,
+      41
+    ]
+  },
+  {
     "name": "ghost",
     "category": "GHOSTS",
     "modelIds": [
@@ -143,6 +216,211 @@
     "walkAnim": 119,
     "scaleXZ": 128,
     "scaleY": 128
+  },
+  {
+    "name": "ghost (?)",
+    "category": "GHOSTS",
+    "modelIds": [
+      5367
+    ],
+    "idleAnim": 1639,
+    "walkAnim": 1640,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      -32682
+    ],
+    "replacementColors": [
+      7599
+    ]
+  },
+  {
+    "name": "ghost banker",
+    "category": "GHOSTS",
+    "modelIds": [
+      5212,
+      5220,
+      5209,
+      5216
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819,
+    "scaleXZ": 112,
+    "scaleY": 112,
+    "originalColors": [
+      17467
+    ],
+    "replacementColors": [
+      18626
+    ]
+  },
+  {
+    "name": "ghost captain",
+    "category": "GHOSTS",
+    "modelIds": [
+      5212,
+      5219,
+      5209,
+      5216,
+      5224,
+      5210
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819,
+    "scaleXZ": 112,
+    "scaleY": 112,
+    "originalColors": [
+      17467
+    ],
+    "replacementColors": [
+      18626
+    ]
+  },
+  {
+    "name": "ghost disciple",
+    "category": "GHOSTS",
+    "modelIds": [
+      5212,
+      5219,
+      5209,
+      5216,
+      5223,
+      5230
+    ],
+    "idleAnim": 813,
+    "walkAnim": 1205,
+    "scaleXZ": 114,
+    "scaleY": 114,
+    "originalColors": [
+      17467
+    ],
+    "replacementColors": [
+      18626
+    ]
+  },
+  {
+    "name": "ghost farmer",
+    "category": "GHOSTS",
+    "modelIds": [
+      5212,
+      5219,
+      5209,
+      5216,
+      5211,
+      5231
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819,
+    "scaleXZ": 110,
+    "scaleY": 110,
+    "originalColors": [
+      17467
+    ],
+    "replacementColors": [
+      18626
+    ]
+  },
+  {
+    "name": "ghost guard",
+    "category": "GHOSTS",
+    "modelIds": [
+      5212,
+      5219,
+      5209,
+      5216
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819,
+    "scaleXZ": 112,
+    "scaleY": 112,
+    "originalColors": [
+      17467
+    ],
+    "replacementColors": [
+      18626
+    ]
+  },
+  {
+    "name": "ghost innkeeper",
+    "category": "GHOSTS",
+    "modelIds": [
+      5212,
+      5219,
+      5209,
+      5216
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819,
+    "scaleXZ": 110,
+    "scaleY": 110,
+    "originalColors": [
+      17467
+    ],
+    "replacementColors": [
+      18626
+    ]
+  },
+  {
+    "name": "ghost sailor",
+    "category": "GHOSTS",
+    "modelIds": [
+      5212,
+      5219,
+      5209,
+      5216,
+      5224,
+      5210
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819,
+    "scaleXZ": 112,
+    "scaleY": 112,
+    "originalColors": [
+      17467
+    ],
+    "replacementColors": [
+      18626
+    ]
+  },
+  {
+    "name": "ghost shopkeeper",
+    "category": "GHOSTS",
+    "modelIds": [
+      5212,
+      5219,
+      5209,
+      5216
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819,
+    "scaleXZ": 110,
+    "scaleY": 110,
+    "originalColors": [
+      17467
+    ],
+    "replacementColors": [
+      18626
+    ]
+  },
+  {
+    "name": "ghost villager",
+    "category": "GHOSTS",
+    "modelIds": [
+      5212,
+      5219,
+      5209,
+      5216
+    ],
+    "idleAnim": 808,
+    "walkAnim": 819,
+    "scaleXZ": 112,
+    "scaleY": 112,
+    "originalColors": [
+      17467
+    ],
+    "replacementColors": [
+      18626
+    ]
   },
   {
     "name": "goblin",
@@ -284,6 +562,29 @@
     "scaleY": 128
   },
   {
+    "name": "iron dragon",
+    "category": "ADULT_DRAGONS",
+    "modelIds": [
+      4986,
+      5022,
+      4987
+    ],
+    "idleAnim": 90,
+    "walkAnim": 79,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      61,
+      33,
+      41
+    ],
+    "replacementColors": [
+      -32725,
+      -32738,
+      -32733
+    ]
+  },
+  {
     "name": "lesser demon",
     "category": "LESSER_DEMONS",
     "modelIds": [
@@ -293,6 +594,85 @@
     "walkAnim": 63,
     "scaleXZ": 128,
     "scaleY": 128
+  },
+  {
+    "name": "mischievous ghost",
+    "category": "GHOSTS",
+    "modelIds": [
+      2961,
+      2964,
+      2965
+    ],
+    "idleAnim": 125,
+    "walkAnim": 119,
+    "scaleXZ": 128,
+    "scaleY": 128
+  },
+  {
+    "name": "mm_transmogrification_large_zombie_monkey",
+    "category": "ZOMBIES",
+    "modelIds": [
+      4817,
+      4824
+    ],
+    "idleAnim": 1386,
+    "walkAnim": 1382,
+    "scaleXZ": 190,
+    "scaleY": 190,
+    "originalColors": [
+      20,
+      7721,
+      0
+    ],
+    "replacementColors": [
+      23849,
+      17734,
+      -81
+    ]
+  },
+  {
+    "name": "mm_transmogrification_small_zombie_monkey",
+    "category": "ZOMBIES",
+    "modelIds": [
+      4817,
+      4824
+    ],
+    "idleAnim": 1386,
+    "walkAnim": 1382,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      20,
+      7721,
+      0
+    ],
+    "replacementColors": [
+      23849,
+      17734,
+      -81
+    ]
+  },
+  {
+    "name": "monkey zombie",
+    "category": "ZOMBIES",
+    "modelIds": [
+      4817,
+      4824
+    ],
+    "idleAnim": 1386,
+    "walkAnim": 1382,
+    "scaleXZ": 190,
+    "scaleY": 190,
+    "originalColors": [
+      20,
+      7721,
+      0
+    ],
+    "replacementColors": [
+      23849,
+      17734,
+      -81
+    ]
   },
   {
     "name": "moss giant",
@@ -379,6 +759,23 @@
     "scaleY": 128
   },
   {
+    "name": "skeleton hellhound",
+    "category": "SKELETONS",
+    "modelIds": [
+      4974
+    ],
+    "idleAnim": 1494,
+    "walkAnim": 1493,
+    "scaleXZ": 256,
+    "scaleY": 256,
+    "originalColors": [
+      10318
+    ],
+    "replacementColors": [
+      11714
+    ]
+  },
+  {
     "name": "skeleton mage",
     "category": "SKELETONS",
     "modelIds": [
@@ -405,6 +802,29 @@
     ]
   },
   {
+    "name": "steel dragon",
+    "category": "ADULT_DRAGONS",
+    "modelIds": [
+      4986,
+      5022,
+      4987
+    ],
+    "idleAnim": 90,
+    "walkAnim": 79,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      61,
+      33,
+      41
+    ],
+    "replacementColors": [
+      -25549,
+      -25433,
+      -25429
+    ]
+  },
+  {
     "name": "summoned zombie",
     "category": "ZOMBIES",
     "modelIds": [
@@ -414,6 +834,86 @@
     "walkAnim": 298,
     "scaleXZ": 128,
     "scaleY": 128
+  },
+  {
+    "name": "toms skeleton",
+    "category": "SKELETONS",
+    "modelIds": [
+      2944
+    ],
+    "idleAnim": 262,
+    "walkAnim": 259,
+    "scaleXZ": 110,
+    "scaleY": 40
+  },
+  {
+    "name": "toms_zombie_monkey",
+    "category": "ZOMBIES",
+    "modelIds": [
+      4817,
+      4824
+    ],
+    "idleAnim": 1386,
+    "walkAnim": 1382,
+    "scaleXZ": 190,
+    "scaleY": 190,
+    "originalColors": [
+      20,
+      7721,
+      0
+    ],
+    "replacementColors": [
+      24770,
+      25174,
+      -81
+    ]
+  },
+  {
+    "name": "toms_zombie_monkey_small",
+    "category": "ZOMBIES",
+    "modelIds": [
+      4817,
+      4824
+    ],
+    "idleAnim": 1386,
+    "walkAnim": 1382,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      20,
+      7721,
+      0
+    ],
+    "replacementColors": [
+      24770,
+      25174,
+      -81
+    ]
+  },
+  {
+    "name": "undead chicken",
+    "category": "CHICKENS",
+    "modelIds": [
+      2849
+    ],
+    "idleAnim": 54,
+    "walkAnim": 53,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      127,
+      11200,
+      8394,
+      926,
+      6080
+    ],
+    "replacementColors": [
+      12480,
+      10566,
+      12475,
+      4771,
+      8101
+    ]
   },
   {
     "name": "zombie",

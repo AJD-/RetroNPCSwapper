@@ -18,6 +18,43 @@ public class RetroCacheTest
 {
 	private static final File CACHE_DIR = new File("retrocache/2005cache");
 
+	/**
+	 * Every sequence the 2005 {@code seq.idx} declares, and the guard's shield block among them.
+	 *
+	 * <p>This is the tripwire for a truncated payload. {@code seq.dat} is a two-block bzip2
+	 * stream, and while only its first block was being decoded the table stopped at id 1124 and
+	 * everything past it either vanished or decoded out of the re-emitted tail - which is how
+	 * 1156 came to be written off as an opcode this decoder could not read. The count is the
+	 * cheap half; sequence 1156 is the half that says the frames are actually right.
+	 */
+	@Test
+	public void testEvery2005SequenceDecodes() throws Exception
+	{
+		if (!CACHE_DIR.exists()) return;
+
+		RetroCacheReader reader = new RetroCacheReader(CACHE_DIR);
+		assertTrue("could not open the 2005 cache", reader.init());
+		Map<String, byte[]> config = reader.readArchive(reader.readFile(0, 2));
+		byte[] seqDat = config.get(String.valueOf(RetroCacheReader.hashFileName("seq.dat")));
+		byte[] seqIdx = config.get(String.valueOf(RetroCacheReader.hashFileName("seq.idx")));
+
+		assertEquals("seq.dat is truncated", 141873, seqDat.length);
+
+		Map<Integer, RetroSeqDefinition> seqs = RetroSeqDecoder.decodeAll(seqDat, seqIdx);
+		assertEquals("every declared 2005 sequence should decode", 1670, seqs.size());
+
+		for (int id : new int[]{1155, 1156, 1157})
+		{
+			assertNotNull("2005 sequence " + id + " is missing", seqs.get(id));
+		}
+
+		// HUMAN_SHIELD_DEFENCE: raise, hold, lower - the frame list runs out and back
+		assertArrayEquals(new int[]{
+				4192, 4193, 4194, 4195, 4196, 4197, 4198, 4199, 4200,
+				4199, 4198, 4197, 4196, 4195, 4194, 4193, 4192},
+			seqs.get(1156).getFrameIds());
+	}
+
 	@Test
 	public void test317NpcDecoder() throws Exception
 	{
