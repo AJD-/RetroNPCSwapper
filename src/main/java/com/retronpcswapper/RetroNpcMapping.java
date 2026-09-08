@@ -91,7 +91,7 @@ public class RetroNpcMapping
 	 * swordsman.
 	 *
 	 * <p>Suppressed at lookup rather than by dropping the name row, because
-	 * {@link #applyCacheRecolors} walks {@code NAME_MAPPINGS} to graft the opcode 40 pairs
+	 * {@link #applyCacheDefinitions} walks {@code NAME_MAPPINGS} to graft the opcode 40 pairs
 	 * onto the archetypes. Removing the row would quietly cost the guard its 2005 colors.
 	 */
 	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
@@ -311,13 +311,8 @@ public class RetroNpcMapping
 		.modernDeathAnims(DEMON_MODERN_DEATHS)
 		.build();
 
-	// Known gap: black demons share mesh 2942 with greater demons and differ only by the 2005
-	// opcode 40 pairs (918 -> 4, 929 -> 4, 0 -> 931). Those pairs are in the generated JSON, but a
-	// static archetype takes precedence over the JSON row, so they never reach createMappingData
-	// and a black demon currently renders in greater demon colors. Lesser and greater demons are
-	// unaffected - they carry no recolor data in 2005, being the base color of their own meshes.
-	// Fixing it means letting an archetype inherit the JSON row's recolors, which is a change to
-	// how load() merges the two rather than a per-category tweak.
+	// Black demons share mesh 2942 with greater demons and differ only by the 2005 opcode 40 pairs
+	// (918 -> 4, 929 -> 4, 0 -> 931), which applyCacheDefinitions grafts on from the JSON row.
 	public static final RetroNpcData BLACK_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.BLACK_DEMONS)
 		.retroModelIds(new int[]{2942})
@@ -584,8 +579,8 @@ public class RetroNpcMapping
 			NAME_MAPPINGS.putIfAbsent(nameLower, createMappingData(entry));
 		}
 
-		// 3. Hand the static archetypes the recolor pairs from their JSON rows
-		applyCacheRecolors(byName);
+		// 3. Hand the static archetypes the recolor pairs and resize from their JSON rows
+		applyCacheDefinitions(byName);
 
 		// 4. Derive the equipment variants, after the recolors so they inherit them
 		applyWeaponVariants();
@@ -595,7 +590,7 @@ public class RetroNpcMapping
 	 * Re-points the guards who carry something other than the sword at a kit that shows it.
 	 *
 	 * <p>Runs last, and derives from whatever is registered rather than from the archetype
-	 * constant, because {@link #applyCacheRecolors} has by then replaced that instance with a
+	 * constant, because {@link #applyCacheDefinitions} has by then replaced that instance with a
 	 * recolored copy. Deriving from the constant instead would hand the axe guard the kit in
 	 * a townsperson's colors.
 	 */
@@ -621,37 +616,54 @@ public class RetroNpcMapping
 	}
 
 	/**
-	 * Grafts 2005 recolor pairs onto the static archetypes.
+	 * Grafts what only the 2005 definition knows - the recolor pairs and the resize - onto the
+	 * static archetypes.
 	 *
 	 * <p>An archetype wins over the generated JSON row for a name, which is what keeps hand-checked
-	 * combat animations and model ids in place. But the row is the only source of the opcode 40
-	 * pairs, and the archetypes are constructed before any cache is read, so the two are recombined
-	 * here instead. Without this a black demon renders in greater demon colors - both are mesh
-	 * 2942, and the pairs are the only thing that separates them.
+	 * combat animations and model ids in place. But the row is the only source of these two, and the
+	 * archetypes are constructed before any cache is read, so the two are recombined here instead.
+	 * Without the pairs a black demon renders in greater demon colors - both are mesh 2942, and the
+	 * pairs are the only thing that separates them. Without the resize a greater demon renders at
+	 * full size where 2005 asked for 110/128ths of it.
 	 *
-	 * <p>Scoped by {@link #categoryUsesRecolors}, for the same reason {@code createMappingData} is:
-	 * guards, goblins and the restless ghost all carry opcode 40 data too, and the generator keeps
-	 * only the lowest-id row per name, so forwarding wholesale would repaint a whole category in one
-	 * arbitrary variant's colors.
+	 * <p>The recolors are scoped by {@link #categoryUsesRecolors}, for the same reason
+	 * {@code createMappingData} scopes them: guards, goblins and the restless ghost all carry opcode
+	 * 40 data too, and the generator keeps only the lowest-id row per name, so forwarding wholesale
+	 * would repaint a whole category in one arbitrary variant's colors. The resize needs no such
+	 * scoping - it is one number per row rather than a palette - but it is only taken where the
+	 * archetype asked for no resize at all, so a hand-corrected size is never overwritten.
 	 */
-	private static void applyCacheRecolors(Map<String, RetroNpcMappingEntry> byName)
+	private static void applyCacheDefinitions(Map<String, RetroNpcMappingEntry> byName)
 	{
 		for (Map.Entry<String, RetroNpcData> mapping : new ArrayList<>(NAME_MAPPINGS.entrySet()))
 		{
 			RetroNpcData data = mapping.getValue();
-			if (data == null || !categoryUsesRecolors(data.getCategory()) || data.hasRecolors())
+			RetroNpcMappingEntry entry = data == null ? null : byName.get(mapping.getKey());
+			if (entry == null)
 			{
 				continue;
 			}
 
-			RetroNpcMappingEntry entry = byName.get(mapping.getKey());
-			if (entry == null || entry.getOriginalColors() == null || entry.getReplacementColors() == null)
+			RetroNpcData updated = data;
+
+			if (categoryUsesRecolors(data.getCategory()) && !data.hasRecolors()
+				&& entry.getOriginalColors() != null && entry.getReplacementColors() != null)
+			{
+				updated = updated.withRecolors(entry.getOriginalColors(), entry.getReplacementColors());
+			}
+
+			if (data.getScaleXZ() == 128 && data.getScaleY() == 128
+				&& (entry.getScaleXZ() != 128 || entry.getScaleY() != 128))
+			{
+				updated = updated.withScale(entry.getScaleXZ(), entry.getScaleY());
+			}
+
+			if (updated == data)
 			{
 				continue;
 			}
 
-			RetroNpcData recolored = data.withRecolors(entry.getOriginalColors(), entry.getReplacementColors());
-			NAME_MAPPINGS.put(mapping.getKey(), recolored);
+			NAME_MAPPINGS.put(mapping.getKey(), updated);
 
 			// Both maps hold the same instance, so every id registered against the archetype has to
 			// be pointed at the replacement too
@@ -659,7 +671,7 @@ public class RetroNpcMapping
 			{
 				if (idMapping.getValue() == data)
 				{
-					idMapping.setValue(recolored);
+					idMapping.setValue(updated);
 				}
 			}
 		}

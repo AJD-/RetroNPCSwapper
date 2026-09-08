@@ -288,19 +288,52 @@ public class RetroNpcData
 	}
 
 	/**
+	 * Returns a copy resized to these 1/128ths, leaving everything else alone.
+	 *
+	 * <p>Exists for the same reason {@link #withRecolors} does: the resize is the 2005 definition's,
+	 * it reaches the plugin only through the generated JSON row, and an archetype is built before
+	 * any of that is read.
+	 */
+	public RetroNpcData withScale(int scaleXZ, int scaleY)
+	{
+		return new RetroNpcData(
+			category,
+			retroModelIds,
+			injectedModelIds,
+			idleAnimationId,
+			walkAnimationId,
+			attackAnimationId,
+			defendAnimationId,
+			deathAnimationId,
+			scaleXZ,
+			scaleY,
+			originalColors,
+			replacementColors,
+			modernAttackAnims,
+			modernDefendAnims,
+			modernDeathAnims);
+	}
+
+	/**
 	 * Returns a copy wearing these parts, leaving everything else alone.
 	 *
 	 * <p>For NPCs that are the same character carrying different equipment - one guard family
 	 * holds a sword, another a battleaxe. Everything that makes them a guard is shared, so the
 	 * variant is derived from the archetype rather than declared beside it, which also means it
 	 * inherits the recolor pairs already grafted on.
+	 *
+	 * <p>Only the cache-backed list is replaced. A mapping that keeps one list for both paths -
+	 * every guard - therefore wears the new parts on both, which is what a change of weapon means.
+	 * A mapping that declares a distinct injected list keeps it, rather than silently collapsing
+	 * onto the parts passed here: a hill giant variant derived this way would otherwise be injected
+	 * wearing the Jogre head that only the cache-backed list is meant to carry.
 	 */
 	public RetroNpcData withModelIds(int[] modelIds)
 	{
 		return new RetroNpcData(
 			category,
 			modelIds,
-			null,
+			injectedModelIds,
 			idleAnimationId,
 			walkAnimationId,
 			attackAnimationId,

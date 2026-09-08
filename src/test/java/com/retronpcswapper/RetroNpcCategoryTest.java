@@ -793,6 +793,54 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
+	 * An equipment variant replaces the cache-backed parts only. Guards keep one list for both
+	 * paths, so for them the new weapon reaches both - but a mapping that declares a distinct
+	 * injected list has that list for a reason, and collapsing the two would inject a hill giant
+	 * wearing the Jogre head that stands in for its missing one on the cache path alone.
+	 */
+	@Test
+	public void testAnEquipmentVariantKeepsItsInjectedParts()
+	{
+		RetroNpcData variant = RetroNpcMapping.HILL_GIANT_DEFAULT.withModelIds(new int[]{2870, 2866, 4990});
+
+		assertArrayEquals(new int[]{2870, 2866, 4990}, variant.getRetroModelIds());
+		assertArrayEquals("the injected parts are not the cache-backed ones",
+			new int[]{2870, 2862}, variant.getInjectedModelIds());
+	}
+
+	/**
+	 * The resize is grafted the same way and for the same reason: 2005 asked for a greater demon at
+	 * 110/128ths, that number lives only in the generated row, and the archetype that shadows the
+	 * row is built before any of it is read. Without the graft the injected path scales by 128/128,
+	 * which is no resize at all.
+	 */
+	@Test
+	public void testGreaterDemonInheritsItsResizeFromTheCache()
+	{
+		RetroNpcData greaterDemon = RetroNpcMapping.get(NpcID.GREATER_DEMON, "Greater demon");
+
+		assertNotNull(greaterDemon);
+		assertEquals("the greater demon archetype must pick up the JSON row's resize",
+			110, greaterDemon.getScaleXZ());
+		assertEquals(110, greaterDemon.getScaleY());
+	}
+
+	/**
+	 * A hand-corrected size is the archetype's own opinion and must survive the graft. The chicken
+	 * is the case: 2005 asked for no resize, the modern composition shrinks its model, and 204 is
+	 * the value that was measured against neither.
+	 */
+	@Test
+	public void testAHandCorrectedResizeIsNotOverwritten()
+	{
+		RetroNpcData chicken = RetroNpcMapping.get(0, "Chicken");
+
+		assertNotNull(chicken);
+		assertEquals(204, chicken.getScaleXZ());
+		assertEquals(204, chicken.getScaleY());
+	}
+
+	/**
 	 * The same graft must reach every NPC id registered against the archetype, not just the name
 	 * lookup - both maps hold the same instance, so replacing one and not the other would leave
 	 * most black demons uncolored.
