@@ -153,8 +153,17 @@ public class RetroModel implements Model
 		faceTransparencies = mesh.getFaceTransparencies();
 		faceTextures = mesh.getFaceTextures();
 
-		// No texture UVs are carried, so make sure a stale texture triangle from a previous bind
-		// cannot be read alongside a face texture id
+		// Face texture ids are carried as they came out of the 2005 cache, which is safe because
+		// the texture list is the one part of that cache that did not move: 2005 texture 37 is
+		// 64x64 averaging (65, 65, 65) and so is live texture 37; 2005 texture 0 is 128x128
+		// averaging (70, 47, 18) and so is live texture 0. Measured against both caches rather than
+		// assumed, because the model and animation ids at these numbers very much did move, and
+		// only one bundled mesh is textured at all - the guard's 2005 head, 34 of its 42 faces.
+		//
+		// The UVs are another matter and are a known gap. That head names 18 texture triangles
+		// through its textureCoords, and neither RetroMesh nor the bundle carries them, so those
+		// faces fall back to the renderer's face-as-UV mapping: the texture lands on them, mapped
+		// off the face's own corners rather than the triangle the artist chose.
 		textureFaces = null;
 		texIndices1 = null;
 		texIndices2 = null;

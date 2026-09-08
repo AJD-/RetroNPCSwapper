@@ -192,6 +192,19 @@ public final class RetroAssetCodec
 		int id = data.readInt();
 		int[] types = readInts(data);
 		int[][] groups = readIntMatrix(data);
+
+		// The two are one table read as two blocks, and nothing downstream re-checks them: the
+		// skinner bounds its loop on the type count and then indexes the groups with it, so a short
+		// groups block reads cleanly here and throws inside the render path instead. Refusing it is
+		// the same contract the magic and version guard - a bundle that is wrong must not load.
+		if (types == null || groups == null || types.length != groups.length)
+		{
+			throw new IOException("Retro asset rig " + id + " names "
+				+ (types == null ? "no" : String.valueOf(types.length)) + " transforms but "
+				+ (groups == null ? "no" : String.valueOf(groups.length))
+				+ " group sets; regenerate the bundle");
+		}
+
 		return new RetroRig(id, types, groups);
 	}
 

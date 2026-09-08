@@ -213,6 +213,50 @@ public class RetroAssetCodecTest
 		}
 	}
 
+	/**
+	 * A rig is one table written as two blocks, so they can disagree without anything else noticing.
+	 * {@link RetroSkinner} bounds its loop on the transform count and indexes the group sets with
+	 * it, which turns a short groups block into an exception inside the render path - a frame into
+	 * the fight rather than at load.
+	 */
+	@Test
+	public void testRejectsARigWhoseTablesDisagree() throws IOException
+	{
+		ByteArrayOutputStream raw = new ByteArrayOutputStream();
+		try (DataOutputStream data = new DataOutputStream(new GZIPOutputStream(raw)))
+		{
+			data.writeInt(0x5254524F);
+			data.writeInt(RetroAssetCodec.VERSION);
+
+			data.writeInt(0);                       // no meshes
+
+			data.writeInt(1);                       // one rig
+			data.writeInt(338);                     // its id
+			data.writeInt(3);                       // three transform types
+			data.writeInt(0);
+			data.writeInt(2);
+			data.writeInt(1);
+			data.writeInt(2);                       // but only two group sets
+			data.writeInt(1);
+			data.writeInt(0);
+			data.writeInt(1);
+			data.writeInt(0);
+
+			data.writeInt(0);                       // no clips
+		}
+
+		try
+		{
+			RetroAssetCodec.read(new ByteArrayInputStream(raw.toByteArray()));
+			fail("expected a refusal for a rig whose two tables disagree");
+		}
+		catch (IOException expected)
+		{
+			assertTrue("the message should name the mismatch it found: " + expected.getMessage(),
+				expected.getMessage().contains("3 transforms but 2 group sets"));
+		}
+	}
+
 	@Test
 	public void testBundleLookupsMissUnknownIds() throws IOException
 	{
