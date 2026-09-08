@@ -59,7 +59,7 @@ tasks.register('run', JavaExec) {
 			"--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
 			"--add-exports=java.desktop/sun.font=ALL-UNNAMED",
 			"-ea"
-	args "--developer-mode", "--debug"
+	args "--developer-mode", "--debug", "--disable-telemetry"
 }
 
 tasks.register('generateNpcMappings', JavaExec) {
@@ -101,6 +101,54 @@ tasks.register('compareRetroModels', JavaExec) {
 	}
 	if (project.hasProperty('cacheDir')) {
 		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+}
+
+// Gate for injecting 2005 geometry that has no live id: checks that the vertex groups baked into
+// the retro mesh are addressed by the framemaps the live sequences name, eg:
+//   ./gradlew verifyRetroRigs
+//   ./gradlew verifyRetroRigs -Pmodels=2853,2854 -Pseqs=79,90
+tasks.register('verifyRetroRigs', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.retronpcswapper.cache.RetroRigVerifier'
+	workingDir = rootDir
+
+	if (project.hasProperty('models')) {
+		systemProperty 'retronpcswapper.models', project.property('models')
+	}
+	if (project.hasProperty('seqs')) {
+		systemProperty 'retronpcswapper.seqs', project.property('seqs')
+	}
+	if (project.hasProperty('cacheDir')) {
+		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+	if (project.hasProperty('retroDir')) {
+		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
+	}
+	if (project.hasProperty('scanrig')) {
+		systemProperty 'retronpcswapper.scanrig', project.property('scanrig')
+	}
+	if (project.hasProperty('probeframes')) {
+		systemProperty 'retronpcswapper.probeframes', 'true'
+	}
+	if (project.hasProperty('findclips')) {
+		systemProperty 'retronpcswapper.findclips', project.property('findclips')
+	}
+}
+
+// Builds the shipped asset bundle: injected geometry plus the rigs and clips that animate it.
+// Meshes come from whichever cache still has them; clips always come from the live cache.
+//   ./gradlew generateRetroAssets
+tasks.register('generateRetroAssets', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.retronpcswapper.cache.RetroAssetGenerator'
+	workingDir = rootDir
+
+	if (project.hasProperty('cacheDir')) {
+		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+	if (project.hasProperty('retroDir')) {
+		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
 	}
 }
 

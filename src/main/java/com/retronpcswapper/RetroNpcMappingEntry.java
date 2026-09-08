@@ -46,13 +46,19 @@ public class RetroNpcMappingEntry
 	private int scaleXZ = 128;
 	private int scaleY = 128;
 
+	// Recolour pairs from npc.dat opcode 40, parallel arrays. The 2005 client gave same-mesh NPC
+	// variants their colour here rather than with separate models, so this is what separates a
+	// retro baby blue dragon from a plain one - both are mesh 2998.
+	private short[] originalColors;
+	private short[] replacementColors;
+
 	// No-arg constructor for Gson
 	public RetroNpcMappingEntry()
 	{
 	}
 
 	public RetroNpcMappingEntry(String name, RetroNpcCategory category, int[] modelIds, int idleAnim, int walkAnim,
-		int scaleXZ, int scaleY)
+		int scaleXZ, int scaleY, short[] originalColors, short[] replacementColors)
 	{
 		this.name = name;
 		this.category = category;
@@ -61,6 +67,8 @@ public class RetroNpcMappingEntry
 		this.walkAnim = walkAnim;
 		this.scaleXZ = scaleXZ;
 		this.scaleY = scaleY;
+		this.originalColors = originalColors;
+		this.replacementColors = replacementColors;
 	}
 
 }

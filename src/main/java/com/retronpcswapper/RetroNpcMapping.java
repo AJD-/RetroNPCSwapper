@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -189,17 +190,18 @@ public class RetroNpcMapping
 
 	// Pre-instantiated immutable archetypes.
 	//
-	// Archetypes for categories outside RetroNpcSwapperPlugin.isCategoryEnabled (demons, imps,
-	// guards, dragons) are currently inert: their mappings resolve but processNpc never
-	// activates them. They are kept, along with their JSON entries, as staged data.
+	// The blockers are not all the same, and they no longer all stand:
+	//   - adult dragons, demons: the 2005 meshes were replaced at their ids and exist nowhere in
+	//     the live cache. This used to say nothing short of an asset-injection API could unblock
+	//     them - that turned out to be the thing to build. They now render from injected geometry
+	//     driven by the surviving 2005 sequences, gated behind the injection pipeline toggle.
+	//   - baby dragons: the model exists, but the animation frames behind the surviving sequence
+	//     ids were re-authored for the modern mesh. Injection does not help; the frames would have
+	//     to be bundled too, and were not, because the mesh needs no replacing.
+	//   - imps: mesh 2887 is preserved exactly, with the same re-authored-frames problem.
 	//
-	// The blockers are not all the same - compareRetroModels decodes
-	// both caches and compares geometry, which settles whether an id still holds its 2005 asset:
-	//   - adult dragons, demons: the 2005 meshes were replaced at their ids and exist nowhere in the
-	//     live cache. Nothing can unblock these short of an asset-injection API.
-	//   - baby dragons: while the model exists, animation frames have been overwritten by the new model
-	//   - imps: mesh 2887 is preserved exactly. Animation frames have been overwritten by ones that match
-	//     the new model
+	// Imp and guard archetypes stay inert: their mappings resolve but processNpc never activates
+	// them. They are kept, along with their JSON entries, as staged data.
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
 		.retroModelIds(new int[]{2943})
@@ -226,6 +228,13 @@ public class RetroNpcMapping
 		.modernDeathAnims(DEMON_MODERN_DEATHS)
 		.build();
 
+	// Known gap: black demons share mesh 2942 with greater demons and differ only by the 2005
+	// opcode 40 pairs (918 -> 4, 929 -> 4, 0 -> 931). Those pairs are in the generated JSON, but a
+	// static archetype takes precedence over the JSON row, so they never reach createMappingData
+	// and a black demon currently renders in greater demon colours. Lesser and greater demons are
+	// unaffected - they carry no recolour data in 2005, being the base colour of their own meshes.
+	// Fixing it means letting an archetype inherit the JSON row's recolours, which is a change to
+	// how load() merges the two rather than a per-category tweak.
 	public static final RetroNpcData BLACK_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.BLACK_DEMONS)
 		.retroModelIds(new int[]{2942})
@@ -349,6 +358,7 @@ public class RetroNpcMapping
 		}
 
 		// 2. Populate mappings from the generated 2005 cache entries
+		Map<String, RetroNpcMappingEntry> byName = new HashMap<>();
 		for (RetroNpcMappingEntry entry : entries)
 		{
 			if (entry == null || entry.getName() == null || entry.getName().isEmpty()
@@ -359,8 +369,72 @@ public class RetroNpcMapping
 			}
 
 			String nameLower = entry.getName().toLowerCase(Locale.ROOT).trim();
+			byName.put(nameLower, entry);
 			NAME_MAPPINGS.putIfAbsent(nameLower, createMappingData(entry));
 		}
+
+		// 3. Hand the static archetypes the recolour pairs from their JSON rows
+		applyCacheRecolors(byName);
+	}
+
+	/**
+	 * Grafts 2005 recolour pairs onto the static archetypes.
+	 *
+	 * <p>An archetype wins over the generated JSON row for a name, which is what keeps hand-checked
+	 * combat animations and model ids in place. But the row is the only source of the opcode 40
+	 * pairs, and the archetypes are constructed before any cache is read, so the two are recombined
+	 * here instead. Without this a black demon renders in greater demon colours - both are mesh
+	 * 2942, and the pairs are the only thing that separates them.
+	 *
+	 * <p>Scoped by {@link #categoryUsesRecolors}, for the same reason {@code createMappingData} is:
+	 * guards, goblins and the restless ghost all carry opcode 40 data too, and the generator keeps
+	 * only the lowest-id row per name, so forwarding wholesale would repaint a whole category in one
+	 * arbitrary variant's colours.
+	 */
+	private static void applyCacheRecolors(Map<String, RetroNpcMappingEntry> byName)
+	{
+		for (Map.Entry<String, RetroNpcData> mapping : new ArrayList<>(NAME_MAPPINGS.entrySet()))
+		{
+			RetroNpcData data = mapping.getValue();
+			if (data == null || !categoryUsesRecolors(data.getCategory()) || data.hasRecolors())
+			{
+				continue;
+			}
+
+			RetroNpcMappingEntry entry = byName.get(mapping.getKey());
+			if (entry == null || entry.getOriginalColors() == null || entry.getReplacementColors() == null)
+			{
+				continue;
+			}
+
+			RetroNpcData recolored = data.withRecolors(entry.getOriginalColors(), entry.getReplacementColors());
+			NAME_MAPPINGS.put(mapping.getKey(), recolored);
+
+			// Both maps hold the same instance, so every id registered against the archetype has to
+			// be pointed at the replacement too
+			for (Map.Entry<Integer, RetroNpcData> idMapping : ID_MAPPINGS.entrySet())
+			{
+				if (idMapping.getValue() == data)
+				{
+					idMapping.setValue(recolored);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Whether a category's retro mesh needs the 2005 recolour pairs to look right.
+	 *
+	 * <p>These meshes carry no usable colour of their own - the dragons are a greyscale ramp, and
+	 * black and greater demons are the same mesh - so recolouring is structural rather than
+	 * cosmetic. Every other category is left alone on purpose.
+	 */
+	private static boolean categoryUsesRecolors(RetroNpcCategory category)
+	{
+		return category == RetroNpcCategory.ADULT_DRAGONS
+			|| category == RetroNpcCategory.LESSER_DEMONS
+			|| category == RetroNpcCategory.GREATER_DEMONS
+			|| category == RetroNpcCategory.BLACK_DEMONS;
 	}
 
 	private static void registerMapping(RetroNpcData data, int... npcIds)
@@ -470,6 +544,18 @@ public class RetroNpcMapping
 		int scaleXZ = entry.getScaleXZ();
 		int scaleY = entry.getScaleY();
 
+		// Deliberately NOT seeded from the entry. Plenty of 2005 definitions carry opcode-40
+		// recolours - goblins and guards among them - and buildEntries collapses rows by name with
+		// the lowest def id winning, so forwarding them wholesale would repaint a live category
+		// with one arbitrary variant's colours. Only a branch that needs them opts in.
+		//
+		// Scoped rather than seeded from every entry: plenty of 2005 definitions carry opcode 40
+		// recolours - goblins and guards among them - and buildEntries keeps only the lowest-id row
+		// per name, so forwarding wholesale would repaint a live category with one arbitrary
+		// variant's colours. See categoryUsesRecolors for why these categories are the exception.
+		short[] recolorFind = categoryUsesRecolors(category) ? entry.getOriginalColors() : null;
+		short[] recolorReplace = categoryUsesRecolors(category) ? entry.getReplacementColors() : null;
+
 		Set<Integer> modernAttacks = Collections.emptySet();
 		Set<Integer> modernDefends = Collections.emptySet();
 		Set<Integer> modernDeaths = Collections.emptySet();
@@ -486,6 +572,7 @@ public class RetroNpcMapping
 			modernAttacks = DEMON_MODERN_ATTACKS;
 			modernDefends = DEMON_MODERN_DEFENDS;
 			modernDeaths = DEMON_MODERN_DEATHS;
+
 		}
 		else if (category == RetroNpcCategory.ADULT_DRAGONS)
 		{
@@ -493,6 +580,7 @@ public class RetroNpcMapping
 			modernAttacks = DRAGON_MODERN_ATTACKS;
 			modernDefends = DRAGON_MODERN_DEFENDS;
 			modernDeaths = DRAGON_MODERN_DEATHS;
+
 		}
 		else if (category == RetroNpcCategory.GOBLINS)
 		{
@@ -608,6 +696,7 @@ public class RetroNpcMapping
 			.deathAnimationId(deathAnim)
 			.scaleXZ(scaleXZ)
 			.scaleY(scaleY)
+			.recolors(recolorFind, recolorReplace)
 			.modernAttackAnims(modernAttacks)
 			.modernDefendAnims(modernDefends)
 			.modernDeathAnims(modernDeaths)

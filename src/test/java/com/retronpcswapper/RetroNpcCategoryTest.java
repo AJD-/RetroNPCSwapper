@@ -46,13 +46,20 @@ public class RetroNpcCategoryTest
 	{
 		// Load mappings from the bundled JSON resource, exactly as the plugin does
 		// at startup - no local 2005 cache needed to run this suite.
+		RetroNpcMapping.load(loadCommittedEntries());
+	}
+
+	/**
+	 * Reads the shipped resource the way the plugin does at startup.
+	 */
+	private static List<RetroNpcMappingEntry> loadCommittedEntries() throws Exception
+	{
 		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("npc-mappings.json"))
 		{
 			assertNotNull("npc-mappings.json resource missing - run ./gradlew generateNpcMappings", in);
-			List<RetroNpcMappingEntry> entries = new Gson().fromJson(
+			return new Gson().fromJson(
 				new InputStreamReader(in, StandardCharsets.UTF_8),
 				new TypeToken<List<RetroNpcMappingEntry>>() {}.getType());
-			RetroNpcMapping.load(entries);
 		}
 	}
 
@@ -597,6 +604,77 @@ public class RetroNpcCategoryTest
 		assertEquals(-1, restless.getDefendAnimationId());
 		assertEquals(-1, restless.getDeathAnimationId());
 		assertFalse(restless.isAttackAnimation(AnimationID.GHOST_UPDATE_NORMAL_ATTACK));
+	}
+
+	/**
+	 * The recolour plumbing is live but nothing opts into it yet, and that has to stay deliberate.
+	 *
+	 * <p>Plenty of 2005 definitions carry opcode-40 recolours - goblins, guards, skeleton mages and
+	 * the restless ghost among them - and {@code buildEntries} collapses rows by name with the
+	 * lowest def id winning, so seeding {@code createMappingData} from the entry would repaint a
+	 * live category with one arbitrary variant's colours. This pins that no shipping category picks
+	 * them up by accident; a branch that needs them opts in explicitly.
+	 */
+	/**
+	 * Black and greater demons are the same mesh (2942) and differ only by the 2005 opcode 40
+	 * pairs, so a black demon without them renders in greater demon colours. The pairs reach it
+	 * through a static archetype, which normally shadows the generated JSON row entirely.
+	 */
+	@Test
+	public void testBlackDemonInheritsItsRecolorsFromTheCache()
+	{
+		RetroNpcData blackDemon = RetroNpcMapping.get(0, "Black demon");
+
+		assertNotNull(blackDemon);
+		assertTrue("the black demon archetype must pick up the JSON row's recolour pairs",
+			blackDemon.hasRecolors());
+		assertEquals("pairs must stay parallel",
+			blackDemon.getOriginalColors().length, blackDemon.getReplacementColors().length);
+	}
+
+	/**
+	 * The same graft must reach every NPC id registered against the archetype, not just the name
+	 * lookup - both maps hold the same instance, so replacing one and not the other would leave
+	 * most black demons uncoloured.
+	 */
+	@Test
+	public void testBlackDemonRecolorsReachTheIdMappingsToo()
+	{
+		RetroNpcData byId = RetroNpcMapping.get(NpcID.BLACK_DEMON, "Black demon");
+
+		assertNotNull(byId);
+		assertTrue("id-resolved black demons must carry the recolours as well", byId.hasRecolors());
+	}
+
+	@Test
+	public void testNoCategoryForwardsRecolorsByDefault()
+	{
+		assertFalse(RetroNpcMapping.get(0, "Goblin").hasRecolors());
+		assertFalse(RetroNpcMapping.get(0, "Guard").hasRecolors());
+		assertFalse(RetroNpcMapping.get(0, "Skeleton mage").hasRecolors());
+		assertFalse(RetroNpcMapping.get(0, "Restless ghost").hasRecolors());
+		assertFalse(RetroNpcMapping.get(0, "Chicken").hasRecolors());
+	}
+
+	/**
+	 * The generator must still carry the pairs through to the JSON even though no category consumes
+	 * them - otherwise the opt-in above would have nothing to opt into.
+	 */
+	@Test
+	public void testGeneratedMappingsCarryRecolorPairs() throws Exception
+	{
+		List<RetroNpcMappingEntry> entries = loadCommittedEntries();
+
+		RetroNpcMappingEntry blueDragon = entries.stream()
+			.filter(e -> "blue dragon".equals(e.getName()))
+			.findFirst()
+			.orElse(null);
+
+		assertNotNull("blue dragon row missing from npc-mappings.json", blueDragon);
+		assertNotNull("blue dragon must carry its opcode 40 pairs", blueDragon.getOriginalColors());
+		assertNotNull(blueDragon.getReplacementColors());
+		assertEquals("recolour arrays must stay parallel",
+			blueDragon.getOriginalColors().length, blueDragon.getReplacementColors().length);
 	}
 
 	@Test

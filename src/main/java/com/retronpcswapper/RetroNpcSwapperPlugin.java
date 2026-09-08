@@ -34,8 +34,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 
+import com.retronpcswapper.inject.ClasspathAssetSource;
+import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroAssetSource;
 import com.retronpcswapper.compatibility.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
@@ -100,6 +104,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private RetroModelCache modelCache;
 
 	@Inject
+	private ScheduledExecutorService executor;
+
+	/** Where injected geometry comes from. Swappable so the delivery mechanism can change later. */
+	private final RetroAssetSource assetSource = new ClasspathAssetSource();
+
+	@Inject
 	private OverlayManager overlayManager;
 
 	@Inject
@@ -131,6 +141,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		log.info("Retro NPC Swapper started");
 		loadMappings();
+		loadAssetBundle();
 		clientThread.invoke(() ->
 		{
 			// A session that died while suppressing left Interact Highlight's NPC outlines off.
@@ -532,12 +543,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return config.swapHillGiants();
 			case GHOSTS:
 				return config.swapGhosts();
+			case ADULT_DRAGONS:
+			case LESSER_DEMONS:
+			case GREATER_DEMONS:
+			case BLACK_DEMONS:
+				// These have no usable mesh in the live cache at all - the ids resolve, but to
+				// unrelated geometry - so they work only through injected geometry, and only when
+				// the bundle actually carries them
+				return config.useInjectionPipeline() && config.swapDragonsAndDemons()
+					&& modelCache.isInjectionPipelineEnabled();
 			default:
-				// The remaining categories (demons, imps, guards, dragons) are disabled. Their
-				// 2005 model IDs still resolve in the modern cache, but resolving is not the same
-				// as being the same mesh: for dragons and demons the geometry at those IDs was
-				// replaced outright, and the retro meshes are not in the live cache at any ID.
-				// See the archetype comments in RetroNpcMapping for the per-category blocker.
+				// Imps and guards remain disabled. Their meshes survive, but the animation frames
+				// behind the surviving sequence ids were re-authored for the modern rig, which only
+				// an in-game look can confirm. See the archetype comments in RetroNpcMapping.
 				return false;
 		}
 	}
@@ -545,8 +563,47 @@ public class RetroNpcSwapperPlugin extends Plugin
 	/**
 	 * Re-evaluates all currently loaded scene NPCs against active configuration toggles.
 	 */
+	/**
+	 * Reads the injected asset bundle off the client thread and publishes it back onto it.
+	 *
+	 * <p>Decompressing 50KB is quick, but it is still disk IO, and startUp must not block on it -
+	 * so this is fire-and-forget. Everything downstream treats an absent bundle as "no injected
+	 * assets", which is why nothing has to wait for this to finish.
+	 */
+	private void loadAssetBundle()
+	{
+		executor.execute(() ->
+		{
+			RetroAssetBundle bundle;
+			try
+			{
+				bundle = assetSource.load();
+			}
+			catch (IOException ex)
+			{
+				// A bundle that exists but will not read is worth saying out loud, unlike one that
+				// is simply absent - it means a stale or truncated resource, not a build without
+				// injected assets
+				log.warn("Could not read the retro asset bundle; injected geometry is unavailable", ex);
+				return;
+			}
+
+			if (bundle.isEmpty())
+			{
+				log.debug("No retro asset bundle present");
+				return;
+			}
+
+			clientThread.invoke(() -> modelCache.setBundle(bundle));
+		});
+	}
+
 	private void recheckLoadedNpcs()
 	{
+		// Cheap and idempotent, and this runs on every path that could have changed the setting -
+		// startup, config change, world change, attach and detach
+		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
+
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			return;

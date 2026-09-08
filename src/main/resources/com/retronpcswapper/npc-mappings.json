@@ -8,7 +8,13 @@
     "idleAnim": 27,
     "walkAnim": 21,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "originalColors": [
+      61
+    ],
+    "replacementColors": [
+      -25049
+    ]
   },
   {
     "name": "baby dragon",
@@ -30,7 +36,17 @@
     "idleAnim": 66,
     "walkAnim": 63,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "originalColors": [
+      918,
+      929,
+      0
+    ],
+    "replacementColors": [
+      4,
+      4,
+      931
+    ]
   },
   {
     "name": "black dragon",
@@ -42,7 +58,13 @@
     "idleAnim": 90,
     "walkAnim": 79,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "originalColors": [
+      61
+    ],
+    "replacementColors": [
+      16
+    ]
   },
   {
     "name": "blue dragon",
@@ -54,7 +76,13 @@
     "idleAnim": 90,
     "walkAnim": 79,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "originalColors": [
+      61
+    ],
+    "replacementColors": [
+      -25049
+    ]
   },
   {
     "name": "chicken",
@@ -130,7 +158,13 @@
     "idleAnim": 90,
     "walkAnim": 79,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "originalColors": [
+      61
+    ],
+    "replacementColors": [
+      22051
+    ]
   },
   {
     "name": "guard",
@@ -149,7 +183,17 @@
     "idleAnim": 808,
     "walkAnim": 819,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "originalColors": [
+      25238,
+      8741,
+      61
+    ],
+    "replacementColors": [
+      10508,
+      6930,
+      5652
+    ]
   },
   {
     "name": "hill giant",
@@ -206,7 +250,13 @@
     "idleAnim": 90,
     "walkAnim": 79,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "originalColors": [
+      61
+    ],
+    "replacementColors": [
+      687
+    ]
   },
   {
     "name": "restless ghost",
@@ -224,7 +274,23 @@
     "idleAnim": 15,
     "walkAnim": 13,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "originalColors": [
+      25238,
+      8741,
+      4550,
+      908,
+      7073,
+      5652
+    ],
+    "replacementColors": [
+      24,
+      37,
+      61,
+      0,
+      24,
+      37
+    ]
   },
   {
     "name": "skeleton",
@@ -251,7 +317,17 @@
     "idleAnim": 808,
     "walkAnim": 819,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "originalColors": [
+      25238,
+      8741,
+      6798
+    ],
+    "replacementColors": [
+      10508,
+      10508,
+      10508
+    ]
   },
   {
     "name": "summoned zombie",

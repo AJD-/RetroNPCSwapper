@@ -36,6 +36,7 @@ public interface RetroNpcConfig extends Config
 
 	/** Also written programmatically, so the key is named rather than repeated as a literal. */
 	String OVERRIDE_INTERACT_HIGHLIGHT = "overrideInteractHighlight";
+	String USE_INJECTION_PIPELINE = "useInjectionPipeline";
 
 	/**
 	 * Read-only notice for users, not a setting.
@@ -186,6 +187,48 @@ public interface RetroNpcConfig extends Config
 		position = 1
 	)
 	default boolean overrideInteractHighlight()
+	{
+		return false;
+	}
+
+	@ConfigSection(
+		name = "Experimental",
+		description = "Unfinished work, off by default",
+		position = 4,
+		closedByDefault = true
+	)
+	String experimentalSection = "experimentalSection";
+
+	@ConfigItem(
+		keyName = USE_INJECTION_PIPELINE,
+		name = "Use the injection pipeline",
+		description = "<html><body style='width:170px'>Draw swapped NPCs through geometry this "
+			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
+			+ "Groundwork for restoring meshes that no longer exist anywhere in the cache. Right "
+			+ "now the geometry is still the same retro model, so <b>nothing should look any "
+			+ "different</b> with this on - if anything does, that is a bug worth "
+			+ "reporting.</body></html>",
+		section = experimentalSection,
+		position = 1
+	)
+	default boolean useInjectionPipeline()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "swapDragonsAndDemons",
+		name = "Dragons and demons",
+		description = "<html><body style='width:170px'>Restore the 2005 adult dragon and demon "
+			+ "models and animation using injected geometry. These cannot be swapped by ID at all - "
+			+ "the August 2006 graphical update overwrote their meshes, and the sequences they play "
+			+ "survived by ID but had their frames re-authored for the modern skeletons. Both the "
+			+ "geometry and the animation come from the 2005 data "
+			+ "instead.<br><br>Requires <b>Use the injection pipeline</b> above.</body></html>",
+		section = experimentalSection,
+		position = 2
+	)
+	default boolean swapDragonsAndDemons()
 	{
 		return false;
 	}

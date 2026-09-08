@@ -100,6 +100,20 @@ public class RetroNpcData
 	private final int scaleY;
 
 	/**
+	 * Recolour pairs applied to the retro mesh, parallel arrays of palette values.
+	 *
+	 * <p>The 2005 client coloured same-mesh NPC variants here rather than with separate models -
+	 * every dragon shares one mesh and recolours palette index 61 to its own colour - so without
+	 * these a baby blue dragon and a baby red dragon would render identically.
+	 */
+	private final short[] originalColors;
+
+	/**
+	 * Replacement palette values, parallel to {@link #originalColors}.
+	 */
+	private final short[] replacementColors;
+
+	/**
 	 * Modern attack animation IDs to intercept and swap for this NPC category.
 	 */
 	@Getter
@@ -127,6 +141,8 @@ public class RetroNpcData
 		int deathAnimationId,
 		int scaleXZ,
 		int scaleY,
+		short[] originalColors,
+		short[] replacementColors,
 		Set<Integer> modernAttackAnims,
 		Set<Integer> modernDefendAnims,
 		Set<Integer> modernDeathAnims
@@ -141,6 +157,12 @@ public class RetroNpcData
 		this.deathAnimationId = deathAnimationId;
 		this.scaleXZ = scaleXZ;
 		this.scaleY = scaleY;
+		// Only keep the pairs when both sides are present and agree - a half-populated recolour
+		// would throw at draw time, which is the worst place to find out
+		boolean recolorUsable = originalColors != null && replacementColors != null
+			&& originalColors.length > 0 && originalColors.length == replacementColors.length;
+		this.originalColors = recolorUsable ? originalColors.clone() : new short[0];
+		this.replacementColors = recolorUsable ? replacementColors.clone() : new short[0];
 		this.modernAttackAnims = modernAttackAnims != null
 			? Collections.unmodifiableSet(new HashSet<>(modernAttackAnims))
 			: Collections.emptySet();
@@ -177,6 +199,48 @@ public class RetroNpcData
 		return retroModelIds.clone();
 	}
 
+	public short[] getOriginalColors()
+	{
+		return originalColors.clone();
+	}
+
+	public short[] getReplacementColors()
+	{
+		return replacementColors.clone();
+	}
+
+	public boolean hasRecolors()
+	{
+		return originalColors.length > 0;
+	}
+
+	/**
+	 * Returns a copy carrying these recolour pairs, leaving everything else alone.
+	 *
+	 * <p>Exists for the static archetypes. They take precedence over the generated JSON row, but
+	 * that row is the only source of the 2005 opcode 40 pairs, so the two have to be recombined
+	 * after the fact rather than at construction - the archetypes are built before any cache data
+	 * is read.
+	 */
+	public RetroNpcData withRecolors(short[] originalColors, short[] replacementColors)
+	{
+		return new RetroNpcData(
+			category,
+			retroModelIds,
+			idleAnimationId,
+			walkAnimationId,
+			attackAnimationId,
+			defendAnimationId,
+			deathAnimationId,
+			scaleXZ,
+			scaleY,
+			originalColors,
+			replacementColors,
+			modernAttackAnims,
+			modernDefendAnims,
+			modernDeathAnims);
+	}
+
 	@Override
 	public boolean equals(Object o)
 	{
@@ -192,6 +256,8 @@ public class RetroNpcData
 			scaleY == that.scaleY &&
 			category == that.category &&
 			Arrays.equals(retroModelIds, that.retroModelIds) &&
+			Arrays.equals(originalColors, that.originalColors) &&
+			Arrays.equals(replacementColors, that.replacementColors) &&
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
 			Objects.equals(modernDefendAnims, that.modernDefendAnims) &&
 			Objects.equals(modernDeathAnims, that.modernDeathAnims);
@@ -209,6 +275,8 @@ public class RetroNpcData
 		result = 31 * result + deathAnimationId;
 		result = 31 * result + scaleXZ;
 		result = 31 * result + scaleY;
+		result = 31 * result + Arrays.hashCode(originalColors);
+		result = 31 * result + Arrays.hashCode(replacementColors);
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
 		result = 31 * result + (modernDefendAnims != null ? modernDefendAnims.hashCode() : 0);
 		result = 31 * result + (modernDeathAnims != null ? modernDeathAnims.hashCode() : 0);
@@ -226,6 +294,8 @@ public class RetroNpcData
 		private int deathAnimationId = -1;
 		private int scaleXZ = 128;
 		private int scaleY = 128;
+		private short[] originalColors;
+		private short[] replacementColors;
 		private final Set<Integer> modernAttackAnims = new HashSet<>();
 		private final Set<Integer> modernDefendAnims = new HashSet<>();
 		private final Set<Integer> modernDeathAnims = new HashSet<>();
@@ -281,6 +351,27 @@ public class RetroNpcData
 		public Builder scaleY(int scaleY)
 		{
 			this.scaleY = scaleY;
+			return this;
+		}
+
+		/**
+		 * Recolour pairs as parallel arrays, in npc.dat opcode 40 order.
+		 */
+		public Builder recolors(short[] originalColors, short[] replacementColors)
+		{
+			this.originalColors = originalColors;
+			this.replacementColors = replacementColors;
+			return this;
+		}
+
+		/**
+		 * Convenience for the common single-pair case, where one palette index carries the whole
+		 * colour of the variant.
+		 */
+		public Builder recolor(int originalColor, int replacementColor)
+		{
+			this.originalColors = new short[]{(short) originalColor};
+			this.replacementColors = new short[]{(short) replacementColor};
 			return this;
 		}
 
@@ -359,6 +450,8 @@ public class RetroNpcData
 				deathAnimationId,
 				scaleXZ,
 				scaleY,
+				originalColors,
+				replacementColors,
 				modernAttackAnims,
 				modernDefendAnims,
 				modernDeathAnims

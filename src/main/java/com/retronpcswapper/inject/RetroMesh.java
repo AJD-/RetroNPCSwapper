@@ -1,0 +1,194 @@
+/*
+ * Copyright (c) 2026, AJD
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.retronpcswapper.inject;
+
+/**
+ * Rest-pose geometry plus the rigging that lets it be animated, owned entirely by this plugin.
+ *
+ * <p>This is what makes injecting a mesh with no live cache id possible. Everything the renderer
+ * needs is here or derived from it, so nothing has to come back through the client.
+ *
+ * <p>Immutable, and shared across every NPC using it: posing reads from here and writes elsewhere,
+ * never back.
+ */
+public final class RetroMesh
+{
+	private final int id;
+
+	private final int verticesCount;
+	private final float[] verticesX;
+	private final float[] verticesY;
+	private final float[] verticesZ;
+
+	private final int faceCount;
+	private final int[] faceIndices1;
+	private final int[] faceIndices2;
+	private final int[] faceIndices3;
+
+	/** Unlit packed HSL per face; {@link RetroLighter} turns these into per-corner colours. */
+	private final short[] faceColors;
+	private final byte[] faceRenderTypes;
+	private final byte[] faceTransparencies;
+	private final byte[] faceRenderPriorities;
+	private final short[] faceTextures;
+
+	/**
+	 * Vertex indices per transform group, the unpacked form of the model's per-vertex labels. An
+	 * empty slot is a group nothing is bound to.
+	 */
+	private final int[][] vertexGroups;
+
+	public RetroMesh(
+		int id,
+		float[] verticesX, float[] verticesY, float[] verticesZ,
+		int[] faceIndices1, int[] faceIndices2, int[] faceIndices3,
+		short[] faceColors, byte[] faceRenderTypes, byte[] faceTransparencies,
+		byte[] faceRenderPriorities, short[] faceTextures,
+		int[][] vertexGroups)
+	{
+		this.id = id;
+		this.verticesCount = verticesX.length;
+		this.verticesX = verticesX;
+		this.verticesY = verticesY;
+		this.verticesZ = verticesZ;
+		this.faceCount = faceIndices1.length;
+		this.faceIndices1 = faceIndices1;
+		this.faceIndices2 = faceIndices2;
+		this.faceIndices3 = faceIndices3;
+		this.faceColors = faceColors;
+		this.faceRenderTypes = faceRenderTypes;
+		this.faceTransparencies = faceTransparencies;
+		this.faceRenderPriorities = faceRenderPriorities;
+		this.faceTextures = faceTextures;
+		this.vertexGroups = vertexGroups;
+	}
+
+	public int getId()
+	{
+		return id;
+	}
+
+	public int getVerticesCount()
+	{
+		return verticesCount;
+	}
+
+	public int getFaceCount()
+	{
+		return faceCount;
+	}
+
+	/** True when this mesh carries rigging and can be posed at all. */
+	public boolean isRigged()
+	{
+		return vertexGroups != null && vertexGroups.length > 0;
+	}
+
+	/**
+	 * Vertices bound to a transform group, or an empty array when the group is out of range.
+	 *
+	 * <p>Out-of-range is normal rather than exceptional: a rig is shared across a whole category and
+	 * addresses more groups than any one mesh uses. The reference implementation makes the same
+	 * bounds check.
+	 */
+	public int[] getVertexGroup(int group)
+	{
+		if (vertexGroups == null || group < 0 || group >= vertexGroups.length)
+		{
+			return EMPTY_GROUP;
+		}
+		int[] members = vertexGroups[group];
+		return members == null ? EMPTY_GROUP : members;
+	}
+
+	private static final int[] EMPTY_GROUP = new int[0];
+
+	// Accessors below hand back the live arrays. Callers read them into their own buffers; nothing
+	// mutates a mesh once it is built.
+
+	public float[] getVerticesX()
+	{
+		return verticesX;
+	}
+
+	public float[] getVerticesY()
+	{
+		return verticesY;
+	}
+
+	public float[] getVerticesZ()
+	{
+		return verticesZ;
+	}
+
+	public int[] getFaceIndices1()
+	{
+		return faceIndices1;
+	}
+
+	public int[] getFaceIndices2()
+	{
+		return faceIndices2;
+	}
+
+	public int[] getFaceIndices3()
+	{
+		return faceIndices3;
+	}
+
+	public short[] getFaceColors()
+	{
+		return faceColors;
+	}
+
+	public byte[] getFaceRenderTypes()
+	{
+		return faceRenderTypes;
+	}
+
+	public byte[] getFaceTransparencies()
+	{
+		return faceTransparencies;
+	}
+
+	public byte[] getFaceRenderPriorities()
+	{
+		return faceRenderPriorities;
+	}
+
+	public short[] getFaceTextures()
+	{
+		return faceTextures;
+	}
+
+	/**
+	 * The whole group table, for callers building a derived mesh. Shared by reference - a derived
+	 * mesh rigs identically to the one it came from.
+	 */
+	public int[][] getVertexGroups()
+	{
+		return vertexGroups;
+	}
+}
