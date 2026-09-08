@@ -37,6 +37,17 @@ public final class RetroMesh
 {
 	private final int id;
 
+	/**
+	 * The model-level render priority, used as the per-face fallback when
+	 * {@link #faceRenderPriorities} is null.
+	 *
+	 * <p>Carried because merging two parts, only one of which has a per-face array, has to fill the
+	 * other side with this rather than with zero - which is what the client's own
+	 * {@code mergeModels} does. Losing it would change draw order on exactly the multi-part NPCs
+	 * merging exists for, and invisibly to any check that only compares vertices.
+	 */
+	private final int priority;
+
 	private final int verticesCount;
 	private final float[] verticesX;
 	private final float[] verticesY;
@@ -61,7 +72,7 @@ public final class RetroMesh
 	private final int[][] vertexGroups;
 
 	public RetroMesh(
-		int id,
+		int id, int priority,
 		float[] verticesX, float[] verticesY, float[] verticesZ,
 		int[] faceIndices1, int[] faceIndices2, int[] faceIndices3,
 		short[] faceColors, byte[] faceRenderTypes, byte[] faceTransparencies,
@@ -69,6 +80,7 @@ public final class RetroMesh
 		int[][] vertexGroups)
 	{
 		this.id = id;
+		this.priority = priority;
 		this.verticesCount = verticesX.length;
 		this.verticesX = verticesX;
 		this.verticesY = verticesY;
@@ -88,6 +100,11 @@ public final class RetroMesh
 	public int getId()
 	{
 		return id;
+	}
+
+	public int getPriority()
+	{
+		return priority;
 	}
 
 	public int getVerticesCount()

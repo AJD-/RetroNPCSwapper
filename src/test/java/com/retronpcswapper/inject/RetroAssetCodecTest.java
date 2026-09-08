@@ -44,7 +44,7 @@ public class RetroAssetCodecTest
 {
 	private static RetroMesh mesh()
 	{
-		return new RetroMesh(2944,
+		return new RetroMesh(2944, 5,
 			new float[]{0f, 10f, 20f},
 			new float[]{0f, -30f, 5f},
 			new float[]{0f, 40f, -15f},
@@ -97,6 +97,12 @@ public class RetroAssetCodecTest
 
 		assertNotNull(restored);
 		assertEquals(original.getId(), restored.getId());
+
+		// The model-level priority is the per-face fallback a merge needs when only one part carries
+		// a priority array, so losing it in the round trip would change draw order on merged models
+		assertEquals(5, restored.getPriority());
+		assertEquals(original.getPriority(), restored.getPriority());
+
 		assertEquals(original.getVerticesCount(), restored.getVerticesCount());
 		assertEquals(original.getFaceCount(), restored.getFaceCount());
 		assertArrayEquals(original.getVerticesX(), restored.getVerticesX(), 0f);

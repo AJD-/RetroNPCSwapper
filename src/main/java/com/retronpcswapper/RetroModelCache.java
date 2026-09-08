@@ -28,11 +28,15 @@ import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
+import com.retronpcswapper.inject.RetroMeshMerger;
 import com.retronpcswapper.inject.RetroModel;
 import com.retronpcswapper.inject.RetroRig;
 import com.retronpcswapper.inject.RetroSkinner;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
@@ -179,9 +183,13 @@ public class RetroModelCache
 
 		baseModels.put(npcId, model);
 
-		// Remember which bundle mesh backs this NPC, so the render path can reach it with a lookup
+		// Remember which bundle mesh backs this NPC, so the skinning check can reach it with a lookup.
+		// Only a single-part NPC qualifies: the memo holds one mesh, so for a multi-part NPC it would
+		// be the body alone against the client's fully merged model, and the comparison could never
+		// do anything but skip - once a frame, forever, now that giants share a bundled body.
 		int[] modelIds = data.getRetroModelIds();
-		if (modelIds.length > 0 && bundle.getMesh(modelIds[0]) != null)
+		RetroMesh bundleMesh = modelIds.length > 0 ? bundle.getMesh(modelIds[0]) : null;
+		if (bundleMesh != null && bundleMesh.getVerticesCount() == model.getVerticesCount())
 		{
 			meshIds.put(npcId, modelIds[0]);
 		}
@@ -290,11 +298,35 @@ public class RetroModelCache
 			return null;
 		}
 
-		RetroMesh mesh = bundle.getMesh(modelIds[0]);
-		if (mesh == null)
+		List<RetroMesh> parts = new ArrayList<>(modelIds.length);
+		for (int modelId : modelIds)
 		{
+			RetroMesh part = bundle.getMesh(modelId);
+			if (part != null)
+			{
+				parts.add(part);
+			}
+		}
+
+		if (parts.isEmpty())
+		{
+			// Not a bundled category at all - the cache-backed path owns this one
 			return null;
 		}
+
+		if (parts.size() < modelIds.length)
+		{
+			// Unlike the cache path, which draws whatever parts it managed to load, a partial set is
+			// never drawn here: the bundle is generated from a fixed spec list, so a missing part is
+			// a generator bug rather than a degraded asset, and a headless giant is worse than
+			// falling back to the cache path. This is also what keeps armed skeletons whole - mesh
+			// 2944 is bundled as the skinner test subject but 2946, its weapon, is not.
+			log.debug("Bundle has {} of {} parts for model ids {}; refusing a partial merge",
+				parts.size(), modelIds.length, Arrays.toString(modelIds));
+			return null;
+		}
+
+		RetroMesh mesh = RetroMeshMerger.merge(modelIds[0], parts);
 
 		// Recolour before lighting, not after: lit colours are baked once and never recomputed, so
 		// a recolour applied afterwards would have nothing left to bite on. Retro dragon meshes are
@@ -367,7 +399,7 @@ public class RetroModelCache
 
 		// Faces and rigging are shared with the bundle mesh - only vertices and colours differ per
 		// NPC, and neither the bundle nor any other NPC sees these copies
-		return new RetroMesh(mesh.getId(), vx, vy, vz,
+		return new RetroMesh(mesh.getId(), mesh.getPriority(), vx, vy, vz,
 			mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
 			colors, mesh.getFaceRenderTypes(), mesh.getFaceTransparencies(),
 			mesh.getFaceRenderPriorities(), mesh.getFaceTextures(), mesh.getVertexGroups());
@@ -463,27 +495,31 @@ public class RetroModelCache
 			return;
 		}
 
-		skinningVerified = true;
-
 		try
 		{
-			compareSkinning(mesh, rig, clip, frame, posed);
+			// Only spend the one shot on a comparison that actually ran. A multi-part NPC memoises
+			// its first part, so the client's merged model has more vertices than the bundle mesh
+			// and the comparison bails - if that burned the flag, a hill giant walking past would
+			// deny the skeleton, the one subject that can settle this, its turn.
+			skinningVerified = compareSkinning(mesh, rig, clip, frame, posed);
 		}
 		catch (RuntimeException ex)
 		{
 			// A check must never be why a frame fails to draw
+			skinningVerified = true;
 			log.debug("Skinning comparison failed", ex);
 		}
 	}
 
-	private void compareSkinning(RetroMesh mesh, RetroRig rig, RetroClip clip, int frame, Model posed)
+	/** Returns whether the comparison actually ran, so a skip does not consume the one shot. */
+	private boolean compareSkinning(RetroMesh mesh, RetroRig rig, RetroClip clip, int frame, Model posed)
 	{
 		int count = mesh.getVerticesCount();
 		if (posed.getVerticesCount() != count)
 		{
 			log.debug("Skinning comparison skipped: bundle mesh has {} vertices, the client's has {}",
 				count, posed.getVerticesCount());
-			return;
+			return false;
 		}
 
 		if (skinnedX.length < count)
@@ -497,7 +533,7 @@ public class RetroModelCache
 		{
 			log.debug("Skinning comparison skipped: frame {} of clip {} could not be applied",
 				frame, clip.getSequenceId());
-			return;
+			return false;
 		}
 
 		float[] theirX = posed.getVerticesX();
@@ -524,7 +560,7 @@ public class RetroModelCache
 		{
 			log.debug("RetroSkinner matches the client on clip {} frame {} over {} vertices "
 				+ "(max delta {})", clip.getSequenceId(), frame, count, maxDelta);
-			return;
+			return true;
 		}
 
 		log.debug("RetroSkinner differs from the client on clip {} frame {}: max delta {} at vertex "
@@ -532,6 +568,7 @@ public class RetroModelCache
 			clip.getSequenceId(), frame, maxDelta, worstVertex,
 			skinnedX[worstVertex], skinnedY[worstVertex], skinnedZ[worstVertex],
 			theirX[worstVertex], theirY[worstVertex], theirZ[worstVertex]);
+		return true;
 	}
 
 	/**

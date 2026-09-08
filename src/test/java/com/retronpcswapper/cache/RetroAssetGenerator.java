@@ -91,8 +91,8 @@ public class RetroAssetGenerator
 		Paths.get("src/main/resources/com/retronpcswapper/retro-assets.dat");
 
 	/**
-	 * What to bundle. Model ids are merged into a single mesh when an NPC is built from parts, and
-	 * stored under the first part's id.
+	 * What to bundle. Each model id becomes its own bundle mesh; an NPC built from parts has them
+	 * merged at runtime. A body mesh named by several specs is decoded and stored once.
 	 */
 	private static final List<Spec> SPECS = Arrays.asList(
 		// Not shipped for its own sake - the skeleton exists in both caches and the client can
@@ -168,11 +168,32 @@ public class RetroAssetGenerator
 				+ retroFrames.getGroups().size() + " groups, " + retroSequences.size() + " sequences");
 		}
 
+		// Which spec first claimed a shared id, so a second spec asking for it from the other cache
+		// is caught here rather than silently taking whichever was written last
+		Map<Integer, Spec> meshOwners = new LinkedHashMap<>();
+		Map<Integer, Spec> clipOwners = new LinkedHashMap<>();
+		boolean complete = true;
+
 		for (Spec spec : SPECS)
 		{
-			List<ModelDefinition> parts = new ArrayList<>();
+			System.out.println(spec.label);
+
 			for (int modelId : spec.modelIds)
 			{
+				Spec owner = meshOwners.get(modelId);
+				if (owner != null)
+				{
+					if (owner.source != spec.source)
+					{
+						System.err.println("  model " + modelId + " is claimed by " + owner.label
+							+ " from the " + owner.source + " cache and by " + spec.label
+							+ " from the " + spec.source + " cache");
+						complete = false;
+					}
+					System.out.println("  mesh " + modelId + "  (shared with " + owner.label + ")");
+					continue;
+				}
+
 				ModelDefinition part = spec.source == Source.RETRO
 					? decodeRetroModel(retro, modelId)
 					: decodeLiveModel(store, modelId);
@@ -180,29 +201,35 @@ public class RetroAssetGenerator
 				if (part == null)
 				{
 					System.err.println("  " + spec.label + ": model " + modelId + " could not be decoded");
+					complete = false;
 					continue;
 				}
-				parts.add(part);
+
+				RetroMesh mesh = toMesh(modelId, part);
+				meshes.put(modelId, mesh);
+				meshOwners.put(modelId, spec);
+
+				System.out.println("  mesh " + modelId
+					+ "  verts=" + mesh.getVerticesCount()
+					+ " faces=" + mesh.getFaceCount()
+					+ " rigged=" + mesh.isRigged());
 			}
-
-			if (parts.isEmpty())
-			{
-				System.err.println(spec.label + ": no geometry, skipped");
-				continue;
-			}
-
-			int meshId = spec.modelIds[0];
-			RetroMesh mesh = toMesh(meshId, parts);
-			meshes.put(meshId, mesh);
-
-			System.out.println(spec.label + "  mesh " + meshId
-				+ "  verts=" + mesh.getVerticesCount()
-				+ " faces=" + mesh.getFaceCount()
-				+ " rigged=" + mesh.isRigged()
-				+ (parts.size() > 1 ? "  (merged from " + parts.size() + " parts)" : ""));
 
 			for (int sequenceId : spec.sequenceIds)
 			{
+				Spec owner = clipOwners.get(sequenceId);
+				if (owner != null)
+				{
+					if (owner.clipSource != spec.clipSource)
+					{
+						System.err.println("  sequence " + sequenceId + " is claimed by " + owner.label
+							+ " from the " + owner.clipSource + " cache and by " + spec.label
+							+ " from the " + spec.clipSource + " cache");
+						complete = false;
+					}
+					continue;
+				}
+
 				RetroClip clip = spec.clipSource == Source.RETRO
 					? buildRetroClip(store, sequenceId, retroFrames, retroSequences, rigs)
 					: buildClip(store, sequenceId, rigs);
@@ -210,28 +237,78 @@ public class RetroAssetGenerator
 				if (clip == null)
 				{
 					System.err.println("  sequence " + sequenceId + " could not be decoded");
+					complete = false;
 					continue;
 				}
 
 				clips.put(sequenceId, clip);
+				clipOwners.put(sequenceId, spec);
 				System.out.println("  clip " + sequenceId + "  frames=" + clip.getFrameCount()
 					+ " rig=" + clip.getRigId()
 					+ (spec.clipSource == Source.RETRO ? "  (2005)" : ""));
 			}
 		}
 
+		// buildInjected refuses a partial part set rather than drawing a headless NPC, so a bundle
+		// missing one head would silently disable a whole category at runtime. Catch it here.
+		if (!complete)
+		{
+			throw new IOException("The bundle is incomplete; see the errors above");
+		}
+
 		return new RetroAssetBundle(meshes, rigs, clips);
 	}
 
 	/**
-	 * Merges the parts of a multi-model NPC into one mesh, offsetting face indices and vertex groups
-	 * so the parts share a coordinate and rig space.
+	 * Converts one decoded model into the bundle mesh form.
 	 *
-	 * <p>Done here rather than at runtime because it is a pure transformation of cache data, and
-	 * because the client's own {@code mergeModels} is not available for geometry the client never
-	 * decoded.
+	 * <p>Parts are stored individually, under their own model ids, and merged at runtime by
+	 * {@link com.retronpcswapper.inject.RetroMeshMerger}. Merging here instead would have to store
+	 * the result under one part id, which cannot express an NPC family that shares a body mesh and
+	 * differs only by head - every variant would collide on the same key.
 	 */
-	private static RetroMesh toMesh(int meshId, List<ModelDefinition> parts)
+	static RetroMesh toMeshForTest(int meshId, ModelDefinition part)
+	{
+		return toMesh(meshId, part);
+	}
+
+	private static RetroMesh toMesh(int meshId, ModelDefinition part)
+	{
+		part.computeAnimationTables();
+
+		float[] vx = new float[part.vertexCount];
+		float[] vy = new float[part.vertexCount];
+		float[] vz = new float[part.vertexCount];
+		for (int v = 0; v < part.vertexCount; v++)
+		{
+			vx[v] = part.vertexX[v];
+			vy[v] = part.vertexY[v];
+			vz[v] = part.vertexZ[v];
+		}
+
+		int[][] partGroups = part.getVertexGroups();
+		int[][] vertexGroups = new int[partGroups == null ? 0 : partGroups.length][];
+		for (int group = 0; group < vertexGroups.length; group++)
+		{
+			int[] members = partGroups[group];
+			vertexGroups[group] = members == null ? new int[0] : members.clone();
+		}
+
+		return new RetroMesh(meshId, part.priority, vx, vy, vz,
+			part.faceIndices1.clone(), part.faceIndices2.clone(), part.faceIndices3.clone(),
+			part.faceColors.clone(),
+			part.faceRenderTypes == null ? null : part.faceRenderTypes.clone(),
+			part.faceTransparencies == null ? null : part.faceTransparencies.clone(),
+			part.faceRenderPriorities == null ? null : part.faceRenderPriorities.clone(),
+			part.faceTextures == null ? null : part.faceTextures.clone(),
+			vertexGroups);
+	}
+
+	/**
+	 * The merge as it stood before it moved to {@code RetroMeshMerger}, kept so
+	 * {@code RetroAssetGeneratorTest} can check the new one against it over real cache geometry.
+	 */
+	static RetroMesh legacyToMesh(int meshId, List<ModelDefinition> parts)
 	{
 		int totalVertices = 0;
 		int totalFaces = 0;
@@ -345,7 +422,7 @@ public class RetroAssetGenerator
 			vertexGroups[group] = packed;
 		}
 
-		return new RetroMesh(meshId, vx, vy, vz, i1, i2, i3,
+		return new RetroMesh(meshId, parts.get(0).priority, vx, vy, vz, i1, i2, i3,
 			colors, renderTypes, transparencies, priorities, textures, vertexGroups);
 	}
 
@@ -647,7 +724,7 @@ public class RetroAssetGenerator
 		}
 	}
 
-	private static ModelDefinition decodeRetroModel(RetroCacheReader retro, int modelId)
+	static ModelDefinition decodeRetroModel(RetroCacheReader retro, int modelId)
 	{
 		try
 		{

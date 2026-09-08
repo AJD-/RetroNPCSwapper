@@ -51,7 +51,7 @@ public final class RetroAssetCodec
 	private static final int MAGIC = 0x5254524F;
 
 	/** Bump on any layout change; readers refuse anything they were not written for. */
-	static final int VERSION = 1;
+	static final int VERSION = 2;
 
 	/** Sanity ceilings, so a corrupt length cannot make the reader allocate wildly. */
 	private static final int MAX_ENTRIES = 100_000;
@@ -136,6 +136,7 @@ public final class RetroAssetCodec
 	private static void writeMesh(DataOutputStream data, RetroMesh mesh) throws IOException
 	{
 		data.writeInt(mesh.getId());
+		data.writeByte(mesh.getPriority());
 
 		writeFloats(data, mesh.getVerticesX());
 		writeFloats(data, mesh.getVerticesY());
@@ -157,6 +158,7 @@ public final class RetroAssetCodec
 	private static RetroMesh readMesh(DataInputStream data) throws IOException
 	{
 		int id = data.readInt();
+		int priority = data.readByte();
 
 		float[] vx = readFloats(data);
 		float[] vy = readFloats(data);
@@ -174,7 +176,7 @@ public final class RetroAssetCodec
 
 		int[][] vertexGroups = readIntMatrix(data);
 
-		return new RetroMesh(id, vx, vy, vz, i1, i2, i3,
+		return new RetroMesh(id, priority, vx, vy, vz, i1, i2, i3,
 			colors, renderTypes, transparencies, priorities, textures, vertexGroups);
 	}
 

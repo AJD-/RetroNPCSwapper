@@ -1,10 +1,16 @@
 package com.retronpcswapper.cache;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import com.retronpcswapper.inject.RetroClip;
+import com.retronpcswapper.inject.RetroMesh;
+import com.retronpcswapper.inject.RetroMeshMerger;
 import com.retronpcswapper.inject.RetroRig;
+import net.runelite.cache.definitions.ModelDefinition;
 import net.runelite.cache.fs.Store;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -25,6 +31,85 @@ public class RetroAssetGeneratorTest
 
 	/** Skeleton ready and walk - 2 and 8 frames in both caches. */
 	private static final int[] SKELETON_SEQUENCES = {262, 259};
+
+	/**
+	 * Checks the runtime merge against the generator's own, over real cache geometry.
+	 *
+	 * <p>The merge used to run here, storing the result under the first part's model id. That could
+	 * not express an NPC family sharing a body mesh, so the bundle now stores parts individually and
+	 * {@link RetroMeshMerger} joins them at spawn. This is the equivalence that makes the move safe:
+	 * the same parts, through the old code and the new, have to produce the same mesh.
+	 */
+	@Test
+	public void testTheRuntimeMergeMatchesTheGeneratorsOwn() throws Exception
+	{
+		if (!RETRO_CACHE_DIR.exists())
+		{
+			return;
+		}
+
+		RetroCacheReader retro = new RetroCacheReader(RETRO_CACHE_DIR);
+		if (!retro.init())
+		{
+			return;
+		}
+
+		try
+		{
+			// The adult dragon is the one NPC that shipped pre-merged
+			assertMergesAgree(retro, 2853, 2854);
+		}
+		finally
+		{
+			retro.close();
+		}
+	}
+
+	private static void assertMergesAgree(RetroCacheReader retro, int... modelIds) throws Exception
+	{
+		List<ModelDefinition> definitions = new ArrayList<>();
+		List<RetroMesh> parts = new ArrayList<>();
+		for (int modelId : modelIds)
+		{
+			ModelDefinition definition = RetroAssetGenerator.decodeRetroModel(retro, modelId);
+			assertNotNull("2005 model " + modelId, definition);
+			definitions.add(definition);
+			parts.add(RetroAssetGenerator.toMeshForTest(modelId, definition));
+		}
+
+		RetroMesh expected = RetroAssetGenerator.legacyToMesh(modelIds[0], definitions);
+		RetroMesh actual = RetroMeshMerger.merge(modelIds[0], parts);
+
+		String where = "merge of " + Arrays.toString(modelIds);
+		assertEquals(where + " vertex count", expected.getVerticesCount(), actual.getVerticesCount());
+		assertEquals(where + " face count", expected.getFaceCount(), actual.getFaceCount());
+		assertEquals(where + " priority", expected.getPriority(), actual.getPriority());
+
+		assertArrayEquals(where + " x", expected.getVerticesX(), actual.getVerticesX(), 0f);
+		assertArrayEquals(where + " y", expected.getVerticesY(), actual.getVerticesY(), 0f);
+		assertArrayEquals(where + " z", expected.getVerticesZ(), actual.getVerticesZ(), 0f);
+
+		assertArrayEquals(where + " i1", expected.getFaceIndices1(), actual.getFaceIndices1());
+		assertArrayEquals(where + " i2", expected.getFaceIndices2(), actual.getFaceIndices2());
+		assertArrayEquals(where + " i3", expected.getFaceIndices3(), actual.getFaceIndices3());
+
+		assertArrayEquals(where + " colors", expected.getFaceColors(), actual.getFaceColors());
+		assertArrayEquals(where + " render types",
+			expected.getFaceRenderTypes(), actual.getFaceRenderTypes());
+		assertArrayEquals(where + " transparencies",
+			expected.getFaceTransparencies(), actual.getFaceTransparencies());
+		assertArrayEquals(where + " priorities",
+			expected.getFaceRenderPriorities(), actual.getFaceRenderPriorities());
+		assertArrayEquals(where + " textures", expected.getFaceTextures(), actual.getFaceTextures());
+
+		int[][] expectedGroups = expected.getVertexGroups();
+		int[][] actualGroups = actual.getVertexGroups();
+		assertEquals(where + " group count", expectedGroups.length, actualGroups.length);
+		for (int group = 0; group < expectedGroups.length; group++)
+		{
+			assertArrayEquals(where + " group " + group, expectedGroups[group], actualGroups[group]);
+		}
+	}
 
 	@Test
 	public void testRetroAndLiveClipPathsAgreeOnTheSkeleton() throws Exception

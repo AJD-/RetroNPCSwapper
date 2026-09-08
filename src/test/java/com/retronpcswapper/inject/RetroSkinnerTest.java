@@ -41,7 +41,7 @@ public class RetroSkinnerTest
 	/** Two vertices on the X axis, both in group 0. */
 	private static RetroMesh mesh()
 	{
-		return new RetroMesh(1,
+		return new RetroMesh(1, 0,
 			new float[]{0f, 100f},
 			new float[]{0f, 0f},
 			new float[]{0f, 0f},
@@ -152,7 +152,7 @@ public class RetroSkinnerTest
 	@Test
 	public void testUnriggedMeshReportsFailureAndKeepsTheRestPose()
 	{
-		RetroMesh unrigged = new RetroMesh(1,
+		RetroMesh unrigged = new RetroMesh(1, 0,
 			new float[]{7f}, new float[]{8f}, new float[]{9f},
 			new int[]{0}, new int[]{0}, new int[]{0},
 			new short[]{0}, null, null, null, null,

@@ -1,7 +1,9 @@
 package com.retronpcswapper.inject;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import com.retronpcswapper.RetroNpcSwapperPlugin;
@@ -31,10 +33,15 @@ public class RetroClipReachTest
 	 */
 	private static final int MINIMUM_PERCENT = 85;
 
-	/** Which mesh each clip animates. A clip is only meaningful against the mesh it was built for. */
+	/**
+	 * Which mesh each clip animates. A clip is only meaningful against the mesh it was built for,
+	 * and for a multi-part NPC that means the merged mesh - measuring a head clip against a
+	 * body-only part would report a mismatch that is really just the missing half.
+	 */
 	private static final int[][] CLIP_MESHES = {
 		{262, 2944}, {259, 2944},
-		{79, 2853}, {80, 2853}, {89, 2853}, {90, 2853}, {91, 2853}, {92, 2853},
+		{79, 2853, 2854}, {80, 2853, 2854}, {89, 2853, 2854},
+		{90, 2853, 2854}, {91, 2853, 2854}, {92, 2853, 2854},
 		{63, 2943}, {64, 2943}, {65, 2943}, {66, 2943}, {67, 2943}, {69, 2943},
 		{68, 2942},
 		{168, 2887}, {169, 2887}, {170, 2887}, {171, 2887}, {172, 2887},
@@ -52,9 +59,16 @@ public class RetroClipReachTest
 			int meshId = pair[1];
 
 			RetroClip clip = bundle.getClip(sequenceId);
-			RetroMesh mesh = bundle.getMesh(meshId);
 			assertNotNull("clip " + sequenceId + " is missing from the bundle", clip);
-			assertNotNull("mesh " + meshId + " is missing from the bundle", mesh);
+
+			List<RetroMesh> parts = new ArrayList<>();
+			for (int part = 1; part < pair.length; part++)
+			{
+				RetroMesh partMesh = bundle.getMesh(pair[part]);
+				assertNotNull("mesh " + pair[part] + " is missing from the bundle", partMesh);
+				parts.add(partMesh);
+			}
+			RetroMesh mesh = RetroMeshMerger.merge(meshId, parts);
 
 			RetroRig rig = bundle.getRig(clip.getRigId());
 			assertNotNull("rig " + clip.getRigId() + " is missing from the bundle", rig);
