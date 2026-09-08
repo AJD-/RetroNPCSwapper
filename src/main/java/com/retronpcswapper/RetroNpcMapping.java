@@ -43,6 +43,60 @@ public class RetroNpcMapping
 	private static final Map<Integer, RetroNpcData> ID_MAPPINGS = new HashMap<>();
 	private static final Map<String, RetroNpcData> NAME_MAPPINGS = new HashMap<>();
 
+	/**
+	 * NPCs that must never be swapped, whatever the name and id tables say.
+	 *
+	 * <p>Matching is mostly by name, which is what lets a 2005 name keep working across every
+	 * modern variant of an NPC - but a name is not always a costume. Several NPCs called "Guard"
+	 * carry a bow, and handing them the 2005 sword-and-shield kit takes the bow away.
+	 *
+	 * <p><b>The tell is the weapon model, not the stance.</b> Falador's bow guards 3272, 3273 and
+	 * 3274 hold their bow in the ordinary 808 idle, so a stance test passes them straight through;
+	 * only 3270 and 11945 use 4591/4226, the bow-at-rest pair. What they all share is a weapon slot
+	 * holding a bow rather than sword 519 and shield 541:
+	 *
+	 * <ul>
+	 * <li>563 on 3272, 3273 and 3274 - the bow every Archer and Ranger in the game carries</li>
+	 * <li>16846 on 3270, the same bow the Ardougne archery trainers hold</li>
+	 * <li>16846 again on 1112 and 1113, which are not registered</li>
+	 * <li>42622 on 11945, the crossbow</li>
+	 * </ul>
+	 *
+	 * <p>{@code FAI_VARROCK_GUARD} is here for a different reason: it stands on 6487 and is three
+	 * models with none of the guard torso, sword or shield among them.
+	 *
+	 * <p>All of these sit in the middle of families that are otherwise registered, which is why
+	 * they are named here rather than only left out of {@code registerMapping} - the omission on
+	 * its own reads like an oversight and invites being tidied up. Their melee siblings still
+	 * swap: 11943 and 11946 carry 23179, which no archer or ranger does.
+	 *
+	 * <p>The female bow guard 11947 is deliberately <b>not</b> here. Female guards are recent
+	 * content with no 2005 counterpart, so she is replaced by the male archer rather than left
+	 * alone - see {@link #BOW_GUARD_LIVE_PARTS}.
+	 */
+	private static final Set<Integer> EXCLUDED_IDS = Set.of(
+		NpcID.FAI_FALADOR_GUARD2, NpcID.FAI_FALADOR_GUARD2_F,
+		NpcID.FAI_FALADOR_GUARD4, NpcID.FAI_FALADOR_GUARD5, NpcID.FAI_FALADOR_GUARD6,
+		NpcID.FAI_VARROCK_GUARD
+	);
+
+	/**
+	 * Categories that resolve from the registered id list only, never from a name.
+	 *
+	 * <p>Matching by name is what lets one 2005 row cover every modern variant of an NPC, and
+	 * for a monster it holds up: everything called "Lesser demon" is one. "Guard" is a job,
+	 * not a costume. 184 NPCs carry that exact name and only about thirty are the town guard
+	 * this kit belongs to - the rest are troll, dwarf, elf, goblin and cave goblin guards,
+	 * archers, and the Deadman ranged variants, all of which were being handed a 2005 human
+	 * swordsman.
+	 *
+	 * <p>Suppressed at lookup rather than by dropping the name row, because
+	 * {@link #applyCacheRecolors} walks {@code NAME_MAPPINGS} to graft the opcode 40 pairs
+	 * onto the archetypes. Removing the row would quietly cost the guard its 2005 colors.
+	 */
+	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
+		Set.of(RetroNpcCategory.GUARDS);
+
 	// Category-Scoped Modern Animation Sets. Values are gameval AnimationID constants where the
 	// modern cache has them; retro 2005 sequence IDs used elsewhere in this class stay numeric
 	// where no gameval name exists
@@ -386,6 +440,49 @@ public class RetroNpcMapping
 	 */
 	private static final int[] GUARD_PARTS = {233, 246, 294, 151, 176, 254, 185, 519, 541};
 
+	/**
+	 * The same kit with the battleaxe in place of the sword, for Falador's axe guard.
+	 *
+	 * <p>2005 model 550 is byte-for-byte the mesh the live cache still holds at that id, so
+	 * the axe is authentic rather than approximated. The shield (541) stays: the live NPC
+	 * carries both, unlike the archers, who carry a bow and no shield at all.
+	 */
+	private static final int[] GUARD_AXE_PARTS = {233, 246, 294, 151, 176, 254, 185, 550, 541};
+
+	/**
+	 * The male bow guard, taken from the live cache rather than the bundle.
+	 *
+	 * <p>This is NPC 3272's own model list. The archer guard is 2006 content and has not changed
+	 * since, so the live meshes are the period-correct ones - there is no 2005 archer to restore,
+	 * because head 9458 and arms 9450 are not in that cache at all.
+	 *
+	 * <p>Live parts have to be drawn by the cache-backed path, not the bundle. They are bound to
+	 * live framemap 0, a 218-group rig, while every bundled guard part is bound into [0..34] and
+	 * animated by 2005 clips on rig 100083. Skinning these against those clips would drive the
+	 * right geometry off the wrong joints, which is the whole reason guards are injection-only in
+	 * the first place. Letting the client animate her instead sidesteps it entirely.
+	 */
+	private static final int[] BOW_GUARD_LIVE_PARTS =
+		{233, 250, 9458, 9450, 176, 28285, 185, 563, 215};
+
+	/**
+	 * NPCs in an injection-only category that are nonetheless built from the live cache.
+	 *
+	 * <p>{@link #requiresInjectedGeometry} is a category-wide rule, and it holds for guards because
+	 * their 2005 head, arms and hands were reused for other things - a cache-backed guard would
+	 * assemble unrelated geometry. It does not hold for the one guard whose parts are all genuine
+	 * live meshes of exactly the NPC being drawn.
+	 */
+	private static final Set<Integer> LIVE_GEOMETRY_IDS = Set.of(NpcID.FAI_FALADOR_GUARD4_F);
+
+	/**
+	 * Whether this NPC is built from the live cache even though its category is injection-only.
+	 */
+	public static boolean usesLiveGeometry(int npcId)
+	{
+		return LIVE_GEOMETRY_IDS.contains(npcId);
+	}
+
 	public static final RetroNpcData GUARD_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.GUARDS)
 		.retroModelIds(GUARD_PARTS)
@@ -489,6 +586,38 @@ public class RetroNpcMapping
 
 		// 3. Hand the static archetypes the recolor pairs from their JSON rows
 		applyCacheRecolors(byName);
+
+		// 4. Derive the equipment variants, after the recolors so they inherit them
+		applyWeaponVariants();
+	}
+
+	/**
+	 * Re-points the guards who carry something other than the sword at a kit that shows it.
+	 *
+	 * <p>Runs last, and derives from whatever is registered rather than from the archetype
+	 * constant, because {@link #applyCacheRecolors} has by then replaced that instance with a
+	 * recolored copy. Deriving from the constant instead would hand the axe guard the kit in
+	 * a townsperson's colors.
+	 */
+	private static void applyWeaponVariants()
+	{
+		// GUARD3_F is the female of the axe guard. Female guards are recent content with no 2005
+		// counterpart of their own, so they take the male kit - which for this one means the axe,
+		// the same as the NPC it is a variant of.
+		for (int axeGuard : new int[]{NpcID.FAI_FALADOR_GUARD3, NpcID.FAI_FALADOR_GUARD3_F})
+		{
+			RetroNpcData guard = ID_MAPPINGS.get(axeGuard);
+			if (guard != null)
+			{
+				ID_MAPPINGS.put(axeGuard, guard.withModelIds(GUARD_AXE_PARTS));
+			}
+		}
+
+		// The female bow guard becomes the male one. Derived from the archetype rather than
+		// from the registered copy, deliberately: the 2005 opcode 40 pairs belong to the 2005
+		// meshes, and these are live ones that already carry the colors they should.
+		ID_MAPPINGS.put(NpcID.FAI_FALADOR_GUARD4_F,
+			GUARD_DEFAULT.withModelIds(BOW_GUARD_LIVE_PARTS));
 	}
 
 	/**
@@ -691,9 +820,11 @@ public class RetroNpcMapping
 			// The base rows of each family. Anything still literally named "Guard" already resolves
 			// by name, so these are belt and braces - but the list below enumerates the _F and
 			// _VARIANT derivatives of exactly these NPCs and simply never included them.
-			NpcID.GUARD1, NpcID.FAI_VARROCK_GUARD, NpcID.ARDOUGNE_GUARD,
-			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD2, NpcID.FAI_FALADOR_GUARD3,
-			NpcID.FAI_FALADOR_GUARD4, NpcID.FAI_FALADOR_GUARD5, NpcID.FAI_FALADOR_GUARD6,
+			NpcID.GUARD1, NpcID.ARDOUGNE_GUARD,
+			// Only the melee half of the Falador family. GUARD2, GUARD4, GUARD5 and GUARD6 carry
+			// a bow or crossbow - see EXCLUDED_IDS. GUARD4_F is listed below: she is the female
+			// of GUARD4, replaced by the male archer rather than excluded.
+			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD3,
 			NpcID.BIM_FAI_VARROCK_GUARD02, NpcID.BIM_FAI_VARROCK_GUARD02_F, NpcID.BIM_FAI_VARROCK_GUARD02_VARIANT02,
 			NpcID.FAI_VARROCK_GUARD02, NpcID.FAI_VARROCK_GUARD02_VARIANT01, NpcID.FAI_VARROCK_GUARD02_VARIANT02,
 			NpcID.FAI_VARROCK_GUARD02_F, NpcID.FAI_VARROCK_GUARD02_F_VARIANT01, NpcID.FAI_VARROCK_GUARD02_F_VARIANT02,
@@ -701,7 +832,16 @@ public class RetroNpcMapping
 			NpcID.GUARD1_VARIANT01, NpcID.GUARD1_F, NpcID.GUARD1_F_VARIANT01,
 			NpcID.ARDOUGNE_GUARD_VARIANT01, NpcID.ARDOUGNE_GUARD_F, NpcID.ARDOUGNE_GUARD_F_VARIANT01,
 			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD1_F, NpcID.FAI_FALADOR_GUARD1_VARIANT02,
-			NpcID.FAI_FALADOR_GUARD2_F, NpcID.FAI_FALADOR_GUARD3_F, NpcID.FAI_FALADOR_GUARD4_F
+			NpcID.FAI_FALADOR_GUARD3_F, NpcID.FAI_FALADOR_GUARD4_F,
+			// The Ratcatchers mansion guards wear the town guard kit exactly - 233, 246, 294,
+			// 176, 185, 519, 541 with the live arms and hands - and stand on 808. They were only
+			// ever reached by name, so they need listing now that the name no longer resolves.
+			NpcID.RATCATCHER_STATICGUARD, NpcID.RATCATCHER_CHIEFGUARD,
+			NpcID.RATCATCHER_GUARD_LEFT_FRONT, NpcID.RATCATCHER_GUARD_LEFT_MID,
+			NpcID.RATCATCHER_GUARD_LEFT_BACK, NpcID.RATCATCHER_GUARD_LEFT_FULLBACK,
+			NpcID.RATCATCHER_GUARD_RIGHT_FRONT, NpcID.RATCATCHER_GUARD_RIGHT_MID,
+			NpcID.RATCATCHER_GUARD_RIGHT_BACK, NpcID.RATCATCHER_GUARD_RIGHT_FULLBACK,
+			NpcID.RATCATCHER_GUARD_LEFT_INSIDE, NpcID.RATCATCHER_GUARD_RIGHT_INSIDE
 		);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
@@ -945,6 +1085,12 @@ public class RetroNpcMapping
 
 	public static RetroNpcData get(int npcId, String npcName)
 	{
+		// Ahead of both tables: an excluded NPC must not be reachable by name either
+		if (EXCLUDED_IDS.contains(npcId))
+		{
+			return null;
+		}
+
 		if (npcName == null)
 		{
 			return ID_MAPPINGS.get(npcId);
@@ -953,6 +1099,12 @@ public class RetroNpcMapping
 		String nameLower = npcName.toLowerCase(Locale.ROOT).trim();
 		RetroNpcData byName = NAME_MAPPINGS.get(nameLower);
 		RetroNpcData byId = ID_MAPPINGS.get(npcId);
+
+		if (byName != null && ID_ONLY_CATEGORIES.contains(byName.getCategory()))
+		{
+			// Sharing a name with the town guard is not enough to be one
+			byName = null;
+		}
 
 		if (byName == null)
 		{

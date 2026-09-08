@@ -165,7 +165,11 @@ public class RetroModelCache
 		// live cache no longer holds the mesh at all, so the cache-backed path has nothing to load.
 		// Gating on the toggle keeps a shipping category on its known-good path by default - the
 		// skeleton is in the bundle as a test subject, and should not quietly change how it renders.
-		InjectedModel injectedModel = useInjectionPipeline ? buildInjected(data) : null;
+		// A live-geometry NPC skips the bundle even when the pipeline is on: its parts are live
+		// meshes on the live rig, and the bundle's clips would drive them off the wrong joints
+		boolean liveGeometry = RetroNpcMapping.usesLiveGeometry(npcId);
+		InjectedModel injectedModel =
+			useInjectionPipeline && !liveGeometry ? buildInjected(data) : null;
 		if (injectedModel != null)
 		{
 			injectedModels.put(npcId, injectedModel);
@@ -175,7 +179,7 @@ public class RetroModelCache
 			return;
 		}
 
-		if (RetroNpcMapping.requiresInjectedGeometry(data.getCategory()))
+		if (!liveGeometry && RetroNpcMapping.requiresInjectedGeometry(data.getCategory()))
 		{
 			// The bundle is the only source for these, so there is no cache-backed fallback to try:
 			// their model ids resolve in the live cache, but to unrelated geometry. Reaching here

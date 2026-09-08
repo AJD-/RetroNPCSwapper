@@ -286,31 +286,32 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testGuardsCategory()
 	{
-		RetroNpcData guardByName = RetroNpcMapping.get(0, "Guard");
-		assertNotNull("Guard by name must exist", guardByName);
-		assertEquals(RetroNpcCategory.GUARDS, guardByName.getCategory());
+		// By id, not by name: "Guard" alone no longer resolves, see ID_ONLY_CATEGORIES
+		RetroNpcData guard = RetroNpcMapping.get(NpcID.GUARD1, "Guard");
+		assertNotNull("the registered town guard must resolve", guard);
+		assertEquals(RetroNpcCategory.GUARDS, guard.getCategory());
 
 		// Nine parts of 2005 human kit. Head 294, arms 151 and hands 254 no longer resolve to their
 		// 2005 geometry in the live cache, which is what makes this category injection-only.
 		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
-			guardByName.getRetroModelIds());
-		assertArrayEquals(guardByName.getRetroModelIds(), guardByName.getInjectedModelIds());
+			guard.getRetroModelIds());
+		assertArrayEquals(guard.getRetroModelIds(), guard.getInjectedModelIds());
 
-		assertEquals(808, guardByName.getIdleAnimationId());
-		assertEquals(819, guardByName.getWalkAnimationId());
-		assertEquals(422, guardByName.getAttackAnimationId());
-		assertEquals(424, guardByName.getDefendAnimationId());
-		assertEquals(836, guardByName.getDeathAnimationId());
+		assertEquals(808, guard.getIdleAnimationId());
+		assertEquals(819, guard.getWalkAnimationId());
+		assertEquals(422, guard.getAttackAnimationId());
+		assertEquals(424, guard.getDefendAnimationId());
+		assertEquals(836, guard.getDeathAnimationId());
 
 		// Verify Varrock/Falador/Ardougne Guard explicit ID mappings
 		int[] guardIds = {
 			NpcID.BIM_FAI_VARROCK_GUARD02, NpcID.BIM_FAI_VARROCK_GUARD02_F, NpcID.FAI_VARROCK_GUARD02,
 			NpcID.GUARD1_VARIANT01, NpcID.ARDOUGNE_GUARD_VARIANT01,
-			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD4_F,
+			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD3_F,
 			// The base row of each family. The list above enumerates the _F and _VARIANT
 			// derivatives of exactly these NPCs and used to skip the NPCs themselves.
-			NpcID.GUARD1, NpcID.FAI_VARROCK_GUARD, NpcID.ARDOUGNE_GUARD,
-			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD6};
+			NpcID.GUARD1, NpcID.ARDOUGNE_GUARD,
+			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD3};
 		for (int id : guardIds)
 		{
 			RetroNpcData guardById = RetroNpcMapping.get(id, "Guard");
@@ -319,21 +320,97 @@ public class RetroNpcCategoryTest
 		}
 
 		// Verify modern guard animations
-		assertTrue(guardByName.isAttackAnimation(422));
-		assertTrue(guardByName.isAttackAnimation(423));
-		assertTrue(guardByName.isDefendAnimation(424));
-		assertTrue(guardByName.isDeathAnimation(836));
+		assertTrue(guard.isAttackAnimation(422));
+		assertTrue(guard.isAttackAnimation(423));
+		assertTrue(guard.isDefendAnimation(424));
+		assertTrue(guard.isDeathAnimation(836));
 		// A guard fights with a sword and shield, so it blocks with HUMAN_SHIELD_DEFENCE. That is
 		// shipped as its own 2005 clip now and must pass straight through: intercepting it onto
 		// the unarmed block 424 is what left a guard blocking with no shield raise, and nothing
 		// used to fail if the interception came back.
 		assertFalse("1156 ships as a 2005 clip and must not be rewritten onto the unarmed block",
-			guardByName.isDefendAnimation(1156));
+			guard.isDefendAnimation(1156));
+
+		// Falador's bow and crossbow guards are called "Guard" too, so the name table would hand
+		// them the sword-and-shield kit and take the bow away. The tell is the weapon model, not
+		// the stance - 3272, 3273 and 3274 carry bow 563 in the ordinary 808 idle.
+		for (int excluded : new int[]{
+			NpcID.FAI_FALADOR_GUARD2, NpcID.FAI_FALADOR_GUARD2_F, NpcID.FAI_FALADOR_GUARD4,
+			NpcID.FAI_FALADOR_GUARD5, NpcID.FAI_FALADOR_GUARD6,
+			NpcID.FAI_VARROCK_GUARD})
+		{
+			assertNull("guard " + excluded + " must not be swapped by id",
+				RetroNpcMapping.get(excluded, null));
+			assertNull("guard " + excluded + " must not be swapped by name either",
+				RetroNpcMapping.get(excluded, "Guard"));
+		}
+
+		// The guards either side of them in the same family are untouched
+		assertNotNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1, "Guard"));
+		assertNotNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3, "Guard"));
+		assertNotNull("the melee female guards carry 23179, not a bow",
+			RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3_F, "Guard"));
+
+		// Falador's axe guard is the same character carrying different equipment, so it wears the
+		// guard kit with 2005 battleaxe 550 where the rest carry sword 519. Derived after the
+		// recolor graft, so losing the 2005 colors here is the thing to watch.
+		RetroNpcData axeGuard = RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3, "Guard");
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 550, 541},
+			axeGuard.getRetroModelIds());
+		assertArrayEquals(axeGuard.getRetroModelIds(), axeGuard.getInjectedModelIds());
+		assertEquals(RetroNpcCategory.GUARDS, axeGuard.getCategory());
+		assertTrue("the axe guard must inherit the guard recolors", axeGuard.hasRecolors());
+		assertEquals(guard.getDefendAnimationId(), axeGuard.getDefendAnimationId());
+
+		// Female guards are recent content with no 2005 counterpart, so they wear the male kit -
+		// and the female of the axe guard gets the axe, not the sword
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 550, 541},
+			RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3_F, "Guard").getRetroModelIds());
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1_F, "Guard").getRetroModelIds());
+
+		// The female bow guard is replaced by the male one, taken from the live cache: the archer
+		// guard is 2006 content unchanged since, and head 9458 and arms 9450 have no 2005 original.
+		// These are NPC 3272's own parts, so she must take the cache-backed path - the bundle's
+		// 2005 clips would drive live-rigged meshes off the wrong joints.
+		RetroNpcData bowGuard = RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD4_F, "Guard");
+		assertNotNull("the female bow guard is swapped, not excluded", bowGuard);
+		assertArrayEquals(new int[]{233, 250, 9458, 9450, 176, 28285, 185, 563, 215},
+			bowGuard.getRetroModelIds());
+		assertTrue("she must be built from the live cache, not the bundle",
+			RetroNpcMapping.usesLiveGeometry(NpcID.FAI_FALADOR_GUARD4_F));
+		assertFalse("the 2005 recolors belong to the 2005 meshes, not these",
+			bowGuard.hasRecolors());
+		assertFalse("no other guard takes the live path",
+			RetroNpcMapping.usesLiveGeometry(NpcID.FAI_FALADOR_GUARD1));
+
+		// and the sword guards keep the sword
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1, "Guard").getRetroModelIds());
+
+		// "Guard" is a job rather than a costume: 184 NPCs carry the name and only the town guard
+		// wears this kit, so the category resolves by registered id and the name alone buys
+		// nothing. Trolls, dwarves, elves, goblins and archers were all being swapped before.
+		int[] notTownGuards = {
+			NpcID.TROLL_SGUARD1, NpcID.DWARF_CITY_BLACK_GUARD1, NpcID.PRIF_GUARD1,
+			NpcID.DORGESH_GUARD1, NpcID.LATHASTRAINER2, NpcID.DEADMAN_GUARD_FALADOR_RANGE_VIS};
+		for (int id : notTownGuards)
+		{
+			assertNull("NPC " + id + " is named Guard but is not a town guard",
+				RetroNpcMapping.get(id, "Guard"));
+		}
+
+		// The Ratcatchers guards do wear the kit and were only ever reached by name, so they are
+		// registered by id now rather than lost
+		assertEquals(RetroNpcCategory.GUARDS,
+			RetroNpcMapping.get(NpcID.RATCATCHER_CHIEFGUARD, "Guard").getCategory());
+		assertEquals(RetroNpcCategory.GUARDS,
+			RetroNpcMapping.get(NpcID.RATCATCHER_GUARD_LEFT_INSIDE, "Guard").getCategory());
 		// 451 (chathead), 7041 (crawl), 7043 (run) and 7044 (turn) are not combat sequences
-		assertFalse(guardByName.isAttackAnimation(451));
-		assertFalse(guardByName.isAttackAnimation(7041));
-		assertFalse(guardByName.isDefendAnimation(7043));
-		assertFalse(guardByName.isDeathAnimation(7044));
+		assertFalse(guard.isAttackAnimation(451));
+		assertFalse(guard.isAttackAnimation(7041));
+		assertFalse(guard.isDefendAnimation(7043));
+		assertFalse(guard.isDeathAnimation(7044));
 	}
 
 	@Test
@@ -743,7 +820,7 @@ public class RetroNpcCategoryTest
 		// 2005 human kit shared with every other NPC that wears it, so without the opcode 40 pairs
 		// a guard renders in a townsperson's colors. The pairs and the parts come from the same
 		// definition, which is what makes this safe where forwarding a goblin variant's would not.
-		RetroNpcData guard = RetroNpcMapping.get(0, "Guard");
+		RetroNpcData guard = RetroNpcMapping.get(NpcID.GUARD1, "Guard");
 		assertNotNull(guard);
 		assertTrue("guards must carry their 2005 recolors", guard.hasRecolors());
 		assertEquals("recolor arrays must stay parallel",

@@ -65,19 +65,18 @@ public class RetroConfigMigrationTest
 	@Test
 	public void testOneLegacyKeyCanFeedSeveralNewOnes()
 	{
+		// Stand-in key names: no live migration splits one key across several any more, but the
+		// helper still supports it and the next toggle to be split will need it
 		ConfigManager configManager = mock(ConfigManager.class);
-		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS))
-			.thenReturn("true");
-		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_DRAGONS)).thenReturn(null);
-		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_DEMONS)).thenReturn(null);
+		when(configManager.getConfiguration(GROUP, "legacyThing")).thenReturn("true");
+		when(configManager.getConfiguration(GROUP, "newA")).thenReturn(null);
+		when(configManager.getConfiguration(GROUP, "newB")).thenReturn(null);
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS,
-			RetroNpcConfig.SWAP_DRAGONS, RetroNpcConfig.SWAP_DEMONS);
+		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager, "legacyThing", "newA", "newB");
 
-		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_DRAGONS, true);
-		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_DEMONS, true);
-		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS);
+		verify(configManager).setConfiguration(GROUP, "newA", true);
+		verify(configManager).setConfiguration(GROUP, "newB", true);
+		verify(configManager).unsetConfiguration(GROUP, "legacyThing");
 	}
 
 	@Test

@@ -35,18 +35,15 @@ public interface RetroNpcConfig extends Config
 	String GROUP = "retronpcswapper";
 
 	/**
-	 * Retired in favour of {@link #swapDragons()} and {@link #swapDemons()}. Kept only so
-	 * {@code migrateDragonsAndDemons} can carry a saved value across; nothing reads it as a setting.
-	 */
-	String LEGACY_DRAGONS_AND_DEMONS = "swapDragonsAndDemons";
-
-	/**
-	 * Retired in favour of {@link #swapGiants()}, which covers the whole family rather than one
+	 * Retired in favor of {@link #swapGiants()}, which covers the whole family rather than one
 	 * member of it. Kept only so a saved value can be carried across; nothing reads it as a setting.
 	 */
 	String LEGACY_HILL_GIANTS = "swapHillGiants";
 
-	/** Written by the migration as well as the user, so both are named rather than repeated. */
+	/**
+	 * {@link #SWAP_GIANTS} is written by the migration as well as the user; the other two are named
+	 * alongside it for consistency.
+	 */
 	String SWAP_DRAGONS = "swapDragons";
 	String SWAP_DEMONS = "swapDemons";
 	String SWAP_GIANTS = "swapGiants";

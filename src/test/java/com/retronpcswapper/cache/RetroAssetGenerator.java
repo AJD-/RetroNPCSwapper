@@ -125,7 +125,8 @@ public class RetroAssetGenerator
 		// 2005 bindings all sit in [0..34]; live framemap 0 is a 218-group rig. Live clips would drive
 		// the right geometry off the wrong bones.
 		new Spec("Guards", Source.RETRO, Source.RETRO,
-			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			// 550 is the battleaxe the Falador axe guard carries in place of sword 519
+			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541, 550},
 			// 386 sword stab and 1156 shield block are what a guard actually plays in a fight;
 			// 422/423/424 are the unarmed set. All are classic ids the live game still uses, so they
 			// need the 2005 frames rather than any interception. 1156 was once left out as

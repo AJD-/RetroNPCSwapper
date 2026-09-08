@@ -287,6 +287,34 @@ public class RetroNpcData
 			modernDeathAnims);
 	}
 
+	/**
+	 * Returns a copy wearing these parts, leaving everything else alone.
+	 *
+	 * <p>For NPCs that are the same character carrying different equipment - one guard family
+	 * holds a sword, another a battleaxe. Everything that makes them a guard is shared, so the
+	 * variant is derived from the archetype rather than declared beside it, which also means it
+	 * inherits the recolor pairs already grafted on.
+	 */
+	public RetroNpcData withModelIds(int[] modelIds)
+	{
+		return new RetroNpcData(
+			category,
+			modelIds,
+			null,
+			idleAnimationId,
+			walkAnimationId,
+			attackAnimationId,
+			defendAnimationId,
+			deathAnimationId,
+			scaleXZ,
+			scaleY,
+			originalColors,
+			replacementColors,
+			modernAttackAnims,
+			modernDefendAnims,
+			modernDeathAnims);
+	}
+
 	@Override
 	public boolean equals(Object o)
 	{
