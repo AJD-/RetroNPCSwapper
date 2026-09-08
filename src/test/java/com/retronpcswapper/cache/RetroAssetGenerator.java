@@ -237,6 +237,27 @@ public class RetroAssetGenerator
 					+ " rigged=" + mesh.isRigged());
 			}
 
+			// The renderer addresses a face's texture triangle as a byte, and 255 is the value that
+			// means "no triangle", so a merged NPC can carry 254 of them at most. Checked here
+			// rather than at the merge, which runs per spawn on the client thread and could only
+			// degrade the mapping it was asked to preserve.
+			int triangles = 0;
+			for (int modelId : spec.modelIds)
+			{
+				RetroMesh mesh = meshes.get(modelId);
+				triangles += mesh == null ? 0 : mesh.getTextureTriangleCount();
+			}
+			if (triangles >= 0xFF)
+			{
+				System.err.println("  " + spec.label + " merges to " + triangles
+					+ " texture triangles, past the 254 a face index can name");
+				complete = false;
+			}
+			if (triangles > 0)
+			{
+				System.out.println("  texture triangles: " + triangles);
+			}
+
 			for (int sequenceId : spec.sequenceIds)
 			{
 				Spec owner = clipOwners.get(sequenceId);
@@ -319,6 +340,8 @@ public class RetroAssetGenerator
 			vertexGroups[group] = members == null ? new int[0] : members.clone();
 		}
 
+		checkTextureMapping(meshId, part);
+
 		return new RetroMesh(meshId, part.priority, vx, vy, vz,
 			part.faceIndices1.clone(), part.faceIndices2.clone(), part.faceIndices3.clone(),
 			part.faceColors.clone(),
@@ -326,7 +349,57 @@ public class RetroAssetGenerator
 			part.faceTransparencies == null ? null : part.faceTransparencies.clone(),
 			part.faceRenderPriorities == null ? null : part.faceRenderPriorities.clone(),
 			part.faceTextures == null ? null : part.faceTextures.clone(),
+			part.textureCoords == null ? null : part.textureCoords.clone(),
+			vertexIndices(part.texIndices1), vertexIndices(part.texIndices2),
+			vertexIndices(part.texIndices3),
 			vertexGroups);
+	}
+
+	/**
+	 * Texture triangle corners as vertex indices. The cache reads them with
+	 * {@code readUnsignedShort} into a {@code short[]}, so anything past 32767 comes back negative
+	 * and has to be unmasked - the loader's own comparisons do the same.
+	 */
+	private static int[] vertexIndices(short[] corners)
+	{
+		if (corners == null)
+		{
+			return null;
+		}
+
+		int[] indices = new int[corners.length];
+		for (int i = 0; i < corners.length; i++)
+		{
+			indices[i] = corners[i] & 0xFFFF;
+		}
+		return indices;
+	}
+
+	/**
+	 * Refuses geometry whose texture mapping the injected path cannot reproduce.
+	 *
+	 * <p>{@link RetroModel} carries the per-face triangle index and the triangles, which is what
+	 * simple projection needs and all the 2005 format ever produces - {@code decodeOldFormat} sets
+	 * every render type to 0. A live-sourced mesh can name the later types, and drawing one of
+	 * those as if it were simple projection is the same silent wrongness this whole change is
+	 * fixing, so it stops the build instead.
+	 */
+	private static void checkTextureMapping(int meshId, ModelDefinition part)
+	{
+		if (part.textureRenderTypes == null)
+		{
+			return;
+		}
+
+		for (int triangle = 0; triangle < part.textureRenderTypes.length; triangle++)
+		{
+			if (part.textureRenderTypes[triangle] != 0)
+			{
+				throw new IllegalStateException("Model " + meshId + " texture triangle " + triangle
+					+ " uses render type " + part.textureRenderTypes[triangle]
+					+ "; only simple projection (0) can be injected");
+			}
+		}
 	}
 
 	/**
@@ -447,8 +520,12 @@ public class RetroAssetGenerator
 			vertexGroups[group] = packed;
 		}
 
+		// Frozen as it was: this exists only to prove the move to RetroMeshMerger was faithful, and
+		// it predates the texture triangles, so it declines them rather than growing a second
+		// implementation of the offsetting to check the first against
 		return new RetroMesh(meshId, parts.get(0).priority, vx, vy, vz, i1, i2, i3,
-			colors, renderTypes, transparencies, priorities, textures, vertexGroups);
+			colors, renderTypes, transparencies, priorities, textures,
+			null, null, null, null, vertexGroups);
 	}
 
 	/**

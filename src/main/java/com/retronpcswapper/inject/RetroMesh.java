@@ -66,6 +66,28 @@ public final class RetroMesh
 	private final short[] faceTextures;
 
 	/**
+	 * Per face, the texture triangle that maps its texture, or -1 for the renderer's own
+	 * face-as-UV projection. Null when no face on this mesh names one.
+	 *
+	 * <p>Carried because dropping it is not neutral. {@code ModelUploader.computeUv} branches on
+	 * exactly this array: with a triangle it projects the face's corners onto that triangle's plane
+	 * basis, so many faces share one continuous mapping; without one it emits a hardcoded (0,0),
+	 * (1,0), (0,1) and every face gets the whole image stretched corner to corner. On the guard's
+	 * 2005 head that is the difference between one mailed surface and 34 copies of a 64x64 texture.
+	 */
+	private final byte[] textureCoords;
+
+	/**
+	 * The three vertices of each texture triangle. Indices into this mesh's own vertices, which is
+	 * why {@link RetroMeshMerger} has to shift them like face indices.
+	 *
+	 * <p>All three are null together or none of them is; a texture triangle is one row across them.
+	 */
+	private final int[] texIndices1;
+	private final int[] texIndices2;
+	private final int[] texIndices3;
+
+	/**
 	 * Vertex indices per transform group, the unpacked form of the model's per-vertex labels. An
 	 * empty slot is a group nothing is bound to.
 	 */
@@ -77,6 +99,7 @@ public final class RetroMesh
 		int[] faceIndices1, int[] faceIndices2, int[] faceIndices3,
 		short[] faceColors, byte[] faceRenderTypes, byte[] faceTransparencies,
 		byte[] faceRenderPriorities, short[] faceTextures,
+		byte[] textureCoords, int[] texIndices1, int[] texIndices2, int[] texIndices3,
 		int[][] vertexGroups)
 	{
 		this.id = id;
@@ -94,6 +117,10 @@ public final class RetroMesh
 		this.faceTransparencies = faceTransparencies;
 		this.faceRenderPriorities = faceRenderPriorities;
 		this.faceTextures = faceTextures;
+		this.textureCoords = textureCoords;
+		this.texIndices1 = texIndices1;
+		this.texIndices2 = texIndices2;
+		this.texIndices3 = texIndices3;
 		this.vertexGroups = vertexGroups;
 	}
 
@@ -193,6 +220,32 @@ public final class RetroMesh
 	public byte[] getFaceRenderPriorities()
 	{
 		return faceRenderPriorities;
+	}
+
+	/** How many texture triangles this mesh carries; zero when it has none. */
+	public int getTextureTriangleCount()
+	{
+		return texIndices1 == null ? 0 : texIndices1.length;
+	}
+
+	public byte[] getTextureCoords()
+	{
+		return textureCoords;
+	}
+
+	public int[] getTexIndices1()
+	{
+		return texIndices1;
+	}
+
+	public int[] getTexIndices2()
+	{
+		return texIndices2;
+	}
+
+	public int[] getTexIndices3()
+	{
+		return texIndices3;
 	}
 
 	public short[] getFaceTextures()

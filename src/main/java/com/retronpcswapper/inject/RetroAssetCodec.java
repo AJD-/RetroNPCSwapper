@@ -51,7 +51,7 @@ public final class RetroAssetCodec
 	private static final int MAGIC = 0x5254524F;
 
 	/** Bump on any layout change; readers refuse anything they were not written for. */
-	static final int VERSION = 2;
+	static final int VERSION = 3;
 
 	/** Sanity ceilings, so a corrupt length cannot make the reader allocate wildly. */
 	private static final int MAX_ENTRIES = 100_000;
@@ -152,6 +152,11 @@ public final class RetroAssetCodec
 		writeBytes(data, mesh.getFaceRenderPriorities());
 		writeShorts(data, mesh.getFaceTextures());
 
+		writeBytes(data, mesh.getTextureCoords());
+		writeInts(data, mesh.getTexIndices1());
+		writeInts(data, mesh.getTexIndices2());
+		writeInts(data, mesh.getTexIndices3());
+
 		writeIntMatrix(data, mesh.getVertexGroups());
 	}
 
@@ -174,10 +179,92 @@ public final class RetroAssetCodec
 		byte[] priorities = readBytes(data);
 		short[] textures = readShorts(data);
 
+		byte[] textureCoords = readBytes(data);
+		int[] texIndices1 = readInts(data);
+		int[] texIndices2 = readInts(data);
+		int[] texIndices3 = readInts(data);
+		checkTextureTriangles(id, vx.length, i1.length, textureCoords,
+			texIndices1, texIndices2, texIndices3);
+
 		int[][] vertexGroups = readIntMatrix(data);
 
 		return new RetroMesh(id, priority, vx, vy, vz, i1, i2, i3,
-			colors, renderTypes, transparencies, priorities, textures, vertexGroups);
+			colors, renderTypes, transparencies, priorities, textures,
+			textureCoords, texIndices1, texIndices2, texIndices3, vertexGroups);
+	}
+
+	/**
+	 * Refuses a mesh whose texture mapping cannot be drawn.
+	 *
+	 * <p>The per-face triangle index and the triangles themselves are separate blocks, so nothing
+	 * else pairs them: an index past the end of the triangle table reads cleanly here and throws
+	 * inside {@code ModelUploader.computeUv} on the first frame that draws the face. Same contract
+	 * as the magic and the version - a bundle that is wrong must not load.
+	 */
+	private static void checkTextureTriangles(int id, int verticesCount, int faceCount,
+		byte[] textureCoords, int[] texIndices1, int[] texIndices2, int[] texIndices3)
+		throws IOException
+	{
+		boolean anyNull = texIndices1 == null || texIndices2 == null || texIndices3 == null;
+		boolean allNull = texIndices1 == null && texIndices2 == null && texIndices3 == null;
+		if (anyNull && !allNull)
+		{
+			throw new IOException("Retro asset mesh " + id
+				+ " has a partial texture triangle table; regenerate the bundle");
+		}
+
+		if (!allNull && (texIndices1.length != texIndices2.length
+			|| texIndices1.length != texIndices3.length))
+		{
+			throw new IOException("Retro asset mesh " + id + " names "
+				+ texIndices1.length + ", " + texIndices2.length + " and " + texIndices3.length
+				+ " texture triangle corners; regenerate the bundle");
+		}
+
+		if (!allNull)
+		{
+			// A corner is a vertex index, and the merge shifts it without re-checking. One past the
+			// end reads out of the vertex arrays inside computeUv, a frame after the bundle loaded
+			for (int triangle = 0; triangle < texIndices1.length; triangle++)
+			{
+				checkCorner(id, triangle, texIndices1[triangle], verticesCount);
+				checkCorner(id, triangle, texIndices2[triangle], verticesCount);
+				checkCorner(id, triangle, texIndices3[triangle], verticesCount);
+			}
+		}
+
+		if (textureCoords == null)
+		{
+			return;
+		}
+
+		if (textureCoords.length != faceCount)
+		{
+			throw new IOException("Retro asset mesh " + id + " maps " + textureCoords.length
+				+ " faces to texture triangles but has " + faceCount
+				+ " faces; regenerate the bundle");
+		}
+
+		int triangles = allNull ? 0 : texIndices1.length;
+		for (byte coord : textureCoords)
+		{
+			// -1 is the renderer's own face-as-UV projection and names no triangle
+			if (coord != -1 && (coord & 0xFF) >= triangles)
+			{
+				throw new IOException("Retro asset mesh " + id + " maps a face to texture triangle "
+					+ (coord & 0xFF) + " of " + triangles + "; regenerate the bundle");
+			}
+		}
+	}
+
+	private static void checkCorner(int id, int triangle, int vertex, int verticesCount)
+		throws IOException
+	{
+		if (vertex < 0 || vertex >= verticesCount)
+		{
+			throw new IOException("Retro asset mesh " + id + " texture triangle " + triangle
+				+ " names vertex " + vertex + " of " + verticesCount + "; regenerate the bundle");
+		}
 	}
 
 	private static void writeRig(DataOutputStream data, RetroRig rig) throws IOException

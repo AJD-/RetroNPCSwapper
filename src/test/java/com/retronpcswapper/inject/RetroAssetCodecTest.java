@@ -53,7 +53,10 @@ public class RetroAssetCodecTest
 			new byte[]{1},
 			null,                      // deliberately null - see the round-trip test below
 			new byte[]{2},
-			new short[]{-1},
+			new short[]{37},
+			// one face mapped by the one texture triangle, which names the mesh's own vertices
+			new byte[]{0},
+			new int[]{0}, new int[]{1}, new int[]{2},
 			new int[][]{{0, 1}, {}, {2}});
 	}
 
@@ -113,6 +116,13 @@ public class RetroAssetCodecTest
 		assertArrayEquals(original.getFaceRenderTypes(), restored.getFaceRenderTypes());
 		assertArrayEquals(original.getFaceRenderPriorities(), restored.getFaceRenderPriorities());
 		assertArrayEquals(original.getFaceTextures(), restored.getFaceTextures());
+
+		// Without these the renderer falls back to a hardcoded (0,0), (1,0), (0,1) per face, which
+		// stretches the whole texture across every face separately
+		assertArrayEquals(original.getTextureCoords(), restored.getTextureCoords());
+		assertArrayEquals(original.getTexIndices1(), restored.getTexIndices1());
+		assertArrayEquals(original.getTexIndices2(), restored.getTexIndices2());
+		assertArrayEquals(original.getTexIndices3(), restored.getTexIndices3());
 	}
 
 	/**

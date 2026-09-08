@@ -428,12 +428,16 @@ public class RetroModelCache
 			}
 		}
 
-		// Faces and rigging are shared with the bundle mesh - only vertices and colors differ per
-		// NPC, and neither the bundle nor any other NPC sees these copies
+		// Faces, texture mapping and rigging are shared with the bundle mesh - only vertices and
+		// colors differ per NPC, and neither the bundle nor any other NPC sees these copies. The
+		// texture triangles survive a resize untouched because they name vertices rather than
+		// positions, and the scale moves every vertex alike.
 		return new RetroMesh(mesh.getId(), mesh.getPriority(), vx, vy, vz,
 			mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
 			colors, mesh.getFaceRenderTypes(), mesh.getFaceTransparencies(),
-			mesh.getFaceRenderPriorities(), mesh.getFaceTextures(), mesh.getVertexGroups());
+			mesh.getFaceRenderPriorities(), mesh.getFaceTextures(),
+			mesh.getTextureCoords(), mesh.getTexIndices1(), mesh.getTexIndices2(),
+			mesh.getTexIndices3(), mesh.getVertexGroups());
 	}
 
 	/**

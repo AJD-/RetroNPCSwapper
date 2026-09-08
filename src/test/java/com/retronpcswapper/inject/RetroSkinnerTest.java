@@ -47,6 +47,7 @@ public class RetroSkinnerTest
 			new float[]{0f, 0f},
 			new int[]{0}, new int[]{1}, new int[]{0},
 			new short[]{0}, null, null, null, null,
+			null, null, null, null,
 			new int[][]{{0, 1}});
 	}
 
@@ -156,6 +157,7 @@ public class RetroSkinnerTest
 			new float[]{7f}, new float[]{8f}, new float[]{9f},
 			new int[]{0}, new int[]{0}, new int[]{0},
 			new short[]{0}, null, null, null, null,
+			null, null, null, null,
 			null);
 
 		float[] x = new float[1];

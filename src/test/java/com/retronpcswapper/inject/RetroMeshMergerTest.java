@@ -34,6 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Covers the merge that lets the bundle store one part per model id.
@@ -53,6 +54,7 @@ public class RetroMeshMergerTest
 			new float[]{0f, 2f},
 			new int[]{0}, new int[]{1}, new int[]{0},
 			new short[]{(short) id}, null, null, null, null,
+			null, null, null, null,
 			group < 0 ? null : groups(group));
 	}
 
@@ -137,6 +139,7 @@ public class RetroMeshMergerTest
 			new float[]{0f, 1f}, new float[]{0f, 0f}, new float[]{0f, 0f},
 			new int[]{0}, new int[]{1}, new int[]{0},
 			new short[]{0}, null, null, new byte[]{7}, null,
+			null, null, null, null,
 			groups(0));
 
 		// This part carries no per-face array, so the merge has to fall back to its model-level
@@ -191,6 +194,150 @@ public class RetroMeshMergerTest
 			Arrays.asList(bundle.getMesh(2870), bundle.getMesh(2862)));
 		assertEquals(177 + 86, hillGiant.getVerticesCount());
 		assertEquals(355 + 155, hillGiant.getFaceCount());
+	}
+
+	/**
+	 * The guard's 2005 head is the only textured mesh in the bundle, and the only one that names
+	 * texture triangles. Everything about that mapping is dropped unless the bundle carries it, and
+	 * a dropped mapping does not fail - it renders, wrongly, as 34 copies of a 64x64 texture.
+	 */
+	@Test
+	public void testOnlyTheGuardHeadCarriesATextureMapping() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+
+		RetroMesh head = bundle.getMesh(294);
+		assertNotNull("guard head 294 is missing from the bundle", head);
+		assertEquals("the 2005 head names 18 texture triangles", 18, head.getTextureTriangleCount());
+
+		byte[] coords = head.getTextureCoords();
+		assertNotNull("the per-face triangle index is what the renderer branches on", coords);
+		assertEquals(head.getFaceCount(), coords.length);
+
+		int mapped = 0;
+		for (byte coord : coords)
+		{
+			if (coord != -1)
+			{
+				mapped++;
+				assertTrue("face triangle " + coord + " is past the table",
+					(coord & 0xFF) < head.getTextureTriangleCount());
+			}
+		}
+		assertEquals("34 of the head's 42 faces are textured", 34, mapped);
+		assertEquals(8, coords.length - mapped);
+
+		for (int meshId : new int[]{233, 246, 151, 176, 254, 185, 519, 541, 550, 2870, 2944})
+		{
+			RetroMesh mesh = bundle.getMesh(meshId);
+			assertNotNull("mesh " + meshId + " is missing from the bundle", mesh);
+			assertEquals("mesh " + meshId + " is untextured and should name no triangles",
+				0, mesh.getTextureTriangleCount());
+			assertNull("mesh " + meshId + " should carry no per-face triangle index",
+				mesh.getTextureCoords());
+		}
+	}
+
+	/**
+	 * A texture triangle names its own part's vertices, so merging has to shift it exactly as a
+	 * face index is shifted - and the per-face index into the triangle table has to shift by the
+	 * triangles the earlier parts contributed. The guard is the case that exercises both: its head
+	 * is the third of ten parts, so its triangles land at a vertex offset with no triangle offset.
+	 */
+	@Test
+	public void testTheGuardHeadKeepsItsMappingThroughTheMerge() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+
+		RetroMesh torso = bundle.getMesh(233);
+		RetroMesh cape = bundle.getMesh(246);
+		RetroMesh head = bundle.getMesh(294);
+
+		RetroMesh merged = RetroMeshMerger.merge(233, Arrays.asList(torso, cape, head));
+
+		int vertexBase = torso.getVerticesCount() + cape.getVerticesCount();
+		int faceBase = torso.getFaceCount() + cape.getFaceCount();
+
+		assertEquals(head.getTextureTriangleCount(), merged.getTextureTriangleCount());
+		for (int t = 0; t < head.getTextureTriangleCount(); t++)
+		{
+			assertEquals("triangle " + t + " corner 1",
+				head.getTexIndices1()[t] + vertexBase, merged.getTexIndices1()[t]);
+			assertEquals("triangle " + t + " corner 2",
+				head.getTexIndices2()[t] + vertexBase, merged.getTexIndices2()[t]);
+			assertEquals("triangle " + t + " corner 3",
+				head.getTexIndices3()[t] + vertexBase, merged.getTexIndices3()[t]);
+		}
+
+		byte[] mergedCoords = merged.getTextureCoords();
+		assertNotNull(mergedCoords);
+		assertEquals(merged.getFaceCount(), mergedCoords.length);
+
+		// The parts in front of the head are untextured, so their faces name no triangle
+		for (int face = 0; face < faceBase; face++)
+		{
+			assertEquals("face " + face + " belongs to an untextured part", -1, mergedCoords[face]);
+		}
+
+		// No triangles came before the head's, so its indices carry through unshifted
+		assertArrayEquals(head.getTextureCoords(),
+			Arrays.copyOfRange(mergedCoords, faceBase, faceBase + head.getFaceCount()));
+	}
+
+	/**
+	 * The other direction: a part whose triangles are not the first has its per-face indices shifted
+	 * by everything ahead of it. Synthetic, because the bundle has only one textured mesh and so
+	 * cannot exercise a non-zero triangle base.
+	 */
+	@Test
+	public void testTriangleIndicesShiftByTheTrianglesAhead()
+	{
+		RetroMesh first = textured(1, 3, new byte[]{0, 1, -1}, 2);
+		RetroMesh second = textured(2, 2, new byte[]{0, 0}, 1);
+		RetroMesh untextured = part(3, 0, 50f, 0);
+
+		RetroMesh merged = RetroMeshMerger.merge(1, Arrays.asList(first, second, untextured));
+
+		assertArrayEquals(new byte[]{0, 1, -1, 2, 2, -1}, merged.getTextureCoords());
+		assertEquals(3, merged.getTextureTriangleCount());
+
+		// first's triangles address vertices 0..2 and stay put; second's address its own 0..2 and
+		// shift by first's three vertices
+		assertArrayEquals(new int[]{0, 0, 3}, merged.getTexIndices1());
+		assertArrayEquals(new int[]{1, 1, 4}, merged.getTexIndices2());
+		assertArrayEquals(new int[]{2, 2, 5}, merged.getTexIndices3());
+	}
+
+	/** Three vertices, {@code coords.length} faces and {@code triangles} texture triangles. */
+	private static RetroMesh textured(int id, int faceCount, byte[] coords, int triangles)
+	{
+		int[] i1 = new int[faceCount];
+		int[] i2 = new int[faceCount];
+		int[] i3 = new int[faceCount];
+		short[] colors = new short[faceCount];
+		short[] textures = new short[faceCount];
+		for (int f = 0; f < faceCount; f++)
+		{
+			i1[f] = 0;
+			i2[f] = 1;
+			i3[f] = 2;
+			textures[f] = 37;
+		}
+
+		int[] t1 = new int[triangles];
+		int[] t2 = new int[triangles];
+		int[] t3 = new int[triangles];
+		for (int t = 0; t < triangles; t++)
+		{
+			t1[t] = 0;
+			t2[t] = 1;
+			t3[t] = 2;
+		}
+
+		return new RetroMesh(id, 0,
+			new float[]{0f, 1f, 2f}, new float[]{0f, 1f, 2f}, new float[]{0f, 1f, 2f},
+			i1, i2, i3, colors, null, null, null, textures,
+			coords, t1, t2, t3, groups(0));
 	}
 
 	private static RetroAssetBundle loadBundle() throws Exception

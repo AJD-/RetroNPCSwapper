@@ -160,14 +160,13 @@ public class RetroModel implements Model
 		// assumed, because the model and animation ids at these numbers very much did move, and
 		// only one bundled mesh is textured at all - the guard's 2005 head, 34 of its 42 faces.
 		//
-		// The UVs are another matter and are a known gap. That head names 18 texture triangles
-		// through its textureCoords, and neither RetroMesh nor the bundle carries them, so those
-		// faces fall back to the renderer's face-as-UV mapping: the texture lands on them, mapped
-		// off the face's own corners rather than the triangle the artist chose.
-		textureFaces = null;
-		texIndices1 = null;
-		texIndices2 = null;
-		texIndices3 = null;
+		// The UV mapping comes with it. ModelUploader.computeUv projects a face's corners onto the
+		// plane basis of the triangle named here; with none it emits a hardcoded (0,0), (1,0),
+		// (0,1) instead, which stretches the whole image across every face separately.
+		textureFaces = mesh.getTextureCoords();
+		texIndices1 = mesh.getTexIndices1();
+		texIndices2 = mesh.getTexIndices2();
+		texIndices3 = mesh.getTexIndices3();
 		faceBias = null;
 
 		transparency = 0;
