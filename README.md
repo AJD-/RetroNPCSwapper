@@ -16,7 +16,7 @@ Each category can be toggled individually in the plugin config:
 
 Under **Experimental**, behind the *Use the injection pipeline* toggle:
 
-- **Dragons** — adult and baby, in all four colours
+- **Dragons** — adult and baby, in all four colors
 - **Demons** — lesser, greater and black
 - **Imps**
 - **Cyclopes**

@@ -112,10 +112,10 @@ public class RetroNpcData
 	private final int scaleY;
 
 	/**
-	 * Recolour pairs applied to the retro mesh, parallel arrays of palette values.
+	 * Recolor pairs applied to the retro mesh, parallel arrays of palette values.
 	 *
-	 * <p>The 2005 client coloured same-mesh NPC variants here rather than with separate models -
-	 * every dragon shares one mesh and recolours palette index 61 to its own colour - so without
+	 * <p>The 2005 client colored same-mesh NPC variants here rather than with separate models -
+	 * every dragon shares one mesh and recolors palette index 61 to its own color - so without
 	 * these a baby blue dragon and a baby red dragon would render identically.
 	 */
 	private final short[] originalColors;
@@ -193,7 +193,7 @@ public class RetroNpcData
 		this.deathAnimationId = deathAnimationId;
 		this.scaleXZ = scaleXZ;
 		this.scaleY = scaleY;
-		// Only keep the pairs when both sides are present and agree - a half-populated recolour
+		// Only keep the pairs when both sides are present and agree - a half-populated recolor
 		// would throw at draw time, which is the worst place to find out
 		boolean recolorUsable = originalColors != null && replacementColors != null
 			&& originalColors.length > 0 && originalColors.length == replacementColors.length;
@@ -260,7 +260,7 @@ public class RetroNpcData
 	}
 
 	/**
-	 * Returns a copy carrying these recolour pairs, leaving everything else alone.
+	 * Returns a copy carrying these recolor pairs, leaving everything else alone.
 	 *
 	 * <p>Exists for the static archetypes. They take precedence over the generated JSON row, but
 	 * that row is the only source of the 2005 opcode 40 pairs, so the two have to be recombined
@@ -404,7 +404,7 @@ public class RetroNpcData
 		}
 
 		/**
-		 * Recolour pairs as parallel arrays, in npc.dat opcode 40 order.
+		 * Recolor pairs as parallel arrays, in npc.dat opcode 40 order.
 		 */
 		public Builder recolors(short[] originalColors, short[] replacementColors)
 		{
@@ -415,7 +415,7 @@ public class RetroNpcData
 
 		/**
 		 * Convenience for the common single-pair case, where one palette index carries the whole
-		 * colour of the variant.
+		 * color of the variant.
 		 */
 		public Builder recolor(int originalColor, int replacementColor)
 		{

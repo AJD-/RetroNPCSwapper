@@ -149,7 +149,7 @@ public class RetroNpcDecoder
 			}
 			else if (opcode == 40)
 			{
-				// Recolour pairs. The 2005 client gave same-mesh NPC variants their colour here
+				// Recolor pairs. The 2005 client gave same-mesh NPC variants their color here
 				// rather than with separate models, so this is the only place a retro baby blue
 				// dragon differs from a plain one.
 				int colors = stream.readUnsignedByte();

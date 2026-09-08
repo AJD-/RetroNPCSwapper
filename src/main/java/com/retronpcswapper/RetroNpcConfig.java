@@ -201,7 +201,7 @@ public interface RetroNpcConfig extends Config
 			+ "outlines around the retro model instead of the modern one.<br><br>While this is on "
 			+ "and models are being swapped, Interact Highlight's own <b>NPCs: Show on hover</b> "
 			+ "and <b>Show on interact</b> are turned off and this plugin draws those outlines in "
-			+ "their place, using that plugin's own colours and border settings.  Both are turned back "
+			+ "their place, using that plugin's own colors and border settings.  Both are turned back "
 			+ "on when this plugin stops.</body></html>",
 		section = compatibilitySection,
 		position = 1

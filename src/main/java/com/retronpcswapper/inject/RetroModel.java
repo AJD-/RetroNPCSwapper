@@ -84,7 +84,7 @@ public class RetroModel implements Model
 	private int[] faceIndices3 = new int[0];
 
 	/**
-	 * Lit per-corner colours. {@code faceColors3 == -1} means flat shaded and {@code -2} means a
+	 * Lit per-corner colors. {@code faceColors3 == -1} means flat shaded and {@code -2} means a
 	 * hidden face; the renderer depends on both sentinels, so they must survive the copy intact.
 	 */
 	private int[] faceColors1 = new int[0];
@@ -127,7 +127,7 @@ public class RetroModel implements Model
 	 * changes with the pose; only vertices move. The vertex buffers are sized here and then written
 	 * directly by the skinner, so posing copies nothing.
 	 *
-	 * @param litColors1 per-corner lit colours from {@link RetroLighter}, baked at rest pose
+	 * @param litColors1 per-corner lit colors from {@link RetroLighter}, baked at rest pose
 	 */
 	public void bind(RetroMesh mesh, int[] litColors1, int[] litColors2, int[] litColors3)
 	{

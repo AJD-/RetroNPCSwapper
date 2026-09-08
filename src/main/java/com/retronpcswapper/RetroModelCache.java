@@ -301,7 +301,7 @@ public class RetroModelCache
 	 * Prepares injected geometry for an NPC, or null when the bundle has nothing for it.
 	 *
 	 * <p>This is the path for meshes the live cache no longer holds. Everything the cache-backed
-	 * build gets from the client - merging, recolouring, scaling, lighting - happens here instead,
+	 * build gets from the client - merging, recoloring, scaling, lighting - happens here instead,
 	 * once, at spawn.
 	 */
 	private InjectedModel buildInjected(RetroNpcData data)
@@ -342,8 +342,8 @@ public class RetroModelCache
 
 		RetroMesh mesh = RetroMeshMerger.merge(modelIds[0], parts);
 
-		// Recolour before lighting, not after: lit colours are baked once and never recomputed, so
-		// a recolour applied afterwards would have nothing left to bite on. Retro dragon meshes are
+		// Recolor before lighting, not after: lit colors are baked once and never recomputed, so
+		// a recolor applied afterward would have nothing left to bite on. Retro dragon meshes are
 		// greyscale ramps, so this is what separates a red dragon from a black one.
 		short[] colors = mesh.getFaceColors().clone();
 		if (data.hasRecolors())
@@ -384,7 +384,7 @@ public class RetroModelCache
 	}
 
 	/**
-	 * Returns the mesh with the recoloured palette, resized when the retro mesh is not the size the
+	 * Returns the mesh with the recolored palette, resized when the retro mesh is not the size the
 	 * modern NPC expects.
 	 *
 	 * <p>Substituted geometry gets no resize from the client, so it has to be applied here - the
@@ -411,7 +411,7 @@ public class RetroModelCache
 			}
 		}
 
-		// Faces and rigging are shared with the bundle mesh - only vertices and colours differ per
+		// Faces and rigging are shared with the bundle mesh - only vertices and colors differ per
 		// NPC, and neither the bundle nor any other NPC sees these copies
 		return new RetroMesh(mesh.getId(), mesh.getPriority(), vx, vy, vz,
 			mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
@@ -698,7 +698,7 @@ public class RetroModelCache
 		if (data.hasRecolors())
 		{
 			// cloneColors first, for the same reason as cloneVertices below - loadModelData hands
-			// back the client's shared arrays, and recolouring in place would repaint the cached
+			// back the client's shared arrays, and recoloring in place would repaint the cached
 			// model for everything else using it
 			short[] originalColors = data.getOriginalColors();
 			short[] replacementColors = data.getReplacementColors();

@@ -131,28 +131,53 @@ public class RetroAssetGeneratorTest
 			new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, mapping);
 	}
 
+	/**
+	 * A death plays once and then leaves a corpse, so a 2005 clip shorter than the modern animation
+	 * it replaces should run at its own pace and hold - not stretch. The baby dragon is the case
+	 * that showed it: nine 2005 frames spread over thirty-six live ones held every pose about
+	 * sixteen ticks, against the five of the guard death that looks right.
+	 */
 	@Test
-	public void testPartialDurationsFallBackToProportionalMapping()
+	public void testAShortDeathPlaysOnceAndThenHolds()
 	{
-		// Same shape, but the 2005 clip is shorter than the live one it plays over
 		int[] liveLengths = new int[36];
 		Arrays.fill(liveLengths, 4);
-		liveLengths[35] = 20000;
+		liveLengths[35] = 200;
 		int[] retroLengths = new int[9];
 		retroLengths[8] = 20000;
 
 		int[] mapping = RetroAssetGenerator.resample(liveLengths, retroLengths, 36, 9);
 
-		assertEquals("the first live frame must start at the first 2005 frame", 0, mapping[0]);
-		assertEquals("the last live frame must reach the last 2005 frame", 8, mapping[35]);
+		assertArrayEquals("the 2005 frames must run a frame at a time",
+			new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8}, Arrays.copyOf(mapping, 9));
 
-		// Monotonic and actually spread, rather than parked on one frame
-		for (int i = 1; i < mapping.length; i++)
+		for (int i = 9; i < mapping.length; i++)
 		{
-			assertTrue("mapping must not go backwards", mapping[i] >= mapping[i - 1]);
+			assertEquals("and then hold the corpse", 8, mapping[i]);
 		}
-		assertTrue("the clip must visit more than its final frame",
-			Arrays.stream(mapping).distinct().count() > 1);
+	}
+
+	/** Equal frame counts are unaffected by the rule above, which is why guard death already worked. */
+	@Test
+	public void testADeathOfEqualLengthStillMapsStraightThrough()
+	{
+		int[] retroLengths = new int[10];
+		retroLengths[9] = 20000;
+
+		int[] mapping = RetroAssetGenerator.resample(
+			new int[]{8, 4, 4, 4, 14, 4, 3, 3, 3, 20000}, retroLengths, 10, 10);
+
+		assertArrayEquals(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, mapping);
+	}
+
+	/** A cycle has no terminal hold, so it still stretches to cover the live sequence. */
+	@Test
+	public void testACycleStillStretches()
+	{
+		int[] mapping = RetroAssetGenerator.resample(
+			new int[]{4, 4, 4, 4, 4, 4, 4, 4}, new int[]{0, 0}, 8, 2);
+
+		assertArrayEquals(new int[]{0, 0, 0, 0, 1, 1, 1, 1}, mapping);
 	}
 
 	/** Real durations on both sides still weight by duration rather than by index. */

@@ -31,7 +31,7 @@ import java.io.InputStream;
  * Reads the bundle shipped inside the plugin jar.
  *
  * <p>A missing resource is treated as "no injected assets" rather than an error, so a build without
- * the bundle degrades to the existing id-swapping behaviour instead of failing to start.
+ * the bundle degrades to the existing id-swapping behavior instead of failing to start.
  */
 public class ClasspathAssetSource implements RetroAssetSource
 {

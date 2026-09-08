@@ -65,10 +65,10 @@ public class RetroLighterTest
 	}
 
 	@Test
-	public void testGouraudFacesGetPerCornerColours()
+	public void testGouraudFacesGetPerCornerColors()
 	{
-		short colour = (short) 0x3A05; // arbitrary packed HSL with a mid luminance
-		int[][] out = light(new short[]{colour, colour}, null, null);
+		short color = (short) 0x3A05; // arbitrary packed HSL with a mid luminance
+		int[][] out = light(new short[]{color, color}, null, null);
 
 		for (int face = 0; face < I1.length; face++)
 		{
@@ -92,7 +92,7 @@ public class RetroLighterTest
 	public void testUnknownRenderTypeHidesTheFace()
 	{
 		// Type 2 is the textured-with-its-own-shading case this port does not handle; it must fall
-		// through to hidden rather than being drawn with a bogus colour
+		// through to hidden rather than being drawn with a bogus color
 		int[][] out = light(new short[]{100, 100}, new byte[]{2, 2}, null);
 
 		assertEquals(-2, out[2][0]);
@@ -110,7 +110,7 @@ public class RetroLighterTest
 
 	/**
 	 * Luminance occupies the low 7 bits and is clamped to 2..126 - 0 and 127 are reserved, and
-	 * letting one through changes the colour rather than the brightness.
+	 * letting one through changes the color rather than the brightness.
 	 */
 	@Test
 	public void testLuminanceStaysInsideTheReservedBounds()
@@ -133,10 +133,10 @@ public class RetroLighterTest
 	@Test
 	public void testHueAndSaturationSurviveLighting()
 	{
-		short colour = (short) 0x3A05;
-		int[][] out = light(new short[]{colour, colour}, null, null);
+		short color = (short) 0x3A05;
+		int[][] out = light(new short[]{color, color}, null, null);
 
 		assertEquals("lighting must replace luminance only",
-			colour & 0xFF80, out[0][0] & 0xFF80);
+			color & 0xFF80, out[0][0] & 0xFF80);
 	}
 }

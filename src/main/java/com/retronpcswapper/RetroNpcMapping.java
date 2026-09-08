@@ -254,9 +254,9 @@ public class RetroNpcMapping
 	// Known gap: black demons share mesh 2942 with greater demons and differ only by the 2005
 	// opcode 40 pairs (918 -> 4, 929 -> 4, 0 -> 931). Those pairs are in the generated JSON, but a
 	// static archetype takes precedence over the JSON row, so they never reach createMappingData
-	// and a black demon currently renders in greater demon colours. Lesser and greater demons are
-	// unaffected - they carry no recolour data in 2005, being the base colour of their own meshes.
-	// Fixing it means letting an archetype inherit the JSON row's recolours, which is a change to
+	// and a black demon currently renders in greater demon colors. Lesser and greater demons are
+	// unaffected - they carry no recolor data in 2005, being the base color of their own meshes.
+	// Fixing it means letting an archetype inherit the JSON row's recolors, which is a change to
 	// how load() merges the two rather than a per-category tweak.
 	public static final RetroNpcData BLACK_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.BLACK_DEMONS)
@@ -271,16 +271,16 @@ public class RetroNpcMapping
 		.modernDeathAnims(DEMON_MODERN_DEATHS)
 		.build();
 
-	// Retro mesh 2998 carries no colour of its own - its whole palette (0, 41, 61, 127) is
-	// saturation 0, a greyscale ramp - so the 2005 client gave each dragon its colour by
-	// recolouring one index. Index 61 is 57% of the mesh; the rest is black, shadow and highlight
-	// detail that stayed grey in 2005 too.
+	// Retro mesh 2998 carries no color of its own - its whole palette (0, 41, 61, 127) is
+	// saturation 0, a greyscale ramp - so the 2005 client gave each dragon its color by
+	// recoloring one index. Index 61 is 57% of the mesh; the rest is black, shadow and highlight
+	// detail that stayed gray in 2005 too.
 	private static final int DRAGON_BODY_GREY = 61;
 
-	// Colours as the 2005 cache specified them. Baby blue comes from the 2005 "Baby blue dragon"
+	// Colors as the 2005 cache specified them. Baby blue comes from the 2005 "Baby blue dragon"
 	// (def 52) and is the same value the adult "Blue dragon" (def 55) uses - which is what makes
-	// the other three trustworthy: every 2005 dragon recolours DRAGON_BODY_GREY to its own colour,
-	// so the adult defs supply the colours for the baby variants that postdate the cache.
+	// the other three trustworthy: every 2005 dragon recolors DRAGON_BODY_GREY to its own color,
+	// so the adult defs supply the colors for the baby variants that postdate the cache.
 	private static final int DRAGON_BLUE = -25049;
 	private static final int DRAGON_RED = 687;     // 2005 "Red dragon", def 53
 	private static final int DRAGON_GREEN = 22051; // 2005 "Green dragon", def 941
@@ -406,7 +406,7 @@ public class RetroNpcMapping
 	private static final int JOGRE_HEAD = 2866;
 
 	/**
-	 * Builds one member of the giant family. They differ only in their parts and their 2005 recolour
+	 * Builds one member of the giant family. They differ only in their parts and their 2005 recolor
 	 * pairs; the animations are shared, which is why every variant resolves to framemap 302.
 	 */
 	private static RetroNpcData giant(RetroNpcCategory category, int[] models, int[] injectedModels)
@@ -481,23 +481,23 @@ public class RetroNpcMapping
 			NAME_MAPPINGS.putIfAbsent(nameLower, createMappingData(entry));
 		}
 
-		// 3. Hand the static archetypes the recolour pairs from their JSON rows
+		// 3. Hand the static archetypes the recolor pairs from their JSON rows
 		applyCacheRecolors(byName);
 	}
 
 	/**
-	 * Grafts 2005 recolour pairs onto the static archetypes.
+	 * Grafts 2005 recolor pairs onto the static archetypes.
 	 *
 	 * <p>An archetype wins over the generated JSON row for a name, which is what keeps hand-checked
 	 * combat animations and model ids in place. But the row is the only source of the opcode 40
 	 * pairs, and the archetypes are constructed before any cache is read, so the two are recombined
-	 * here instead. Without this a black demon renders in greater demon colours - both are mesh
+	 * here instead. Without this a black demon renders in greater demon colors - both are mesh
 	 * 2942, and the pairs are the only thing that separates them.
 	 *
 	 * <p>Scoped by {@link #categoryUsesRecolors}, for the same reason {@code createMappingData} is:
 	 * guards, goblins and the restless ghost all carry opcode 40 data too, and the generator keeps
 	 * only the lowest-id row per name, so forwarding wholesale would repaint a whole category in one
-	 * arbitrary variant's colours.
+	 * arbitrary variant's colors.
 	 */
 	private static void applyCacheRecolors(Map<String, RetroNpcMappingEntry> byName)
 	{
@@ -531,10 +531,10 @@ public class RetroNpcMapping
 	}
 
 	/**
-	 * Whether a category's retro mesh needs the 2005 recolour pairs to look right.
+	 * Whether a category's retro mesh needs the 2005 recolor pairs to look right.
 	 *
-	 * <p>These meshes carry no usable colour of their own - the dragons are a greyscale ramp, and
-	 * black and greater demons are the same mesh - so recolouring is structural rather than
+	 * <p>These meshes carry no usable color of their own - the dragons are a greyscale ramp, and
+	 * black and greater demons are the same mesh - so recoloring is structural rather than
 	 * cosmetic. Every other category is left alone on purpose.
 	 */
 	/**
@@ -577,7 +577,7 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.ICE_GIANTS
 			|| category == RetroNpcCategory.MOSS_GIANTS
 			// A guard's parts are generic 2005 human kit shared with everything else that wears it,
-			// so the opcode 40 pairs are what make the kit a guard's colours rather than a
+			// so the opcode 40 pairs are what make the kit a guard's colors rather than a
 			// townsperson's. The pairs come from the definition the parts come from.
 			|| category == RetroNpcCategory.GUARDS;
 	}
@@ -629,7 +629,7 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("imp", IMP_DEFAULT);
 		registerMapping(IMP_DEFAULT, NpcID.IMP, NpcID.GODWARS_ANCIENT_IMP, NpcID.CASTLEWARS_IMP);
 
-		// Baby Dragons. All four modern colours share retro mesh 2998 and differ only by recolour.
+		// Baby Dragons. All four modern colors share retro mesh 2998 and differ only by recolor.
 		// Registered by id as well as name so a renamed or newly added variant still resolves.
 		NAME_MAPPINGS.put("baby blue dragon", BABY_BLUE_DRAGON);
 		registerMapping(BABY_BLUE_DRAGON,
@@ -699,7 +699,7 @@ public class RetroNpcMapping
 		);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
-		// animations and differ only in their parts and their 2005 recolour pairs.
+		// animations and differ only in their parts and their 2005 recolor pairs.
 		NAME_MAPPINGS.put("hill giant", HILL_GIANT_DEFAULT);
 		registerMapping(HILL_GIANT_DEFAULT,
 			NpcID.GIANT, NpcID.GIANT2, NpcID.GIANT3, NpcID.GIANT4, NpcID.GIANT5, NpcID.GIANT6,
@@ -756,14 +756,14 @@ public class RetroNpcMapping
 		int scaleY = entry.getScaleY();
 
 		// Deliberately NOT seeded from the entry. Plenty of 2005 definitions carry opcode-40
-		// recolours - goblins and guards among them - and buildEntries collapses rows by name with
+		// recolors - goblins and guards among them - and buildEntries collapses rows by name with
 		// the lowest def id winning, so forwarding them wholesale would repaint a live category
-		// with one arbitrary variant's colours. Only a branch that needs them opts in.
+		// with one arbitrary variant's colors. Only a branch that needs them opts in.
 		//
 		// Scoped rather than seeded from every entry: plenty of 2005 definitions carry opcode 40
-		// recolours - goblins and guards among them - and buildEntries keeps only the lowest-id row
+		// recolors - goblins and guards among them - and buildEntries keeps only the lowest-id row
 		// per name, so forwarding wholesale would repaint a live category with one arbitrary
-		// variant's colours. See categoryUsesRecolors for why these categories are the exception.
+		// variant's colors. See categoryUsesRecolors for why these categories are the exception.
 		short[] recolorFind = categoryUsesRecolors(category) ? entry.getOriginalColors() : null;
 		short[] recolorReplace = categoryUsesRecolors(category) ? entry.getReplacementColors() : null;
 

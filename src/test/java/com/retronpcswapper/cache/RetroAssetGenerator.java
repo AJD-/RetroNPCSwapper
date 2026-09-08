@@ -108,7 +108,7 @@ public class RetroAssetGenerator
 		new Spec("Imps", Source.RETRO, Source.RETRO, new int[]{2887}, new int[]{168, 169, 170, 171, 172}),
 		// Mesh 2998 drifted rather than being replaced - 250 verts became 252 - so compareRetroModels
 		// calls it REPLACED on a magnitude it should not. The 2005 copy is taken anyway, and it also
-		// drops the live-only colour indices 53 and 70, which no 2005 recolour pair names and which
+		// drops the live-only color indices 53 and 70, which no 2005 recolor pair names and which
 		// would otherwise stay grey on the body.
 		new Spec("Baby dragons", Source.RETRO, Source.RETRO, new int[]{2998}, new int[]{21, 25, 26, 27, 28}),
 		// The giant family is one 2005 body plus a variant head, so 2870 is decoded once and shared.
@@ -619,6 +619,20 @@ public class RetroAssetGenerator
 	{
 		int[] mapping = new int[liveCount];
 
+		if (endsOnAHold(retroLengths, retroCount))
+		{
+			// A play-once clip: run it a frame at a time and hold the last pose for whatever is
+			// left. Spreading it over the whole live sequence instead makes every pose linger,
+			// because the modern animation takes far longer than the 2005 one it replaced - a
+			// baby dragon's death is 9 retro frames against 36 live ones, so each 2005 pose would
+			// be held about 16 ticks where the guard's correct-looking death holds each for 5.
+			for (int i = 0; i < liveCount; i++)
+			{
+				mapping[i] = Math.min(i, retroCount - 1);
+			}
+			return mapping;
+		}
+
 		long liveTotal = total(liveLengths, liveCount);
 		long retroTotal = total(retroLengths, retroCount);
 
@@ -658,6 +672,39 @@ public class RetroAssetGenerator
 		}
 
 		return mapping;
+	}
+
+	/**
+	 * Whether a clip ends by holding its last frame far longer than any other - the shape of a
+	 * death, which plays once and then leaves a corpse.
+	 *
+	 * <p>2005 death sequences declare it unmistakably, as no duration at all for the frames that do
+	 * the dying and then something like 20000 on the last. That terminal hold is the only marker in
+	 * the data that separates a play-once animation from a cycle, and it is the same field that,
+	 * read as an ordinary duration, once collapsed every death onto its final frame.
+	 */
+	private static boolean endsOnAHold(int[] lengths, int count)
+	{
+		if (lengths == null || lengths.length < count || count < 2)
+		{
+			return false;
+		}
+
+		int last = lengths[count - 1];
+		if (last <= 0)
+		{
+			return false;
+		}
+
+		int longestOther = 0;
+		for (int i = 0; i < count - 1; i++)
+		{
+			longestOther = Math.max(longestOther, lengths[i]);
+		}
+
+		// Ten times the longest frame that actually animates. A clip whose frames are all of a
+		// similar length is a cycle, however long its last frame happens to be.
+		return last >= 10L * Math.max(longestOther, 1);
 	}
 
 	/**

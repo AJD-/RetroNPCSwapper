@@ -367,9 +367,9 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
-	 * All four baby dragon colours share retro mesh 2998, whose palette is a greyscale ramp, so the
-	 * recolour pair is the only thing separating them. A variant that lost its pair would render as
-	 * a grey lump rather than fail, which is why the colours are asserted individually.
+	 * All four baby dragon colors share retro mesh 2998, whose palette is a greyscale ramp, so the
+	 * recolor pair is the only thing separating them. A variant that lost its pair would render as
+	 * a gray lump rather than fail, which is why the colors are asserted individually.
 	 */
 	@Test
 	public void testBabyDragonsCategory()
@@ -397,13 +397,13 @@ public class RetroNpcCategoryTest
 			assertEquals(-1, baby.getDefendAnimationId());
 			assertEquals(-1, baby.getDeathAnimationId());
 
-			assertTrue("baby dragon " + variant[0] + " must carry a recolour", baby.hasRecolors());
-			assertArrayEquals("every 2005 dragon recolours the same body index",
+			assertTrue("baby dragon " + variant[0] + " must carry a recolor", baby.hasRecolors());
+			assertArrayEquals("every 2005 dragon recolors the same body index",
 				new short[]{61}, baby.getOriginalColors());
 			assertArrayEquals(new short[]{(short) variant[1]}, baby.getReplacementColors());
 		}
 
-		// Resolving by name matters as much as by id: a colour added or renamed upstream falls back
+		// Resolving by name matters as much as by id: a color added or renamed upstream falls back
 		// to the name, and the four must not collapse onto one shared instance
 		assertEquals((short) -25049,
 			RetroNpcMapping.get(-1, "Baby blue dragon").getReplacementColors()[0]);
@@ -667,17 +667,17 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
-	 * The recolour plumbing is live but nothing opts into it yet, and that has to stay deliberate.
+	 * The recolor plumbing is live but nothing opts into it yet, and that has to stay deliberate.
 	 *
-	 * <p>Plenty of 2005 definitions carry opcode-40 recolours - goblins, guards, skeleton mages and
+	 * <p>Plenty of 2005 definitions carry opcode-40 recolors - goblins, guards, skeleton mages and
 	 * the restless ghost among them - and {@code buildEntries} collapses rows by name with the
 	 * lowest def id winning, so seeding {@code createMappingData} from the entry would repaint a
-	 * live category with one arbitrary variant's colours. This pins that no shipping category picks
+	 * live category with one arbitrary variant's colors. This pins that no shipping category picks
 	 * them up by accident; a branch that needs them opts in explicitly.
 	 */
 	/**
 	 * Black and greater demons are the same mesh (2942) and differ only by the 2005 opcode 40
-	 * pairs, so a black demon without them renders in greater demon colours. The pairs reach it
+	 * pairs, so a black demon without them renders in greater demon colors. The pairs reach it
 	 * through a static archetype, which normally shadows the generated JSON row entirely.
 	 */
 	@Test
@@ -686,7 +686,7 @@ public class RetroNpcCategoryTest
 		RetroNpcData blackDemon = RetroNpcMapping.get(0, "Black demon");
 
 		assertNotNull(blackDemon);
-		assertTrue("the black demon archetype must pick up the JSON row's recolour pairs",
+		assertTrue("the black demon archetype must pick up the JSON row's recolor pairs",
 			blackDemon.hasRecolors());
 		assertEquals("pairs must stay parallel",
 			blackDemon.getOriginalColors().length, blackDemon.getReplacementColors().length);
@@ -695,7 +695,7 @@ public class RetroNpcCategoryTest
 	/**
 	 * The same graft must reach every NPC id registered against the archetype, not just the name
 	 * lookup - both maps hold the same instance, so replacing one and not the other would leave
-	 * most black demons uncoloured.
+	 * most black demons uncolored.
 	 */
 	@Test
 	public void testBlackDemonRecolorsReachTheIdMappingsToo()
@@ -703,7 +703,7 @@ public class RetroNpcCategoryTest
 		RetroNpcData byId = RetroNpcMapping.get(NpcID.BLACK_DEMON, "Black demon");
 
 		assertNotNull(byId);
-		assertTrue("id-resolved black demons must carry the recolours as well", byId.hasRecolors());
+		assertTrue("id-resolved black demons must carry the recolors as well", byId.hasRecolors());
 	}
 
 	@Test
@@ -716,16 +716,16 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
-	 * The recolours have to reach the <em>id</em> lookup, not just the name one. Both maps hold the
+	 * The recolors have to reach the <em>id</em> lookup, not just the name one. Both maps hold the
 	 * same instance and the graft replaces it, so checking only get(0, name) would pass while every
-	 * guard resolved by id rendered in the base kit's colours.
+	 * guard resolved by id rendered in the base kit's colors.
 	 */
 	@Test
 	public void testGuardRecolorsReachTheIdMappingsToo()
 	{
 		RetroNpcData byId = RetroNpcMapping.get(NpcID.GUARD1, "Guard");
 		assertNotNull(byId);
-		assertTrue("id-resolved guards must carry the recolours as well", byId.hasRecolors());
+		assertTrue("id-resolved guards must carry the recolors as well", byId.hasRecolors());
 		assertArrayEquals(new short[]{25238, 8741, 61}, byId.getOriginalColors());
 		assertArrayEquals(new short[]{10508, 6930, 5652}, byId.getReplacementColors());
 	}
@@ -735,12 +735,12 @@ public class RetroNpcCategoryTest
 	{
 		// Guards are the exception to the rule above, and deliberately so. Their parts are generic
 		// 2005 human kit shared with every other NPC that wears it, so without the opcode 40 pairs
-		// a guard renders in a townsperson's colours. The pairs and the parts come from the same
+		// a guard renders in a townsperson's colors. The pairs and the parts come from the same
 		// definition, which is what makes this safe where forwarding a goblin variant's would not.
 		RetroNpcData guard = RetroNpcMapping.get(0, "Guard");
 		assertNotNull(guard);
-		assertTrue("guards must carry their 2005 recolours", guard.hasRecolors());
-		assertEquals("recolour arrays must stay parallel",
+		assertTrue("guards must carry their 2005 recolors", guard.hasRecolors());
+		assertEquals("recolor arrays must stay parallel",
 			guard.getOriginalColors().length, guard.getReplacementColors().length);
 	}
 
@@ -761,7 +761,7 @@ public class RetroNpcCategoryTest
 		assertNotNull("blue dragon row missing from npc-mappings.json", blueDragon);
 		assertNotNull("blue dragon must carry its opcode 40 pairs", blueDragon.getOriginalColors());
 		assertNotNull(blueDragon.getReplacementColors());
-		assertEquals("recolour arrays must stay parallel",
+		assertEquals("recolor arrays must stay parallel",
 			blueDragon.getOriginalColors().length, blueDragon.getReplacementColors().length);
 	}
 
@@ -892,24 +892,24 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
-	public void testFireIceAndMossGiantsCarryTheir2005Recolours()
+	public void testFireIceAndMossGiantsCarryTheir2005Recolors()
 	{
 		// These three are the same body mesh as the hill giant, told apart only by opcode 40. Without
-		// the pairs they would all render in hill giant colours.
+		// the pairs they would all render in hill giant colors.
 		for (String name : new String[]{"Fire giant", "Ice giant", "Moss giant"})
 		{
 			RetroNpcData data = RetroNpcMapping.get(0, name);
 			assertNotNull(name, data);
-			assertTrue(name + " must carry 2005 recolours", data.hasRecolors());
-			assertEquals(name + " recolour arrays must stay parallel",
+			assertTrue(name + " must carry 2005 recolors", data.hasRecolors());
+			assertEquals(name + " recolor arrays must stay parallel",
 				data.getOriginalColors().length, data.getReplacementColors().length);
 		}
 
-		// The recolours have to reach the id lookup too - ID_MAPPINGS and NAME_MAPPINGS hold the
-		// same instance, so a graft that updated only one would leave most fire giants uncoloured
+		// The recolors have to reach the id lookup too - ID_MAPPINGS and NAME_MAPPINGS hold the
+		// same instance, so a graft that updated only one would leave most fire giants uncolored
 		RetroNpcData byId = RetroNpcMapping.get(NpcID.FIREGIANT, "Fire giant");
 		assertNotNull(byId);
-		assertTrue("recolours must reach the id mapping", byId.hasRecolors());
+		assertTrue("recolors must reach the id mapping", byId.hasRecolors());
 	}
 
 	@Test

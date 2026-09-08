@@ -33,7 +33,7 @@ import java.util.List;
  *
  * <p>This used to happen in the generator, with the merged result stored under the first part's
  * model id. That could not express the giant family, where five NPCs are one shared body mesh plus
- * a variant head: every one of them keys on 2870, so the last spec written would win and they would
+ * a variant head: every one of them keys on 2870, so the last spec written would win, and they would
  * all wear the same head. The bundle now stores each part under its own real model id - keeping the
  * "keyed by the ids the source caches use" invariant, and storing a shared body once - and the
  * merge happens here instead, once per NPC id at spawn.
@@ -49,7 +49,7 @@ public final class RetroMeshMerger
 
 	/**
 	 * Merges parts into a single mesh under {@code id}, conventionally the first part's model id so
-	 * that logging still names something recognisable.
+	 * that logging still names something recognizable.
 	 *
 	 * <p>A single part is returned as-is rather than copied. {@link RetroMesh} is immutable and every
 	 * consumer that needs to change one builds a derived copy first, so sharing the instance is safe

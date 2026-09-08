@@ -27,16 +27,16 @@ package com.retronpcswapper.inject;
 import net.runelite.api.ModelData;
 
 /**
- * Turns unlit HSL face colours into the per-corner lit colours the renderer draws.
+ * Turns unlit HSL face colors into the per-corner lit colors the renderer draws.
  *
  * <p>Needed because {@link ModelData#light()} only works on a model the client itself decoded, and
  * injected geometry by definition is not one. Lighting is baked once, at rest pose, exactly as the
- * client does it - animation moves vertices afterwards and the colours are not recomputed.
+ * client does it - animation moves vertices afterward and the colors are not recomputed.
  *
  * <h2>Output encoding</h2>
  *
  * The renderer reads three parallel arrays of packed HSL, one per triangle corner, and two values in
- * {@code faceColors3} are sentinels rather than colours:
+ * {@code faceColors3} are sentinels rather than colors:
  * <ul>
  *   <li>{@code -1} - flat shaded, so {@code faceColors1} applies to the whole face</li>
  *   <li>{@code -2} - hidden, the face is skipped entirely</li>
@@ -56,7 +56,7 @@ public final class RetroLighter
 {
 	/** Face is shaded across its corners from the vertex normals. */
 	private static final int RENDER_TYPE_GOURAUD = 0;
-	/** Face takes a single colour from its own normal. */
+	/** Face takes a single color from its own normal. */
 	private static final int RENDER_TYPE_FLAT = 1;
 	/** Face is drawn unshaded. */
 	private static final int RENDER_TYPE_UNSHADED = 3;
@@ -101,7 +101,7 @@ public final class RetroLighter
 			int renderType = faceRenderTypes == null ? RENDER_TYPE_GOURAUD : faceRenderTypes[face];
 			boolean textured = faceTextures != null && faceTextures[face] != -1;
 
-			// A textured face takes its shading from a fixed mid grey rather than its own colour
+			// A textured face takes its shading from a fixed mid grey rather than its own color
 			int color = textured ? 127 : faceColors[face] & 0xFFFF;
 
 			if (renderType == RENDER_TYPE_GOURAUD)
@@ -139,11 +139,11 @@ public final class RetroLighter
 	}
 
 	/**
-	 * Applies a light level to a packed HSL colour, keeping hue and saturation and replacing
+	 * Applies a light level to a packed HSL color, keeping hue and saturation and replacing
 	 * luminance.
 	 *
 	 * <p>The clamp to 2..126 is not cosmetic: 0 and 127 are reserved, and letting luminance reach
-	 * them produces the wrong colour rather than a slightly wrong brightness.
+	 * them produces the wrong color rather than a slightly wrong brightness.
 	 */
 	private static int shade(int hsl, int light)
 	{

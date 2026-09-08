@@ -46,8 +46,8 @@ public class RetroNpcMappingEntry
 	private int scaleXZ = 128;
 	private int scaleY = 128;
 
-	// Recolour pairs from npc.dat opcode 40, parallel arrays. The 2005 client gave same-mesh NPC
-	// variants their colour here rather than with separate models, so this is what separates a
+	// Recolor pairs from npc.dat opcode 40, parallel arrays. The 2005 client gave same-mesh NPC
+	// variants their color here rather than with separate models, so this is what separates a
 	// retro baby blue dragon from a plain one - both are mesh 2998.
 	private short[] originalColors;
 	private short[] replacementColors;

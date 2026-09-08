@@ -29,11 +29,6 @@ import java.io.IOException;
 /**
  * Where injected assets are read from.
  *
- * <p>An interface rather than a direct resource read so the delivery mechanism can change without
- * touching anything that consumes a bundle - shipping assets in the jar is the simplest option, not
- * necessarily the last one. A source that reads a user-generated bundle out of the
- * {@code .runelite} directory would slot in here unchanged.
- *
  * <p>Implementations do blocking IO and must not be called on the client thread.
  */
 public interface RetroAssetSource

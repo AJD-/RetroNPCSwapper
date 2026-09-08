@@ -68,9 +68,9 @@ import net.runelite.cache.fs.Store;
  * it and then nulls it, so {@code packedVertexGroups} is null for every model ever loaded whether it
  * is rigged or not. Testing that field measures nothing.
  *
- * <p>Finally it dumps the 2005 opcode 40 recolour pairs for the same NPCs. Retro dragon meshes are
+ * <p>Finally it dumps the 2005 opcode 40 recolor pairs for the same NPCs. Retro dragon meshes are
  * greyscale ramps - the 2005 client tinted same-mesh variants from these pairs - so without them
- * all four dragon colours render as identical grey lumps.
+ * all four dragon colors render as identical gray lumps.
  *
  * <p>Run with {@code ./gradlew verifyRetroRigs}, or aim it by hand with
  * {@code -Pmodels=2853,2854 -Pseqs=79,90}. Reads the untracked {@code retrocache/} 2005 cache
@@ -173,7 +173,7 @@ public class RetroRigVerifier
 				allCompatible &= verify(store, retro, framemapCache, target);
 			}
 
-			dumpRecolours(retro, targets);
+			dumpRecolors(retro, targets);
 		}
 		finally
 		{
@@ -309,9 +309,9 @@ public class RetroRigVerifier
 
 	/**
 	 * Prints the opcode 40 pairs for the 2005 definitions behind these categories, which is the
-	 * only cache-derived source of colour for a greyscale retro mesh.
+	 * only cache-derived source of color for a greyscale retro mesh.
 	 */
-	private static void dumpRecolours(RetroCacheReader retro, List<Target> targets) throws IOException
+	private static void dumpRecolors(RetroCacheReader retro, List<Target> targets) throws IOException
 	{
 		byte[] archiveData = retro.readFile(0, 2); // Archive 0 file 2 (config.jag)
 		Map<String, byte[]> files = retro.readArchive(archiveData);
@@ -319,7 +319,7 @@ public class RetroRigVerifier
 		byte[] npcIdx = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.idx")));
 		if (npcDat == null || npcIdx == null)
 		{
-			System.out.println("=== 2005 recolours === npc.dat/npc.idx missing, skipped");
+			System.out.println("=== 2005 recolors === npc.dat/npc.idx missing, skipped");
 			return;
 		}
 
@@ -332,7 +332,7 @@ public class RetroRigVerifier
 			}
 		}
 
-		System.out.println("=== 2005 opcode 40 recolours ===");
+		System.out.println("=== 2005 opcode 40 recolors ===");
 		Map<Integer, RetroNpcDefinition> defs = RetroNpcDecoder.decodeAll(npcDat, npcIdx);
 		for (Map.Entry<Integer, RetroNpcDefinition> entry : new java.util.TreeMap<>(defs).entrySet())
 		{

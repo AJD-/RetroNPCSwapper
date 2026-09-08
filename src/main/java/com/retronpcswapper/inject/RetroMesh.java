@@ -58,7 +58,7 @@ public final class RetroMesh
 	private final int[] faceIndices2;
 	private final int[] faceIndices3;
 
-	/** Unlit packed HSL per face; {@link RetroLighter} turns these into per-corner colours. */
+	/** Unlit packed HSL per face; {@link RetroLighter} turns these into per-corner colors. */
 	private final short[] faceColors;
 	private final byte[] faceRenderTypes;
 	private final byte[] faceTransparencies;
