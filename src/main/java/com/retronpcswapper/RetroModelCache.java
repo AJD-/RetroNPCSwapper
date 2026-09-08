@@ -71,6 +71,9 @@ public class RetroModelCache
 	/** NPC ids whose retro models could not be built, so spawns stop retrying them. */
 	private final Set<Integer> unbuildable = new HashSet<>();
 
+	/** NPC id and animation pairs already reported by {@link #reportAction}, so each is said once. */
+	private final Set<Long> reportedActions = new HashSet<>();
+
 	/**
 	 * Scratch geometry this plugin owns, used when the injection pipeline is on. One instance,
 	 * reused every frame and every NPC, because it is consumed before anything else can run - the
@@ -429,8 +432,14 @@ public class RetroModelCache
 		RetroMesh mesh = injectedModel.mesh;
 		RetroModel model = injectedModel.model;
 
-		RetroClip clip = bundle.getClip(npc.getAnimation());
+		int action = npc.getAnimation();
+		RetroClip clip = bundle.getClip(action);
 		int frame = npc.getAnimationFrame();
+
+		if (action != -1)
+		{
+			reportAction(npc.getId(), action, frame, clip);
+		}
 
 		if (clip == null || !clip.hasFrame(frame))
 		{
@@ -447,6 +456,42 @@ public class RetroModelCache
 		model.calculateBoundsCylinder();
 
 		return model;
+	}
+
+	/**
+	 * Says once, per NPC id and animation, what the injected path did with an action animation.
+	 *
+	 * <p>An action that finds no clip leaves the NPC holding its movement pose, which on screen is
+	 * indistinguishable from the animation simply not playing - so without this the only way to
+	 * learn which sequence id an NPC really uses is to guess, and guessing at combat sequences is
+	 * what once rewrote every dragon attack into a head butt. The frame index is reported with it
+	 * because an action that starts part-way through its clip looks like the NPC snapping straight
+	 * to the end.
+	 *
+	 * <p>Bounded by construction: one line per id and animation, not per frame.
+	 */
+	private void reportAction(int npcId, int action, int frame, RetroClip clip)
+	{
+		if (!log.isDebugEnabled() || !reportedActions.add(((long) npcId << 32) | (action & 0xFFFFFFFFL)))
+		{
+			return;
+		}
+
+		if (clip == null)
+		{
+			log.debug("NPC {} plays animation {}, which the bundle has no clip for - it will hold "
+				+ "its movement pose", npcId, action);
+		}
+		else if (!clip.hasFrame(frame))
+		{
+			log.debug("NPC {} plays animation {} at frame {}, past the {} frames of its clip",
+				npcId, action, frame, clip.getFrameCount());
+		}
+		else
+		{
+			log.debug("NPC {} plays animation {}, entering its clip at frame {} of {}",
+				npcId, action, frame, clip.getFrameCount());
+		}
 	}
 
 	/** Injected geometry for one NPC id: the mesh it was built from, and the model handed out. */
@@ -612,6 +657,7 @@ public class RetroModelCache
 	public void clear()
 	{
 		substituted.clear();
+		reportedActions.clear();
 		baseModels.clear();
 		meshIds.clear();
 		injectedModels.clear();

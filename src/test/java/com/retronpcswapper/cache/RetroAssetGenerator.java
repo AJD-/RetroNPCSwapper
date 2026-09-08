@@ -261,7 +261,10 @@ public class RetroAssetGenerator
 				clipOwners.put(sequenceId, spec);
 				System.out.println("  clip " + sequenceId + "  frames=" + clip.getFrameCount()
 					+ " rig=" + clip.getRigId()
-					+ (spec.clipSource == Source.RETRO ? "  (2005)" : ""));
+					+ (spec.clipSource == Source.RETRO
+						? "  (2005, from " + retroSequences.get(sequenceId).getFrameIds().length
+							+ " source frames)"
+						: ""));
 			}
 		}
 

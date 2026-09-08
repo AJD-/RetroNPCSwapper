@@ -715,6 +715,21 @@ public class RetroNpcCategoryTest
 		assertFalse(RetroNpcMapping.get(0, "Chicken").hasRecolors());
 	}
 
+	/**
+	 * The recolours have to reach the <em>id</em> lookup, not just the name one. Both maps hold the
+	 * same instance and the graft replaces it, so checking only get(0, name) would pass while every
+	 * guard resolved by id rendered in the base kit's colours.
+	 */
+	@Test
+	public void testGuardRecolorsReachTheIdMappingsToo()
+	{
+		RetroNpcData byId = RetroNpcMapping.get(NpcID.GUARD1, "Guard");
+		assertNotNull(byId);
+		assertTrue("id-resolved guards must carry the recolours as well", byId.hasRecolors());
+		assertArrayEquals(new short[]{25238, 8741, 61}, byId.getOriginalColors());
+		assertArrayEquals(new short[]{10508, 6930, 5652}, byId.getReplacementColors());
+	}
+
 	@Test
 	public void testGuardsDoCarryTheirRecolors()
 	{
