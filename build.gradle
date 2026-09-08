@@ -66,6 +66,12 @@ tasks.register('generateNpcMappings', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = 'com.retronpcswapper.cache.NpcMappingGenerator'
 	workingDir = rootDir
+
+	// The generator takes the 2005 cache as its first argument, so -PretroDir goes through args
+	// rather than a system property like the other tasks
+	if (project.hasProperty('retroDir')) {
+		args project.property('retroDir').toString()
+	}
 }
 
 // Prints NPC definitions from the live OSRS cache, eg:
@@ -101,6 +107,9 @@ tasks.register('compareRetroModels', JavaExec) {
 	}
 	if (project.hasProperty('cacheDir')) {
 		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+	if (project.hasProperty('retroDir')) {
+		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
 	}
 }
 
