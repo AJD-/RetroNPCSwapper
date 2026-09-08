@@ -208,6 +208,24 @@ public class NpcMappingGenerator
 		{
 			return RetroNpcCategory.HILL_GIANTS;
 		}
+		if (nameLower.contains("fire giant"))
+		{
+			return RetroNpcCategory.FIRE_GIANTS;
+		}
+		if (nameLower.contains("ice giant"))
+		{
+			return RetroNpcCategory.ICE_GIANTS;
+		}
+		if (nameLower.contains("moss giant"))
+		{
+			return RetroNpcCategory.MOSS_GIANTS;
+		}
+		// Matched exactly rather than by substring: a bare "giant" would catch giant rats, spiders
+		// and frogs, which share nothing with this family but the word.
+		if (nameLower.equals("cyclops"))
+		{
+			return RetroNpcCategory.CYCLOPS;
+		}
 		if (nameLower.contains("chicken"))
 		{
 			return RetroNpcCategory.CHICKENS;

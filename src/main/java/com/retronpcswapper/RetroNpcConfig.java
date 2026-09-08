@@ -40,9 +40,16 @@ public interface RetroNpcConfig extends Config
 	 */
 	String LEGACY_DRAGONS_AND_DEMONS = "swapDragonsAndDemons";
 
+	/**
+	 * Retired in favour of {@link #swapGiants()}, which covers the whole family rather than one
+	 * member of it. Kept only so a saved value can be carried across; nothing reads it as a setting.
+	 */
+	String LEGACY_HILL_GIANTS = "swapHillGiants";
+
 	/** Written by the migration as well as the user, so both are named rather than repeated. */
 	String SWAP_DRAGONS = "swapDragons";
 	String SWAP_DEMONS = "swapDemons";
+	String SWAP_GIANTS = "swapGiants";
 
 	/** Also written programmatically, so the key is named rather than repeated as a literal. */
 	String OVERRIDE_INTERACT_HIGHLIGHT = "overrideInteractHighlight";
@@ -120,13 +127,16 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapHillGiants",
-		name = "Hill Giants",
-		description = "Swap modern Hill Giant models and animations to their 2004/2005 retro variants.",
+		keyName = SWAP_GIANTS,
+		name = "Giants",
+		description = "<html><body style='width:170px'>Swap modern Hill, Fire, Ice and Moss Giant "
+			+ "models and animations to their 2004/2005 retro variants.<br><br>Hill giants work on "
+			+ "their own. The other three need <b>Use the injection pipeline</b>, because their 2005 "
+			+ "heads no longer exist in the game cache at all.</body></html>",
 		section = miscSection,
 		position = 5
 	)
-	default boolean swapHillGiants()
+	default boolean swapGiants()
 	{
 		return true;
 	}
@@ -214,10 +224,10 @@ public interface RetroNpcConfig extends Config
 		name = "Use the injection pipeline",
 		description = "<html><body style='width:170px'>Draw swapped NPCs through geometry this "
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
-			+ "Groundwork for restoring meshes that no longer exist anywhere in the cache. Right "
-			+ "now the geometry is still the same retro model, so <b>nothing should look any "
-			+ "different</b> with this on - if anything does, that is a bug worth "
-			+ "reporting.</body></html>",
+			+ "This is what restores meshes that no longer exist anywhere in the game cache, so it "
+			+ "gates the categories below - and it also gives the giants their real 2005 heads in "
+			+ "place of the stand-ins the cache-backed path has to use. Everything else should look "
+			+ "the same with this on; if it does not, that is a bug worth reporting.</body></html>",
 		section = experimentalSection,
 		position = 1
 	)
@@ -270,6 +280,21 @@ public interface RetroNpcConfig extends Config
 		position = 4
 	)
 	default boolean swapImps()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = "swapCyclops",
+		name = "Cyclopes",
+		description = "<html><body style='width:170px'>Restore the 2005 cyclops. It is built on the "
+			+ "same body as the giants, but its 2005 head no longer exists in the game cache, so it "
+			+ "can only be drawn from injected geometry.<br><br>Requires <b>Use the injection "
+			+ "pipeline</b> above.</body></html>",
+		section = experimentalSection,
+		position = 5
+	)
+	default boolean swapCyclops()
 	{
 		return false;
 	}

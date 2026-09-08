@@ -96,6 +96,42 @@
     "scaleY": 128
   },
   {
+    "name": "cyclops",
+    "category": "CYCLOPS",
+    "modelIds": [
+      2870,
+      2867
+    ],
+    "idleAnim": 130,
+    "walkAnim": 127,
+    "scaleXZ": 128,
+    "scaleY": 128
+  },
+  {
+    "name": "fire giant",
+    "category": "FIRE_GIANTS",
+    "modelIds": [
+      2870,
+      2864,
+      4991,
+      4990
+    ],
+    "idleAnim": 130,
+    "walkAnim": 127,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      4550,
+      -26391,
+      8086
+    ],
+    "replacementColors": [
+      960,
+      2349,
+      2349
+    ]
+  },
+  {
     "name": "ghost",
     "category": "GHOSTS",
     "modelIds": [
@@ -219,6 +255,24 @@
     "scaleY": 128
   },
   {
+    "name": "ice giant",
+    "category": "ICE_GIANTS",
+    "modelIds": [
+      2870,
+      2868
+    ],
+    "idleAnim": 130,
+    "walkAnim": 127,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      4550
+    ],
+    "replacementColors": [
+      -29461
+    ]
+  },
+  {
     "name": "imp",
     "category": "IMPS",
     "modelIds": [
@@ -239,6 +293,27 @@
     "walkAnim": 63,
     "scaleXZ": 128,
     "scaleY": 128
+  },
+  {
+    "name": "moss giant",
+    "category": "MOSS_GIANTS",
+    "modelIds": [
+      2870,
+      2865,
+      4990
+    ],
+    "idleAnim": 130,
+    "walkAnim": 127,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      4550,
+      -26391
+    ],
+    "replacementColors": [
+      24466,
+      10130
+    ]
   },
   {
     "name": "red dragon",

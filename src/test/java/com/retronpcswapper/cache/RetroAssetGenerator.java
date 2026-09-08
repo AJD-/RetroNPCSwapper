@@ -110,7 +110,16 @@ public class RetroAssetGenerator
 		// calls it REPLACED on a magnitude it should not. The 2005 copy is taken anyway, and it also
 		// drops the live-only colour indices 53 and 70, which no 2005 recolour pair names and which
 		// would otherwise stay grey on the body.
-		new Spec("Baby dragons", Source.RETRO, Source.RETRO, new int[]{2998}, new int[]{21, 25, 26, 27, 28})
+		new Spec("Baby dragons", Source.RETRO, Source.RETRO, new int[]{2998}, new int[]{21, 25, 26, 27, 28}),
+		// The giant family is one 2005 body plus a variant head, so 2870 is decoded once and shared.
+		// Clips stay LIVE: sequences 127-131 all resolve to framemap 302 and reach 100/100/100/83/95%
+		// against the merged mesh, nowhere near the 47-68% that marks a re-authored rig - and 2005 and
+		// live 2870 report the same 31 vertex groups over the same [0..34] range.
+		new Spec("Hill giants", Source.RETRO, Source.LIVE, new int[]{2870, 2862}, new int[]{127, 128, 129, 130, 131}),
+		new Spec("Fire giants", Source.RETRO, Source.LIVE, new int[]{2870, 2864, 4991, 4990}, new int[]{127, 128, 129, 130, 131}),
+		new Spec("Ice giants", Source.RETRO, Source.LIVE, new int[]{2870, 2868}, new int[]{127, 128, 129, 130, 131}),
+		new Spec("Moss giants", Source.RETRO, Source.LIVE, new int[]{2870, 2865, 4990}, new int[]{127, 128, 129, 130, 131}),
+		new Spec("Cyclopes", Source.RETRO, Source.LIVE, new int[]{2870, 2867}, new int[]{127, 128, 129, 130, 131})
 	);
 
 	private enum Source

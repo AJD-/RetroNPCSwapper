@@ -43,9 +43,21 @@ public class RetroNpcData
 	private final RetroNpcCategory category;
 
 	/**
-	 * Model IDs from the 2004/2005 RuneScape cache.
+	 * Model IDs from the 2004/2005 RuneScape cache, as looked up in the <em>live</em> cache.
 	 */
 	private final int[] retroModelIds;
+
+	/**
+	 * Model IDs to assemble from the injected asset bundle, when they differ from
+	 * {@link #retroModelIds}. Null means the two are the same, which is the usual case.
+	 *
+	 * <p>The two paths diverge when a 2005 part no longer resolves in the live cache. Hill giants
+	 * are the case that forced this: the real 2005 head 2862 is gone, so the cache-backed path
+	 * substitutes a Jogre head (2866) that still exists, while the bundle can carry the real one.
+	 * One shared list would either put a dead id in front of {@code loadModelData} or deny the
+	 * injected path the correct head.
+	 */
+	private final int[] injectedModelIds;
 
 	/**
 	 * Idle (standing) animation sequence ID.
@@ -148,8 +160,32 @@ public class RetroNpcData
 		Set<Integer> modernDeathAnims
 	)
 	{
+		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
+			defendAnimationId, deathAnimationId, scaleXZ, scaleY, originalColors, replacementColors,
+			modernAttackAnims, modernDefendAnims, modernDeathAnims);
+	}
+
+	public RetroNpcData(
+		RetroNpcCategory category,
+		int[] retroModelIds,
+		int[] injectedModelIds,
+		int idleAnimationId,
+		int walkAnimationId,
+		int attackAnimationId,
+		int defendAnimationId,
+		int deathAnimationId,
+		int scaleXZ,
+		int scaleY,
+		short[] originalColors,
+		short[] replacementColors,
+		Set<Integer> modernAttackAnims,
+		Set<Integer> modernDefendAnims,
+		Set<Integer> modernDeathAnims
+	)
+	{
 		this.category = category;
 		this.retroModelIds = retroModelIds != null ? retroModelIds.clone() : new int[0];
+		this.injectedModelIds = injectedModelIds != null ? injectedModelIds.clone() : null;
 		this.idleAnimationId = idleAnimationId;
 		this.walkAnimationId = walkAnimationId;
 		this.attackAnimationId = attackAnimationId;
@@ -199,6 +235,15 @@ public class RetroNpcData
 		return retroModelIds.clone();
 	}
 
+	/**
+	 * The model IDs the injected path assembles, falling back to {@link #getRetroModelIds()} when
+	 * no separate list was given.
+	 */
+	public int[] getInjectedModelIds()
+	{
+		return injectedModelIds != null ? injectedModelIds.clone() : retroModelIds.clone();
+	}
+
 	public short[] getOriginalColors()
 	{
 		return originalColors.clone();
@@ -227,6 +272,7 @@ public class RetroNpcData
 		return new RetroNpcData(
 			category,
 			retroModelIds,
+			injectedModelIds,
 			idleAnimationId,
 			walkAnimationId,
 			attackAnimationId,
@@ -256,6 +302,7 @@ public class RetroNpcData
 			scaleY == that.scaleY &&
 			category == that.category &&
 			Arrays.equals(retroModelIds, that.retroModelIds) &&
+			Arrays.equals(injectedModelIds, that.injectedModelIds) &&
 			Arrays.equals(originalColors, that.originalColors) &&
 			Arrays.equals(replacementColors, that.replacementColors) &&
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
@@ -268,6 +315,7 @@ public class RetroNpcData
 	{
 		int result = category != null ? category.hashCode() : 0;
 		result = 31 * result + Arrays.hashCode(retroModelIds);
+		result = 31 * result + Arrays.hashCode(injectedModelIds);
 		result = 31 * result + idleAnimationId;
 		result = 31 * result + walkAnimationId;
 		result = 31 * result + attackAnimationId;
@@ -287,6 +335,7 @@ public class RetroNpcData
 	{
 		private RetroNpcCategory category;
 		private int[] retroModelIds = new int[0];
+		private int[] injectedModelIds;
 		private int idleAnimationId = -1;
 		private int walkAnimationId = -1;
 		private int attackAnimationId = -1;
@@ -438,11 +487,22 @@ public class RetroNpcData
 			return this;
 		}
 
+		/**
+		 * Overrides the model IDs the injected path assembles, for an NPC whose 2005 parts no
+		 * longer all resolve in the live cache.
+		 */
+		public Builder injectedModelIds(int[] injectedModelIds)
+		{
+			this.injectedModelIds = injectedModelIds;
+			return this;
+		}
+
 		public RetroNpcData build()
 		{
 			return new RetroNpcData(
 				category,
 				retroModelIds,
+				injectedModelIds,
 				idleAnimationId,
 				walkAnimationId,
 				attackAnimationId,

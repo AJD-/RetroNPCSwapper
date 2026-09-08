@@ -56,8 +56,10 @@ public class RetroAssetGeneratorTest
 
 		try
 		{
-			// The adult dragon is the one NPC that shipped pre-merged
+			// The adult dragon, which shipped pre-merged, and the four-part fire giant, which is the
+			// first NPC with more parts than the old path ever had to join
 			assertMergesAgree(retro, 2853, 2854);
+			assertMergesAgree(retro, 2870, 2864, 4991, 4990);
 		}
 		finally
 		{

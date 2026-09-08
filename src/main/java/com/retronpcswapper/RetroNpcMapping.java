@@ -200,8 +200,14 @@ public class RetroNpcMapping
 	//     help, on the reasoning that a mesh needing no replacement gains nothing from it - which
 	//     was wrong. Injection is what makes it possible to skin the model against the 2005 frames
 	//     rather than the client's, so imps now ship the same way, behind their own toggle.
-	//   - baby dragons: the same re-authored-frames problem, and the same fix should apply. Not
-	//     bundled yet, and unverified in game.
+	//   - baby dragons: the same re-authored-frames problem, and the same fix applied. Bundled and
+	//     shipping under the dragon toggle.
+	//   - the giant family: never an animation problem at all - sequences 127-131 still resolve to
+	//     framemap 302 and still fit the 2005 body, which survives. It is a geometry problem, and
+	//     only for the heads: all five variants are body 2870 wearing a different head, and only
+	//     the fire giant's survived. Hill giants render either way, wearing a Jogre head on the
+	//     cache path and their real one when injected; the rest have no head in the live cache at
+	//     all, so requiresInjectedGeometry keeps the cache path from drawing them wrong.
 	//   - guards: an animation-only swap with no retro model at all, so there is no geometry to
 	//     inject and nowhere to hang 2005 frames. Still blocked.
 	//
@@ -365,18 +371,59 @@ public class RetroNpcMapping
 		.modernDeathAnims(GUARD_MODERN_DEATHS)
 		.build();
 
-	public static final RetroNpcData HILL_GIANT_DEFAULT = RetroNpcData.builder()
-		.category(RetroNpcCategory.HILL_GIANTS)
-		.retroModelIds(new int[]{2870, 2866})
-		.idleAnimationId(130)
-		.walkAnimationId(127)
-		.attackAnimationId(128)
-		.defendAnimationId(129)
-		.deathAnimationId(131)
-		.modernAttackAnims(GIANT_MODERN_ATTACKS)
-		.modernDefendAnims(GIANT_MODERN_DEFENDS)
-		.modernDeathAnims(GIANT_MODERN_DEATHS)
-		.build();
+	/**
+	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
+	 * vertices in both, 355 faces against 347 - so the cache-backed path can still load it.
+	 */
+	private static final int GIANT_BODY = 2870;
+
+	/**
+	 * The Jogre head the cache path wears. The real 2005 hill giant head is 2862, but that id now
+	 * holds unrelated 466-vertex geometry, so only the bundle can supply the right one.
+	 */
+	private static final int JOGRE_HEAD = 2866;
+
+	/**
+	 * Builds one member of the giant family. They differ only in their parts and their 2005 recolour
+	 * pairs; the animations are shared, which is why every variant resolves to framemap 302.
+	 */
+	private static RetroNpcData giant(RetroNpcCategory category, int[] models, int[] injectedModels)
+	{
+		return RetroNpcData.builder()
+			.category(category)
+			.retroModelIds(models)
+			.injectedModelIds(injectedModels)
+			.idleAnimationId(AnimationID.GIANT_READY)
+			.walkAnimationId(AnimationID.GIANT_WALK)
+			.attackAnimationId(AnimationID.GIANT_ATTACK)
+			.defendAnimationId(AnimationID.GIANT_BLOCK)
+			.deathAnimationId(AnimationID.GIANT_DEATH)
+			.modernAttackAnims(GIANT_MODERN_ATTACKS)
+			.modernDefendAnims(GIANT_MODERN_DEFENDS)
+			.modernDeathAnims(GIANT_MODERN_DEATHS)
+			.build();
+	}
+
+	/**
+	 * The one member of the family that works without injection: its body survives, and the Jogre
+	 * head stands in for the head that does not. The injected path takes the real 2862 head instead.
+	 */
+	public static final RetroNpcData HILL_GIANT_DEFAULT =
+		giant(RetroNpcCategory.HILL_GIANTS, new int[]{GIANT_BODY, JOGRE_HEAD}, new int[]{GIANT_BODY, 2862});
+
+	// The remaining variants have no live counterpart for their heads at all, so their model ids are
+	// bundle ids on both fields - the cache path would load unrelated geometry and is gated off.
+	public static final RetroNpcData FIRE_GIANT_DEFAULT =
+		giant(RetroNpcCategory.FIRE_GIANTS, new int[]{GIANT_BODY, 2864, 4991, 4990}, null);
+
+	public static final RetroNpcData ICE_GIANT_DEFAULT =
+		giant(RetroNpcCategory.ICE_GIANTS, new int[]{GIANT_BODY, 2868}, null);
+
+	public static final RetroNpcData MOSS_GIANT_DEFAULT =
+		giant(RetroNpcCategory.MOSS_GIANTS, new int[]{GIANT_BODY, 2865, 4990}, null);
+
+	public static final RetroNpcData CYCLOPS_DEFAULT =
+		giant(RetroNpcCategory.CYCLOPS, new int[]{GIANT_BODY, 2867}, null);
 
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
@@ -468,13 +515,44 @@ public class RetroNpcMapping
 	 * black and greater demons are the same mesh - so recolouring is structural rather than
 	 * cosmetic. Every other category is left alone on purpose.
 	 */
+	/**
+	 * Whether a category can only be drawn from injected geometry.
+	 *
+	 * <p>These are the categories with no usable 2005 asset left at their model ids: the ids still
+	 * resolve, but to unrelated geometry - statues and skulls for the dragons and demons, and for
+	 * the giant family a head and two props that belong to something else entirely. So the
+	 * cache-backed path must not run for them even as a fallback. Without this a bundle that failed
+	 * to load would not disable them, it would draw them wrong.
+	 *
+	 * <p>Hill giants are deliberately absent: their body survives, and the Jogre head stands in for
+	 * the head that does not, so they have a real cache-backed render to fall back to.
+	 */
+	public static boolean requiresInjectedGeometry(RetroNpcCategory category)
+	{
+		return category == RetroNpcCategory.ADULT_DRAGONS
+			|| category == RetroNpcCategory.BABY_DRAGONS
+			|| category == RetroNpcCategory.LESSER_DEMONS
+			|| category == RetroNpcCategory.GREATER_DEMONS
+			|| category == RetroNpcCategory.BLACK_DEMONS
+			|| category == RetroNpcCategory.IMPS
+			|| category == RetroNpcCategory.FIRE_GIANTS
+			|| category == RetroNpcCategory.ICE_GIANTS
+			|| category == RetroNpcCategory.MOSS_GIANTS
+			|| category == RetroNpcCategory.CYCLOPS;
+	}
+
 	private static boolean categoryUsesRecolors(RetroNpcCategory category)
 	{
 		return category == RetroNpcCategory.ADULT_DRAGONS
 			|| category == RetroNpcCategory.BABY_DRAGONS
 			|| category == RetroNpcCategory.LESSER_DEMONS
 			|| category == RetroNpcCategory.GREATER_DEMONS
-			|| category == RetroNpcCategory.BLACK_DEMONS;
+			|| category == RetroNpcCategory.BLACK_DEMONS
+			// Fire, ice and moss giants are the same body mesh as the hill giant, told apart only by
+			// their 2005 opcode 40 pairs. Hill giants and the cyclops carry none and are left alone.
+			|| category == RetroNpcCategory.FIRE_GIANTS
+			|| category == RetroNpcCategory.ICE_GIANTS
+			|| category == RetroNpcCategory.MOSS_GIANTS;
 	}
 
 	private static void registerMapping(RetroNpcData data, int... npcIds)
@@ -587,11 +665,46 @@ public class RetroNpcMapping
 			NpcID.FAI_FALADOR_GUARD2_F, NpcID.FAI_FALADOR_GUARD3_F, NpcID.FAI_FALADOR_GUARD4_F
 		);
 
-		// Hill Giants
+		// The giant family. All five are the same 2005 body with a variant head, so they share the
+		// animations and differ only in their parts and their 2005 recolour pairs.
 		NAME_MAPPINGS.put("hill giant", HILL_GIANT_DEFAULT);
 		registerMapping(HILL_GIANT_DEFAULT,
 			NpcID.GIANT, NpcID.GIANT2, NpcID.GIANT3, NpcID.GIANT4, NpcID.GIANT5, NpcID.GIANT6,
 			NpcID.KOUREND_HILLGIANT
+		);
+
+		NAME_MAPPINGS.put("fire giant", FIRE_GIANT_DEFAULT);
+		registerMapping(FIRE_GIANT_DEFAULT,
+			NpcID.FIREGIANT, NpcID.FIREGIANT2, NpcID.FIREGIANT3,
+			NpcID.FIREGIANT_BIG, NpcID.FIREGIANT_BIG2, NpcID.FIREGIANT_BIG3,
+			NpcID.FIREGIANT_STRONGHOLDCAVE_1, NpcID.FIREGIANT_STRONGHOLDCAVE_2,
+			NpcID.FIREGIANT_STRONGHOLDCAVE_3, NpcID.FIREGIANT_STRONGHOLDCAVE_4,
+			NpcID.KOUREND_FIREGIANT1, NpcID.KOUREND_FIREGIANT2
+		);
+
+		NAME_MAPPINGS.put("ice giant", ICE_GIANT_DEFAULT);
+		registerMapping(ICE_GIANT_DEFAULT,
+			NpcID.ICEGIANT, NpcID.ICEGIANT2, NpcID.ICEGIANT3,
+			NpcID.ICEGIANT_LOW_WANDERRANGE, NpcID.ICEGIANT_LOW_WANDERRANGE2,
+			NpcID.WILD_CAVE_ICEGIANT, NpcID.WILD_CAVE_ICEGIANT2, NpcID.WILD_CAVE_ICEGIANT3
+		);
+
+		NAME_MAPPINGS.put("moss giant", MOSS_GIANT_DEFAULT);
+		registerMapping(MOSS_GIANT_DEFAULT,
+			NpcID.MOSSGIANT, NpcID.MOSSGIANT2, NpcID.MOSSGIANT3, NpcID.MOSSGIANT4,
+			NpcID.ROVING_MOSSGIANT, NpcID.LUNAR_MOSSGIANT, NpcID.LUNAR_MOSSGIANT2,
+			NpcID.KOUREND_MOSSGIANT, NpcID.PRIF_MOSSGIANT, NpcID.GB_MOSSGIANT
+		);
+
+		// WARGUILD_CYCLOPS_PET is left out - it is a pet, not the NPC
+		NAME_MAPPINGS.put("cyclops", CYCLOPS_DEFAULT);
+		registerMapping(CYCLOPS_DEFAULT,
+			NpcID.CYCLOPS,
+			NpcID.WARGUILD_CYCLOPS1, NpcID.WARGUILD_CYCLOPS2, NpcID.WARGUILD_CYCLOPS3,
+			NpcID.WARGUILD_CYCLOPS4, NpcID.WARGUILD_CYCLOPS5, NpcID.WARGUILD_CYCLOPS6,
+			NpcID.WARGUILD_CYCLOPS1_HIGH, NpcID.WARGUILD_CYCLOPS2_HIGH, NpcID.WARGUILD_CYCLOPS3_HIGH,
+			NpcID.WARGUILD_CYCLOPS4_HIGH, NpcID.WARGUILD_CYCLOPS5_HIGH, NpcID.WARGUILD_CYCLOPS6_HIGH,
+			NpcID.KOUREND_CYCLOPS1, NpcID.KOUREND_CYCLOPS2
 		);
 	}
 
@@ -701,15 +814,24 @@ public class RetroNpcMapping
 			modernDefends = CHICKEN_MODERN_DEFENDS;
 			modernDeaths = CHICKEN_MODERN_DEATHS;
 		}
-		else if (category == RetroNpcCategory.HILL_GIANTS)
+		else if (category == RetroNpcCategory.HILL_GIANTS
+			|| category == RetroNpcCategory.FIRE_GIANTS
+			|| category == RetroNpcCategory.ICE_GIANTS
+			|| category == RetroNpcCategory.MOSS_GIANTS
+			|| category == RetroNpcCategory.CYCLOPS)
 		{
-			// TODO: Maybe we can find the 'real' Hill Giant Head (currently set to a Jogre head, which looks 'OK')
-			models = new int[] {2870, 2866};
-			stanceAnim = 130;
-			walkAnim = 127;
-			attackAnim = 128;
-			defendAnim = 129;
-			deathAnim = 131;
+			// The generated row already carries this family's parts. Hill giants are the exception:
+			// their 2005 head 2862 is gone from the live cache, so the row's parts would leave the
+			// cache-backed path loading unrelated geometry - it takes the Jogre head instead.
+			if (category == RetroNpcCategory.HILL_GIANTS)
+			{
+				models = new int[]{GIANT_BODY, JOGRE_HEAD};
+			}
+			stanceAnim = stanceAnim != -1 ? stanceAnim : AnimationID.GIANT_READY;
+			walkAnim = walkAnim != -1 ? walkAnim : AnimationID.GIANT_WALK;
+			attackAnim = AnimationID.GIANT_ATTACK;
+			defendAnim = AnimationID.GIANT_BLOCK;
+			deathAnim = AnimationID.GIANT_DEATH;
 			modernAttacks = GIANT_MODERN_ATTACKS;
 			modernDefends = GIANT_MODERN_DEFENDS;
 			modernDeaths = GIANT_MODERN_DEATHS;

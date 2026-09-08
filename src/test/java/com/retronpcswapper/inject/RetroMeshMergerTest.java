@@ -170,6 +170,29 @@ public class RetroMeshMergerTest
 		assertEquals(776, merged.getFaceCount());
 	}
 
+	@Test
+	public void testTheGiantFamilySharesOneBodyMesh() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+
+		// One body, five heads - the arrangement the old modelIds[0] bundle key could not express,
+		// since every one of these NPCs would have collided on 2870
+		assertNotNull("giant body 2870 is missing", bundle.getMesh(2870));
+		for (int head : new int[]{2862, 2864, 2865, 2867, 2868})
+		{
+			assertNotNull("giant head " + head + " is missing", bundle.getMesh(head));
+		}
+		for (int prop : new int[]{4990, 4991})
+		{
+			assertNotNull("giant prop " + prop + " is missing", bundle.getMesh(prop));
+		}
+
+		RetroMesh hillGiant = RetroMeshMerger.merge(2870,
+			Arrays.asList(bundle.getMesh(2870), bundle.getMesh(2862)));
+		assertEquals(177 + 86, hillGiant.getVerticesCount());
+		assertEquals(355 + 155, hillGiant.getFaceCount());
+	}
+
 	private static RetroAssetBundle loadBundle() throws Exception
 	{
 		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))

@@ -172,6 +172,17 @@ public class RetroModelCache
 			return;
 		}
 
+		if (RetroNpcMapping.requiresInjectedGeometry(data.getCategory()))
+		{
+			// The bundle is the only source for these, so there is no cache-backed fallback to try:
+			// their model ids resolve in the live cache, but to unrelated geometry. Reaching here
+			// means the bundle is absent or incomplete, and drawing nothing is the correct outcome.
+			unbuildable.add(npcId);
+			log.debug("No injected geometry for NPC id {} ({}), and it has no cache-backed fallback",
+				npcId, data.getCategory());
+			return;
+		}
+
 		Model model = build(data);
 		if (model == null)
 		{
@@ -292,7 +303,7 @@ public class RetroModelCache
 	 */
 	private InjectedModel buildInjected(RetroNpcData data)
 	{
-		int[] modelIds = data.getRetroModelIds();
+		int[] modelIds = data.getInjectedModelIds();
 		if (modelIds == null || modelIds.length == 0)
 		{
 			return null;

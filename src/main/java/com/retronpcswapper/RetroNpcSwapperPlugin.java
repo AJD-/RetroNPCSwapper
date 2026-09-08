@@ -140,7 +140,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		log.info("Retro NPC Swapper started");
-		migrateDragonsAndDemons();
+		migrateLegacyToggles();
 		loadMappings();
 		loadAssetBundle();
 		clientThread.invoke(() ->
@@ -154,25 +154,34 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Carries a saved {@code swapDragonsAndDemons} across to the two toggles that replaced it.
+	 * Carries saved values across from config keys that have been replaced.
+	 */
+	private void migrateLegacyToggles()
+	{
+		migrateLegacyToggle(RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS,
+			RetroNpcConfig.SWAP_DRAGONS, RetroNpcConfig.SWAP_DEMONS);
+		migrateLegacyToggle(RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+	}
+
+	/**
+	 * Hands a retired key's saved value to the toggles that replaced it.
 	 *
 	 * <p>Renaming a config key silently resets whatever the user had chosen, so the old key is read
-	 * once and its value handed to both halves. Only ever writes a key that has no value of its own,
-	 * so a user who has already set the new toggles is never overwritten - which also makes this
-	 * safe to run on every start. The old key is cleared afterwards, so the migration happens once
-	 * and leaves no orphan behind.
+	 * once and its value handed on. Only ever writes a key that has no value of its own, so a user
+	 * who has already set the new toggles is never overwritten - which also makes this safe to run
+	 * on every start. The old key is cleared afterwards, so the migration happens once and leaves no
+	 * orphan behind.
 	 */
-	private void migrateDragonsAndDemons()
+	private void migrateLegacyToggle(String legacyKey, String... newKeys)
 	{
-		String legacy = configManager.getConfiguration(
-			RetroNpcConfig.GROUP, RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS);
+		String legacy = configManager.getConfiguration(RetroNpcConfig.GROUP, legacyKey);
 
 		if (legacy == null)
 		{
 			return;
 		}
 
-		for (String key : new String[]{RetroNpcConfig.SWAP_DRAGONS, RetroNpcConfig.SWAP_DEMONS})
+		for (String key : newKeys)
 		{
 			if (configManager.getConfiguration(RetroNpcConfig.GROUP, key) == null)
 			{
@@ -180,9 +189,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 			}
 		}
 
-		configManager.unsetConfiguration(RetroNpcConfig.GROUP, RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS);
-		log.debug("Migrated {}={} to {} and {}", RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS, legacy,
-			RetroNpcConfig.SWAP_DRAGONS, RetroNpcConfig.SWAP_DEMONS);
+		configManager.unsetConfiguration(RetroNpcConfig.GROUP, legacyKey);
+		log.debug("Migrated {}={} to {}", legacyKey, legacy, String.join(", ", newKeys));
 	}
 
 	@Override
@@ -573,7 +581,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case ZOMBIES:
 				return config.swapZombies();
 			case HILL_GIANTS:
-				return config.swapHillGiants();
+				// The body survives and the Jogre head stands in for the one that does not, so this
+				// one renders on either path - the injection toggle just decides which
+				return config.swapGiants();
+			case FIRE_GIANTS:
+			case ICE_GIANTS:
+			case MOSS_GIANTS:
+				// Their 2005 heads are gone from the live cache, so the cache-backed path would load
+				// unrelated geometry. Only the bundle can supply them.
+				return config.swapGiants() && config.useInjectionPipeline()
+					&& modelCache.isInjectionPipelineEnabled();
+			case CYCLOPS:
+				return config.swapCyclops() && config.useInjectionPipeline()
+					&& modelCache.isInjectionPipelineEnabled();
 			case GHOSTS:
 				return config.swapGhosts();
 			case ADULT_DRAGONS:

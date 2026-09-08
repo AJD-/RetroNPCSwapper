@@ -732,7 +732,10 @@ public class RetroNpcCategoryTest
 		RetroNpcData hillGiant = RetroNpcMapping.get(0, "Hill giant");
 		assertNotNull("Hill giant mapping must exist", hillGiant);
 		assertEquals(RetroNpcCategory.HILL_GIANTS, hillGiant.getCategory());
+		// The two paths take different heads on purpose: the real 2005 head 2862 no longer resolves
+		// in the live cache, so only the bundle can supply it and the cache path wears a Jogre head
 		assertArrayEquals(new int[]{2870, 2866}, hillGiant.getRetroModelIds());
+		assertArrayEquals(new int[]{2870, 2862}, hillGiant.getInjectedModelIds());
 		assertEquals(130, hillGiant.getIdleAnimationId());
 		assertEquals(127, hillGiant.getWalkAnimationId());
 		assertEquals(128, hillGiant.getAttackAnimationId());
@@ -793,8 +796,92 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testTheRestOfTheGiantFamily()
+	{
+		// One shared 2005 body with a variant head - the arrangement that made a bundle keyed by the
+		// first model id unworkable, since all five collided on 2870
+		assertGiant("Fire giant", RetroNpcCategory.FIRE_GIANTS, new int[]{2870, 2864, 4991, 4990});
+		assertGiant("Ice giant", RetroNpcCategory.ICE_GIANTS, new int[]{2870, 2868});
+		assertGiant("Moss giant", RetroNpcCategory.MOSS_GIANTS, new int[]{2870, 2865, 4990});
+		assertGiant("Cyclops", RetroNpcCategory.CYCLOPS, new int[]{2870, 2867});
+
+		int[][] idsByName = {
+			{NpcID.FIREGIANT, NpcID.FIREGIANT_BIG, NpcID.FIREGIANT_STRONGHOLDCAVE_1, NpcID.KOUREND_FIREGIANT1},
+			{NpcID.ICEGIANT, NpcID.ICEGIANT_LOW_WANDERRANGE, NpcID.WILD_CAVE_ICEGIANT},
+			{NpcID.MOSSGIANT, NpcID.ROVING_MOSSGIANT, NpcID.PRIF_MOSSGIANT, NpcID.GB_MOSSGIANT},
+			{NpcID.CYCLOPS, NpcID.WARGUILD_CYCLOPS1, NpcID.WARGUILD_CYCLOPS6_HIGH, NpcID.KOUREND_CYCLOPS2}};
+		RetroNpcCategory[] categories = {
+			RetroNpcCategory.FIRE_GIANTS, RetroNpcCategory.ICE_GIANTS,
+			RetroNpcCategory.MOSS_GIANTS, RetroNpcCategory.CYCLOPS};
+
+		for (int i = 0; i < idsByName.length; i++)
+		{
+			for (int id : idsByName[i])
+			{
+				RetroNpcData byId = RetroNpcMapping.get(id, "unused");
+				assertNotNull("NPC id " + id + " must map", byId);
+				assertEquals(categories[i], byId.getCategory());
+			}
+		}
+	}
+
+	private static void assertGiant(String name, RetroNpcCategory category, int[] models)
+	{
+		RetroNpcData data = RetroNpcMapping.get(0, name);
+		assertNotNull(name + " mapping must exist", data);
+		assertEquals(category, data.getCategory());
+		assertArrayEquals(name + " parts", models, data.getRetroModelIds());
+
+		// Nothing but the hill giant needs a per-path split, so both lists agree
+		assertArrayEquals(name + " injected parts", models, data.getInjectedModelIds());
+
+		// The whole family animates off the same five sequences, which is why they all resolve to
+		// framemap 302
+		assertEquals(130, data.getIdleAnimationId());
+		assertEquals(127, data.getWalkAnimationId());
+		assertEquals(128, data.getAttackAnimationId());
+		assertEquals(129, data.getDefendAnimationId());
+		assertEquals(131, data.getDeathAnimationId());
+
+		// The whole family reuses GIANT_MODERN_*, so the post-2006 rework animations are intercepted
+		assertTrue(name + " must intercept the reworked attacks", data.isAttackAnimation(4652));
+		assertTrue(name + " must intercept the reworked defends", data.isDefendAnimation(4651));
+		assertTrue(name + " must intercept the reworked deaths", data.isDeathAnimation(4653));
+
+		// Unrelated sequences are left alone
+		assertFalse(name + " must not intercept an unrelated attack", data.isAttackAnimation(5385));
+	}
+
+	@Test
+	public void testFireIceAndMossGiantsCarryTheir2005Recolours()
+	{
+		// These three are the same body mesh as the hill giant, told apart only by opcode 40. Without
+		// the pairs they would all render in hill giant colours.
+		for (String name : new String[]{"Fire giant", "Ice giant", "Moss giant"})
+		{
+			RetroNpcData data = RetroNpcMapping.get(0, name);
+			assertNotNull(name, data);
+			assertTrue(name + " must carry 2005 recolours", data.hasRecolors());
+			assertEquals(name + " recolour arrays must stay parallel",
+				data.getOriginalColors().length, data.getReplacementColors().length);
+		}
+
+		// The recolours have to reach the id lookup too - ID_MAPPINGS and NAME_MAPPINGS hold the
+		// same instance, so a graft that updated only one would leave most fire giants uncoloured
+		RetroNpcData byId = RetroNpcMapping.get(NpcID.FIREGIANT, "Fire giant");
+		assertNotNull(byId);
+		assertTrue("recolours must reach the id mapping", byId.hasRecolors());
+	}
+
+	@Test
 	public void testCategoryMatchingExclusions()
 	{
+		// A bare "giant" substring would sweep all of these into the giant family
+		assertNull(RetroNpcMapping.get(0, "Giant rat"));
+		assertNull(RetroNpcMapping.get(0, "Giant spider"));
+		assertNull(RetroNpcMapping.get(0, "Giant frog"));
+		assertNull(RetroNpcMapping.get(0, "Giant bat"));
+
 		assertNull(RetroNpcMapping.get(0, "Guard dog"));
 		assertNull(RetroNpcMapping.get(0, "Ogre guard"));
 		assertNull(RetroNpcMapping.get(0, "Khazard Guard"));
@@ -950,7 +1037,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapGoblins must default to true", config.swapGoblins());
 		assertTrue("swapSkeletons must default to true", config.swapSkeletons());
 		assertTrue("swapZombies must default to true", config.swapZombies());
-		assertTrue("swapHillGiants must default to true", config.swapHillGiants());
+		assertTrue("swapGiants must default to true", config.swapGiants());
 	}
 
 	@Test

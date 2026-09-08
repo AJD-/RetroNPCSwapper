@@ -41,5 +41,9 @@ public enum RetroNpcCategory
 	ZOMBIES,
 	GHOSTS,
 	HILL_GIANTS,
+	FIRE_GIANTS,
+	ICE_GIANTS,
+	MOSS_GIANTS,
+	CYCLOPS,
 	CHICKENS
 }

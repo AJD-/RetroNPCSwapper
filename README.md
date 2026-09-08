@@ -11,7 +11,7 @@ Each category can be toggled individually in the plugin config:
 - **Goblins**
 - **Skeletons** (armed and unarmed)
 - **Zombies** (armed and unarmed)
-- **Hill Giants** (albeit with a Jogre head)
+- **Giants** — Hill, Fire, Ice and Moss
 - **Ghosts**
 
 Under **Experimental**, behind the *Use the injection pipeline* toggle:
@@ -19,13 +19,23 @@ Under **Experimental**, behind the *Use the injection pipeline* toggle:
 - **Dragons** — adult and baby, in all four colours
 - **Demons** — lesser, greater and black
 - **Imps**
+- **Cyclopes**
 
-These four need the injection pipeline because swapping IDs is not enough for them. The adult
-dragon and demon meshes were removed from the OSRS cache outright — the IDs were reused for
-unrelated geometry such as statues and skulls — so there is nothing to swap to. The imp and baby
-dragon meshes survived, but for all of them the animation *frames* behind the surviving sequence
-IDs were re-authored for the modern skeletons, so the sequences no longer drive the retro meshes.
-Both the geometry and the animation therefore come from the 2005 data instead of the live cache.
+These need the injection pipeline because swapping IDs is not enough for them. The adult dragon and
+demon meshes were removed from the OSRS cache outright — the IDs were reused for unrelated geometry
+such as statues and skulls — so there is nothing to swap to. The imp and baby dragon meshes
+survived, but for all of them the animation *frames* behind the surviving sequence IDs were
+re-authored for the modern skeletons, so the sequences no longer drive the retro meshes. Both the
+geometry and the animation therefore come from the 2005 data instead of the live cache.
+
+The giant family is a mixed case, which is why it sits under one toggle in the first list. All five
+— the four giants and the cyclops — are the same 2005 body mesh (2870) wearing a different head, and
+that body survives in the live cache. Only the fire giant's head survived with it; the hill, ice,
+moss and cyclops heads were all reused for unrelated geometry. So **Hill Giants** render either way
+(the cache-backed path substitutes a Jogre head for the one that is gone, while the injected path
+carries the real 2005 head), and the rest need the injection pipeline to get a head at all. Their
+animations were never the problem: sequences 127-131 still resolve to framemap 302 and still fit the
+2005 body, so the clips come from the live cache.
 
 **Guards** remain unsupported. They are an animation-only swap with no retro model, so there is no
 geometry to inject and nowhere to hang the 2005 frames their sequences no longer carry.
@@ -66,11 +76,12 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
   numeric model and animation IDs, and every asset it displays already comes from your own game
   cache. Resolving an ID is not the same as it still being the 2005 asset, which is what separates
   those categories from the experimental ones.
-- **The experimental categories ship their assets.** Dragons, demons and imps have no usable 2005
-  asset left in the live cache, so `retro-assets.dat` (~32 KB) is bundled in the jar and carries
-  their meshes, rigs and animation clips, extracted from the February 2005 cache. This is the one
-  thing the plugin distributes rather than reads from your own installation, which is why those
-  categories are gated behind a toggle that is off by default.
+- **The injected categories ship their assets.** Dragons, demons, imps, the cyclops and the giant
+  heads have no usable 2005 asset left in the live cache, so `retro-assets.dat` (~41 KB) is bundled
+  in the jar and carries their meshes, rigs and animation clips, extracted from the February 2005
+  cache. This is the one thing the plugin distributes rather than reads from your own installation,
+  which is why those categories are gated behind a toggle that is off by default. Parts are stored
+  individually and joined at spawn, so the body the whole giant family shares is carried once.
 - Safety settings (on by default) disable all swapping on PvP worlds and in the Wilderness.
 
 There is currently no sanctioned RuneLite API for overriding NPC models, which is why the plugin
