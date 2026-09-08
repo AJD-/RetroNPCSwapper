@@ -253,6 +253,40 @@ public class RetroNpcMapping
 		.modernDeathAnims(DEMON_MODERN_DEATHS)
 		.build();
 
+	// Retro mesh 2998 carries no colour of its own - its whole palette (0, 41, 61, 127) is
+	// saturation 0, a greyscale ramp - so the 2005 client gave each dragon its colour by
+	// recolouring one index. Index 61 is 57% of the mesh; the rest is black, shadow and highlight
+	// detail that stayed grey in 2005 too.
+	private static final int DRAGON_BODY_GREY = 61;
+
+	// Colours as the 2005 cache specified them. Baby blue comes from the 2005 "Baby blue dragon"
+	// (def 52) and is the same value the adult "Blue dragon" (def 55) uses - which is what makes
+	// the other three trustworthy: every 2005 dragon recolours DRAGON_BODY_GREY to its own colour,
+	// so the adult defs supply the colours for the baby variants that postdate the cache.
+	private static final int DRAGON_BLUE = -25049;
+	private static final int DRAGON_RED = 687;     // 2005 "Red dragon", def 53
+	private static final int DRAGON_GREEN = 22051; // 2005 "Green dragon", def 941
+	private static final int DRAGON_BLACK = 16;    // 2005 "Black dragon", def 54
+
+	private static RetroNpcData babyDragon(int bodyColor)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.BABY_DRAGONS)
+			.retroModelIds(new int[]{2998})
+			.idleAnimationId(AnimationID.BDRAG_READY)
+			.walkAnimationId(AnimationID.BDRAG_WALK)
+			.recolor(DRAGON_BODY_GREY, bodyColor)
+			.build();
+	}
+
+	// Only the blue variant existed in February 2005, so the other three are registered here
+	// rather than coming from the generated JSON. Combat slots stay -1 for the same reason as the
+	// BABY_DRAGONS branch in createMappingData.
+	public static final RetroNpcData BABY_BLUE_DRAGON = babyDragon(DRAGON_BLUE);
+	public static final RetroNpcData BABY_RED_DRAGON = babyDragon(DRAGON_RED);
+	public static final RetroNpcData BABY_GREEN_DRAGON = babyDragon(DRAGON_GREEN);
+	public static final RetroNpcData BABY_BLACK_DRAGON = babyDragon(DRAGON_BLACK);
+
 	public static final RetroNpcData IMP_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.IMPS)
 		.retroModelIds(new int[]{2887})
@@ -437,6 +471,7 @@ public class RetroNpcMapping
 	private static boolean categoryUsesRecolors(RetroNpcCategory category)
 	{
 		return category == RetroNpcCategory.ADULT_DRAGONS
+			|| category == RetroNpcCategory.BABY_DRAGONS
 			|| category == RetroNpcCategory.LESSER_DEMONS
 			|| category == RetroNpcCategory.GREATER_DEMONS
 			|| category == RetroNpcCategory.BLACK_DEMONS;
@@ -488,6 +523,31 @@ public class RetroNpcMapping
 		// Imps
 		NAME_MAPPINGS.put("imp", IMP_DEFAULT);
 		registerMapping(IMP_DEFAULT, NpcID.IMP, NpcID.GODWARS_ANCIENT_IMP, NpcID.CASTLEWARS_IMP);
+
+		// Baby Dragons. All four modern colours share retro mesh 2998 and differ only by recolour.
+		// Registered by id as well as name so a renamed or newly added variant still resolves.
+		NAME_MAPPINGS.put("baby blue dragon", BABY_BLUE_DRAGON);
+		registerMapping(BABY_BLUE_DRAGON,
+			NpcID.BABYBLUEDRAGON, NpcID.BABYBLUEDRAGON2, NpcID.BABYBLUEDRAGON3,
+			NpcID.BABY_BLUE_DRAGON_TAPOYAUIK_1, NpcID.BABY_BLUE_DRAGON_TAPOYAUIK_2
+		);
+
+		NAME_MAPPINGS.put("baby red dragon", BABY_RED_DRAGON);
+		registerMapping(BABY_RED_DRAGON,
+			NpcID.POH_BABYREDDRAGON,
+			NpcID.BABYREDDRAGON, NpcID.BABYREDDRAGON2, NpcID.BABYREDDRAGON3
+		);
+
+		NAME_MAPPINGS.put("baby green dragon", BABY_GREEN_DRAGON);
+		registerMapping(BABY_GREEN_DRAGON,
+			NpcID.BABYGREENDRAGON1, NpcID.BABYGREENDRAGON2, NpcID.BABYGREENDRAGON3
+		);
+
+		NAME_MAPPINGS.put("baby black dragon", BABY_BLACK_DRAGON);
+		registerMapping(BABY_BLACK_DRAGON,
+			NpcID.CHICKENQUEST_BABY_BLACK_DRAGON, NpcID.BABY_BLACK_DRAGON_STRONGHOLDCAVE,
+			NpcID.BABY_BLACK_DRAGON_NOHUNT
+		);
 
 		NAME_MAPPINGS.put("skeleton", SKELETON_UNARMED);
 		registerMapping(SKELETON_UNARMED,
@@ -586,6 +646,21 @@ public class RetroNpcMapping
 			modernDefends = DRAGON_MODERN_DEFENDS;
 			modernDeaths = DRAGON_MODERN_DEATHS;
 
+		}
+		else if (category == RetroNpcCategory.BABY_DRAGONS)
+		{
+			// Modern baby dragons already stand and walk on the 2005 sequences - every live
+			// definition has standingAnim 27 and walkingAnim 21 - so these only backstop a -1
+			// in the JSON.
+			stanceAnim = stanceAnim != -1 ? stanceAnim : AnimationID.BDRAG_READY;
+			walkAnim = walkAnim != -1 ? walkAnim : AnimationID.BDRAG_WALK;
+
+			// BDRAG_ATTACK/BLOCK/DEATH (25/26/28) survive too, and the bundle carries them, but
+			// combat sequences are not part of an NPC definition, so the cache cannot say what a
+			// modern baby dragon plays in a fight. Leaving the slots at -1 short-circuits
+			// isAttack/Defend/DeathAnimation. The failure mode of guessing is on record in the
+			// ADULT_DRAGONS branch, where listing retro-native sequences as things to intercept
+			// rewrote every attack into a head butt.
 		}
 		else if (category == RetroNpcCategory.GOBLINS)
 		{

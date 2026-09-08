@@ -105,7 +105,12 @@ public class RetroAssetGenerator
 		// The imp mesh survived the 2006 update untouched - only its frames were re-authored. The
 		// geometry still comes from 2005, because identical geometry is no guarantee of an identical
 		// rig, and it is the vertex groups that have to match the 2005 framemap.
-		new Spec("Imps", Source.RETRO, Source.RETRO, new int[]{2887}, new int[]{168, 169, 170, 171, 172})
+		new Spec("Imps", Source.RETRO, Source.RETRO, new int[]{2887}, new int[]{168, 169, 170, 171, 172}),
+		// Mesh 2998 drifted rather than being replaced - 250 verts became 252 - so compareRetroModels
+		// calls it REPLACED on a magnitude it should not. The 2005 copy is taken anyway, and it also
+		// drops the live-only colour indices 53 and 70, which no 2005 recolour pair names and which
+		// would otherwise stay grey on the body.
+		new Spec("Baby dragons", Source.RETRO, Source.RETRO, new int[]{2998}, new int[]{21, 25, 26, 27, 28})
 	);
 
 	private enum Source

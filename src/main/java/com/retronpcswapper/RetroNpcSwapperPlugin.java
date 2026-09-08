@@ -140,6 +140,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	protected void startUp() throws Exception
 	{
 		log.info("Retro NPC Swapper started");
+		migrateDragonsAndDemons();
 		loadMappings();
 		loadAssetBundle();
 		clientThread.invoke(() ->
@@ -150,6 +151,38 @@ public class RetroNpcSwapperPlugin extends Plugin
 			recheckLoadedNpcs();
 			attach();
 		});
+	}
+
+	/**
+	 * Carries a saved {@code swapDragonsAndDemons} across to the two toggles that replaced it.
+	 *
+	 * <p>Renaming a config key silently resets whatever the user had chosen, so the old key is read
+	 * once and its value handed to both halves. Only ever writes a key that has no value of its own,
+	 * so a user who has already set the new toggles is never overwritten - which also makes this
+	 * safe to run on every start. The old key is cleared afterwards, so the migration happens once
+	 * and leaves no orphan behind.
+	 */
+	private void migrateDragonsAndDemons()
+	{
+		String legacy = configManager.getConfiguration(
+			RetroNpcConfig.GROUP, RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS);
+
+		if (legacy == null)
+		{
+			return;
+		}
+
+		for (String key : new String[]{RetroNpcConfig.SWAP_DRAGONS, RetroNpcConfig.SWAP_DEMONS})
+		{
+			if (configManager.getConfiguration(RetroNpcConfig.GROUP, key) == null)
+			{
+				configManager.setConfiguration(RetroNpcConfig.GROUP, key, Boolean.parseBoolean(legacy));
+			}
+		}
+
+		configManager.unsetConfiguration(RetroNpcConfig.GROUP, RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS);
+		log.debug("Migrated {}={} to {} and {}", RetroNpcConfig.LEGACY_DRAGONS_AND_DEMONS, legacy,
+			RetroNpcConfig.SWAP_DRAGONS, RetroNpcConfig.SWAP_DEMONS);
 	}
 
 	@Override
@@ -544,13 +577,16 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case GHOSTS:
 				return config.swapGhosts();
 			case ADULT_DRAGONS:
+			case BABY_DRAGONS:
+				// The adult mesh has no usable live counterpart at all - the ids resolve, but to
+				// unrelated geometry. The baby mesh survives, but both had their frames re-authored,
+				// so both need the injected path to be animated from the 2005 data
+				return config.useInjectionPipeline() && config.swapDragons()
+					&& modelCache.isInjectionPipelineEnabled();
 			case LESSER_DEMONS:
 			case GREATER_DEMONS:
 			case BLACK_DEMONS:
-				// These have no usable mesh in the live cache at all - the ids resolve, but to
-				// unrelated geometry - so they work only through injected geometry, and only when
-				// the bundle actually carries them
-				return config.useInjectionPipeline() && config.swapDragonsAndDemons()
+				return config.useInjectionPipeline() && config.swapDemons()
 					&& modelCache.isInjectionPipelineEnabled();
 			case IMPS:
 				// The imp mesh survives, so this is not about geometry: the frames behind its

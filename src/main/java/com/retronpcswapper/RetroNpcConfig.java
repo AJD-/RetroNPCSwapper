@@ -34,6 +34,16 @@ public interface RetroNpcConfig extends Config
 {
 	String GROUP = "retronpcswapper";
 
+	/**
+	 * Retired in favour of {@link #swapDragons()} and {@link #swapDemons()}. Kept only so
+	 * {@code migrateDragonsAndDemons} can carry a saved value across; nothing reads it as a setting.
+	 */
+	String LEGACY_DRAGONS_AND_DEMONS = "swapDragonsAndDemons";
+
+	/** Written by the migration as well as the user, so both are named rather than repeated. */
+	String SWAP_DRAGONS = "swapDragons";
+	String SWAP_DEMONS = "swapDemons";
+
 	/** Also written programmatically, so the key is named rather than repeated as a literal. */
 	String OVERRIDE_INTERACT_HIGHLIGHT = "overrideInteractHighlight";
 	String USE_INJECTION_PIPELINE = "useInjectionPipeline";
@@ -217,18 +227,33 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapDragonsAndDemons",
-		name = "Dragons and demons",
-		description = "<html><body style='width:170px'>Restore the 2005 adult dragon and demon "
-			+ "models and animation using injected geometry. These cannot be swapped by ID at all - "
-			+ "the August 2006 graphical update overwrote their meshes, and the sequences they play "
-			+ "survived by ID but had their frames re-authored for the modern skeletons. Both the "
-			+ "geometry and the animation come from the 2005 data "
-			+ "instead.<br><br>Requires <b>Use the injection pipeline</b> above.</body></html>",
+		keyName = SWAP_DRAGONS,
+		name = "Dragons",
+		description = "<html><body style='width:170px'>Restore the 2005 dragons - adult and baby - "
+			+ "using injected geometry and 2005 animation.<br><br>The adult mesh cannot be swapped "
+			+ "by ID at all: the August 2006 graphical update overwrote it. The baby mesh survived, "
+			+ "but both had the frames behind their sequences re-authored for the modern "
+			+ "skeletons.<br><br>Requires <b>Use the injection pipeline</b> above.</body></html>",
 		section = experimentalSection,
 		position = 2
 	)
-	default boolean swapDragonsAndDemons()
+	default boolean swapDragons()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = SWAP_DEMONS,
+		name = "Demons",
+		description = "<html><body style='width:170px'>Restore the 2005 lesser, greater and black "
+			+ "demons using injected geometry and 2005 animation. These cannot be swapped by ID at "
+			+ "all - the August 2006 graphical update overwrote their meshes, and the sequences "
+			+ "they play survived by ID but had their frames re-authored for the modern "
+			+ "skeletons.<br><br>Requires <b>Use the injection pipeline</b> above.</body></html>",
+		section = experimentalSection,
+		position = 3
+	)
+	default boolean swapDemons()
 	{
 		return false;
 	}
@@ -242,7 +267,7 @@ public interface RetroNpcConfig extends Config
 			+ "applied through injected geometry.<br><br>Requires <b>Use the injection pipeline</b> "
 			+ "above.</body></html>",
 		section = experimentalSection,
-		position = 3
+		position = 4
 	)
 	default boolean swapImps()
 	{

@@ -355,6 +355,55 @@ public class RetroNpcCategoryTest
 		assertFalse(imp.isAttackAnimation(99999));
 	}
 
+	/**
+	 * All four baby dragon colours share retro mesh 2998, whose palette is a greyscale ramp, so the
+	 * recolour pair is the only thing separating them. A variant that lost its pair would render as
+	 * a grey lump rather than fail, which is why the colours are asserted individually.
+	 */
+	@Test
+	public void testBabyDragonsCategory()
+	{
+		int[][] variants = {
+			{NpcID.BABYBLUEDRAGON, -25049},
+			{NpcID.BABYREDDRAGON, 687},
+			{NpcID.BABYGREENDRAGON1, 22051},
+			{NpcID.CHICKENQUEST_BABY_BLACK_DRAGON, 16},
+		};
+
+		for (int[] variant : variants)
+		{
+			RetroNpcData baby = RetroNpcMapping.get(variant[0], "Baby dragon");
+			assertNotNull("baby dragon " + variant[0] + " must be mapped", baby);
+			assertEquals(RetroNpcCategory.BABY_DRAGONS, baby.getCategory());
+			assertArrayEquals(new int[]{2998}, baby.getRetroModelIds());
+
+			assertEquals(AnimationID.BDRAG_READY, baby.getIdleAnimationId());
+			assertEquals(AnimationID.BDRAG_WALK, baby.getWalkAnimationId());
+
+			// The cache cannot say what a modern baby dragon plays in a fight, so these stay unset
+			// rather than being guessed at - see the branch in createMappingData
+			assertEquals(-1, baby.getAttackAnimationId());
+			assertEquals(-1, baby.getDefendAnimationId());
+			assertEquals(-1, baby.getDeathAnimationId());
+
+			assertTrue("baby dragon " + variant[0] + " must carry a recolour", baby.hasRecolors());
+			assertArrayEquals("every 2005 dragon recolours the same body index",
+				new short[]{61}, baby.getOriginalColors());
+			assertArrayEquals(new short[]{(short) variant[1]}, baby.getReplacementColors());
+		}
+
+		// Resolving by name matters as much as by id: a colour added or renamed upstream falls back
+		// to the name, and the four must not collapse onto one shared instance
+		assertEquals((short) -25049,
+			RetroNpcMapping.get(-1, "Baby blue dragon").getReplacementColors()[0]);
+		assertEquals((short) 687,
+			RetroNpcMapping.get(-1, "Baby red dragon").getReplacementColors()[0]);
+		assertEquals((short) 22051,
+			RetroNpcMapping.get(-1, "Baby green dragon").getReplacementColors()[0]);
+		assertEquals((short) 16,
+			RetroNpcMapping.get(-1, "Baby black dragon").getReplacementColors()[0]);
+	}
+
 	@Test
 	public void testSkeletonsCategory()
 	{
