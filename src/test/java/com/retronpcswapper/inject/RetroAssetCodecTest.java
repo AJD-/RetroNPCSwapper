@@ -42,6 +42,16 @@ import org.junit.Test;
 
 public class RetroAssetCodecTest
 {
+	/**
+	 * The skeleton's real ids - mesh 2944, framemap 338, idle sequence 262 - so the three factories
+	 * read as one coherent kit rather than three unrelated blobs: the rig's group sets address
+	 * exactly the three vertex groups this mesh declares, and the clip's transform indices stay in
+	 * range of the rig's three transforms.
+	 *
+	 * <p>The geometry is one textured triangle, the smallest shape that still gives every array the
+	 * codec writes something to carry. Only the priority and the vertex groups are asserted as
+	 * literals; every other value is compared against this same fixture, so any valid one would do.
+	 */
 	private static RetroMesh mesh()
 	{
 		return new RetroMesh(2944, 5,
@@ -49,22 +59,34 @@ public class RetroAssetCodecTest
 			new float[]{0f, -30f, 5f},
 			new float[]{0f, 40f, -15f},
 			new int[]{0}, new int[]{1}, new int[]{2},
-			new short[]{(short) 0x3A05},
+			new short[]{(short) 0x3A05},   // packed HSL, not an RGB color
 			new byte[]{1},
 			null,                      // deliberately null - see the round-trip test below
 			new byte[]{2},
-			new short[]{37},
+			new short[]{37},           // any texture id; the codec does not interpret it
 			// one face mapped by the one texture triangle, which names the mesh's own vertices
 			new byte[]{0},
 			new int[]{0}, new int[]{1}, new int[]{2},
+			// populated and empty, the pair the null-versus-empty test has to tell apart
 			new int[][]{{0, 1}, {}, {2}});
 	}
 
+	/**
+	 * Three transforms whose types - pivot, rotate, translate, see {@link RetroRig#getType} for the
+	 * codes - are deliberately out of order, so a codec that wrote a transform's index where its
+	 * type belongs would fail rather than round-trip. The group sets address the mesh's own groups,
+	 * and the second one holds two so a row of more than one survives the matrix encoding.
+	 */
 	private static RetroRig rig()
 	{
 		return new RetroRig(338, new int[]{0, 2, 1}, new int[][]{{0}, {0, 1}, {2}});
 	}
 
+	/**
+	 * Two frames against rig 338, carrying a different number of ops each so a frame cannot come
+	 * back with the op count of the wrong row. The three deltas are distinct per axis at the op the
+	 * assertions read, which is what catches a transposed x/y/z instead of passing on symmetry.
+	 */
 	private static RetroClip clip()
 	{
 		return new RetroClip(262, 338,
@@ -265,6 +287,147 @@ public class RetroAssetCodecTest
 			assertTrue("the message should name the mismatch it found: " + expected.getMessage(),
 				expected.getMessage().contains("3 transforms but 2 group sets"));
 		}
+	}
+
+	/**
+	 * Writes a bundle holding one malformed mesh and returns what reading it back threw.
+	 *
+	 * <p>Goes through {@link RetroAssetCodec#write} rather than hand-assembled bytes because
+	 * neither {@link RetroMesh} nor {@link RetroClip} validates its own arguments - the writer will
+	 * happily emit any of these, which is exactly the point. That also keeps each case a
+	 * one-argument change away from the good fixture, so what is being rejected is legible.
+	 */
+	private static String refusalFor(RetroMesh malformed) throws IOException
+	{
+		Map<Integer, RetroMesh> meshes = new LinkedHashMap<>();
+		meshes.put(malformed.getId(), malformed);
+		return refusalFor(new RetroAssetBundle(meshes, Collections.emptyMap(), Collections.emptyMap()));
+	}
+
+	private static String refusalFor(RetroClip malformed) throws IOException
+	{
+		Map<Integer, RetroClip> clips = new LinkedHashMap<>();
+		clips.put(malformed.getSequenceId(), malformed);
+		return refusalFor(new RetroAssetBundle(Collections.emptyMap(), Collections.emptyMap(), clips));
+	}
+
+	private static String refusalFor(RetroAssetBundle bundle) throws IOException
+	{
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		RetroAssetCodec.write(bundle, out);
+
+		try
+		{
+			RetroAssetCodec.read(new ByteArrayInputStream(out.toByteArray()));
+			fail("expected a refusal rather than geometry that throws somewhere else later");
+			return null;
+		}
+		catch (IOException expected)
+		{
+			assertTrue("the message should say to regenerate: " + expected.getMessage(),
+				expected.getMessage().contains("regenerate the bundle"));
+			return expected.getMessage();
+		}
+	}
+
+	/**
+	 * Builds a mesh from the good fixture with one column replaced, so each rejection test differs
+	 * from a mesh that loads by exactly the thing being rejected.
+	 */
+	private static RetroMesh meshWith(float[] vy, int[] i1, short[] colors, int[][] vertexGroups)
+	{
+		RetroMesh good = mesh();
+		return new RetroMesh(good.getId(), good.getPriority(),
+			good.getVerticesX(), vy == null ? good.getVerticesY() : vy, good.getVerticesZ(),
+			i1 == null ? good.getFaceIndices1() : i1, good.getFaceIndices2(), good.getFaceIndices3(),
+			colors == null ? good.getFaceColors() : colors,
+			good.getFaceRenderTypes(), good.getFaceTransparencies(),
+			good.getFaceRenderPriorities(), good.getFaceTextures(),
+			good.getTextureCoords(), good.getTexIndices1(), good.getTexIndices2(),
+			good.getTexIndices3(), vertexGroups == null ? good.getVertexGroups() : vertexGroups);
+	}
+
+	/**
+	 * Each vertex axis is its own length-prefixed block and {@link RetroMesh} takes its vertex count
+	 * from the x axis alone, so a short y axis reads cleanly and then runs off the end wherever the
+	 * mesh is next walked.
+	 */
+	@Test
+	public void testRejectsAMeshWhoseVertexAxesDisagree() throws IOException
+	{
+		String message = refusalFor(meshWith(new float[]{0f, -30f}, null, null, null));
+		assertTrue("the message should name the three lengths: " + message,
+			message.contains("3, 2 and 3 vertices"));
+	}
+
+	/**
+	 * The failure this one prevents is the expensive one: a face index past the vertex arrays
+	 * throws inside {@code RetroLighter.computeNormals}, reached from
+	 * {@code RetroModelCache.ensureBuilt}, which only records an id as unbuildable when the build
+	 * returns null. A throw skips that, so the work is retried on every spawn of that NPC.
+	 */
+	@Test
+	public void testRejectsAFaceIndexPastTheVertices() throws IOException
+	{
+		String message = refusalFor(meshWith(null, new int[]{7}, null, null));
+		assertTrue("the message should name the face and the vertex it reached for: " + message,
+			message.contains("face 0 names vertex 7 of 3"));
+	}
+
+	/**
+	 * A group member is a vertex index the skinner writes through on the render path, where
+	 * {@code RetroDrawCallbacks} catches the throw and silently draws the vanilla model instead.
+	 */
+	@Test
+	public void testRejectsAVertexGroupMemberPastTheVertices() throws IOException
+	{
+		String message = refusalFor(meshWith(null, null, null, new int[][]{{0, 1}, {}, {9}}));
+		assertTrue("the message should name the group and the vertex it reached for: " + message,
+			message.contains("vertex group 2 names vertex 9 of 3"));
+	}
+
+	/**
+	 * A per-face column may be absent entirely - null carries meaning to the renderer - but a
+	 * present one has to cover every face, because every consumer indexes it by face.
+	 */
+	@Test
+	public void testRejectsAPerFaceColumnOfTheWrongLength() throws IOException
+	{
+		String message = refusalFor(
+			meshWith(null, null, new short[]{(short) 0x3A05, (short) 0x3A06}, null));
+		assertTrue("the message should name the column and both counts: " + message,
+			message.contains("2 face colors for 1 faces"));
+	}
+
+	/**
+	 * A clip's four columns are one table written as four blocks. {@link RetroSkinner} bounds its
+	 * loop on the transform column's length and then indexes the three delta columns with it, so a
+	 * short one throws on the render path rather than at load.
+	 */
+	@Test
+	public void testRejectsAClipWhoseFrameCountsDisagree() throws IOException
+	{
+		String message = refusalFor(new RetroClip(262, 338,
+			new int[][]{{0, 1}, {1}},
+			new int[][]{{5, -5}, {0}},
+			new int[][]{{0, 128}},          // one frame short
+			new int[][]{{-3, 3}, {0}}));
+
+		assertTrue("the message should name the four frame counts: " + message,
+			message.contains("2, 2, 1 and 2 frames"));
+	}
+
+	@Test
+	public void testRejectsAClipFrameWhoseOpCountsDisagree() throws IOException
+	{
+		String message = refusalFor(new RetroClip(262, 338,
+			new int[][]{{0, 1}, {1}},
+			new int[][]{{5, -5}, {0}},
+			new int[][]{{0, 128}, {7}},
+			new int[][]{{-3}, {0}}));       // frame 0 is one op short
+
+		assertTrue("the message should name the frame and the four op counts: " + message,
+			message.contains("frame 0 has 2, 2, 2 and 1 ops"));
 	}
 
 	@Test

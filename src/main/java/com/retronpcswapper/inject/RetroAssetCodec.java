@@ -183,14 +183,151 @@ public final class RetroAssetCodec
 		int[] texIndices1 = readInts(data);
 		int[] texIndices2 = readInts(data);
 		int[] texIndices3 = readInts(data);
-		checkTextureTriangles(id, vx.length, i1.length, textureCoords,
-			texIndices1, texIndices2, texIndices3);
 
 		int[][] vertexGroups = readIntMatrix(data);
+
+		checkGeometry(id, vx, vy, vz, i1, i2, i3,
+			colors, renderTypes, transparencies, priorities, textures, vertexGroups);
+		checkTextureTriangles(id, vx.length, i1.length, textureCoords,
+			texIndices1, texIndices2, texIndices3);
 
 		return new RetroMesh(id, priority, vx, vy, vz, i1, i2, i3,
 			colors, renderTypes, transparencies, priorities, textures,
 			textureCoords, texIndices1, texIndices2, texIndices3, vertexGroups);
+	}
+
+	/**
+	 * Refuses a mesh whose geometry blocks disagree with each other.
+	 *
+	 * <p>Every column of a mesh is written as its own length-prefixed block, so nothing in the
+	 * format pairs them and nothing downstream re-checks them either: {@link RetroMesh} takes its
+	 * vertex count from {@code verticesX} alone and its face count from {@code faceIndices1} alone,
+	 * and every consumer indexes the rest by those. A short column reads cleanly here and throws
+	 * somewhere far away instead.
+	 *
+	 * <p>Worth being strict about because of where those throws land. A face index past the end of
+	 * the vertex arrays reaches {@code RetroLighter.computeNormals} by way of
+	 * {@code RetroModelCache.ensureBuilt}, which only remembers an NPC id as unbuildable when the
+	 * build <em>returns</em> null - a throw skips that, so every spawn of that id retries it. A
+	 * vertex group member past the end reaches {@code RetroSkinner} on the render path, where
+	 * {@code RetroDrawCallbacks} catches it and quietly draws the vanilla model. Neither failure
+	 * names the bundle that caused it. Same contract as the magic and the version: a bundle that is
+	 * wrong must not load.
+	 */
+	private static void checkGeometry(int id, float[] vx, float[] vy, float[] vz,
+		int[] i1, int[] i2, int[] i3, short[] colors, byte[] renderTypes, byte[] transparencies,
+		byte[] priorities, short[] textures, int[][] vertexGroups) throws IOException
+	{
+		if (vx == null || vy == null || vz == null)
+		{
+			throw new IOException("Retro asset mesh " + id
+				+ " is missing a vertex axis; regenerate the bundle");
+		}
+
+		if (vx.length != vy.length || vx.length != vz.length)
+		{
+			throw new IOException("Retro asset mesh " + id + " has " + vx.length + ", "
+				+ vy.length + " and " + vz.length
+				+ " vertices on its three axes; regenerate the bundle");
+		}
+
+		if (i1 == null || i2 == null || i3 == null)
+		{
+			throw new IOException("Retro asset mesh " + id
+				+ " is missing a face index column; regenerate the bundle");
+		}
+
+		if (i1.length != i2.length || i1.length != i3.length)
+		{
+			throw new IOException("Retro asset mesh " + id + " names " + i1.length + ", "
+				+ i2.length + " and " + i3.length + " face corners; regenerate the bundle");
+		}
+
+		int verticesCount = vx.length;
+		int faceCount = i1.length;
+
+		for (int face = 0; face < faceCount; face++)
+		{
+			checkVertex(id, "face " + face, i1[face], verticesCount);
+			checkVertex(id, "face " + face, i2[face], verticesCount);
+			checkVertex(id, "face " + face, i3[face], verticesCount);
+		}
+
+		// Face colors are the one per-face column with no null case: RetroLighter reads them for
+		// every untextured face, and the recolor in RetroModelCache clones them outright
+		if (colors == null)
+		{
+			throw new IOException("Retro asset mesh " + id
+				+ " has no face colors; regenerate the bundle");
+		}
+
+		checkFaceColumn(id, "face colors", colors, faceCount);
+		checkFaceColumn(id, "render types", renderTypes, faceCount);
+		checkFaceColumn(id, "transparencies", transparencies, faceCount);
+		checkFaceColumn(id, "render priorities", priorities, faceCount);
+		checkFaceColumn(id, "face textures", textures, faceCount);
+
+		if (vertexGroups == null)
+		{
+			return;
+		}
+
+		// A null row is a group nothing is bound to, which RetroMesh.getVertexGroup handles. A
+		// member naming a vertex this mesh does not have is a different thing entirely
+		for (int group = 0; group < vertexGroups.length; group++)
+		{
+			int[] members = vertexGroups[group];
+			if (members == null)
+			{
+				continue;
+			}
+			for (int member : members)
+			{
+				checkVertex(id, "vertex group " + group, member, verticesCount);
+			}
+		}
+	}
+
+	private static void checkVertex(int id, String owner, int vertex, int verticesCount)
+		throws IOException
+	{
+		if (vertex < 0 || vertex >= verticesCount)
+		{
+			throw new IOException("Retro asset mesh " + id + " " + owner + " names vertex "
+				+ vertex + " of " + verticesCount + "; regenerate the bundle");
+		}
+	}
+
+	// A per-face column is either absent entirely - null is meaningful, a null transparency array is
+	// what puts a model on the opaque path - or exactly as long as the face count. Nothing in
+	// between: every consumer indexes these by face without checking.
+
+	private static void checkFaceColumn(int id, String column, byte[] values, int faceCount)
+		throws IOException
+	{
+		if (values != null)
+		{
+			checkFaceColumn(id, column, values.length, faceCount);
+		}
+	}
+
+	private static void checkFaceColumn(int id, String column, short[] values, int faceCount)
+		throws IOException
+	{
+		if (values != null)
+		{
+			checkFaceColumn(id, column, values.length, faceCount);
+		}
+	}
+
+	private static void checkFaceColumn(int id, String column, int length, int faceCount)
+		throws IOException
+	{
+		if (length != faceCount)
+		{
+			throw new IOException("Retro asset mesh " + id + " has " + length + " " + column
+				+ " for " + faceCount + " faces; regenerate the bundle");
+		}
 	}
 
 	/**
@@ -313,7 +450,58 @@ public final class RetroAssetCodec
 		int[][] dx = readIntMatrix(data);
 		int[][] dy = readIntMatrix(data);
 		int[][] dz = readIntMatrix(data);
+		checkClip(sequenceId, transforms, dx, dy, dz);
 		return new RetroClip(sequenceId, rigId, transforms, dx, dy, dz);
+	}
+
+	/**
+	 * Refuses a clip whose four op columns disagree.
+	 *
+	 * <p>The frame list, and each frame's ops, are one table written as four blocks, and the
+	 * skinner is the only thing that ever pairs them again - it bounds its loop on
+	 * {@code getOpCount}, which is the transform column's own length, and then indexes the three
+	 * delta columns with it. A short column reads cleanly here and throws inside
+	 * {@code RetroSkinner.apply} on the render path, where {@code RetroDrawCallbacks} catches it
+	 * and draws the vanilla model instead: the NPC is silently un-swapped, once per frame, with
+	 * nothing above debug level to say why.
+	 *
+	 * <p>Same contract as the rig's two tables, and for the same reason - a bundle that is wrong
+	 * must not load.
+	 */
+	private static void checkClip(int sequenceId, int[][] transforms, int[][] dx, int[][] dy,
+		int[][] dz) throws IOException
+	{
+		if (transforms == null || dx == null || dy == null || dz == null)
+		{
+			throw new IOException("Retro asset clip " + sequenceId
+				+ " is missing an op column; regenerate the bundle");
+		}
+
+		if (transforms.length != dx.length || transforms.length != dy.length
+			|| transforms.length != dz.length)
+		{
+			throw new IOException("Retro asset clip " + sequenceId + " has " + transforms.length
+				+ ", " + dx.length + ", " + dy.length + " and " + dz.length
+				+ " frames across its four op columns; regenerate the bundle");
+		}
+
+		for (int frame = 0; frame < transforms.length; frame++)
+		{
+			if (transforms[frame] == null || dx[frame] == null
+				|| dy[frame] == null || dz[frame] == null)
+			{
+				throw new IOException("Retro asset clip " + sequenceId + " frame " + frame
+					+ " is missing an op column; regenerate the bundle");
+			}
+
+			int ops = transforms[frame].length;
+			if (dx[frame].length != ops || dy[frame].length != ops || dz[frame].length != ops)
+			{
+				throw new IOException("Retro asset clip " + sequenceId + " frame " + frame
+					+ " has " + ops + ", " + dx[frame].length + ", " + dy[frame].length + " and "
+					+ dz[frame].length + " ops across its four columns; regenerate the bundle");
+			}
+		}
 	}
 
 	// A length of -1 encodes null, which is distinct from an empty array: a null transparency array
