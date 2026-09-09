@@ -64,7 +64,7 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
-	 * Lesser demons stay disabled permanently, and not for the reason the code used to give. The
+	 * Lesser demons need injected geometry, and not for the reason the code used to give. The
 	 * 2005 sequences survive under DEMON_* gameval names; it is the mesh that is gone. Model 2943
 	 * resolves in the live cache but holds a 1000-vertex asset where the 2005 lesser demon is 428,
 	 * and a scan of all 61874 live models finds the retro mesh at no id - the 29 August 2006

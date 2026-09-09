@@ -191,8 +191,8 @@ public class RetroSeqDecoder
 
 					// Interleaved per frame, unlike the modern format which splits the same fields
 					// into three separate passes. The giveaway in a raw dump is a repeating triple
-					// with a constant -1 in the middle - the chat frame, which almost no sequence
-					// uses.
+					// with a constant 0xFFFF in the middle - the chat frame, which almost no
+					// sequence uses.
 					int[] chatFrameIds = new int[frameCount];
 					for (int i = 0; i < frameCount; i++)
 					{

@@ -78,7 +78,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 @Slf4j
 @PluginDescriptor(
 	name = "Retro NPC Swapper",
-	description = "Swaps modern NPC models and animations to their 2004/2005 retro variants from the Old School RuneScape cache.",
+	description = "Swaps modern NPC models and animations to their 2004/2005 retro variants, using the live cache where those assets survive and a bundled 2005 set where they do not.",
 	tags = {"npc", "retro", "swapper", "model", "animation", "cache"}
 )
 public class RetroNpcSwapperPlugin extends Plugin
@@ -670,14 +670,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Re-evaluates all currently loaded scene NPCs against active configuration toggles.
-	 */
-	/**
 	 * Reads the injected asset bundle off the client thread and publishes it back onto it.
 	 *
-	 * <p>Decompressing 50KB is quick, but it is still disk IO, and startUp must not block on it -
-	 * so this is fire-and-forget. Everything downstream treats an absent bundle as "no injected
-	 * assets", which is why nothing has to wait for this to finish.
+	 * <p>Decompressing the bundle is quick, but it is still disk IO, and startUp must not block on
+	 * it - so this is fire-and-forget. Everything downstream treats an absent bundle as "no
+	 * injected assets", which is why nothing has to wait for this to finish.
 	 */
 	private void loadAssetBundle()
 	{
@@ -730,10 +727,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 		});
 	}
 
+	/**
+	 * Re-evaluates all currently loaded scene NPCs against active configuration toggles.
+	 */
 	private void recheckLoadedNpcs()
 	{
 		// Cheap and idempotent, and this runs on every path that could have changed the setting -
-		// startup, config change, world change, attach and detach
+		// startup, config change, world change, a landed bundle, and attach
 		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
 
 		if (client.getGameState() != GameState.LOGGED_IN)
@@ -832,7 +832,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			// Something else holds the slot. If it wrapped our wrapper, that stale decorator
 			// stays in its chain - harmless once the cache's memo is cleared (every
-			// substitution then falls through to the vanilla model), but worth a trace.
+			// substitution then falls through to the vanilla model), but worth saying.
 			log.debug("Draw callbacks slot no longer ours at detach; leaving it untouched");
 		}
 		wrapper = null;

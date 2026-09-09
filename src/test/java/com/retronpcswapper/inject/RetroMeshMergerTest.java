@@ -242,7 +242,8 @@ public class RetroMeshMergerTest
 	 * A texture triangle names its own part's vertices, so merging has to shift it exactly as a
 	 * face index is shifted - and the per-face index into the triangle table has to shift by the
 	 * triangles the earlier parts contributed. The guard is the case that exercises both: its head
-	 * is the third of ten parts, so its triangles land at a vertex offset with no triangle offset.
+	 * is the third of the nine parts a guard wears, so its triangles land at a vertex offset with
+	 * no triangle offset.
 	 */
 	@Test
 	public void testTheGuardHeadKeepsItsMappingThroughTheMerge() throws Exception

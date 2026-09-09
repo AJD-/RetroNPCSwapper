@@ -300,7 +300,9 @@ public final class RetroAssetCodec
 
 	// A per-face column is either absent entirely - null is meaningful, a null transparency array is
 	// what puts a model on the opaque path - or exactly as long as the face count. Nothing in
-	// between: every consumer indexes these by face without checking.
+	// between: every consumer indexes these by face without checking. textureCoords is the one
+	// per-face column not checked here; it is checked in checkTextureTriangles, alongside the
+	// triangle table its entries index into.
 
 	private static void checkFaceColumn(int id, String column, byte[] values, int faceCount)
 		throws IOException

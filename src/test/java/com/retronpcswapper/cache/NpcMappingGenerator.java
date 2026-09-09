@@ -204,6 +204,8 @@ public class NpcMappingGenerator
 		{
 			return RetroNpcCategory.GHOSTS;
 		}
+		// Matched on the two-word name, never on "giant" alone: a bare "giant" would catch giant
+		// rats, spiders and frogs, which share nothing with this family but the word.
 		if (nameLower.contains("hill giant"))
 		{
 			return RetroNpcCategory.HILL_GIANTS;
@@ -220,8 +222,8 @@ public class NpcMappingGenerator
 		{
 			return RetroNpcCategory.MOSS_GIANTS;
 		}
-		// Matched exactly rather than by substring: a bare "giant" would catch giant rats, spiders
-		// and frogs, which share nothing with this family but the word.
+		// Whole name rather than substring, so only the plain Cyclops matches and a longer name
+		// built on the word does not
 		if (nameLower.equals("cyclops"))
 		{
 			return RetroNpcCategory.CYCLOPS;

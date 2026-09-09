@@ -38,7 +38,7 @@ public class RetroSeqDefinition
 	 */
 	private int[] frameIds;
 
-	/** Secondary frame per entry, for chathead animations. -1 on almost everything. */
+	/** Secondary frame per entry, for chathead animations. 0xFFFF on almost everything. */
 	private int[] chatFrameIds;
 
 	/** Per-frame duration in client ticks. */

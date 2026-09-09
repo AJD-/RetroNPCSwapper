@@ -46,8 +46,8 @@ import lombok.extern.slf4j.Slf4j;
 public final class RetroMeshMerger
 {
 	/**
-	 * The highest texture triangle a merged mesh can address. The renderer reads the per-face index
-	 * as {@code textureFaces[face] & 0xff}, so 255 is indistinguishable from the -1 that means "no
+	 * The most texture triangles a merged mesh can carry. The renderer reads the per-face index as
+	 * {@code textureFaces[face] & 0xff}, so 255 is indistinguishable from the -1 that means "no
 	 * triangle" - which leaves 0..254 usable. The generator refuses to bundle a set that would
 	 * exceed this, so reaching it here means the bundle and this code disagree.
 	 */

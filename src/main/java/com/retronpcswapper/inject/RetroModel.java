@@ -58,8 +58,9 @@ import net.runelite.api.Node;
  *
  * <h2>Which methods carry data</h2>
  *
- * Only the ones the GPU plugin and the outline renderer actually read. The rest return null or 0,
- * and that is safe rather than lazy: {@code GpuPlugin.setupGpuFlags} sets only
+ * Only the ones the GPU plugin and the outline renderer actually read. The accessors gated behind
+ * a render flag return null, and that is safe rather than lazy: {@code GpuPlugin.setupGpuFlags}
+ * sets only
  * {@code GPU | ZBUF | RENDER_THREADS}, never {@code HILLSKEW}, {@code NORMALS} or
  * {@code UNLIT_FACE_COLORS}, so the gated accessors are never called. {@code drawFrustum} and
  * {@code drawOrtho} belong to the software rasterizer, which is not in use under the GPU plugin.
@@ -199,7 +200,10 @@ public class RetroModel implements Model
 	 * invalidated by the next {@code applyTransformations} call, including the client's own, so
 	 * holding a reference to its arrays would be a use-after-free in slow motion.
 	 *
-	 * <p>Buffers are grown on demand and reused, so a steady state does no allocation.
+	 * <p>The vertex, index and color buffers are grown on demand and reused, so a steady state does
+	 * not allocate for those. The per-face columns go through {@code copyOrNull}, which clones
+	 * every time: a null there carries meaning to the renderer, and a reused buffer cannot express
+	 * one.
 	 */
 	public void copyFrom(Model source)
 	{
@@ -315,10 +319,8 @@ public class RetroModel implements Model
 	 * {@link #getDiameter()} for culling and sorting.
 	 *
 	 * <p>The client calls this on every model it is about to draw, so it has to be cheap and it has
-	 * to be idempotent.
-	 */
-	/**
-	 * A transcription of the client's own bounds routine, kept deliberately faithful.
+	 * to be idempotent. A transcription of the client's own bounds routine, kept deliberately
+	 * faithful.
 	 *
 	 * <p>These are not free-form numbers. {@code ModelUploader.uploadSortedModel} buckets each face
 	 * by {@code radius + meanDepth} into an array of {@code diameter} slots and asserts the index
@@ -660,9 +662,9 @@ public class RetroModel implements Model
 	}
 
 	// --- Never reached under the GPU plugin ----------------------------------------------------
-	// Gated off by setupGpuFlags (HILLSKEW, NORMALS, UNLIT_FACE_COLORS are never set) or belonging
-	// to the software rasterizer. Returning empty rather than throwing keeps a future renderer
-	// change from taking the scene down with it.
+	// Gated off by setupGpuFlags, which never sets HILLSKEW, NORMALS or UNLIT_FACE_COLORS.
+	// Returning null rather than throwing keeps a future renderer change from taking the scene
+	// down with it.
 
 	@Override
 	public short[] getUnlitFaceColors()
@@ -687,6 +689,10 @@ public class RetroModel implements Model
 	{
 		return null;
 	}
+
+	// --- Answered from the bounding cylinder ---------------------------------------------------
+	// These are reached. There is no skew and no separate bounding box to keep, so each is served
+	// from the cylinder calculateBoundsCylinder already derived.
 
 	@Override
 	public Model getUnskewedModel()

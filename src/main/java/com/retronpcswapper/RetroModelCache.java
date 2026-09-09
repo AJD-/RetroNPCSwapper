@@ -82,14 +82,17 @@ public class RetroModelCache
 	private final RetroModel injected = new RetroModel();
 
 	/**
-	 * Whether to route posed geometry through {@link RetroModel} rather than hand the client's own
-	 * model straight to the renderer.
+	 * Whether to build and draw NPCs from the bundle rather than from the live cache.
 	 *
-	 * <p>While the geometry still comes from the cache this is a no-op by construction - the copy
-	 * is faithful, so anything that looks different on screen with it on is a defect in the
-	 * injection path. That is what makes it worth a toggle: it separates "can the renderer accept
-	 * geometry we own" from "is our geometry correct", which are the two questions the injection
-	 * work has to answer one at a time.
+	 * <p>Load-bearing rather than diagnostic. {@link #ensureBuilt} consults this before taking the
+	 * injected path at all, so the categories with no usable asset left at their live model ids -
+	 * the fire, ice and moss giants, the cyclops, guards, dragons, demons and imps - do not render
+	 * with it off. That is what the user-facing "Use Converted 2005 Assets" toggle drives.
+	 *
+	 * <p>It also routes cache-backed geometry through {@link RetroModel} on the way to the
+	 * renderer, which is a faithful copy and so a no-op on screen. That half started as the
+	 * diagnostic that separated "can the renderer accept geometry we own" from "is our geometry
+	 * correct"; it is kept because the copy is what proves the first of those still holds.
 	 */
 	private boolean useInjectionPipeline;
 

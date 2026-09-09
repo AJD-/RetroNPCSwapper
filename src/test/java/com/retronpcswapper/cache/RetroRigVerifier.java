@@ -54,14 +54,14 @@ import net.runelite.cache.fs.Store;
  * Dev-only gate for injecting 2005 geometry that no longer exists at any live id.
  *
  * <p>Adult dragons and demons lost their meshes to the Aug-2006 graphical update but kept their
- * sequences, which are still keyed to the 2005 framemaps - that is <em>why</em> those sequences
- * survive. So the injection plan is 2005 geometry plus live frames, and the whole plan rests on one
- * assumption that can be measured offline: <em>do the vertex groups baked into the 2005 mesh line
- * up with the framemap the live sequence names?</em>
+ * sequence ids. This measures, offline, the one thing that decides whether a live sequence can
+ * drive a 2005 mesh: <em>do the vertex groups baked into the mesh line up with the framemap the
+ * sequence names?</em>
  *
- * <p>If they do, the mesh can be rigged by the sequences the server is already driving and no
- * animation authoring is needed. If they do not, the geometry is only a static prop and the plan
- * needs rethinking before any client work happens.
+ * <p>If they do, the mesh can be rigged by the sequences the server is already driving. If they do
+ * not, the clip has to come from the 2005 cache too. That is how it turned out for most of them -
+ * see {@link #probe2005Frames} - so the bundle now ships 2005 clips for every category but the
+ * skeleton and the giant family. This tool is what settles which of the two a new category needs.
  *
  * <p>Read the rig from {@code ModelDefinition.getVertexGroups()}. The packed per-vertex array is a
  * trap: {@code ModelLoader.load} finishes by calling {@code computeAnimationTables}, which unpacks
@@ -88,8 +88,12 @@ public class RetroRigVerifier
 
 
 	/**
-	 * The blocked categories, with the live sequences their NPC definitions still name. Sequence
-	 * ids are the ones surviving under gameval {@code DRAGON_*} and {@code DEMON_*} names.
+	 * What this tool measures when aimed at nothing in particular: the three categories the
+	 * question was first asked of, with the live sequences their NPC definitions still name.
+	 * Sequence ids are the ones surviving under gameval {@code DRAGON_*} and {@code DEMON_*} names.
+	 *
+	 * <p>Not the list of what the bundle ships - {@code RetroAssetGenerator.SPECS} is that, and it
+	 * is longer. Aim this at a new subject with {@code -Pmodels} and {@code -Pseqs}.
 	 */
 	private static final List<Target> DEFAULT_TARGETS = new ArrayList<>();
 
@@ -432,11 +436,14 @@ public class RetroRigVerifier
 	 * How much of a clip actually lands on the mesh: the share of its transform ops whose groups
 	 * intersect groups the mesh really uses.
 	 *
-	 * <p>This is the check the subset test above should have been. "Every mesh group is addressed
-	 * somewhere in the framemap" is nearly vacuous when the framemap addresses 215 groups and the
-	 * mesh uses 60 - almost any mesh passes. What matters is the converse: if the frames spend
-	 * their ops on groups this mesh does not have, most of the animation lands on nothing and the
-	 * model barely moves, which is what a rig authored for a different mesh looks like.
+	 * <p>The better of the two measurements, and the one to read first. "Every mesh group is
+	 * addressed somewhere in the framemap" - the subset test above, which is what still sets the
+	 * verdict - is nearly vacuous when the framemap addresses 215 groups and the mesh uses 60, so
+	 * almost any mesh passes it. What matters is the converse: if the frames spend their ops on
+	 * groups this mesh does not have, most of the animation lands on nothing and the model barely
+	 * moves, which is what a rig authored for a different mesh looks like. Reported rather than
+	 * enforced because there is no floor that fits every subject - see RetroClipReachTest, which
+	 * does enforce one, per clip, against the shipped bundle.
 	 *
 	 * <p>Read it against a known-good pair. The skeleton animates correctly in game, so whatever
 	 * reach it shows is what working looks like.

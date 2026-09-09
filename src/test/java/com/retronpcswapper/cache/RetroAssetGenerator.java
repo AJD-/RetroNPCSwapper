@@ -305,6 +305,12 @@ public class RetroAssetGenerator
 		return new RetroAssetBundle(meshes, rigs, clips);
 	}
 
+	/** Opens {@link #toMesh} to RetroAssetGeneratorTest, which checks it against legacyToMesh. */
+	static RetroMesh toMeshForTest(int meshId, ModelDefinition part)
+	{
+		return toMesh(meshId, part);
+	}
+
 	/**
 	 * Converts one decoded model into the bundle mesh form.
 	 *
@@ -313,11 +319,6 @@ public class RetroAssetGenerator
 	 * the result under one part id, which cannot express an NPC family that shares a body mesh and
 	 * differs only by head - every variant would collide on the same key.
 	 */
-	static RetroMesh toMeshForTest(int meshId, ModelDefinition part)
-	{
-		return toMesh(meshId, part);
-	}
-
 	private static RetroMesh toMesh(int meshId, ModelDefinition part)
 	{
 		part.computeAnimationTables();
@@ -682,16 +683,15 @@ public class RetroAssetGenerator
 	 * Maps each live frame onto the 2005 frame at the same point in the cycle, so a 2005 clip plays
 	 * over the live sequence's duration however many frames it actually has.
 	 *
-	 * <p>Weighted by duration only when <em>every</em> frame on both sides declares one; otherwise
-	 * proportional by index, which is the same answer when frames are uniform.
+	 * <p>Three cases, in the order they are tried. A clip that ends on a hold - see
+	 * {@link #endsOnAHold}, which is where the death animations land - plays once, a frame at a
+	 * time, and holds its last pose for whatever is left. Otherwise it is weighted by duration when
+	 * <em>every</em> frame on both sides declares one, and proportional by index when any does not,
+	 * which is the same answer when frames are uniform.
 	 *
-	 * <p>Requiring every frame rather than a positive total is load-bearing, and getting it wrong
-	 * broke every death animation the bundle ships. A 2005 death sequence declares lengths like
-	 * {@code [0, 0, 0, 0, 0, 0, 0, 0, 0, 20000]} - no duration at all for the frames that do the
-	 * dying, then an enormous hold on the corpse. That sums to a positive total, so a total-only
-	 * check runs the weighted path over data where nine of ten frames occupy zero time, and every
-	 * live frame's midpoint lands in the tenth. The result maps the whole animation to its final
-	 * frame: the NPC snaps to a corpse instead of falling. Partial duration data is absent data.
+	 * <p>Requiring every frame rather than a positive total is load-bearing: partial duration data
+	 * is absent data, and one non-zero entry among zeros would otherwise take the weighted path
+	 * over a timeline where most frames occupy no time at all.
 	 */
 	static int[] resample(int[] liveLengths, int[] retroLengths, int liveCount, int retroCount)
 	{

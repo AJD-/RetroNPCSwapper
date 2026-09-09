@@ -50,6 +50,7 @@ public interface RetroNpcConfig extends Config
 
 	/** Also written programmatically, so the key is named rather than repeated as a literal. */
 	String OVERRIDE_INTERACT_HIGHLIGHT = "overrideInteractHighlight";
+
 	String USE_INJECTION_PIPELINE = "useInjectionPipeline";
 
 	/**
@@ -73,8 +74,8 @@ public interface RetroNpcConfig extends Config
 		description = "<html><body style='width:170px'>Draw swapped NPCs through geometry this "
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
 			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
-			+ "game cache. Turn it off and only Chickens, Goblins, Skeletons, Zombies, Hill Giants, "
-			+ "and ghosts will swap to their retro assets, (Hill Giants will have a Zogre head).  "
+			+ "game cache. Turn it off and only Chickens, Goblins, Skeletons, Zombies, Hill Giants "
+			+ "and Ghosts will swap to their retro assets. Hill Giants will wear a Jogre head."
 			+ "</body></html>",
 		position = 1
 	)

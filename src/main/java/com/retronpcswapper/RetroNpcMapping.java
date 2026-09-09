@@ -282,9 +282,6 @@ public class RetroNpcMapping
 	//     clips for a reason no other category has: the surviving parts are byte-identical in both
 	//     caches but their vertex groups were RENUMBERED, from a ~35 group 2005 human rig to
 	//     framemap 0's 218. Same geometry, different bones.
-	//
-	// The guard archetype stays inert: its mapping resolves but processNpc never activates it. It
-	// is kept, along with its JSON entries, as staged data.
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
 		.retroModelIds(new int[]{2943})
@@ -678,13 +675,6 @@ public class RetroNpcMapping
 	}
 
 	/**
-	 * Whether a category's retro mesh needs the 2005 recolor pairs to look right.
-	 *
-	 * <p>These meshes carry no usable color of their own - the dragons are a greyscale ramp, and
-	 * black and greater demons are the same mesh - so recoloring is structural rather than
-	 * cosmetic. Every other category is left alone on purpose.
-	 */
-	/**
 	 * Whether a category can only be drawn from injected geometry.
 	 *
 	 * <p>These are the categories with no usable 2005 asset left at their model ids: the ids still
@@ -729,6 +719,13 @@ public class RetroNpcMapping
 		return requiresInjectedGeometry(category) || category == RetroNpcCategory.HILL_GIANTS;
 	}
 
+	/**
+	 * Whether a category's retro mesh needs the 2005 recolor pairs to look right.
+	 *
+	 * <p>These meshes carry no usable color of their own - the dragons are a greyscale ramp, and
+	 * black and greater demons are the same mesh - so recoloring is structural rather than
+	 * cosmetic. Every other category is left alone on purpose.
+	 */
 	private static boolean categoryUsesRecolors(RetroNpcCategory category)
 	{
 		return category == RetroNpcCategory.ADULT_DRAGONS
@@ -847,9 +844,9 @@ public class RetroNpcMapping
 		// Guards
 		NAME_MAPPINGS.put("guard", GUARD_DEFAULT);
 		registerMapping(GUARD_DEFAULT,
-			// The base rows of each family. Anything still literally named "Guard" already resolves
-			// by name, so these are belt and braces - but the list below enumerates the _F and
-			// _VARIANT derivatives of exactly these NPCs and simply never included them.
+			// The base rows of each family. GUARDS is in ID_ONLY_CATEGORIES, so the name no longer
+			// resolves and every guard has to be named here - including the _F and _VARIANT
+			// derivatives below, which the name lookup used to cover.
 			NpcID.GUARD1, NpcID.ARDOUGNE_GUARD,
 			// Only the melee half of the Falador family. GUARD2, GUARD4, GUARD5 and GUARD6 carry
 			// a bow or crossbow - see EXCLUDED_IDS. GUARD4_F is listed below: she is the female
@@ -931,11 +928,6 @@ public class RetroNpcMapping
 		int scaleXZ = entry.getScaleXZ();
 		int scaleY = entry.getScaleY();
 
-		// Deliberately NOT seeded from the entry. Plenty of 2005 definitions carry opcode-40
-		// recolors - goblins and guards among them - and buildEntries collapses rows by name with
-		// the lowest def id winning, so forwarding them wholesale would repaint a live category
-		// with one arbitrary variant's colors. Only a branch that needs them opts in.
-		//
 		// Scoped rather than seeded from every entry: plenty of 2005 definitions carry opcode 40
 		// recolors - goblins and guards among them - and buildEntries keeps only the lowest-id row
 		// per name, so forwarding wholesale would repaint a live category with one arbitrary
@@ -1059,7 +1051,8 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.IMPS)
 		{
-			// Animations no longer exist in the official game cache, so these are disabled
+			// The 2005 sequences survive at these ids; it is the frames behind them that were
+			// re-authored for the modern rig, which is why imps need the injected skinner
 			stanceAnim = stanceAnim != -1 ? stanceAnim : 171;
 			walkAnim = walkAnim != -1 ? walkAnim : 168;
 			attackAnim = 169;
