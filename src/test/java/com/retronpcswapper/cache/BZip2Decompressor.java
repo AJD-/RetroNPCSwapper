@@ -539,7 +539,7 @@ public class BZip2Decompressor
 		}
 
 		s.cftab[0] = 0;
-        System.arraycopy(s.unRLE, 0, s.cftab, 1, 256);
+		System.arraycopy(s.unRLE, 0, s.cftab, 1, 256);
 		for (int i = 1; i <= 256; i++)
 		{
 			s.cftab[i] += s.cftab[i - 1];

@@ -53,9 +53,9 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
   frame index the client is already driving so the two stay in step.
 - **Clickboxes are untouched.** The client resolves clickboxes from the original model before the
   draw callback runs, so interaction hitboxes stay exactly vanilla.
-- `Interact Highlight` plugin compatibility: the **Compatibility** section provides a `Fix Interact 
-  Highlight outlines` checkbox to resolve inconsistent outline draws on retro models. Because the 
-  swap happens at draw time, anything outlining an NPC through the API outlines the modern mesh, 
+- `Interact Highlight` plugin compatibility: the **Compatibility** section provides a `Fix Interact
+  Highlight outlines` checkbox to resolve inconsistent outline draws on retro models. Because the
+  swap happens at draw time, anything outlining an NPC through the API outlines the modern mesh,
   which no longer matches what is on screen. With the `Interact Highlight` plugin enabled, and the
   compatibility checkbox enabled, this plugin _turns off_ that plugin's own NPC hover and interact
   outlines and draws them around the retro model instead, using its colors and border settings; its

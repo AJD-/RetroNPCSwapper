@@ -107,141 +107,141 @@ public class RetroNpcDecoder
 					break;
 				}
 
-			if (opcode == 1)
-			{
-				int modelCount = stream.readUnsignedByte();
-				int[] models = new int[modelCount];
-				for (int j = 0; j < modelCount; j++)
+				if (opcode == 1)
 				{
-					models[j] = stream.readUnsignedShort();
-				}
-				def.setModels(models);
-			}
-			else if (opcode == 2)
-			{
-				def.setName(stream.readString());
-			}
-			else if (opcode == 3)
-			{
-				def.setDescription(stream.readString());
-			}
-			else if (opcode == 12)
-			{
-				def.setSize(stream.readByte());
-			}
-			else if (opcode == 13)
-			{
-				def.setStanceAnimation(stream.readUnsignedShort());
-			}
-			else if (opcode == 14)
-			{
-				def.setWalkAnimation(stream.readUnsignedShort());
-			}
-			else if (opcode == 17)
-			{
-				def.setWalkAnimation(stream.readUnsignedShort());
-				stream.readUnsignedShort(); // turnAroundAnim
-				stream.readUnsignedShort(); // turnRightAnim
-				stream.readUnsignedShort(); // turnLeftAnim
-			}
-			else if (opcode >= 30 && opcode < 40)
-			{
-				String[] actions = def.getActions();
-				int actionIdx = opcode - 30;
-				String actionStr = stream.readString();
-				if (actionIdx >= 0 && actionIdx < actions.length)
-				{
-					if ("hidden".equalsIgnoreCase(actionStr))
+					int modelCount = stream.readUnsignedByte();
+					int[] models = new int[modelCount];
+					for (int j = 0; j < modelCount; j++)
 					{
-						actionStr = null;
+						models[j] = stream.readUnsignedShort();
 					}
-					actions[actionIdx] = actionStr;
+					def.setModels(models);
 				}
-				def.setActions(actions);
-			}
-			else if (opcode == 40)
-			{
-				// Recolor pairs. The 2005 client gave same-mesh NPC variants their color here
-				// rather than with separate models, so this is the only place a retro baby blue
-				// dragon differs from a plain one.
-				int colors = stream.readUnsignedByte();
-				short[] originalColors = new short[colors];
-				short[] replacementColors = new short[colors];
-				for (int c = 0; c < colors; c++)
+				else if (opcode == 2)
 				{
-					// Read unsigned, stored signed - palette indices are 16-bit and
-					// ModelData.recolor takes shorts
-					originalColors[c] = (short) stream.readUnsignedShort();
-					replacementColors[c] = (short) stream.readUnsignedShort();
+					def.setName(stream.readString());
 				}
-				def.setOriginalColors(originalColors);
-				def.setReplacementColors(replacementColors);
-			}
-			else if (opcode == 60)
-			{
-				int addModelCount = stream.readUnsignedByte();
-				int[] addModels = new int[addModelCount];
-				for (int j = 0; j < addModelCount; j++)
+				else if (opcode == 3)
 				{
-					addModels[j] = stream.readUnsignedShort();
+					def.setDescription(stream.readString());
 				}
-				def.setAdditionalModels(addModels);
-			}
-			else if (opcode == 90 || opcode == 91 || opcode == 92)
-			{
-				stream.readUnsignedShort();
-			}
-			else if (opcode == 93)
-			{
-				// drawMapDot = false
-			}
-			else if (opcode == 95)
-			{
-				def.setCombatLevel(stream.readUnsignedShort());
-			}
-			else if (opcode == 97)
-			{
-				def.setScaleXZ(stream.readUnsignedShort());
-			}
-			else if (opcode == 98)
-			{
-				def.setScaleY(stream.readUnsignedShort());
-			}
-			else if (opcode == 99)
-			{
-				// priorityRender = true
-			}
-			else if (opcode == 100)
-			{
-				stream.readByte(); // lightModifier1
-			}
-			else if (opcode == 101)
-			{
-				stream.readByte(); // lightModifier2
-			}
-			else if (opcode == 102)
-			{
-				stream.readUnsignedShort(); // headIcon
-			}
-			else if (opcode == 103)
-			{
-				stream.readUnsignedShort(); // degreesToTurn
-			}
-			else if (opcode == 106)
-			{
-				stream.readUnsignedShort(); // varbitId
-				stream.readUnsignedShort(); // varpId
-				int childCount = stream.readUnsignedByte();
-				for (int c = 0; c <= childCount; c++)
+				else if (opcode == 12)
 				{
-					stream.readUnsignedShort(); // childrenIDs
+					def.setSize(stream.readByte());
+				}
+				else if (opcode == 13)
+				{
+					def.setStanceAnimation(stream.readUnsignedShort());
+				}
+				else if (opcode == 14)
+				{
+					def.setWalkAnimation(stream.readUnsignedShort());
+				}
+				else if (opcode == 17)
+				{
+					def.setWalkAnimation(stream.readUnsignedShort());
+					stream.readUnsignedShort(); // turnAroundAnim
+					stream.readUnsignedShort(); // turnRightAnim
+					stream.readUnsignedShort(); // turnLeftAnim
+				}
+				else if (opcode >= 30 && opcode < 40)
+				{
+					String[] actions = def.getActions();
+					int actionIdx = opcode - 30;
+					String actionStr = stream.readString();
+					if (actionIdx >= 0 && actionIdx < actions.length)
+					{
+						if ("hidden".equalsIgnoreCase(actionStr))
+						{
+							actionStr = null;
+						}
+						actions[actionIdx] = actionStr;
+					}
+					def.setActions(actions);
+				}
+				else if (opcode == 40)
+				{
+					// Recolor pairs. The 2005 client gave same-mesh NPC variants their color here
+					// rather than with separate models, so this is the only place a retro baby blue
+					// dragon differs from a plain one.
+					int colors = stream.readUnsignedByte();
+					short[] originalColors = new short[colors];
+					short[] replacementColors = new short[colors];
+					for (int c = 0; c < colors; c++)
+					{
+						// Read unsigned, stored signed - palette indices are 16-bit and
+						// ModelData.recolor takes shorts
+						originalColors[c] = (short) stream.readUnsignedShort();
+						replacementColors[c] = (short) stream.readUnsignedShort();
+					}
+					def.setOriginalColors(originalColors);
+					def.setReplacementColors(replacementColors);
+				}
+				else if (opcode == 60)
+				{
+					int addModelCount = stream.readUnsignedByte();
+					int[] addModels = new int[addModelCount];
+					for (int j = 0; j < addModelCount; j++)
+					{
+						addModels[j] = stream.readUnsignedShort();
+					}
+					def.setAdditionalModels(addModels);
+				}
+				else if (opcode == 90 || opcode == 91 || opcode == 92)
+				{
+					stream.readUnsignedShort();
+				}
+				else if (opcode == 93)
+				{
+					// drawMapDot = false
+				}
+				else if (opcode == 95)
+				{
+					def.setCombatLevel(stream.readUnsignedShort());
+				}
+				else if (opcode == 97)
+				{
+					def.setScaleXZ(stream.readUnsignedShort());
+				}
+				else if (opcode == 98)
+				{
+					def.setScaleY(stream.readUnsignedShort());
+				}
+				else if (opcode == 99)
+				{
+					// priorityRender = true
+				}
+				else if (opcode == 100)
+				{
+					stream.readByte(); // lightModifier1
+				}
+				else if (opcode == 101)
+				{
+					stream.readByte(); // lightModifier2
+				}
+				else if (opcode == 102)
+				{
+					stream.readUnsignedShort(); // headIcon
+				}
+				else if (opcode == 103)
+				{
+					stream.readUnsignedShort(); // degreesToTurn
+				}
+				else if (opcode == 106)
+				{
+					stream.readUnsignedShort(); // varbitId
+					stream.readUnsignedShort(); // varpId
+					int childCount = stream.readUnsignedByte();
+					for (int c = 0; c <= childCount; c++)
+					{
+						stream.readUnsignedShort(); // childrenIDs
+					}
+				}
+				else if (opcode == 107)
+				{
+					// clickable = false
 				}
 			}
-			else if (opcode == 107)
-			{
-				// clickable = false
-			}
-		}
 		}
 		catch (Exception e)
 		{

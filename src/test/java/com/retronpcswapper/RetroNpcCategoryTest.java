@@ -355,8 +355,8 @@ public class RetroNpcCategoryTest
 		// guard kit with 2005 battleaxe 550 where the rest carry sword 519. Derived after the
 		// recolor graft, so losing the 2005 colors here is the thing to watch.
 		RetroNpcData axeGuard = RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3, "Guard");
-        assertNotNull(axeGuard);
-        assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 550, 541},
+		assertNotNull(axeGuard);
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 550, 541},
 			axeGuard.getRetroModelIds());
 		assertArrayEquals(axeGuard.getRetroModelIds(), axeGuard.getInjectedModelIds());
 		assertEquals(RetroNpcCategory.GUARDS, axeGuard.getCategory());
@@ -750,7 +750,7 @@ public class RetroNpcCategoryTest
 		assertFalse(restless.isAttackAnimation(AnimationID.GHOST_UPDATE_NORMAL_ATTACK));
 	}
 
-    /**
+	/**
 	 * Black and greater demons are the same mesh (2942) and differ only by the 2005 opcode 40
 	 * pairs, so a black demon without them renders in greater demon colors. The pairs reach it
 	 * through a static archetype, which normally shadows the generated JSON row entirely.

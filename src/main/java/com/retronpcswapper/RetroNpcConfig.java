@@ -145,7 +145,7 @@ public interface RetroNpcConfig extends Config
 		name = "Giants",
 		description = "<html><body style='width:170px'>Swap modern Hill, Fire, Ice and Moss Giant "
 			+ "models and animations to their 2004/2005 retro variants.<br><br>Note: Fire, Ice, "
-	        + "and Moss Giants Need <b>Use Converted 2005 Assets</b>, which is on by default."
+			+ "and Moss Giants need <b>Use Converted 2005 Assets</b>, which is on by default."
 			+ "</body></html>",
 		section = npcTogglesSection,
 		position = 5
@@ -165,63 +165,6 @@ public interface RetroNpcConfig extends Config
 	default boolean swapGhosts()
 	{
 		return true;
-	}
-
-	@ConfigSection(
-		name = "Safety",
-		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
-		position = 3,
-		closedByDefault = true
-	)
-	String safetySection = "safetySection";
-
-	@ConfigItem(
-		keyName = "disablePvpWorld",
-		name = "Disable on PvP worlds",
-		description = "Disable retro NPC swapping for all NPCs when on a PvP world.",
-		section = safetySection,
-		position = 1
-	)
-	default boolean disablePvpWorld()
-	{
-		return true;
-	}
-
-	@ConfigItem(
-		keyName = "disableWilderness",
-		name = "Disable in Wilderness",
-		description = "Disable retro NPC swapping for all NPCs while in the Wilderness.",
-		section = safetySection,
-		position = 2
-	)
-	default boolean disableWilderness()
-	{
-		return true;
-	}
-
-	@ConfigSection(
-		name = "Compatibility",
-		description = "Settings for working alongside other plugins",
-		position = 4,
-		closedByDefault = true
-	)
-	String compatibilitySection = "compatibilitySection";
-
-	@ConfigItem(
-		keyName = OVERRIDE_INTERACT_HIGHLIGHT,
-		name = "Fix Interact Highlight outlines",
-		description = "<html><body style='width:170px'>Draw the Interact Highlight plugin's NPC "
-			+ "outlines around the retro model instead of the modern one.<br><br>While this is on "
-			+ "and models are being swapped, Interact Highlight's own <b>NPCs: Show on hover</b> "
-			+ "and <b>Show on interact</b> are turned off and this plugin draws those outlines in "
-			+ "their place, using that plugin's own colors and border settings. Both are turned back "
-			+ "on when this plugin stops.</body></html>",
-		section = compatibilitySection,
-		position = 1
-	)
-	default boolean overrideInteractHighlight()
-	{
-		return false;
 	}
 
 	@ConfigItem(
@@ -289,6 +232,63 @@ public interface RetroNpcConfig extends Config
 		position = 11
 	)
 	default boolean swapGuards()
+	{
+		return false;
+	}
+
+	@ConfigSection(
+		name = "Safety",
+		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
+		position = 3,
+		closedByDefault = true
+	)
+	String safetySection = "safetySection";
+
+	@ConfigItem(
+		keyName = "disablePvpWorld",
+		name = "Disable on PvP worlds",
+		description = "Disable retro NPC swapping for all NPCs when on a PvP world.",
+		section = safetySection,
+		position = 1
+	)
+	default boolean disablePvpWorld()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "disableWilderness",
+		name = "Disable in Wilderness",
+		description = "Disable retro NPC swapping for all NPCs while in the Wilderness.",
+		section = safetySection,
+		position = 2
+	)
+	default boolean disableWilderness()
+	{
+		return true;
+	}
+
+	@ConfigSection(
+		name = "Compatibility",
+		description = "Settings for working alongside other plugins",
+		position = 4,
+		closedByDefault = true
+	)
+	String compatibilitySection = "compatibilitySection";
+
+	@ConfigItem(
+		keyName = OVERRIDE_INTERACT_HIGHLIGHT,
+		name = "Fix Interact Highlight outlines",
+		description = "<html><body style='width:170px'>Draw the Interact Highlight plugin's NPC "
+			+ "outlines around the retro model instead of the modern one.<br><br>While this is on "
+			+ "and models are being swapped, Interact Highlight's own <b>NPCs: Show on hover</b> "
+			+ "and <b>Show on interact</b> are turned off and this plugin draws those outlines in "
+			+ "their place, using that plugin's own colors and border settings. Both are turned back "
+			+ "on when this plugin stops.</body></html>",
+		section = compatibilitySection,
+		position = 1
+	)
+	default boolean overrideInteractHighlight()
 	{
 		return false;
 	}
