@@ -1,0 +1,997 @@
+/*
+ * Copyright (c) 2026, AJD
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.retronpcswapper.cache;
+
+import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroAssetCodec;
+import com.retronpcswapper.inject.RetroClip;
+import com.retronpcswapper.inject.RetroMesh;
+import com.retronpcswapper.inject.RetroRig;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.GZIPInputStream;
+import net.runelite.cache.ConfigType;
+import net.runelite.cache.IndexType;
+import net.runelite.cache.definitions.FrameDefinition;
+import net.runelite.cache.definitions.FramemapDefinition;
+import net.runelite.cache.definitions.ModelDefinition;
+import net.runelite.cache.definitions.SequenceDefinition;
+import net.runelite.cache.definitions.loaders.FrameLoader;
+import net.runelite.cache.definitions.loaders.FramemapLoader;
+import net.runelite.cache.definitions.loaders.ModelLoader;
+import net.runelite.cache.definitions.loaders.SequenceLoader;
+import net.runelite.cache.fs.Archive;
+import net.runelite.cache.fs.ArchiveFiles;
+import net.runelite.cache.fs.FSFile;
+import net.runelite.cache.fs.Store;
+
+/**
+ * Builds the shipped asset bundle: geometry the plugin injects, plus the rigs and clips that
+ * animate it.
+ *
+ * <p>Meshes come from whichever cache still has them - the 2005 one for assets the live cache
+ * overwrote, the live one otherwise. Clips are sourced the same way, and for the same reason: the
+ * live sequences the dragons and demons name survived by id but had their frames re-authored for
+ * the modern rigs, so only the 2005 frames fit those meshes. The skeleton stays on live clips
+ * deliberately - it exists in both caches, which is what lets {@code RetroModelCache.verifySkinning}
+ * check the skinner against the client's own {@code applyTransformations}.
+ *
+ * <p>The frame index the plugin is handed at draw time is an index into the <em>live</em> sequence,
+ * because the client plays live sequence N even when the plugin sets it as a retro id. A 2005 clip
+ * has its own, usually smaller, frame count, so {@link #resample} maps one onto the other here
+ * rather than at runtime - which is why nothing in {@code src/main} has to know where a clip came
+ * from.
+ *
+ * <p>Run with {@code ./gradlew generateRetroAssets}. Dev tooling: reads caches outside
+ * {@code .runelite} and prints to the console, neither of which the shipped plugin does.
+ */
+public class RetroAssetGenerator
+{
+	private static final String CACHE_DIR_PROPERTY = "retronpcswapper.cacheDir";
+	private static final String RETRO_DIR_PROPERTY = "retronpcswapper.retroDir";
+	private static final String RETRO_CACHE_DIR = "retrocache/2005cache";
+
+	/** Index 1 of the RS2 cache holds models. */
+	private static final int RETRO_MODEL_INDEX = 1;
+
+	private static final Path OUTPUT_PATH =
+		Paths.get("src/main/resources/com/retronpcswapper/retro-assets.dat");
+
+	/**
+	 * What to bundle. Each model id becomes its own bundle mesh; an NPC built from parts has them
+	 * merged at runtime. A body mesh named by several specs is decoded and stored once.
+	 */
+	private static final List<Spec> SPECS = Arrays.asList(
+		// Not shipped for its own sake - the skeleton exists in both caches and the client can
+		// animate it, which makes it the only mesh the skinner can be checked against in game.
+		// Its clips stay live for the same reason.
+		new Spec("Skeleton", Source.LIVE, Source.LIVE, new int[]{2944}, new int[]{262, 259}),
+		new Spec("Adult dragons", Source.RETRO, Source.RETRO, new int[]{2853, 2854}, new int[]{79, 80, 89, 90, 91, 92}),
+		new Spec("Lesser demons", Source.RETRO, Source.RETRO, new int[]{2943}, new int[]{63, 64, 65, 66, 67, 69}),
+		new Spec("Greater and black demons", Source.RETRO, Source.RETRO, new int[]{2942}, new int[]{63, 64, 65, 66, 67, 68, 69}),
+		// The imp mesh survived the 2006 update untouched - only its frames were re-authored. The
+		// geometry still comes from 2005, because identical geometry is no guarantee of an identical
+		// rig, and it is the vertex groups that have to match the 2005 framemap.
+		new Spec("Imps", Source.RETRO, Source.RETRO, new int[]{2887}, new int[]{168, 169, 170, 171, 172}),
+		// Mesh 2998 drifted rather than being replaced - 250 verts became 252 - so compareRetroModels
+		// calls it REPLACED on a magnitude it should not. The 2005 copy is taken anyway, and it also
+		// drops the live-only color indices 53 and 70, which no 2005 recolor pair names and which
+		// would otherwise stay grey on the body.
+		new Spec("Baby dragons", Source.RETRO, Source.RETRO, new int[]{2998}, new int[]{21, 25, 26, 27, 28}),
+		// The giant family is one 2005 body plus a variant head, so 2870 is decoded once and shared.
+		// Clips stay LIVE: sequences 127-131 all resolve to framemap 302 and reach 100/100/100/83/95%
+		// against the merged mesh, nowhere near the 47-68% that marks a re-authored rig - and 2005 and
+		// live 2870 report the same 31 vertex groups over the same [0..34] range.
+		new Spec("Hill giants", Source.RETRO, Source.LIVE, new int[]{2870, 2862}, new int[]{127, 128, 129, 130, 131}),
+		new Spec("Fire giants", Source.RETRO, Source.LIVE, new int[]{2870, 2864, 4991, 4990}, new int[]{127, 128, 129, 130, 131}),
+		new Spec("Ice giants", Source.RETRO, Source.LIVE, new int[]{2870, 2868}, new int[]{127, 128, 129, 130, 131}),
+		new Spec("Moss giants", Source.RETRO, Source.LIVE, new int[]{2870, 2865, 4990}, new int[]{127, 128, 129, 130, 131}),
+		new Spec("Cyclopes", Source.RETRO, Source.LIVE, new int[]{2870, 2867}, new int[]{127, 128, 129, 130, 131}),
+		// Guards are the first subject needing 2005 clips for a reason other than re-authored frames:
+		// the human meshes are byte-identical in both caches but their vertex groups were RENUMBERED.
+		// 2005 bindings all sit in [0..34]; live framemap 0 is a 218-group rig. Live clips would drive
+		// the right geometry off the wrong bones.
+		new Spec("Guards", Source.RETRO, Source.RETRO,
+			// 550 is the battleaxe the Falador axe guard carries in place of sword 519
+			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541, 550},
+			// 386 sword stab and 1156 shield block are what a guard actually plays in a fight;
+			// 422/423/424 are the unarmed set. All are classic ids the live game still uses, so they
+			// need the 2005 frames rather than any interception. 1156 was once left out as
+			// undecodable, which was a truncated seq.dat rather than anything about the sequence - it
+			// ships like the rest now, and its 17 frames resolve to rig 100083 with the others.
+			new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156})
+	);
+
+	private enum Source
+	{
+		LIVE,
+		RETRO
+	}
+
+	public static void main(String[] args) throws IOException
+	{
+		File liveDir = resolveLiveCacheDir();
+		if (liveDir == null)
+		{
+			System.err.println("Could not find the live OSRS cache; pass one with -PcacheDir=<path>");
+			System.exit(1);
+			return;
+		}
+
+		File retroDir = resolveRetroCacheDir();
+		RetroCacheReader retro = new RetroCacheReader(retroDir);
+		if (!retro.init())
+		{
+			System.err.println("Could not read the 2005 cache at " + retroDir.getAbsolutePath()
+				+ " - it is untracked, so copy it in before running this.");
+			System.exit(1);
+			return;
+		}
+
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+
+			RetroAssetBundle bundle = build(store, retro);
+			write(bundle);
+		}
+		finally
+		{
+			retro.close();
+		}
+	}
+
+	static RetroAssetBundle build(Store store, RetroCacheReader retro) throws IOException
+	{
+		Map<Integer, RetroMesh> meshes = new LinkedHashMap<>();
+		Map<Integer, RetroRig> rigs = new LinkedHashMap<>();
+		Map<Integer, RetroClip> clips = new LinkedHashMap<>();
+
+		RetroFrameIndex retroFrames = null;
+		Map<Integer, RetroSeqDefinition> retroSequences = null;
+		if (SPECS.stream().anyMatch(spec -> spec.clipSource == Source.RETRO))
+		{
+			retroFrames = RetroFrameDecoder.decodeAll(retro);
+			retroSequences = decodeRetroSequences(retro);
+			System.out.println("2005 animations: " + retroFrames.getFrameCount() + " frames in "
+				+ retroFrames.getGroups().size() + " groups, " + retroSequences.size() + " sequences");
+		}
+
+		// Which spec first claimed a shared id, so a second spec asking for it from the other cache
+		// is caught here rather than silently taking whichever was written last
+		Map<Integer, Spec> meshOwners = new LinkedHashMap<>();
+		Map<Integer, Spec> clipOwners = new LinkedHashMap<>();
+		boolean complete = true;
+
+		for (Spec spec : SPECS)
+		{
+			System.out.println(spec.label);
+
+			for (int modelId : spec.modelIds)
+			{
+				Spec owner = meshOwners.get(modelId);
+				if (owner != null)
+				{
+					if (owner.source != spec.source)
+					{
+						System.err.println("  model " + modelId + " is claimed by " + owner.label
+							+ " from the " + owner.source + " cache and by " + spec.label
+							+ " from the " + spec.source + " cache");
+						complete = false;
+					}
+					System.out.println("  mesh " + modelId + "  (shared with " + owner.label + ")");
+					continue;
+				}
+
+				ModelDefinition part = spec.source == Source.RETRO
+					? decodeRetroModel(retro, modelId)
+					: decodeLiveModel(store, modelId);
+
+				if (part == null)
+				{
+					System.err.println("  " + spec.label + ": model " + modelId + " could not be decoded");
+					complete = false;
+					continue;
+				}
+
+				RetroMesh mesh = toMesh(modelId, part);
+				meshes.put(modelId, mesh);
+				meshOwners.put(modelId, spec);
+
+				System.out.println("  mesh " + modelId
+					+ "  verts=" + mesh.getVerticesCount()
+					+ " faces=" + mesh.getFaceCount()
+					+ " rigged=" + mesh.isRigged());
+			}
+
+			// The renderer addresses a face's texture triangle as a byte, and 255 is the value that
+			// means "no triangle", so a merged NPC can carry 254 of them at most. Checked here
+			// rather than at the merge, which runs per spawn on the client thread and could only
+			// degrade the mapping it was asked to preserve.
+			int triangles = 0;
+			for (int modelId : spec.modelIds)
+			{
+				RetroMesh mesh = meshes.get(modelId);
+				triangles += mesh == null ? 0 : mesh.getTextureTriangleCount();
+			}
+			if (triangles >= 0xFF)
+			{
+				System.err.println("  " + spec.label + " merges to " + triangles
+					+ " texture triangles, past the 254 a face index can name");
+				complete = false;
+			}
+			if (triangles > 0)
+			{
+				System.out.println("  texture triangles: " + triangles);
+			}
+
+			for (int sequenceId : spec.sequenceIds)
+			{
+				Spec owner = clipOwners.get(sequenceId);
+				if (owner != null)
+				{
+					if (owner.clipSource != spec.clipSource)
+					{
+						System.err.println("  sequence " + sequenceId + " is claimed by " + owner.label
+							+ " from the " + owner.clipSource + " cache and by " + spec.label
+							+ " from the " + spec.clipSource + " cache");
+						complete = false;
+					}
+					continue;
+				}
+
+				RetroClip clip = spec.clipSource == Source.RETRO
+					? buildRetroClip(store, sequenceId, retroFrames, retroSequences, rigs)
+					: buildClip(store, sequenceId, rigs);
+
+				if (clip == null)
+				{
+					System.err.println("  sequence " + sequenceId + " could not be decoded");
+					complete = false;
+					continue;
+				}
+
+				clips.put(sequenceId, clip);
+				clipOwners.put(sequenceId, spec);
+				System.out.println("  clip " + sequenceId + "  frames=" + clip.getFrameCount()
+					+ " rig=" + clip.getRigId()
+					+ (spec.clipSource == Source.RETRO
+						? "  (2005, from " + retroSequences.get(sequenceId).getFrameIds().length
+							+ " source frames)"
+						: ""));
+			}
+		}
+
+		// buildInjected refuses a partial part set rather than drawing a headless NPC, so a bundle
+		// missing one head would silently disable a whole category at runtime. Catch it here.
+		if (!complete)
+		{
+			throw new IOException("The bundle is incomplete; see the errors above");
+		}
+
+		return new RetroAssetBundle(meshes, rigs, clips);
+	}
+
+	/** Opens {@link #toMesh} to RetroAssetGeneratorTest, which checks it against legacyToMesh. */
+	static RetroMesh toMeshForTest(int meshId, ModelDefinition part)
+	{
+		return toMesh(meshId, part);
+	}
+
+	/**
+	 * Converts one decoded model into the bundle mesh form.
+	 *
+	 * <p>Parts are stored individually, under their own model ids, and merged at runtime by
+	 * {@link com.retronpcswapper.inject.RetroMeshMerger}. Merging here instead would have to store
+	 * the result under one part id, which cannot express an NPC family that shares a body mesh and
+	 * differs only by head - every variant would collide on the same key.
+	 */
+	private static RetroMesh toMesh(int meshId, ModelDefinition part)
+	{
+		part.computeAnimationTables();
+
+		float[] vx = new float[part.vertexCount];
+		float[] vy = new float[part.vertexCount];
+		float[] vz = new float[part.vertexCount];
+		for (int v = 0; v < part.vertexCount; v++)
+		{
+			vx[v] = part.vertexX[v];
+			vy[v] = part.vertexY[v];
+			vz[v] = part.vertexZ[v];
+		}
+
+		int[][] partGroups = part.getVertexGroups();
+		int[][] vertexGroups = new int[partGroups == null ? 0 : partGroups.length][];
+		for (int group = 0; group < vertexGroups.length; group++)
+		{
+			int[] members = partGroups[group];
+			vertexGroups[group] = members == null ? new int[0] : members.clone();
+		}
+
+		checkTextureMapping(meshId, part);
+
+		return new RetroMesh(meshId, part.priority, vx, vy, vz,
+			part.faceIndices1.clone(), part.faceIndices2.clone(), part.faceIndices3.clone(),
+			part.faceColors.clone(),
+			part.faceRenderTypes == null ? null : part.faceRenderTypes.clone(),
+			part.faceTransparencies == null ? null : part.faceTransparencies.clone(),
+			part.faceRenderPriorities == null ? null : part.faceRenderPriorities.clone(),
+			part.faceTextures == null ? null : part.faceTextures.clone(),
+			part.textureCoords == null ? null : part.textureCoords.clone(),
+			vertexIndices(part.texIndices1), vertexIndices(part.texIndices2),
+			vertexIndices(part.texIndices3),
+			vertexGroups);
+	}
+
+	/**
+	 * Texture triangle corners as vertex indices. The cache reads them with
+	 * {@code readUnsignedShort} into a {@code short[]}, so anything past 32767 comes back negative
+	 * and has to be unmasked - the loader's own comparisons do the same.
+	 */
+	private static int[] vertexIndices(short[] corners)
+	{
+		if (corners == null)
+		{
+			return null;
+		}
+
+		int[] indices = new int[corners.length];
+		for (int i = 0; i < corners.length; i++)
+		{
+			indices[i] = corners[i] & 0xFFFF;
+		}
+		return indices;
+	}
+
+	/**
+	 * Refuses geometry whose texture mapping the injected path cannot reproduce.
+	 *
+	 * <p>{@link RetroModel} carries the per-face triangle index and the triangles, which is what
+	 * simple projection needs and all the 2005 format ever produces - {@code decodeOldFormat} sets
+	 * every render type to 0. A live-sourced mesh can name the later types, and drawing one of
+	 * those as if it were simple projection is the same silent wrongness this whole change is
+	 * fixing, so it stops the build instead.
+	 */
+	private static void checkTextureMapping(int meshId, ModelDefinition part)
+	{
+		if (part.textureRenderTypes == null)
+		{
+			return;
+		}
+
+		for (int triangle = 0; triangle < part.textureRenderTypes.length; triangle++)
+		{
+			if (part.textureRenderTypes[triangle] != 0)
+			{
+				throw new IllegalStateException("Model " + meshId + " texture triangle " + triangle
+					+ " uses render type " + part.textureRenderTypes[triangle]
+					+ "; only simple projection (0) can be injected");
+			}
+		}
+	}
+
+	/**
+	 * The merge as it stood before it moved to {@code RetroMeshMerger}, kept so
+	 * {@code RetroAssetGeneratorTest} can check the new one against it over real cache geometry.
+	 */
+	static RetroMesh legacyToMesh(int meshId, List<ModelDefinition> parts)
+	{
+		int totalVertices = 0;
+		int totalFaces = 0;
+		int groupCount = 0;
+		boolean anyRenderTypes = false;
+		boolean anyTransparencies = false;
+		boolean anyPriorities = false;
+		boolean anyTextures = false;
+
+		for (ModelDefinition part : parts)
+		{
+			part.computeAnimationTables();
+			totalVertices += part.vertexCount;
+			totalFaces += part.faceCount;
+			int[][] groups = part.getVertexGroups();
+			if (groups != null)
+			{
+				groupCount = Math.max(groupCount, groups.length);
+			}
+			anyRenderTypes |= part.faceRenderTypes != null;
+			anyTransparencies |= part.faceTransparencies != null;
+			anyPriorities |= part.faceRenderPriorities != null;
+			anyTextures |= part.faceTextures != null;
+		}
+
+		float[] vx = new float[totalVertices];
+		float[] vy = new float[totalVertices];
+		float[] vz = new float[totalVertices];
+		int[] i1 = new int[totalFaces];
+		int[] i2 = new int[totalFaces];
+		int[] i3 = new int[totalFaces];
+		short[] colors = new short[totalFaces];
+		byte[] renderTypes = anyRenderTypes ? new byte[totalFaces] : null;
+		byte[] transparencies = anyTransparencies ? new byte[totalFaces] : null;
+		byte[] priorities = anyPriorities ? new byte[totalFaces] : null;
+		short[] textures = anyTextures ? new short[totalFaces] : null;
+
+		List<List<Integer>> groups = new ArrayList<>();
+		for (int i = 0; i < groupCount; i++)
+		{
+			groups.add(new ArrayList<>());
+		}
+
+		int vertexBase = 0;
+		int faceBase = 0;
+		for (ModelDefinition part : parts)
+		{
+			for (int v = 0; v < part.vertexCount; v++)
+			{
+				vx[vertexBase + v] = part.vertexX[v];
+				vy[vertexBase + v] = part.vertexY[v];
+				vz[vertexBase + v] = part.vertexZ[v];
+			}
+
+			for (int f = 0; f < part.faceCount; f++)
+			{
+				int face = faceBase + f;
+				i1[face] = part.faceIndices1[f] + vertexBase;
+				i2[face] = part.faceIndices2[f] + vertexBase;
+				i3[face] = part.faceIndices3[f] + vertexBase;
+				colors[face] = part.faceColors[f];
+
+				if (renderTypes != null)
+				{
+					renderTypes[face] = part.faceRenderTypes == null ? 0 : part.faceRenderTypes[f];
+				}
+				if (transparencies != null)
+				{
+					transparencies[face] = part.faceTransparencies == null ? 0 : part.faceTransparencies[f];
+				}
+				if (priorities != null)
+				{
+					priorities[face] = part.faceRenderPriorities == null
+						? part.priority : part.faceRenderPriorities[f];
+				}
+				if (textures != null)
+				{
+					textures[face] = part.faceTextures == null ? -1 : part.faceTextures[f];
+				}
+			}
+
+			int[][] partGroups = part.getVertexGroups();
+			if (partGroups != null)
+			{
+				for (int group = 0; group < partGroups.length; group++)
+				{
+					if (partGroups[group] == null)
+					{
+						continue;
+					}
+					for (int vertex : partGroups[group])
+					{
+						groups.get(group).add(vertex + vertexBase);
+					}
+				}
+			}
+
+			vertexBase += part.vertexCount;
+			faceBase += part.faceCount;
+		}
+
+		int[][] vertexGroups = new int[groupCount][];
+		for (int group = 0; group < groupCount; group++)
+		{
+			List<Integer> members = groups.get(group);
+			int[] packed = new int[members.size()];
+			for (int i = 0; i < packed.length; i++)
+			{
+				packed[i] = members.get(i);
+			}
+			vertexGroups[group] = packed;
+		}
+
+		// Frozen as it was: this exists only to prove the move to RetroMeshMerger was faithful, and
+		// it predates the texture triangles, so it declines them rather than growing a second
+		// implementation of the offsetting to check the first against
+		return new RetroMesh(meshId, parts.get(0).priority, vx, vy, vz, i1, i2, i3,
+			colors, renderTypes, transparencies, priorities, textures,
+			null, null, null, null, vertexGroups);
+	}
+
+	/**
+	 * Decodes one sequence into a clip, registering the rig it references.
+	 *
+	 * <p>A frame names its own framemap in its first two bytes, which is why the framemap has to be
+	 * loaded before the frame can be.
+	 */
+	static RetroClip buildClip(Store store, int sequenceId, Map<Integer, RetroRig> rigs)
+		throws IOException
+	{
+		SequenceDefinition sequence = loadSequence(store, sequenceId);
+		if (sequence == null || sequence.frameIDs == null || sequence.frameIDs.length == 0)
+		{
+			return null;
+		}
+
+		int frameCount = sequence.frameIDs.length;
+		int[][] transforms = new int[frameCount][];
+		int[][] dx = new int[frameCount][];
+		int[][] dy = new int[frameCount][];
+		int[][] dz = new int[frameCount][];
+
+		int rigId = -1;
+		for (int i = 0; i < frameCount; i++)
+		{
+			int packed = sequence.frameIDs[i];
+			byte[] frameData = loadFile(store, IndexType.ANIMATIONS, packed >> 16, packed & 0xFFFF);
+			if (frameData == null || frameData.length < 2)
+			{
+				transforms[i] = new int[0];
+				dx[i] = new int[0];
+				dy[i] = new int[0];
+				dz[i] = new int[0];
+				continue;
+			}
+
+			int framemapId = ((frameData[0] & 0xFF) << 8) | (frameData[1] & 0xFF);
+			FramemapDefinition framemap = loadFramemap(store, framemapId, rigs);
+			if (framemap == null)
+			{
+				return null;
+			}
+
+			if (rigId == -1)
+			{
+				rigId = framemapId;
+			}
+			else if (rigId != framemapId)
+			{
+				// Every clip this bundle carries uses one rig throughout. A sequence that switched
+				// rigs mid-animation would need a per-frame rig id, so fail loudly rather than
+				// silently animate against the wrong skeleton.
+				throw new IOException("Sequence " + sequenceId + " mixes framemaps "
+					+ rigId + " and " + framemapId + "; the clip format assumes one per clip");
+			}
+
+			FrameDefinition frame = new FrameLoader().load(framemap, packed & 0xFFFF, frameData);
+			transforms[i] = frame.indexFrameIds;
+			dx[i] = frame.translator_x;
+			dy[i] = frame.translator_y;
+			dz[i] = frame.translator_z;
+		}
+
+		return rigId == -1 ? null : new RetroClip(sequenceId, rigId, transforms, dx, dy, dz);
+	}
+
+	/**
+	 * Builds a clip from the 2005 frames, resampled onto the live sequence's frame count.
+	 *
+	 * <p>A 2005 sequence names its frames by a flat id that says nothing about where they live, so
+	 * the file - which is also what owns the rig - comes from {@link RetroFrameIndex}.
+	 */
+	static RetroClip buildRetroClip(Store store, int sequenceId, RetroFrameIndex frames,
+		Map<Integer, RetroSeqDefinition> sequences, Map<Integer, RetroRig> rigs) throws IOException
+	{
+		RetroSeqDefinition retroSeq = sequences.get(sequenceId);
+		if (retroSeq == null || retroSeq.getFrameIds() == null || retroSeq.getFrameIds().length == 0)
+		{
+			return null;
+		}
+
+		int[] retroFrameIds = retroSeq.getFrameIds();
+
+		// The client plays the live sequence at this id, so its frame count is what the plugin will
+		// be handed at draw time. Without one there is nothing to resample onto.
+		SequenceDefinition liveSequence = loadSequence(store, sequenceId);
+		int liveCount = liveSequence == null || liveSequence.frameIDs == null
+			? retroFrameIds.length
+			: liveSequence.frameIDs.length;
+
+		int rigId = -1;
+		RetroFramemapDefinition rig = null;
+		for (int retroFrameId : retroFrameIds)
+		{
+			RetroFramemapDefinition framemap = frames.getFramemapForFrame(retroFrameId);
+			if (framemap == null)
+			{
+				System.err.println("  sequence " + sequenceId + ": 2005 frame " + retroFrameId
+					+ " is in no index 2 file");
+				return null;
+			}
+
+			if (rigId == -1)
+			{
+				rigId = framemap.getId();
+				rig = framemap;
+			}
+			else if (rigId != framemap.getId() && !sameRig(rig, framemap))
+			{
+				// Every clip this bundle carries uses one rig throughout. Two files can hold the
+				// same skeleton, which is harmless; genuinely different ones are not.
+				throw new IOException("2005 sequence " + sequenceId + " mixes framemaps "
+					+ rigId + " and " + framemap.getId() + "; the clip format assumes one per clip");
+			}
+		}
+
+		rigs.putIfAbsent(rigId, new RetroRig(rigId, rig.getTypes(), rig.getGroups()));
+
+		int[] mapping = resample(
+			liveSequence == null ? null : liveSequence.frameLengths,
+			retroSeq.getFrameLengths(),
+			liveCount,
+			retroFrameIds.length);
+
+		int[][] transforms = new int[liveCount][];
+		int[][] dx = new int[liveCount][];
+		int[][] dy = new int[liveCount][];
+		int[][] dz = new int[liveCount][];
+
+		for (int i = 0; i < liveCount; i++)
+		{
+			RetroFrameDefinition frame = frames.getFrame(retroFrameIds[mapping[i]]);
+			transforms[i] = frame.getIndexFrameIds();
+			dx[i] = frame.getTranslatorX();
+			dy[i] = frame.getTranslatorY();
+			dz[i] = frame.getTranslatorZ();
+		}
+
+		return new RetroClip(sequenceId, rigId, transforms, dx, dy, dz);
+	}
+
+	private static boolean sameRig(RetroFramemapDefinition a, RetroFramemapDefinition b)
+	{
+		if (!Arrays.equals(a.getTypes(), b.getTypes()))
+		{
+			return false;
+		}
+
+		return Arrays.deepEquals(a.getGroups(), b.getGroups());
+	}
+
+	/**
+	 * Maps each live frame onto the 2005 frame at the same point in the cycle, so a 2005 clip plays
+	 * over the live sequence's duration however many frames it actually has.
+	 *
+	 * <p>Three cases, in the order they are tried. A clip that ends on a hold - see
+	 * {@link #endsOnAHold}, which is where the death animations land - plays once, a frame at a
+	 * time, and holds its last pose for whatever is left. Otherwise it is weighted by duration when
+	 * <em>every</em> frame on both sides declares one, and proportional by index when any does not,
+	 * which is the same answer when frames are uniform.
+	 *
+	 * <p>Requiring every frame rather than a positive total is load-bearing: partial duration data
+	 * is absent data, and one non-zero entry among zeros would otherwise take the weighted path
+	 * over a timeline where most frames occupy no time at all.
+	 */
+	static int[] resample(int[] liveLengths, int[] retroLengths, int liveCount, int retroCount)
+	{
+		int[] mapping = new int[liveCount];
+
+		if (endsOnAHold(retroLengths, retroCount))
+		{
+			// A play-once clip: run it a frame at a time and hold the last pose for whatever is
+			// left. Spreading it over the whole live sequence instead makes every pose linger,
+			// because the modern animation takes far longer than the 2005 one it replaced - a
+			// baby dragon's death is 9 retro frames against 36 live ones, so each 2005 pose would
+			// be held about 16 ticks where the guard's correct-looking death holds each for 5.
+			for (int i = 0; i < liveCount; i++)
+			{
+				mapping[i] = Math.min(i, retroCount - 1);
+			}
+			return mapping;
+		}
+
+		long liveTotal = total(liveLengths, liveCount);
+		long retroTotal = total(retroLengths, retroCount);
+
+		if (liveTotal <= 0 || retroTotal <= 0
+			|| !everyFrameHasADuration(liveLengths, liveCount)
+			|| !everyFrameHasADuration(retroLengths, retroCount))
+		{
+			for (int i = 0; i < liveCount; i++)
+			{
+				mapping[i] = (int) ((long) i * retroCount / liveCount);
+			}
+			return mapping;
+		}
+
+		long elapsed = 0;
+		for (int i = 0; i < liveCount; i++)
+		{
+			// The midpoint of the live frame, so a frame is matched to the pose it spends most of
+			// its time nearest rather than to whatever happens to start at its leading edge
+			long midpoint = 2 * elapsed + liveLengths[i];
+			long target = midpoint * retroTotal / (2 * liveTotal);
+
+			long retroElapsed = 0;
+			int chosen = retroCount - 1;
+			for (int j = 0; j < retroCount; j++)
+			{
+				retroElapsed += retroLengths[j];
+				if (target < retroElapsed)
+				{
+					chosen = j;
+					break;
+				}
+			}
+
+			mapping[i] = chosen;
+			elapsed += liveLengths[i];
+		}
+
+		return mapping;
+	}
+
+	/**
+	 * Whether a clip ends by holding its last frame far longer than any other - the shape of a
+	 * death, which plays once and then leaves a corpse.
+	 *
+	 * <p>2005 death sequences declare it unmistakably, as no duration at all for the frames that do
+	 * the dying and then something like 20000 on the last. That terminal hold is the only marker in
+	 * the data that separates a play-once animation from a cycle, and it is the same field that,
+	 * read as an ordinary duration, once collapsed every death onto its final frame.
+	 */
+	private static boolean endsOnAHold(int[] lengths, int count)
+	{
+		if (lengths == null || lengths.length < count || count < 2)
+		{
+			return false;
+		}
+
+		int last = lengths[count - 1];
+		if (last <= 0)
+		{
+			return false;
+		}
+
+		int longestOther = 0;
+		for (int i = 0; i < count - 1; i++)
+		{
+			longestOther = Math.max(longestOther, lengths[i]);
+		}
+
+		// Ten times the longest frame that actually animates. A clip whose frames are all of a
+		// similar length is a cycle, however long its last frame happens to be.
+		return last >= 10L * Math.max(longestOther, 1);
+	}
+
+	/**
+	 * Whether every frame declares a duration, which is what makes weighting by duration meaningful.
+	 * A single zero means the timeline has frames that occupy no time, and any weighted mapping
+	 * skips straight past them.
+	 */
+	private static boolean everyFrameHasADuration(int[] lengths, int count)
+	{
+		if (lengths == null || lengths.length < count)
+		{
+			return false;
+		}
+
+		for (int i = 0; i < count; i++)
+		{
+			if (lengths[i] <= 0)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private static long total(int[] lengths, int count)
+	{
+		if (lengths == null || lengths.length < count)
+		{
+			return 0;
+		}
+
+		long sum = 0;
+		for (int i = 0; i < count; i++)
+		{
+			if (lengths[i] < 0)
+			{
+				return 0;
+			}
+			sum += lengths[i];
+		}
+		return sum;
+	}
+
+	static Map<Integer, RetroSeqDefinition> decodeRetroSequences(RetroCacheReader retro)
+	{
+		Map<String, byte[]> config = retro.readArchive(retro.readFile(0, 2));
+		byte[] seqDat = config.get(String.valueOf(RetroCacheReader.hashFileName("seq.dat")));
+		byte[] seqIdx = config.get(String.valueOf(RetroCacheReader.hashFileName("seq.idx")));
+		return RetroSeqDecoder.decodeAll(seqDat, seqIdx);
+	}
+
+	private static FramemapDefinition loadFramemap(Store store, int framemapId, Map<Integer, RetroRig> rigs)
+		throws IOException
+	{
+		byte[] data = loadFile(store, IndexType.SKELETONS, framemapId, 0);
+		if (data == null)
+		{
+			return null;
+		}
+
+		FramemapDefinition framemap = new FramemapLoader().load(framemapId, data);
+		rigs.putIfAbsent(framemapId, new RetroRig(framemapId, framemap.types, framemap.frameMaps));
+		return framemap;
+	}
+
+	static SequenceDefinition loadSequence(Store store, int sequenceId) throws IOException
+	{
+		byte[] data = loadFile(store, IndexType.CONFIGS, ConfigType.SEQUENCE.getId(), sequenceId);
+		if (data == null)
+		{
+			return null;
+		}
+
+		return new SequenceLoader()
+			.configureForRevision(store.getIndex(IndexType.CONFIGS).getRevision())
+			.load(sequenceId, data);
+	}
+
+	static byte[] loadFile(Store store, IndexType indexType, int archiveId, int fileId)
+		throws IOException
+	{
+		Archive archive = store.getIndex(indexType).getArchive(archiveId);
+		if (archive == null)
+		{
+			return null;
+		}
+
+		byte[] container = store.getStorage().loadArchive(archive);
+		if (container == null)
+		{
+			return null;
+		}
+
+		if (archive.getFileData() != null && archive.getFileData().length == 1)
+		{
+			return archive.decompress(container);
+		}
+
+		ArchiveFiles files = archive.getFiles(container);
+		FSFile file = files.findFile(fileId);
+		return file == null ? null : file.getContents();
+	}
+
+	private static ModelDefinition decodeLiveModel(Store store, int modelId)
+	{
+		try
+		{
+			Archive archive = store.getIndex(IndexType.MODELS).getArchive(modelId);
+			if (archive == null)
+			{
+				return null;
+			}
+			byte[] data = archive.decompress(store.getStorage().loadArchive(archive));
+			return data == null ? null : new ModelLoader().load(modelId, data);
+		}
+		catch (IOException | RuntimeException e)
+		{
+			return null;
+		}
+	}
+
+	static ModelDefinition decodeRetroModel(RetroCacheReader retro, int modelId)
+	{
+		try
+		{
+			byte[] data = gunzipIfNeeded(retro.readFile(RETRO_MODEL_INDEX, modelId));
+			return data == null ? null : new ModelLoader().load(modelId, data);
+		}
+		catch (RuntimeException e)
+		{
+			return null;
+		}
+	}
+
+	/** Some RS2 index entries are gzip wrapped and some are stored raw, so sniff rather than guess. */
+	private static byte[] gunzipIfNeeded(byte[] data)
+	{
+		if (data == null || data.length < 2 || (data[0] & 0xFF) != 0x1F || (data[1] & 0xFF) != 0x8B)
+		{
+			return data;
+		}
+
+		try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(data)))
+		{
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			byte[] buffer = new byte[8192];
+			int read;
+			while ((read = in.read(buffer)) > 0)
+			{
+				out.write(buffer, 0, read);
+			}
+			return out.toByteArray();
+		}
+		catch (IOException e)
+		{
+			return data;
+		}
+	}
+
+	private static void write(RetroAssetBundle bundle) throws IOException
+	{
+		Files.createDirectories(OUTPUT_PATH.getParent());
+		try (OutputStream out = Files.newOutputStream(OUTPUT_PATH))
+		{
+			RetroAssetCodec.write(bundle, out);
+		}
+
+		System.out.println();
+		System.out.println("Wrote " + OUTPUT_PATH.toAbsolutePath()
+			+ "  (" + Files.size(OUTPUT_PATH) / 1024 + " KB, " + bundle + ")");
+	}
+
+	private static File resolveRetroCacheDir()
+	{
+		String configured = System.getProperty(RETRO_DIR_PROPERTY);
+		return configured == null || configured.isEmpty()
+			? new File(RETRO_CACHE_DIR)
+			: new File(configured);
+	}
+
+	static File resolveLiveCacheDir()
+	{
+		String configured = System.getProperty(CACHE_DIR_PROPERTY);
+		if (configured != null && !configured.isEmpty())
+		{
+			File dir = new File(configured);
+			return dir.isDirectory() ? dir : null;
+		}
+
+		File dir = new File(System.getProperty("user.home"), ".runelite/jagexcache/oldschool/LIVE");
+		return dir.isDirectory() ? dir : null;
+	}
+
+	/** One bundled entry: where its geometry comes from, and which sequences drive it. */
+	private static final class Spec
+	{
+		private final String label;
+		private final Source source;
+		private final Source clipSource;
+		private final int[] modelIds;
+		private final int[] sequenceIds;
+
+		private Spec(String label, Source source, Source clipSource, int[] modelIds, int[] sequenceIds)
+		{
+			this.label = label;
+			this.source = source;
+			this.clipSource = clipSource;
+			this.modelIds = modelIds;
+			this.sequenceIds = sequenceIds;
+		}
+	}
+}

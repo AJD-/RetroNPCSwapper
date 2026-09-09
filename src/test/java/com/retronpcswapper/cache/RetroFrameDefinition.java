@@ -22,28 +22,28 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.retronpcswapper;
+package com.retronpcswapper.cache;
+
+import lombok.Data;
 
 /**
- * NPC classification category for Retro NPC Swapper config toggles.
+ * One 2005 animation frame, already flattened into the shape {@code RetroClip} stores and
+ * {@code RetroSkinner} replays: a list of framemap transform indices plus a delta per axis.
+ *
+ * <p>That flattening is not a formatting choice. It carries the pivot back-fill from
+ * {@code FrameLoader.load} - a rotate/translate op is preceded by a zero op on the nearest earlier
+ * type-0 transform, so the pivot is reset rather than inherited from whatever moved last.
  */
-public enum RetroNpcCategory
+@Data
+public class RetroFrameDefinition
 {
-	LESSER_DEMONS,
-	GREATER_DEMONS,
-	BLACK_DEMONS,
-	ADULT_DRAGONS,
-	BABY_DRAGONS,
-	GOBLINS,
-	GUARDS,
-	IMPS,
-	SKELETONS,
-	ZOMBIES,
-	GHOSTS,
-	HILL_GIANTS,
-	FIRE_GIANTS,
-	ICE_GIANTS,
-	MOSS_GIANTS,
-	CYCLOPS,
-	CHICKENS
+	/** Flat 16-bit id, unique across the whole of index 2. */
+	private final int frameId;
+
+	/** Which framemap transforms this frame touches, in application order. */
+	private final int[] indexFrameIds;
+
+	private final int[] translatorX;
+	private final int[] translatorY;
+	private final int[] translatorZ;
 }

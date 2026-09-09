@@ -22,28 +22,26 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.retronpcswapper;
+package com.retronpcswapper.cache;
+
+import java.util.List;
+import lombok.Data;
 
 /**
- * NPC classification category for Retro NPC Swapper config toggles.
+ * One file of 2005 cache index 2: a framemap and every frame authored against it.
+ *
+ * <p>Index 2 is not one frame per file. Its 411 files hold 12,597 frames between them, and a file
+ * is the unit that owns a skeleton - which is why a sequence's frames all live in one file, and why
+ * the frame id alone is enough to find the rig it belongs to.
  */
-public enum RetroNpcCategory
+@Data
+public class RetroFrameGroup
 {
-	LESSER_DEMONS,
-	GREATER_DEMONS,
-	BLACK_DEMONS,
-	ADULT_DRAGONS,
-	BABY_DRAGONS,
-	GOBLINS,
-	GUARDS,
-	IMPS,
-	SKELETONS,
-	ZOMBIES,
-	GHOSTS,
-	HILL_GIANTS,
-	FIRE_GIANTS,
-	ICE_GIANTS,
-	MOSS_GIANTS,
-	CYCLOPS,
-	CHICKENS
+	/** File id within index 2. */
+	private final int fileId;
+
+	private final RetroFramemapDefinition framemap;
+
+	/** In storage order, which is not id order. */
+	private final List<RetroFrameDefinition> frames;
 }

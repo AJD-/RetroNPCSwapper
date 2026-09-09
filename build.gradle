@@ -31,10 +31,14 @@ dependencies {
 	testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
 
 	testImplementation 'junit:junit:4.12'
+	// Test-only. The config migrations are the one piece of behaviour with no cache or client to
+	// drive it from - they are pure ConfigManager calls - so a mock is the only way to cover them.
+	testImplementation 'org.mockito:mockito-core:4.11.0'
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
 	testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
-	// Dev tooling only - decodes the live OSRS cache for ModernNpcDumper. Never shipped: the
-	// plugin jar is built from the main sourceSet, which does not reference it.
+	// Dev tooling only - decodes the live OSRS cache for the generators and dumpers. Not in the
+	// Hub jar, which is built from the main sourceSet and does not reference it; the local
+	// shadowJar dev launcher does bundle it, along with the rest of the test sourceSet.
 	testImplementation(group: 'net.runelite', name:'cache', version: runeLiteVersion) {
 		// The client already brings logback; without this every run warns about two bindings
 		exclude group: 'org.slf4j', module: 'slf4j-simple'
@@ -59,13 +63,19 @@ tasks.register('run', JavaExec) {
 			"--add-exports=java.desktop/sun.awt=ALL-UNNAMED",
 			"--add-exports=java.desktop/sun.font=ALL-UNNAMED",
 			"-ea"
-	args "--developer-mode", "--debug"
+	args "--developer-mode", "--debug", "--disable-telemetry"
 }
 
 tasks.register('generateNpcMappings', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = 'com.retronpcswapper.cache.NpcMappingGenerator'
 	workingDir = rootDir
+
+	// The generator takes the 2005 cache as its first argument, so -PretroDir goes through args
+	// rather than a system property like the other tasks
+	if (project.hasProperty('retroDir')) {
+		args project.property('retroDir').toString()
+	}
 }
 
 // Prints NPC definitions from the live OSRS cache, eg:
@@ -101,6 +111,58 @@ tasks.register('compareRetroModels', JavaExec) {
 	}
 	if (project.hasProperty('cacheDir')) {
 		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+	if (project.hasProperty('retroDir')) {
+		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
+	}
+}
+
+// Gate for injecting 2005 geometry that has no live id: checks that the vertex groups baked into
+// the retro mesh are addressed by the framemaps the live sequences name, eg:
+//   ./gradlew verifyRetroRigs
+//   ./gradlew verifyRetroRigs -Pmodels=2853,2854 -Pseqs=79,90
+tasks.register('verifyRetroRigs', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.retronpcswapper.cache.RetroRigVerifier'
+	workingDir = rootDir
+
+	if (project.hasProperty('models')) {
+		systemProperty 'retronpcswapper.models', project.property('models')
+	}
+	if (project.hasProperty('seqs')) {
+		systemProperty 'retronpcswapper.seqs', project.property('seqs')
+	}
+	if (project.hasProperty('cacheDir')) {
+		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+	if (project.hasProperty('retroDir')) {
+		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
+	}
+	if (project.hasProperty('scanrig')) {
+		systemProperty 'retronpcswapper.scanrig', project.property('scanrig')
+	}
+	if (project.hasProperty('probeframes')) {
+		systemProperty 'retronpcswapper.probeframes', 'true'
+	}
+	if (project.hasProperty('findclips')) {
+		systemProperty 'retronpcswapper.findclips', project.property('findclips')
+	}
+}
+
+// Builds the shipped asset bundle: injected geometry plus the rigs and clips that animate it.
+// Meshes and clips each come from whichever cache still holds a usable copy - see SPECS in
+// RetroAssetGenerator. Only the skeleton and the giant family stay on live clips.
+//   ./gradlew generateRetroAssets
+tasks.register('generateRetroAssets', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.retronpcswapper.cache.RetroAssetGenerator'
+	workingDir = rootDir
+
+	if (project.hasProperty('cacheDir')) {
+		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+	if (project.hasProperty('retroDir')) {
+		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
 	}
 }
 

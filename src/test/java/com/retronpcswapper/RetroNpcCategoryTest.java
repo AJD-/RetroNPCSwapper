@@ -46,18 +46,25 @@ public class RetroNpcCategoryTest
 	{
 		// Load mappings from the bundled JSON resource, exactly as the plugin does
 		// at startup - no local 2005 cache needed to run this suite.
+		RetroNpcMapping.load(loadCommittedEntries());
+	}
+
+	/**
+	 * Reads the shipped resource the way the plugin does at startup.
+	 */
+	private static List<RetroNpcMappingEntry> loadCommittedEntries() throws Exception
+	{
 		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("npc-mappings.json"))
 		{
 			assertNotNull("npc-mappings.json resource missing - run ./gradlew generateNpcMappings", in);
-			List<RetroNpcMappingEntry> entries = new Gson().fromJson(
+			return new Gson().fromJson(
 				new InputStreamReader(in, StandardCharsets.UTF_8),
 				new TypeToken<List<RetroNpcMappingEntry>>() {}.getType());
-			RetroNpcMapping.load(entries);
 		}
 	}
 
 	/**
-	 * Lesser demons stay disabled permanently, and not for the reason the code used to give. The
+	 * Lesser demons need injected geometry, and not for the reason the code used to give. The
 	 * 2005 sequences survive under DEMON_* gameval names; it is the mesh that is gone. Model 2943
 	 * resolves in the live cache but holds a 1000-vertex asset where the 2005 lesser demon is 428,
 	 * and a scan of all 61874 live models finds the retro mesh at no id - the 29 August 2006
@@ -279,20 +286,32 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testGuardsCategory()
 	{
-		RetroNpcData guardByName = RetroNpcMapping.get(0, "Guard");
-		assertNotNull("Guard by name must exist", guardByName);
-		assertEquals(RetroNpcCategory.GUARDS, guardByName.getCategory());
-		assertEquals(808, guardByName.getIdleAnimationId());
-		assertEquals(819, guardByName.getWalkAnimationId());
-		assertEquals(422, guardByName.getAttackAnimationId());
-		assertEquals(424, guardByName.getDefendAnimationId());
-		assertEquals(836, guardByName.getDeathAnimationId());
+		// By id, not by name: "Guard" alone no longer resolves, see ID_ONLY_CATEGORIES
+		RetroNpcData guard = RetroNpcMapping.get(NpcID.GUARD1, "Guard");
+		assertNotNull("the registered town guard must resolve", guard);
+		assertEquals(RetroNpcCategory.GUARDS, guard.getCategory());
+
+		// Nine parts of 2005 human kit. Head 294, arms 151 and hands 254 no longer resolve to their
+		// 2005 geometry in the live cache, which is what makes this category injection-only.
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			guard.getRetroModelIds());
+		assertArrayEquals(guard.getRetroModelIds(), guard.getInjectedModelIds());
+
+		assertEquals(808, guard.getIdleAnimationId());
+		assertEquals(819, guard.getWalkAnimationId());
+		assertEquals(422, guard.getAttackAnimationId());
+		assertEquals(424, guard.getDefendAnimationId());
+		assertEquals(836, guard.getDeathAnimationId());
 
 		// Verify Varrock/Falador/Ardougne Guard explicit ID mappings
 		int[] guardIds = {
 			NpcID.BIM_FAI_VARROCK_GUARD02, NpcID.BIM_FAI_VARROCK_GUARD02_F, NpcID.FAI_VARROCK_GUARD02,
 			NpcID.GUARD1_VARIANT01, NpcID.ARDOUGNE_GUARD_VARIANT01,
-			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD4_F};
+			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD3_F,
+			// The base row of each family. The list above enumerates the _F and _VARIANT
+			// derivatives of exactly these NPCs and used to skip the NPCs themselves.
+			NpcID.GUARD1, NpcID.ARDOUGNE_GUARD,
+			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD3};
 		for (int id : guardIds)
 		{
 			RetroNpcData guardById = RetroNpcMapping.get(id, "Guard");
@@ -301,15 +320,98 @@ public class RetroNpcCategoryTest
 		}
 
 		// Verify modern guard animations
-		assertTrue(guardByName.isAttackAnimation(422));
-		assertTrue(guardByName.isAttackAnimation(423));
-		assertTrue(guardByName.isDefendAnimation(424));
-		assertTrue(guardByName.isDeathAnimation(836));
+		assertTrue(guard.isAttackAnimation(422));
+		assertTrue(guard.isAttackAnimation(423));
+		assertTrue(guard.isDefendAnimation(424));
+		assertTrue(guard.isDeathAnimation(836));
+		// A guard fights with a sword and shield, so it blocks with HUMAN_SHIELD_DEFENCE. That is
+		// shipped as its own 2005 clip now and must pass straight through: intercepting it onto
+		// the unarmed block 424 is what left a guard blocking with no shield raise, and nothing
+		// used to fail if the interception came back.
+		assertFalse("1156 ships as a 2005 clip and must not be rewritten onto the unarmed block",
+			guard.isDefendAnimation(1156));
+
+		// Falador's bow and crossbow guards are called "Guard" too, so the name table would hand
+		// them the sword-and-shield kit and take the bow away. The tell is the weapon model, not
+		// the stance - 3272, 3273 and 3274 carry bow 563 in the ordinary 808 idle.
+		for (int excluded : new int[]{
+			NpcID.FAI_FALADOR_GUARD2, NpcID.FAI_FALADOR_GUARD2_F, NpcID.FAI_FALADOR_GUARD4,
+			NpcID.FAI_FALADOR_GUARD5, NpcID.FAI_FALADOR_GUARD6,
+			NpcID.FAI_VARROCK_GUARD})
+		{
+			assertNull("guard " + excluded + " must not be swapped by id",
+				RetroNpcMapping.get(excluded, null));
+			assertNull("guard " + excluded + " must not be swapped by name either",
+				RetroNpcMapping.get(excluded, "Guard"));
+		}
+
+		// The guards either side of them in the same family are untouched
+		assertNotNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1, "Guard"));
+		assertNotNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3, "Guard"));
+		assertNotNull("the melee female guards carry 23179, not a bow",
+			RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3_F, "Guard"));
+
+		// Falador's axe guard is the same character carrying different equipment, so it wears the
+		// guard kit with 2005 battleaxe 550 where the rest carry sword 519. Derived after the
+		// recolor graft, so losing the 2005 colors here is the thing to watch.
+		RetroNpcData axeGuard = RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3, "Guard");
+		assertNotNull(axeGuard);
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 550, 541},
+			axeGuard.getRetroModelIds());
+		assertArrayEquals(axeGuard.getRetroModelIds(), axeGuard.getInjectedModelIds());
+		assertEquals(RetroNpcCategory.GUARDS, axeGuard.getCategory());
+		assertTrue("the axe guard must inherit the guard recolors", axeGuard.hasRecolors());
+		assertEquals(guard.getDefendAnimationId(), axeGuard.getDefendAnimationId());
+
+		// Female guards are recent content with no 2005 counterpart, so they wear the male kit -
+		// and the female of the axe guard gets the axe, not the sword
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 550, 541},
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3_F, "Guard")).getRetroModelIds());
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1_F, "Guard")).getRetroModelIds());
+
+		// The female bow guard is replaced by the male one, taken from the live cache: the archer
+		// guard is 2006 content unchanged since, and head 9458 and arms 9450 have no 2005 original.
+		// These are NPC 3272's own parts, so she must take the cache-backed path - the bundle's
+		// 2005 clips would drive live-rigged meshes off the wrong joints.
+		RetroNpcData bowGuard = RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD4_F, "Guard");
+		assertNotNull("the female bow guard is swapped, not excluded", bowGuard);
+		assertArrayEquals(new int[]{233, 250, 9458, 9450, 176, 28285, 185, 563, 215},
+			bowGuard.getRetroModelIds());
+		assertTrue("she must be built from the live cache, not the bundle",
+			RetroNpcMapping.usesLiveGeometry(NpcID.FAI_FALADOR_GUARD4_F));
+		assertFalse("the 2005 recolors belong to the 2005 meshes, not these",
+			bowGuard.hasRecolors());
+		assertFalse("no other guard takes the live path",
+			RetroNpcMapping.usesLiveGeometry(NpcID.FAI_FALADOR_GUARD1));
+
+		// and the sword guards keep the sword
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1, "Guard")).getRetroModelIds());
+
+		// "Guard" is a job rather than a costume: 184 NPCs carry the name and only the town guard
+		// wears this kit, so the category resolves by registered id and the name alone buys
+		// nothing. Trolls, dwarves, elves, goblins and archers were all being swapped before.
+		int[] notTownGuards = {
+			NpcID.TROLL_SGUARD1, NpcID.DWARF_CITY_BLACK_GUARD1, NpcID.PRIF_GUARD1,
+			NpcID.DORGESH_GUARD1, NpcID.LATHASTRAINER2, NpcID.DEADMAN_GUARD_FALADOR_RANGE_VIS};
+		for (int id : notTownGuards)
+		{
+			assertNull("NPC " + id + " is named Guard but is not a town guard",
+				RetroNpcMapping.get(id, "Guard"));
+		}
+
+		// The Ratcatchers guards do wear the kit and were only ever reached by name, so they are
+		// registered by id now rather than lost
+		assertEquals(RetroNpcCategory.GUARDS,
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.RATCATCHER_CHIEFGUARD, "Guard")).getCategory());
+		assertEquals(RetroNpcCategory.GUARDS,
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.RATCATCHER_GUARD_LEFT_INSIDE, "Guard")).getCategory());
 		// 451 (chathead), 7041 (crawl), 7043 (run) and 7044 (turn) are not combat sequences
-		assertFalse(guardByName.isAttackAnimation(451));
-		assertFalse(guardByName.isAttackAnimation(7041));
-		assertFalse(guardByName.isDefendAnimation(7043));
-		assertFalse(guardByName.isDeathAnimation(7044));
+		assertFalse(guard.isAttackAnimation(451));
+		assertFalse(guard.isAttackAnimation(7041));
+		assertFalse(guard.isDefendAnimation(7043));
+		assertFalse(guard.isDeathAnimation(7044));
 	}
 
 	@Test
@@ -346,6 +448,55 @@ public class RetroNpcCategoryTest
 		assertFalse(imp.isDeathAnimation(836));
 		assertFalse(imp.isDeathAnimation(5389));
 		assertFalse(imp.isAttackAnimation(99999));
+	}
+
+	/**
+	 * All four baby dragon colors share retro mesh 2998, whose palette is a greyscale ramp, so the
+	 * recolor pair is the only thing separating them. A variant that lost its pair would render as
+	 * a gray lump rather than fail, which is why the colors are asserted individually.
+	 */
+	@Test
+	public void testBabyDragonsCategory()
+	{
+		int[][] variants = {
+			{NpcID.BABYBLUEDRAGON, -25049},
+			{NpcID.BABYREDDRAGON, 687},
+			{NpcID.BABYGREENDRAGON1, 22051},
+			{NpcID.CHICKENQUEST_BABY_BLACK_DRAGON, 16},
+		};
+
+		for (int[] variant : variants)
+		{
+			RetroNpcData baby = RetroNpcMapping.get(variant[0], "Baby dragon");
+			assertNotNull("baby dragon " + variant[0] + " must be mapped", baby);
+			assertEquals(RetroNpcCategory.BABY_DRAGONS, baby.getCategory());
+			assertArrayEquals(new int[]{2998}, baby.getRetroModelIds());
+
+			assertEquals(AnimationID.BDRAG_READY, baby.getIdleAnimationId());
+			assertEquals(AnimationID.BDRAG_WALK, baby.getWalkAnimationId());
+
+			// The cache cannot say what a modern baby dragon plays in a fight, so these stay unset
+			// rather than being guessed at - see the branch in createMappingData
+			assertEquals(-1, baby.getAttackAnimationId());
+			assertEquals(-1, baby.getDefendAnimationId());
+			assertEquals(-1, baby.getDeathAnimationId());
+
+			assertTrue("baby dragon " + variant[0] + " must carry a recolor", baby.hasRecolors());
+			assertArrayEquals("every 2005 dragon recolors the same body index",
+				new short[]{61}, baby.getOriginalColors());
+			assertArrayEquals(new short[]{(short) variant[1]}, baby.getReplacementColors());
+		}
+
+		// Resolving by name matters as much as by id: a color added or renamed upstream falls back
+		// to the name, and the four must not collapse onto one shared instance
+		assertEquals((short) -25049,
+			Objects.requireNonNull(RetroNpcMapping.get(-1, "Baby blue dragon")).getReplacementColors()[0]);
+		assertEquals((short) 687,
+			Objects.requireNonNull(RetroNpcMapping.get(-1, "Baby red dragon")).getReplacementColors()[0]);
+		assertEquals((short) 22051,
+			Objects.requireNonNull(RetroNpcMapping.get(-1, "Baby green dragon")).getReplacementColors()[0]);
+		assertEquals((short) 16,
+			Objects.requireNonNull(RetroNpcMapping.get(-1, "Baby black dragon")).getReplacementColors()[0]);
 	}
 
 	@Test
@@ -599,13 +750,171 @@ public class RetroNpcCategoryTest
 		assertFalse(restless.isAttackAnimation(AnimationID.GHOST_UPDATE_NORMAL_ATTACK));
 	}
 
+	/**
+	 * Black and greater demons are the same mesh (2942) and differ only by the 2005 opcode 40
+	 * pairs, so a black demon without them renders in greater demon colors. The pairs reach it
+	 * through a static archetype, which normally shadows the generated JSON row entirely.
+	 */
+	@Test
+	public void testBlackDemonInheritsItsRecolorsFromTheCache()
+	{
+		RetroNpcData blackDemon = RetroNpcMapping.get(0, "Black demon");
+
+		assertNotNull(blackDemon);
+		assertTrue("the black demon archetype must pick up the JSON row's recolor pairs",
+			blackDemon.hasRecolors());
+		assertEquals("pairs must stay parallel",
+			blackDemon.getOriginalColors().length, blackDemon.getReplacementColors().length);
+	}
+
+	/**
+	 * The bundle carries mesh 2944 so the skinner can be checked against the client's own animation
+	 * of it, and only its idle and walk clips - drawing a skeleton from the bundle would cost it
+	 * every combat animation it has. Which path a category takes is therefore a decision the
+	 * mapping makes, not one read off the bundle's contents.
+	 */
+	@Test
+	public void testTheSkeletonIsNotDrawnFromTheBundle()
+	{
+		assertFalse("the skeleton is bundled to be measured, not to be drawn",
+			RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SKELETONS));
+		assertTrue("hill giants have a cache-backed render, but a better head in the bundle",
+			RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.HILL_GIANTS));
+		assertFalse("and only the bundle can supply that head",
+			RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.HILL_GIANTS));
+	}
+
+	/**
+	 * An equipment variant replaces the cache-backed parts only. Guards keep one list for both
+	 * paths, so for them the new weapon reaches both - but a mapping that declares a distinct
+	 * injected list has that list for a reason, and collapsing the two would inject a hill giant
+	 * wearing the Jogre head that stands in for its missing one on the cache path alone.
+	 */
+	@Test
+	public void testAnEquipmentVariantKeepsItsInjectedParts()
+	{
+		RetroNpcData variant = RetroNpcMapping.HILL_GIANT_DEFAULT.withModelIds(new int[]{2870, 2866, 4990});
+
+		assertArrayEquals(new int[]{2870, 2866, 4990}, variant.getRetroModelIds());
+		assertArrayEquals("the injected parts are not the cache-backed ones",
+			new int[]{2870, 2862}, variant.getInjectedModelIds());
+	}
+
+	/**
+	 * The resize is grafted the same way and for the same reason: 2005 asked for a greater demon at
+	 * 110/128ths, that number lives only in the generated row, and the archetype that shadows the
+	 * row is built before any of it is read. Without the graft the injected path scales by 128/128,
+	 * which is no resize at all.
+	 */
+	@Test
+	public void testGreaterDemonInheritsItsResizeFromTheCache()
+	{
+		RetroNpcData greaterDemon = RetroNpcMapping.get(NpcID.GREATER_DEMON, "Greater demon");
+
+		assertNotNull(greaterDemon);
+		assertEquals("the greater demon archetype must pick up the JSON row's resize",
+			110, greaterDemon.getScaleXZ());
+		assertEquals(110, greaterDemon.getScaleY());
+	}
+
+	/**
+	 * A hand-corrected size is the archetype's own opinion and must survive the graft. The chicken
+	 * is the case: 2005 asked for no resize, the modern composition shrinks its model, and 204 is
+	 * the value that was measured against neither.
+	 */
+	@Test
+	public void testAHandCorrectedResizeIsNotOverwritten()
+	{
+		RetroNpcData chicken = RetroNpcMapping.get(0, "Chicken");
+
+		assertNotNull(chicken);
+		assertEquals(204, chicken.getScaleXZ());
+		assertEquals(204, chicken.getScaleY());
+	}
+
+	/**
+	 * The same graft must reach every NPC id registered against the archetype, not just the name
+	 * lookup - both maps hold the same instance, so replacing one and not the other would leave
+	 * most black demons uncolored.
+	 */
+	@Test
+	public void testBlackDemonRecolorsReachTheIdMappingsToo()
+	{
+		RetroNpcData byId = RetroNpcMapping.get(NpcID.BLACK_DEMON, "Black demon");
+
+		assertNotNull(byId);
+		assertTrue("id-resolved black demons must carry the recolors as well", byId.hasRecolors());
+	}
+
+	@Test
+	public void testNoCategoryForwardsRecolorsByDefault()
+	{
+		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Goblin")).hasRecolors());
+		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Skeleton mage")).hasRecolors());
+		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Restless ghost")).hasRecolors());
+		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Chicken")).hasRecolors());
+	}
+
+	/**
+	 * The recolors have to reach the <em>id</em> lookup, not just the name one. Both maps hold the
+	 * same instance and the graft replaces it, so checking only get(0, name) would pass while every
+	 * guard resolved by id rendered in the base kit's colors.
+	 */
+	@Test
+	public void testGuardRecolorsReachTheIdMappingsToo()
+	{
+		RetroNpcData byId = RetroNpcMapping.get(NpcID.GUARD1, "Guard");
+		assertNotNull(byId);
+		assertTrue("id-resolved guards must carry the recolors as well", byId.hasRecolors());
+		assertArrayEquals(new short[]{25238, 8741, 61}, byId.getOriginalColors());
+		assertArrayEquals(new short[]{10508, 6930, 5652}, byId.getReplacementColors());
+	}
+
+	@Test
+	public void testGuardsDoCarryTheirRecolors()
+	{
+		// Guards are the exception to the rule above, and deliberately so. Their parts are generic
+		// 2005 human kit shared with every other NPC that wears it, so without the opcode 40 pairs
+		// a guard renders in a townsperson's colors. The pairs and the parts come from the same
+		// definition, which is what makes this safe where forwarding a goblin variant's would not.
+		RetroNpcData guard = RetroNpcMapping.get(NpcID.GUARD1, "Guard");
+		assertNotNull(guard);
+		assertTrue("guards must carry their 2005 recolors", guard.hasRecolors());
+		assertEquals("recolor arrays must stay parallel",
+			guard.getOriginalColors().length, guard.getReplacementColors().length);
+	}
+
+	/**
+	 * The generator must still carry the pairs through to the JSON even though no category consumes
+	 * them - otherwise the opt-in above would have nothing to opt into.
+	 */
+	@Test
+	public void testGeneratedMappingsCarryRecolorPairs() throws Exception
+	{
+		List<RetroNpcMappingEntry> entries = loadCommittedEntries();
+
+		RetroNpcMappingEntry blueDragon = entries.stream()
+			.filter(e -> "blue dragon".equals(e.getName()))
+			.findFirst()
+			.orElse(null);
+
+		assertNotNull("blue dragon row missing from npc-mappings.json", blueDragon);
+		assertNotNull("blue dragon must carry its opcode 40 pairs", blueDragon.getOriginalColors());
+		assertNotNull(blueDragon.getReplacementColors());
+		assertEquals("recolor arrays must stay parallel",
+			blueDragon.getOriginalColors().length, blueDragon.getReplacementColors().length);
+	}
+
 	@Test
 	public void testGiantsCategory()
 	{
 		RetroNpcData hillGiant = RetroNpcMapping.get(0, "Hill giant");
 		assertNotNull("Hill giant mapping must exist", hillGiant);
 		assertEquals(RetroNpcCategory.HILL_GIANTS, hillGiant.getCategory());
+		// The two paths take different heads on purpose: the real 2005 head 2862 no longer resolves
+		// in the live cache, so only the bundle can supply it and the cache path wears a Jogre head
 		assertArrayEquals(new int[]{2870, 2866}, hillGiant.getRetroModelIds());
+		assertArrayEquals(new int[]{2870, 2862}, hillGiant.getInjectedModelIds());
 		assertEquals(130, hillGiant.getIdleAnimationId());
 		assertEquals(127, hillGiant.getWalkAnimationId());
 		assertEquals(128, hillGiant.getAttackAnimationId());
@@ -666,8 +975,92 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testTheRestOfTheGiantFamily()
+	{
+		// One shared 2005 body with a variant head - the arrangement that made a bundle keyed by the
+		// first model id unworkable, since all five collided on 2870
+		assertGiant("Fire giant", RetroNpcCategory.FIRE_GIANTS, new int[]{2870, 2864, 4991, 4990});
+		assertGiant("Ice giant", RetroNpcCategory.ICE_GIANTS, new int[]{2870, 2868});
+		assertGiant("Moss giant", RetroNpcCategory.MOSS_GIANTS, new int[]{2870, 2865, 4990});
+		assertGiant("Cyclops", RetroNpcCategory.CYCLOPS, new int[]{2870, 2867});
+
+		int[][] idsByName = {
+			{NpcID.FIREGIANT, NpcID.FIREGIANT_BIG, NpcID.FIREGIANT_STRONGHOLDCAVE_1, NpcID.KOUREND_FIREGIANT1},
+			{NpcID.ICEGIANT, NpcID.ICEGIANT_LOW_WANDERRANGE, NpcID.WILD_CAVE_ICEGIANT},
+			{NpcID.MOSSGIANT, NpcID.ROVING_MOSSGIANT, NpcID.PRIF_MOSSGIANT, NpcID.GB_MOSSGIANT},
+			{NpcID.CYCLOPS, NpcID.WARGUILD_CYCLOPS1, NpcID.WARGUILD_CYCLOPS6_HIGH, NpcID.KOUREND_CYCLOPS2}};
+		RetroNpcCategory[] categories = {
+			RetroNpcCategory.FIRE_GIANTS, RetroNpcCategory.ICE_GIANTS,
+			RetroNpcCategory.MOSS_GIANTS, RetroNpcCategory.CYCLOPS};
+
+		for (int i = 0; i < idsByName.length; i++)
+		{
+			for (int id : idsByName[i])
+			{
+				RetroNpcData byId = RetroNpcMapping.get(id, "unused");
+				assertNotNull("NPC id " + id + " must map", byId);
+				assertEquals(categories[i], byId.getCategory());
+			}
+		}
+	}
+
+	private static void assertGiant(String name, RetroNpcCategory category, int[] models)
+	{
+		RetroNpcData data = RetroNpcMapping.get(0, name);
+		assertNotNull(name + " mapping must exist", data);
+		assertEquals(category, data.getCategory());
+		assertArrayEquals(name + " parts", models, data.getRetroModelIds());
+
+		// Nothing but the hill giant needs a per-path split, so both lists agree
+		assertArrayEquals(name + " injected parts", models, data.getInjectedModelIds());
+
+		// The whole family animates off the same five sequences, which is why they all resolve to
+		// framemap 302
+		assertEquals(130, data.getIdleAnimationId());
+		assertEquals(127, data.getWalkAnimationId());
+		assertEquals(128, data.getAttackAnimationId());
+		assertEquals(129, data.getDefendAnimationId());
+		assertEquals(131, data.getDeathAnimationId());
+
+		// The whole family reuses GIANT_MODERN_*, so the post-2006 rework animations are intercepted
+		assertTrue(name + " must intercept the reworked attacks", data.isAttackAnimation(4652));
+		assertTrue(name + " must intercept the reworked defends", data.isDefendAnimation(4651));
+		assertTrue(name + " must intercept the reworked deaths", data.isDeathAnimation(4653));
+
+		// Unrelated sequences are left alone
+		assertFalse(name + " must not intercept an unrelated attack", data.isAttackAnimation(5385));
+	}
+
+	@Test
+	public void testFireIceAndMossGiantsCarryTheir2005Recolors()
+	{
+		// These three are the same body mesh as the hill giant, told apart only by opcode 40. Without
+		// the pairs they would all render in hill giant colors.
+		for (String name : new String[]{"Fire giant", "Ice giant", "Moss giant"})
+		{
+			RetroNpcData data = RetroNpcMapping.get(0, name);
+			assertNotNull(name, data);
+			assertTrue(name + " must carry 2005 recolors", data.hasRecolors());
+			assertEquals(name + " recolor arrays must stay parallel",
+				data.getOriginalColors().length, data.getReplacementColors().length);
+		}
+
+		// The recolors have to reach the id lookup too - ID_MAPPINGS and NAME_MAPPINGS hold the
+		// same instance, so a graft that updated only one would leave most fire giants uncolored
+		RetroNpcData byId = RetroNpcMapping.get(NpcID.FIREGIANT, "Fire giant");
+		assertNotNull(byId);
+		assertTrue("recolors must reach the id mapping", byId.hasRecolors());
+	}
+
+	@Test
 	public void testCategoryMatchingExclusions()
 	{
+		// A bare "giant" substring would sweep all of these into the giant family
+		assertNull(RetroNpcMapping.get(0, "Giant rat"));
+		assertNull(RetroNpcMapping.get(0, "Giant spider"));
+		assertNull(RetroNpcMapping.get(0, "Giant frog"));
+		assertNull(RetroNpcMapping.get(0, "Giant bat"));
+
 		assertNull(RetroNpcMapping.get(0, "Guard dog"));
 		assertNull(RetroNpcMapping.get(0, "Ogre guard"));
 		assertNull(RetroNpcMapping.get(0, "Khazard Guard"));
@@ -818,12 +1211,28 @@ public class RetroNpcCategoryTest
 		assertTrue("disablePvpWorld must default to true", config.disablePvpWorld());
 		assertTrue("disableWilderness must default to true", config.disableWilderness());
 
-		// The five live category toggles default to on
+		// Every category that renders without the bundle defaults to on
 		assertTrue("swapChickens must default to true", config.swapChickens());
 		assertTrue("swapGoblins must default to true", config.swapGoblins());
 		assertTrue("swapSkeletons must default to true", config.swapSkeletons());
 		assertTrue("swapZombies must default to true", config.swapZombies());
-		assertTrue("swapHillGiants must default to true", config.swapHillGiants());
+		assertTrue("swapGiants must default to true", config.swapGiants());
+		assertTrue("swapGhosts must default to true", config.swapGhosts());
+
+		// The pipeline toggle carries the six bundle-only categories, so its default decides
+		// whether they can render at all - see isCategoryEnabled
+		assertTrue("useInjectionPipeline must default to true", config.useInjectionPipeline());
+
+		// The bundle-only categories are opt-in, because they are what the plugin distributes
+		assertFalse("swapDragons must default to false", config.swapDragons());
+		assertFalse("swapDemons must default to false", config.swapDemons());
+		assertFalse("swapImps must default to false", config.swapImps());
+		assertFalse("swapCyclops must default to false", config.swapCyclops());
+		assertFalse("swapGuards must default to false", config.swapGuards());
+
+		// Off by default: it turns another plugin's settings off while it is on
+		assertFalse("overrideInteractHighlight must default to false",
+			config.overrideInteractHighlight());
 	}
 
 	@Test

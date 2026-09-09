@@ -72,6 +72,7 @@ import net.runelite.cache.fs.Store;
 public class RetroModelComparator
 {
 	private static final String CACHE_DIR_PROPERTY = "retronpcswapper.cacheDir";
+	private static final String RETRO_DIR_PROPERTY = "retronpcswapper.retroDir";
 	private static final String FIND_MOVED_PROPERTY = "retronpcswapper.findmoved";
 	private static final String RETRO_CACHE_DIR = "retrocache/2005cache";
 
@@ -94,7 +95,7 @@ public class RetroModelComparator
 			return;
 		}
 
-		File retroDir = new File(RETRO_CACHE_DIR);
+		File retroDir = resolveRetroCacheDir();
 		RetroCacheReader retro = new RetroCacheReader(retroDir);
 		if (!retro.init())
 		{
@@ -298,6 +299,14 @@ public class RetroModelComparator
 		return geometry.byteLength + "B  verts=" + geometry.vertexCount
 			+ " faces=" + geometry.faceCount
 			+ " colors=" + Arrays.toString(geometry.colors);
+	}
+
+	private static File resolveRetroCacheDir()
+	{
+		String configured = System.getProperty(RETRO_DIR_PROPERTY);
+		return configured == null || configured.isEmpty()
+			? new File(RETRO_CACHE_DIR)
+			: new File(configured);
 	}
 
 	private static File resolveLiveCacheDir()

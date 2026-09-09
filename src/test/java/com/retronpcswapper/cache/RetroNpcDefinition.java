@@ -167,6 +167,26 @@ public class RetroNpcDefinition
 		this.actions = actions;
 	}
 
+	public short[] getOriginalColors()
+	{
+		return originalColors != null ? originalColors.clone() : null;
+	}
+
+	public void setOriginalColors(short[] originalColors)
+	{
+		this.originalColors = originalColors;
+	}
+
+	public short[] getReplacementColors()
+	{
+		return replacementColors != null ? replacementColors.clone() : null;
+	}
+
+	public void setReplacementColors(short[] replacementColors)
+	{
+		this.replacementColors = replacementColors;
+	}
+
 	@Override
 	public String toString()
 	{

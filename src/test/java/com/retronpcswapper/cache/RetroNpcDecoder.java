@@ -56,6 +56,7 @@ public class RetroNpcDecoder
 			}
 
 			Buffer datBuffer = new Buffer(npcDat);
+			int failed = 0;
 			for (int j = 0; j < totalNpcs; j++)
 			{
 				int npcOffset = streamIndices[j];
@@ -63,7 +64,11 @@ public class RetroNpcDecoder
 				{
 					datBuffer.setOffset(npcOffset);
 					RetroNpcDefinition def = decodeNpc(j, datBuffer, npcDat.length);
-					if (def != null && def.getName() != null && !def.getName().isEmpty())
+					if (def == null)
+					{
+						failed++;
+					}
+					else if (def.getName() != null && !def.getName().isEmpty())
 					{
 						defs.put(j, def);
 					}
@@ -71,6 +76,13 @@ public class RetroNpcDecoder
 			}
 
 			log.info("Successfully decoded {} 2005 Retro NPC definitions", defs.size());
+			if (failed > 0)
+			{
+				// Said out loud rather than left to the count: a drop here changes what
+				// generateNpcMappings writes, and RetroCacheTest compares that against the
+				// committed resource
+				log.warn("{} 2005 NPC definitions did not decode and were dropped", failed);
+			}
 		}
 		catch (Exception e)
 		{
@@ -95,135 +107,151 @@ public class RetroNpcDecoder
 					break;
 				}
 
-			if (opcode == 1)
-			{
-				int modelCount = stream.readUnsignedByte();
-				int[] models = new int[modelCount];
-				for (int j = 0; j < modelCount; j++)
+				if (opcode == 1)
 				{
-					models[j] = stream.readUnsignedShort();
-				}
-				def.setModels(models);
-			}
-			else if (opcode == 2)
-			{
-				def.setName(stream.readString());
-			}
-			else if (opcode == 3)
-			{
-				def.setDescription(stream.readString());
-			}
-			else if (opcode == 12)
-			{
-				def.setSize(stream.readByte());
-			}
-			else if (opcode == 13)
-			{
-				def.setStanceAnimation(stream.readUnsignedShort());
-			}
-			else if (opcode == 14)
-			{
-				def.setWalkAnimation(stream.readUnsignedShort());
-			}
-			else if (opcode == 17)
-			{
-				def.setWalkAnimation(stream.readUnsignedShort());
-				stream.readUnsignedShort(); // turnAroundAnim
-				stream.readUnsignedShort(); // turnRightAnim
-				stream.readUnsignedShort(); // turnLeftAnim
-			}
-			else if (opcode >= 30 && opcode < 40)
-			{
-				String[] actions = def.getActions();
-				int actionIdx = opcode - 30;
-				String actionStr = stream.readString();
-				if (actionIdx >= 0 && actionIdx < actions.length)
-				{
-					if ("hidden".equalsIgnoreCase(actionStr))
+					int modelCount = stream.readUnsignedByte();
+					int[] models = new int[modelCount];
+					for (int j = 0; j < modelCount; j++)
 					{
-						actionStr = null;
+						models[j] = stream.readUnsignedShort();
 					}
-					actions[actionIdx] = actionStr;
+					def.setModels(models);
 				}
-				def.setActions(actions);
-			}
-			else if (opcode == 40)
-			{
-				int colors = stream.readUnsignedByte();
-				for (int c = 0; c < colors; c++)
+				else if (opcode == 2)
 				{
-					stream.readUnsignedShort(); // originalColor
-					stream.readUnsignedShort(); // modifiedColor
+					def.setName(stream.readString());
 				}
-			}
-			else if (opcode == 60)
-			{
-				int addModelCount = stream.readUnsignedByte();
-				int[] addModels = new int[addModelCount];
-				for (int j = 0; j < addModelCount; j++)
+				else if (opcode == 3)
 				{
-					addModels[j] = stream.readUnsignedShort();
+					def.setDescription(stream.readString());
 				}
-				def.setAdditionalModels(addModels);
-			}
-			else if (opcode == 90 || opcode == 91 || opcode == 92)
-			{
-				stream.readUnsignedShort();
-			}
-			else if (opcode == 93)
-			{
-				// drawMapDot = false
-			}
-			else if (opcode == 95)
-			{
-				def.setCombatLevel(stream.readUnsignedShort());
-			}
-			else if (opcode == 97)
-			{
-				def.setScaleXZ(stream.readUnsignedShort());
-			}
-			else if (opcode == 98)
-			{
-				def.setScaleY(stream.readUnsignedShort());
-			}
-			else if (opcode == 99)
-			{
-				// priorityRender = true
-			}
-			else if (opcode == 100)
-			{
-				stream.readByte(); // lightModifier1
-			}
-			else if (opcode == 101)
-			{
-				stream.readByte(); // lightModifier2
-			}
-			else if (opcode == 102)
-			{
-				stream.readUnsignedShort(); // headIcon
-			}
-			else if (opcode == 103)
-			{
-				stream.readUnsignedShort(); // degreesToTurn
-			}
-			else if (opcode == 106)
-			{
-				stream.readUnsignedShort(); // varbitId
-				stream.readUnsignedShort(); // varpId
-				int childCount = stream.readUnsignedByte();
-				for (int c = 0; c <= childCount; c++)
+				else if (opcode == 12)
 				{
-					stream.readUnsignedShort(); // childrenIDs
+					def.setSize(stream.readByte());
 				}
-			}
-			else if (opcode == 107)
-			{
-				// clickable = false
+				else if (opcode == 13)
+				{
+					def.setStanceAnimation(stream.readUnsignedShort());
+				}
+				else if (opcode == 14)
+				{
+					def.setWalkAnimation(stream.readUnsignedShort());
+				}
+				else if (opcode == 17)
+				{
+					def.setWalkAnimation(stream.readUnsignedShort());
+					stream.readUnsignedShort(); // turnAroundAnim
+					stream.readUnsignedShort(); // turnRightAnim
+					stream.readUnsignedShort(); // turnLeftAnim
+				}
+				else if (opcode >= 30 && opcode < 40)
+				{
+					String[] actions = def.getActions();
+					int actionIdx = opcode - 30;
+					String actionStr = stream.readString();
+					if (actionIdx >= 0 && actionIdx < actions.length)
+					{
+						if ("hidden".equalsIgnoreCase(actionStr))
+						{
+							actionStr = null;
+						}
+						actions[actionIdx] = actionStr;
+					}
+					def.setActions(actions);
+				}
+				else if (opcode == 40)
+				{
+					// Recolor pairs. The 2005 client gave same-mesh NPC variants their color here
+					// rather than with separate models, so this is the only place a retro baby blue
+					// dragon differs from a plain one.
+					int colors = stream.readUnsignedByte();
+					short[] originalColors = new short[colors];
+					short[] replacementColors = new short[colors];
+					for (int c = 0; c < colors; c++)
+					{
+						// Read unsigned, stored signed - palette indices are 16-bit and
+						// ModelData.recolor takes shorts
+						originalColors[c] = (short) stream.readUnsignedShort();
+						replacementColors[c] = (short) stream.readUnsignedShort();
+					}
+					def.setOriginalColors(originalColors);
+					def.setReplacementColors(replacementColors);
+				}
+				else if (opcode == 60)
+				{
+					int addModelCount = stream.readUnsignedByte();
+					int[] addModels = new int[addModelCount];
+					for (int j = 0; j < addModelCount; j++)
+					{
+						addModels[j] = stream.readUnsignedShort();
+					}
+					def.setAdditionalModels(addModels);
+				}
+				else if (opcode == 90 || opcode == 91 || opcode == 92)
+				{
+					stream.readUnsignedShort();
+				}
+				else if (opcode == 93)
+				{
+					// drawMapDot = false
+				}
+				else if (opcode == 95)
+				{
+					def.setCombatLevel(stream.readUnsignedShort());
+				}
+				else if (opcode == 97)
+				{
+					def.setScaleXZ(stream.readUnsignedShort());
+				}
+				else if (opcode == 98)
+				{
+					def.setScaleY(stream.readUnsignedShort());
+				}
+				else if (opcode == 99)
+				{
+					// priorityRender = true
+				}
+				else if (opcode == 100)
+				{
+					stream.readByte(); // lightModifier1
+				}
+				else if (opcode == 101)
+				{
+					stream.readByte(); // lightModifier2
+				}
+				else if (opcode == 102)
+				{
+					stream.readUnsignedShort(); // headIcon
+				}
+				else if (opcode == 103)
+				{
+					stream.readUnsignedShort(); // degreesToTurn
+				}
+				else if (opcode == 106)
+				{
+					stream.readUnsignedShort(); // varbitId
+					stream.readUnsignedShort(); // varpId
+					int childCount = stream.readUnsignedByte();
+					for (int c = 0; c <= childCount; c++)
+					{
+						stream.readUnsignedShort(); // childrenIDs
+					}
+				}
+				else if (opcode == 107)
+				{
+					// clickable = false
+				}
 			}
 		}
-		}
-		catch (Exception ignored)
+		catch (Exception e)
 		{
+			// Everything after a failed read is garbage, so the entry goes rather than keeping
+			// however much of it was decoded before the stream position was lost. A definition that
+			// looks decoded but is not is worse than a missing one: it reaches npc-mappings.json
+			// and nothing downstream can tell the two apart. Same contract as RetroSeqDecoder,
+			// whose javadoc records what keeping the partial reads cost there.
+			log.debug("2005 NPC {} did not decode", id, e);
+			return null;
 		}
 
 		return def;

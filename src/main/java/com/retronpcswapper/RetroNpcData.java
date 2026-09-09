@@ -43,9 +43,21 @@ public class RetroNpcData
 	private final RetroNpcCategory category;
 
 	/**
-	 * Model IDs from the 2004/2005 RuneScape cache.
+	 * Model IDs from the 2004/2005 RuneScape cache, as looked up in the <em>live</em> cache.
 	 */
 	private final int[] retroModelIds;
+
+	/**
+	 * Model IDs to assemble from the injected asset bundle, when they differ from
+	 * {@link #retroModelIds}. Null means the two are the same, which is the usual case.
+	 *
+	 * <p>The two paths diverge when a 2005 part no longer resolves in the live cache. Hill giants
+	 * are the case that forced this: the real 2005 head 2862 is gone, so the cache-backed path
+	 * substitutes a Jogre head (2866) that still exists, while the bundle can carry the real one.
+	 * One shared list would either put a dead id in front of {@code loadModelData} or deny the
+	 * injected path the correct head.
+	 */
+	private final int[] injectedModelIds;
 
 	/**
 	 * Idle (standing) animation sequence ID.
@@ -100,6 +112,20 @@ public class RetroNpcData
 	private final int scaleY;
 
 	/**
+	 * Recolor pairs applied to the retro mesh, parallel arrays of palette values.
+	 *
+	 * <p>The 2005 client colored same-mesh NPC variants here rather than with separate models -
+	 * every dragon shares one mesh and recolors palette index 61 to its own color - so without
+	 * these a baby blue dragon and a baby red dragon would render identically.
+	 */
+	private final short[] originalColors;
+
+	/**
+	 * Replacement palette values, parallel to {@link #originalColors}.
+	 */
+	private final short[] replacementColors;
+
+	/**
 	 * Modern attack animation IDs to intercept and swap for this NPC category.
 	 */
 	@Getter
@@ -127,6 +153,31 @@ public class RetroNpcData
 		int deathAnimationId,
 		int scaleXZ,
 		int scaleY,
+		short[] originalColors,
+		short[] replacementColors,
+		Set<Integer> modernAttackAnims,
+		Set<Integer> modernDefendAnims,
+		Set<Integer> modernDeathAnims
+	)
+	{
+		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
+			defendAnimationId, deathAnimationId, scaleXZ, scaleY, originalColors, replacementColors,
+			modernAttackAnims, modernDefendAnims, modernDeathAnims);
+	}
+
+	public RetroNpcData(
+		RetroNpcCategory category,
+		int[] retroModelIds,
+		int[] injectedModelIds,
+		int idleAnimationId,
+		int walkAnimationId,
+		int attackAnimationId,
+		int defendAnimationId,
+		int deathAnimationId,
+		int scaleXZ,
+		int scaleY,
+		short[] originalColors,
+		short[] replacementColors,
 		Set<Integer> modernAttackAnims,
 		Set<Integer> modernDefendAnims,
 		Set<Integer> modernDeathAnims
@@ -134,6 +185,7 @@ public class RetroNpcData
 	{
 		this.category = category;
 		this.retroModelIds = retroModelIds != null ? retroModelIds.clone() : new int[0];
+		this.injectedModelIds = injectedModelIds != null ? injectedModelIds.clone() : null;
 		this.idleAnimationId = idleAnimationId;
 		this.walkAnimationId = walkAnimationId;
 		this.attackAnimationId = attackAnimationId;
@@ -141,6 +193,12 @@ public class RetroNpcData
 		this.deathAnimationId = deathAnimationId;
 		this.scaleXZ = scaleXZ;
 		this.scaleY = scaleY;
+		// Only keep the pairs when both sides are present and agree - a half-populated recolor
+		// would throw at draw time, which is the worst place to find out
+		boolean recolorUsable = originalColors != null && replacementColors != null
+			&& originalColors.length > 0 && originalColors.length == replacementColors.length;
+		this.originalColors = recolorUsable ? originalColors.clone() : new short[0];
+		this.replacementColors = recolorUsable ? replacementColors.clone() : new short[0];
 		this.modernAttackAnims = modernAttackAnims != null
 			? Collections.unmodifiableSet(new HashSet<>(modernAttackAnims))
 			: Collections.emptySet();
@@ -177,6 +235,119 @@ public class RetroNpcData
 		return retroModelIds.clone();
 	}
 
+	/**
+	 * The model IDs the injected path assembles, falling back to {@link #getRetroModelIds()} when
+	 * no separate list was given.
+	 */
+	public int[] getInjectedModelIds()
+	{
+		return injectedModelIds != null ? injectedModelIds.clone() : retroModelIds.clone();
+	}
+
+	public short[] getOriginalColors()
+	{
+		return originalColors.clone();
+	}
+
+	public short[] getReplacementColors()
+	{
+		return replacementColors.clone();
+	}
+
+	public boolean hasRecolors()
+	{
+		return originalColors.length > 0;
+	}
+
+	/**
+	 * Returns a copy carrying these recolor pairs, leaving everything else alone.
+	 *
+	 * <p>Exists for the static archetypes. They take precedence over the generated JSON row, but
+	 * that row is the only source of the 2005 opcode 40 pairs, so the two have to be recombined
+	 * after the fact rather than at construction - the archetypes are built before any cache data
+	 * is read.
+	 */
+	public RetroNpcData withRecolors(short[] originalColors, short[] replacementColors)
+	{
+		return new RetroNpcData(
+			category,
+			retroModelIds,
+			injectedModelIds,
+			idleAnimationId,
+			walkAnimationId,
+			attackAnimationId,
+			defendAnimationId,
+			deathAnimationId,
+			scaleXZ,
+			scaleY,
+			originalColors,
+			replacementColors,
+			modernAttackAnims,
+			modernDefendAnims,
+			modernDeathAnims);
+	}
+
+	/**
+	 * Returns a copy resized to these 1/128ths, leaving everything else alone.
+	 *
+	 * <p>Exists for the same reason {@link #withRecolors} does: the resize is the 2005 definition's,
+	 * it reaches the plugin only through the generated JSON row, and an archetype is built before
+	 * any of that is read.
+	 */
+	public RetroNpcData withScale(int scaleXZ, int scaleY)
+	{
+		return new RetroNpcData(
+			category,
+			retroModelIds,
+			injectedModelIds,
+			idleAnimationId,
+			walkAnimationId,
+			attackAnimationId,
+			defendAnimationId,
+			deathAnimationId,
+			scaleXZ,
+			scaleY,
+			originalColors,
+			replacementColors,
+			modernAttackAnims,
+			modernDefendAnims,
+			modernDeathAnims);
+	}
+
+	/**
+	 * Returns a copy wearing these parts, leaving everything else alone.
+	 *
+	 * <p>For NPCs that are the same character carrying different equipment - one guard family
+	 * holds a sword, another a battleaxe. Everything that makes them a guard is shared, so the
+	 * variant is derived from the archetype rather than declared beside it, which also means it
+	 * inherits the recolor pairs already grafted on.
+	 *
+	 * <p>Only the cache-backed list is replaced. A mapping that keeps one list for both paths -
+	 * every guard - therefore wears the new parts on both, which is what a change of weapon means.
+	 * A mapping that declares a distinct injected list keeps it, rather than silently collapsing
+	 * onto the parts passed here: a hill giant variant derived this way would otherwise be injected
+	 * wearing the Jogre head that only the cache-backed list is meant to carry.
+	 */
+	public RetroNpcData withModelIds(int[] modelIds)
+	{
+		return new RetroNpcData(
+			category,
+			modelIds,
+			injectedModelIds,
+			idleAnimationId,
+			walkAnimationId,
+			attackAnimationId,
+			defendAnimationId,
+			deathAnimationId,
+			scaleXZ,
+			scaleY,
+			originalColors,
+			replacementColors,
+			modernAttackAnims,
+			modernDefendAnims,
+			modernDeathAnims);
+	}
+
 	@Override
 	public boolean equals(Object o)
 	{
@@ -192,6 +363,9 @@ public class RetroNpcData
 			scaleY == that.scaleY &&
 			category == that.category &&
 			Arrays.equals(retroModelIds, that.retroModelIds) &&
+			Arrays.equals(injectedModelIds, that.injectedModelIds) &&
+			Arrays.equals(originalColors, that.originalColors) &&
+			Arrays.equals(replacementColors, that.replacementColors) &&
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
 			Objects.equals(modernDefendAnims, that.modernDefendAnims) &&
 			Objects.equals(modernDeathAnims, that.modernDeathAnims);
@@ -202,6 +376,7 @@ public class RetroNpcData
 	{
 		int result = category != null ? category.hashCode() : 0;
 		result = 31 * result + Arrays.hashCode(retroModelIds);
+		result = 31 * result + Arrays.hashCode(injectedModelIds);
 		result = 31 * result + idleAnimationId;
 		result = 31 * result + walkAnimationId;
 		result = 31 * result + attackAnimationId;
@@ -209,6 +384,8 @@ public class RetroNpcData
 		result = 31 * result + deathAnimationId;
 		result = 31 * result + scaleXZ;
 		result = 31 * result + scaleY;
+		result = 31 * result + Arrays.hashCode(originalColors);
+		result = 31 * result + Arrays.hashCode(replacementColors);
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
 		result = 31 * result + (modernDefendAnims != null ? modernDefendAnims.hashCode() : 0);
 		result = 31 * result + (modernDeathAnims != null ? modernDeathAnims.hashCode() : 0);
@@ -219,6 +396,7 @@ public class RetroNpcData
 	{
 		private RetroNpcCategory category;
 		private int[] retroModelIds = new int[0];
+		private int[] injectedModelIds;
 		private int idleAnimationId = -1;
 		private int walkAnimationId = -1;
 		private int attackAnimationId = -1;
@@ -226,6 +404,8 @@ public class RetroNpcData
 		private int deathAnimationId = -1;
 		private int scaleXZ = 128;
 		private int scaleY = 128;
+		private short[] originalColors;
+		private short[] replacementColors;
 		private final Set<Integer> modernAttackAnims = new HashSet<>();
 		private final Set<Integer> modernDefendAnims = new HashSet<>();
 		private final Set<Integer> modernDeathAnims = new HashSet<>();
@@ -281,6 +461,27 @@ public class RetroNpcData
 		public Builder scaleY(int scaleY)
 		{
 			this.scaleY = scaleY;
+			return this;
+		}
+
+		/**
+		 * Recolor pairs as parallel arrays, in npc.dat opcode 40 order.
+		 */
+		public Builder recolors(short[] originalColors, short[] replacementColors)
+		{
+			this.originalColors = originalColors;
+			this.replacementColors = replacementColors;
+			return this;
+		}
+
+		/**
+		 * Convenience for the common single-pair case, where one palette index carries the whole
+		 * color of the variant.
+		 */
+		public Builder recolor(int originalColor, int replacementColor)
+		{
+			this.originalColors = new short[]{(short) originalColor};
+			this.replacementColors = new short[]{(short) replacementColor};
 			return this;
 		}
 
@@ -347,11 +548,22 @@ public class RetroNpcData
 			return this;
 		}
 
+		/**
+		 * Overrides the model IDs the injected path assembles, for an NPC whose 2005 parts no
+		 * longer all resolve in the live cache.
+		 */
+		public Builder injectedModelIds(int[] injectedModelIds)
+		{
+			this.injectedModelIds = injectedModelIds;
+			return this;
+		}
+
 		public RetroNpcData build()
 		{
 			return new RetroNpcData(
 				category,
 				retroModelIds,
+				injectedModelIds,
 				idleAnimationId,
 				walkAnimationId,
 				attackAnimationId,
@@ -359,6 +571,8 @@ public class RetroNpcData
 				deathAnimationId,
 				scaleXZ,
 				scaleY,
+				originalColors,
+				replacementColors,
 				modernAttackAnims,
 				modernDefendAnims,
 				modernDeathAnims

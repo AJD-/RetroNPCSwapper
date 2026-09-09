@@ -22,28 +22,32 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.retronpcswapper;
+package com.retronpcswapper.inject;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
- * NPC classification category for Retro NPC Swapper config toggles.
+ * Reads the bundle shipped inside the plugin jar.
+ *
+ * <p>A missing resource is treated as "no injected assets" rather than an error, so a build without
+ * the bundle degrades to the existing id-swapping behavior instead of failing to start.
  */
-public enum RetroNpcCategory
+public class ClasspathAssetSource implements RetroAssetSource
 {
-	LESSER_DEMONS,
-	GREATER_DEMONS,
-	BLACK_DEMONS,
-	ADULT_DRAGONS,
-	BABY_DRAGONS,
-	GOBLINS,
-	GUARDS,
-	IMPS,
-	SKELETONS,
-	ZOMBIES,
-	GHOSTS,
-	HILL_GIANTS,
-	FIRE_GIANTS,
-	ICE_GIANTS,
-	MOSS_GIANTS,
-	CYCLOPS,
-	CHICKENS
+	private static final String RESOURCE = "/com/retronpcswapper/retro-assets.dat";
+
+	@Override
+	public RetroAssetBundle load() throws IOException
+	{
+		try (InputStream in = ClasspathAssetSource.class.getResourceAsStream(RESOURCE))
+		{
+			if (in == null)
+			{
+				return RetroAssetBundle.empty();
+			}
+
+			return RetroAssetCodec.read(in);
+		}
+	}
 }

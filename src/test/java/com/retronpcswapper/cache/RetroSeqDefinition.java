@@ -22,28 +22,44 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.retronpcswapper;
+package com.retronpcswapper.cache;
 
-/**
- * NPC classification category for Retro NPC Swapper config toggles.
- */
-public enum RetroNpcCategory
+import lombok.Data;
+
+/** One 2005 sequence definition, as decoded from seq.dat. */
+@Data
+public class RetroSeqDefinition
 {
-	LESSER_DEMONS,
-	GREATER_DEMONS,
-	BLACK_DEMONS,
-	ADULT_DRAGONS,
-	BABY_DRAGONS,
-	GOBLINS,
-	GUARDS,
-	IMPS,
-	SKELETONS,
-	ZOMBIES,
-	GHOSTS,
-	HILL_GIANTS,
-	FIRE_GIANTS,
-	ICE_GIANTS,
-	MOSS_GIANTS,
-	CYCLOPS,
-	CHICKENS
+	private int id;
+
+	/**
+	 * Flat 16-bit ids, unlike the modern format's {@code animationFile << 16 | frameIndex}. Resolve
+	 * them through {@link RetroFrameIndex}, which is built by reading every index 2 directory.
+	 */
+	private int[] frameIds;
+
+	/** Secondary frame per entry, for chathead animations. 0xFFFF on almost everything. */
+	private int[] chatFrameIds;
+
+	/** Per-frame duration in client ticks. */
+	private int[] frameLengths;
+
+	private int loopOffset = -1;
+
+	/** Which transforms come from the second animation when a pose and an action are layered. */
+	private int[] interleaveOrder;
+
+	private boolean stretches;
+	private int forcedPriority = 5;
+	private int leftHandItem = -1;
+	private int rightHandItem = -1;
+	private int maxLoops = 99;
+	private int precedenceAnimating = -1;
+	private int priority = -1;
+	private int replyMode = 2;
+
+	public int getFrameCount()
+	{
+		return frameIds == null ? 0 : frameIds.length;
+	}
 }

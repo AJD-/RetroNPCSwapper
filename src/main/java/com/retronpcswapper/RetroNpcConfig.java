@@ -34,8 +34,24 @@ public interface RetroNpcConfig extends Config
 {
 	String GROUP = "retronpcswapper";
 
+	/**
+	 * Retired in favor of {@link #swapGiants()}, which covers the whole family rather than one
+	 * member of it. Kept only so a saved value can be carried across; nothing reads it as a setting.
+	 */
+	String LEGACY_HILL_GIANTS = "swapHillGiants";
+
+	/**
+	 * {@link #SWAP_GIANTS} is written by the migration as well as the user; the other two are named
+	 * alongside it for consistency.
+	 */
+	String SWAP_DRAGONS = "swapDragons";
+	String SWAP_DEMONS = "swapDemons";
+	String SWAP_GIANTS = "swapGiants";
+
 	/** Also written programmatically, so the key is named rather than repeated as a literal. */
 	String OVERRIDE_INTERACT_HIGHLIGHT = "overrideInteractHighlight";
+
+	String USE_INJECTION_PIPELINE = "useInjectionPipeline";
 
 	/**
 	 * Read-only notice for users, not a setting.
@@ -52,19 +68,35 @@ public interface RetroNpcConfig extends Config
 	{
 	}
 
+	@ConfigItem(
+		keyName = USE_INJECTION_PIPELINE,
+		name = "Use Converted 2005 Assets",
+		description = "<html><body style='width:170px'>Draw swapped NPCs through geometry this "
+			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
+			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
+			+ "game cache. Turn it off and only Chickens, Goblins, Skeletons, Zombies, Hill Giants "
+			+ "and Ghosts will swap to their retro assets. Hill Giants will wear a Jogre head."
+			+ "</body></html>",
+		position = 1
+	)
+	default boolean useInjectionPipeline()
+	{
+		return true;
+	}
+
 	@ConfigSection(
-		name = "Misc NPCs",
-		description = "Retro models and animations for miscellaneous NPCs",
-		position = 1,
+		name = "NPC Toggles",
+		description = "Retro models and animations, one toggle per NPC family",
+		position = 2,
 		closedByDefault = false
 	)
-	String miscSection = "miscSection";
+	String npcTogglesSection = "npcTogglesSection";
 
 	@ConfigItem(
 		keyName = "swapChickens",
 		name = "Chickens",
 		description = "Swap modern Chicken models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
+		section = npcTogglesSection,
 		position = 1
 	)
 	default boolean swapChickens()
@@ -76,7 +108,7 @@ public interface RetroNpcConfig extends Config
 		keyName = "swapGoblins",
 		name = "Goblins",
 		description = "Swap modern Goblin models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
+		section = npcTogglesSection,
 		position = 2
 	)
 	default boolean swapGoblins()
@@ -88,7 +120,7 @@ public interface RetroNpcConfig extends Config
 		keyName = "swapSkeletons",
 		name = "Skeletons",
 		description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
+		section = npcTogglesSection,
 		position = 3
 	)
 	default boolean swapSkeletons()
@@ -100,7 +132,7 @@ public interface RetroNpcConfig extends Config
 		keyName = "swapZombies",
 		name = "Zombies",
 		description = "Swap modern Zombie models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
+		section = npcTogglesSection,
 		position = 4
 	)
 	default boolean swapZombies()
@@ -109,13 +141,16 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapHillGiants",
-		name = "Hill Giants",
-		description = "Swap modern Hill Giant models and animations to their 2004/2005 retro variants.",
-		section = miscSection,
+		keyName = SWAP_GIANTS,
+		name = "Giants",
+		description = "<html><body style='width:170px'>Swap modern Hill, Fire, Ice and Moss Giant "
+			+ "models and animations to their 2004/2005 retro variants.<br><br>Note: Fire, Ice, "
+			+ "and Moss Giants need <b>Use Converted 2005 Assets</b>, which is on by default."
+			+ "</body></html>",
+		section = npcTogglesSection,
 		position = 5
 	)
-	default boolean swapHillGiants()
+	default boolean swapGiants()
 	{
 		return true;
 	}
@@ -123,9 +158,8 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "swapGhosts",
 		name = "Ghosts",
-		description = "Swap modern Ghost models and animations to their 2004/2005 retro variants."
-			+ " The Restless ghost swaps its model and idle/walk poses only.",
-		section = miscSection,
+		description = "Swap modern Ghost models and animations to their 2004/2005 retro variants.",
+		section = npcTogglesSection,
 		position = 6
 	)
 	default boolean swapGhosts()
@@ -133,10 +167,79 @@ public interface RetroNpcConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = SWAP_DRAGONS,
+		name = "Dragons",
+		description = "<html><body style='width:170px'>Swap modern Dragon models and animations - "
+			+ "adult and baby - to their 2004/2005 retro variants.<br><br>Needs <b>Use Converted "
+			+ "2005 Assets</b>, which is on by default.</body></html>",
+		section = npcTogglesSection,
+		position = 7
+	)
+	default boolean swapDragons()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = SWAP_DEMONS,
+		name = "Demons",
+		description = "<html><body style='width:170px'>Swap modern Lesser, Greater and Black Demon "
+			+ "models and animations to their 2004/2005 retro variants.<br><br>Needs <b>Use "
+			+ "Converted 2005 Assets</b>, which is on by default.</body></html>",
+		section = npcTogglesSection,
+		position = 8
+	)
+	default boolean swapDemons()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapImps",
+		name = "Imps",
+		description = "<html><body style='width:170px'>Swap modern Imp models and animations to "
+			+ "their 2004/2005 retro variants.<br><br>Needs <b>Use Converted 2005 Assets</b>, "
+			+ "which is on by default.</body></html>",
+		section = npcTogglesSection,
+		position = 9
+	)
+	default boolean swapImps()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapCyclops",
+		name = "Cyclopes",
+		description = "<html><body style='width:170px'>Swap modern cyclopes with their 2005 retro variant."
+			+ "<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
+		section = npcTogglesSection,
+		position = 10
+	)
+	default boolean swapCyclops()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapGuards",
+		name = "Guards",
+		description = "<html><body style='width:170px'>Swap modern Guards with their 2004/2005 retro "
+			+ "variants. <br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by default."
+			+ "</body></html>",
+		section = npcTogglesSection,
+		position = 11
+	)
+	default boolean swapGuards()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Safety",
 		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
-		position = 2,
+		position = 3,
 		closedByDefault = true
 	)
 	String safetySection = "safetySection";
@@ -168,7 +271,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigSection(
 		name = "Compatibility",
 		description = "Settings for working alongside other plugins",
-		position = 3,
+		position = 4,
 		closedByDefault = true
 	)
 	String compatibilitySection = "compatibilitySection";
@@ -180,13 +283,13 @@ public interface RetroNpcConfig extends Config
 			+ "outlines around the retro model instead of the modern one.<br><br>While this is on "
 			+ "and models are being swapped, Interact Highlight's own <b>NPCs: Show on hover</b> "
 			+ "and <b>Show on interact</b> are turned off and this plugin draws those outlines in "
-			+ "their place, using that plugin's own colours and border settings.  Both are turned back "
+			+ "their place, using that plugin's own colors and border settings. Both are turned back "
 			+ "on when this plugin stops.</body></html>",
 		section = compatibilitySection,
 		position = 1
 	)
 	default boolean overrideInteractHighlight()
 	{
-		return false;
+		return true;
 	}
 }

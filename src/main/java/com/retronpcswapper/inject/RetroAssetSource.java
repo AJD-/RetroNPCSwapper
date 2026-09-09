@@ -22,28 +22,22 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.retronpcswapper;
+package com.retronpcswapper.inject;
+
+import java.io.IOException;
 
 /**
- * NPC classification category for Retro NPC Swapper config toggles.
+ * Where injected assets are read from.
+ *
+ * <p>Implementations do blocking IO and must not be called on the client thread.
  */
-public enum RetroNpcCategory
+public interface RetroAssetSource
 {
-	LESSER_DEMONS,
-	GREATER_DEMONS,
-	BLACK_DEMONS,
-	ADULT_DRAGONS,
-	BABY_DRAGONS,
-	GOBLINS,
-	GUARDS,
-	IMPS,
-	SKELETONS,
-	ZOMBIES,
-	GHOSTS,
-	HILL_GIANTS,
-	FIRE_GIANTS,
-	ICE_GIANTS,
-	MOSS_GIANTS,
-	CYCLOPS,
-	CHICKENS
+	/**
+	 * Loads the bundle, or returns an empty one when this source has nothing to offer.
+	 *
+	 * @throws IOException when assets exist but cannot be read, which is a real failure rather than
+	 *                     an absence and should not be quietly treated as one
+	 */
+	RetroAssetBundle load() throws IOException;
 }

@@ -47,7 +47,7 @@ import com.retronpcswapper.RetroNpcMappingEntry;
  * Dev-only tool that regenerates the bundled npc-mappings.json resource from a
  * local copy of the 2005 cache. Run with {@code ./gradlew generateNpcMappings}
  * from the repo root (the cache folder itself is not committed).
- *
+ * <p>
  * This class lives in the test sourceSet and is never shipped with the plugin,
  * so a plain GsonBuilder and direct file writes outside .runelite are fine here;
  * the @Inject Gson / .runelite-only rules apply to src/main runtime code.
@@ -146,7 +146,8 @@ public class NpcMappingGenerator
 
 			byName.putIfAbsent(nameLower, new RetroNpcMappingEntry(
 				nameLower, category, def.getModels(), def.getStanceAnimation(), def.getWalkAnimation(),
-				def.getScaleXZ(), def.getScaleY()));
+				def.getScaleXZ(), def.getScaleY(),
+				def.getOriginalColors(), def.getReplacementColors()));
 		}
 
 		return new ArrayList<>(new TreeMap<>(byName).values());
@@ -203,9 +204,29 @@ public class NpcMappingGenerator
 		{
 			return RetroNpcCategory.GHOSTS;
 		}
+		// Matched on the two-word name, never on "giant" alone: a bare "giant" would catch giant
+		// rats, spiders and frogs, which share nothing with this family but the word.
 		if (nameLower.contains("hill giant"))
 		{
 			return RetroNpcCategory.HILL_GIANTS;
+		}
+		if (nameLower.contains("fire giant"))
+		{
+			return RetroNpcCategory.FIRE_GIANTS;
+		}
+		if (nameLower.contains("ice giant"))
+		{
+			return RetroNpcCategory.ICE_GIANTS;
+		}
+		if (nameLower.contains("moss giant"))
+		{
+			return RetroNpcCategory.MOSS_GIANTS;
+		}
+		// Whole name rather than substring, so only the plain Cyclops matches and a longer name
+		// built on the word does not
+		if (nameLower.equals("cyclops"))
+		{
+			return RetroNpcCategory.CYCLOPS;
 		}
 		if (nameLower.contains("chicken"))
 		{

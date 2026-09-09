@@ -34,9 +34,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 
-import com.retronpcswapper.compatibility.*;
+import com.retronpcswapper.inject.ClasspathAssetSource;
+import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroAssetSource;
+import com.retronpcswapper.compatibility.InteractHighlightCompat;
+import com.retronpcswapper.compatibility.InteractTargetTracker;
+import com.retronpcswapper.compatibility.RetroInteractHighlightOverlay;
+import com.retronpcswapper.compatibility.RetroNpcOutliner;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.Actor;
@@ -73,7 +81,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 @Slf4j
 @PluginDescriptor(
 	name = "Retro NPC Swapper",
-	description = "Swaps modern NPC models and animations to their 2004/2005 retro variants from the Old School RuneScape cache.",
+	description = "Swaps modern NPC models and animations to their 2004/2005 retro variants, using the live cache where those assets survive and a bundled 2005 set where they do not.",
 	tags = {"npc", "retro", "swapper", "model", "animation", "cache"}
 )
 public class RetroNpcSwapperPlugin extends Plugin
@@ -98,6 +106,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	@Inject
 	private RetroModelCache modelCache;
+
+	@Inject
+	private ScheduledExecutorService executor;
+
+	/** Where injected geometry comes from. Swappable so the delivery mechanism can change later. */
+	private final RetroAssetSource assetSource = new ClasspathAssetSource();
 
 	@Inject
 	private OverlayManager overlayManager;
@@ -126,11 +140,31 @@ public class RetroNpcSwapperPlugin extends Plugin
 	// Whether we are currently drawing Interact Highlight's NPC outlines in its place
 	private boolean outlineTakeover;
 
+	/**
+	 * The in-flight bundle read, so shutDown can cancel it.
+	 *
+	 * <p>Volatile because startUp and shutDown are not guaranteed to be the same thread.
+	 */
+	private volatile Future<?> bundleLoad;
+
+	/**
+	 * Whether this plugin is still running, read by anything coming back from another thread.
+	 *
+	 * <p>Volatile for real here rather than defensively: this is written in shutDown and read on
+	 * the executor's thread. Cancelling a task cannot stop one already past its own read, nor a
+	 * {@code clientThread} runnable it has already queued, so the flag is what actually closes the
+	 * window - cancel only keeps a task that never started from starting.
+	 */
+	private volatile boolean active;
+
 	@Override
 	protected void startUp() throws Exception
 	{
 		log.info("Retro NPC Swapper started");
+		active = true;
+		migrateLegacyToggles();
 		loadMappings();
+		loadAssetBundle();
 		clientThread.invoke(() ->
 		{
 			// A session that died while suppressing left Interact Highlight's NPC outlines off.
@@ -141,10 +175,65 @@ public class RetroNpcSwapperPlugin extends Plugin
 		});
 	}
 
+	/**
+	 * Carries saved values across from config keys that have been replaced.
+	 */
+	private void migrateLegacyToggles()
+	{
+		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_HILL_GIANTS,
+			RetroNpcConfig.SWAP_GIANTS);
+	}
+
+	/**
+	 * Hands a retired key's saved value to the toggles that replaced it.
+	 *
+	 * <p>Renaming a config key silently resets whatever the user had chosen, so the old key is read
+	 * once and its value handed on. Only ever writes a key that has no value of its own, so a user
+	 * who has already set the new toggles is never overwritten - which also makes this safe to run
+	 * on every start. The old key is cleared afterward, so the migration happens once and leaves no
+	 * orphan behind.
+	 *
+	 * <p>Takes the manager rather than reading the field so it can be driven directly from a test.
+	 * There is no cache or client involved here, only ConfigManager calls, so that is the whole of
+	 * what the behavior needs to be checked against.
+	 */
+	static void migrateLegacyToggle(ConfigManager configManager, String legacyKey, String... newKeys)
+	{
+		String legacy = configManager.getConfiguration(RetroNpcConfig.GROUP, legacyKey);
+
+		if (legacy == null)
+		{
+			return;
+		}
+
+		for (String key : newKeys)
+		{
+			if (configManager.getConfiguration(RetroNpcConfig.GROUP, key) == null)
+			{
+				configManager.setConfiguration(RetroNpcConfig.GROUP, key, Boolean.parseBoolean(legacy));
+			}
+		}
+
+		configManager.unsetConfiguration(RetroNpcConfig.GROUP, legacyKey);
+		log.debug("Migrated {}={} to {}", legacyKey, legacy, String.join(", ", newKeys));
+	}
+
 	@Override
 	protected void shutDown() throws Exception
 	{
 		log.info("Retro NPC Swapper stopped");
+		active = false;
+
+		// The executor is RuneLite's own and is not ours to shut down, but the read we put on it is.
+		// Cancelling does not interrupt one already in progress - hence the active flag it also
+		// checks - it only keeps a queued one from ever starting.
+		Future<?> load = bundleLoad;
+		if (load != null)
+		{
+			load.cancel(false);
+			bundleLoad = null;
+		}
+
 		clientThread.invoke(() ->
 		{
 			// detach() stands the Interact Highlight takeover down as part of dropping the wrapper
@@ -447,8 +536,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		// Build the replacement geometry here, on the client thread, so the draw callback
-		// only ever does a map lookup
-		modelCache.ensureBuilt(npc.getId(), data);
+		// only ever does a map lookup. Nothing else happens if that fails: an NPC left on its
+		// vanilla model must keep its vanilla animations too, for the reason above. The bundle
+		// loads off-thread, so this is not a rare path - every giant, guard, dragon and demon
+		// already on screen when the plugin starts comes through here before it lands, and
+		// recheckLoadedNpcs picks them up once it does.
+		if (!modelCache.ensureBuilt(npc.getId(), data))
+		{
+			modelCache.clearSubstituted(npc.getId());
+			resetNpc(npc);
+			return;
+		}
+
 		modelCache.setSubstituted(npc.getId());
 		applyRetroSwap(npc, data);
 	}
@@ -529,17 +628,112 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case ZOMBIES:
 				return config.swapZombies();
 			case HILL_GIANTS:
-				return config.swapHillGiants();
+				// The body survives and the Jogre head stands in for the one that does not, so this
+				// one renders on either path - the injection toggle just decides which
+				return config.swapGiants();
+			case FIRE_GIANTS:
+			case ICE_GIANTS:
+			case MOSS_GIANTS:
+				// Their 2005 heads are gone from the live cache, so the cache-backed path would load
+				// unrelated geometry. Only the bundle can supply them.
+				return config.swapGiants() && injectionEnabled();
+			case CYCLOPS:
+				return config.swapCyclops() && injectionEnabled();
+			case GUARDS:
+				// Three of the nine kit parts are gone from the live cache, and the six that remain
+				// were re-bound to a different rig, so both the geometry and the animation have to
+				// come from the bundle
+				return config.swapGuards() && injectionEnabled();
 			case GHOSTS:
 				return config.swapGhosts();
+			case ADULT_DRAGONS:
+			case BABY_DRAGONS:
+				// The adult mesh has no usable live counterpart at all - the ids resolve, but to
+				// unrelated geometry. The baby mesh survives, but both had their frames re-authored,
+				// so both need the injected path to be animated from the 2005 data
+				return config.swapDragons() && injectionEnabled();
+			case LESSER_DEMONS:
+			case GREATER_DEMONS:
+			case BLACK_DEMONS:
+				return config.swapDemons() && injectionEnabled();
+			case IMPS:
+				// The imp mesh survives, so this is not about geometry: the frames behind its
+				// sequence ids were re-authored for the modern rig, and applying the 2005 ones
+				// means skinning the model ourselves
+				return config.swapImps() && injectionEnabled();
 			default:
-				// The remaining categories (demons, imps, guards, dragons) are disabled. Their
-				// 2005 model IDs still resolve in the modern cache, but resolving is not the same
-				// as being the same mesh: for dragons and demons the geometry at those IDs was
-				// replaced outright, and the retro meshes are not in the live cache at any ID.
-				// See the archetype comments in RetroNpcMapping for the per-category blocker.
 				return false;
 		}
+	}
+
+	/**
+	 * Whether the categories that can only be drawn from the bundle are allowed to draw at all.
+	 *
+	 * <p>The config value rather than the cache's copy of it. The two are the same by the time this
+	 * decides anything: recheckLoadedNpcs hands the config value to the cache, and processNpc will
+	 * not reach here until attach() has run, which happens after that on every path.
+	 */
+	private boolean injectionEnabled()
+	{
+		return config.useInjectionPipeline();
+	}
+
+	/**
+	 * Reads the injected asset bundle off the client thread and publishes it back onto it.
+	 *
+	 * <p>Decompressing the bundle is quick, but it is still disk IO, and startUp must not block on
+	 * it - so this is fire-and-forget. Everything downstream treats an absent bundle as "no
+	 * injected assets", which is why nothing has to wait for this to finish.
+	 */
+	private void loadAssetBundle()
+	{
+		bundleLoad = executor.submit(() ->
+		{
+			if (!active)
+			{
+				return;
+			}
+
+			RetroAssetBundle bundle;
+			try
+			{
+				bundle = assetSource.load();
+			}
+			catch (IOException ex)
+			{
+				// A bundle that exists but will not read is worth saying out loud, unlike one that
+				// is simply absent - it means a stale or truncated resource, not a build without
+				// injected assets
+				log.warn("Could not read the retro asset bundle; injected geometry is unavailable", ex);
+				return;
+			}
+
+			if (bundle.isEmpty())
+			{
+				log.debug("No retro asset bundle present");
+				return;
+			}
+
+			clientThread.invoke(() ->
+			{
+				// A read that finishes after shutDown must not put the bundle back into a cache
+				// that was just cleared, nor sweep the scene on behalf of a plugin that is no
+				// longer running
+				if (!active)
+				{
+					log.debug("Retro asset bundle finished reading after shutdown; dropping it");
+					return;
+				}
+
+				modelCache.setBundle(bundle);
+
+				// The load is off-thread, so NPCs are usually already on screen by the time it
+				// lands - and setBundle only drops what was built, it does not rebuild. Without
+				// this they stay vanilla until they happen to respawn, which for the guards
+				// standing where you log in could be a long time.
+				recheckLoadedNpcs();
+			});
+		});
 	}
 
 	/**
@@ -547,6 +741,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void recheckLoadedNpcs()
 	{
+		// Cheap and idempotent, and this runs on every path that could have changed the setting -
+		// startup, config change, world change, a landed bundle, and attach
+		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
+
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			return;
@@ -643,7 +841,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			// Something else holds the slot. If it wrapped our wrapper, that stale decorator
 			// stays in its chain - harmless once the cache's memo is cleared (every
-			// substitution then falls through to the vanilla model), but worth a trace.
+			// substitution then falls through to the vanilla model), but worth saying.
 			log.debug("Draw callbacks slot no longer ours at detach; leaving it untouched");
 		}
 		wrapper = null;
