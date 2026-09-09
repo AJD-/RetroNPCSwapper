@@ -65,10 +65,19 @@ import net.runelite.api.Node;
  * {@code drawOrtho} belong to the software rasterizer, which is not in use under the GPU plugin.
  *
  * <p><b>Maintenance cost, deliberately accepted:</b> {@code Model} has no default methods, so a
- * RuneLite release that adds one breaks compilation here. Worse, a sideloaded jar meets whatever
- * client the launcher runs, and a missing method surfaces at runtime as {@link AbstractMethodError}
- * inside the uploader - an {@code Error}, which the GPU plugin's {@code catch (Exception)} will not
- * contain. The build pins the client version; that narrows the window, it does not close it.
+ * RuneLite release that adds one breaks compilation here. Nothing pins the client version to stop
+ * that: {@code build.gradle} resolves {@code latest.release}, matching the example-plugin template,
+ * and the Hub rebuilds against whatever is current regardless of what a plugin asks for.
+ *
+ * <p>That cuts two ways, and the difference matters. Through the Hub the failure is loud and
+ * contained - the rebuild fails, the plugin is delisted until it is patched, and no user ever runs
+ * a jar missing a method. A <b>sideloaded</b> jar is the dangerous case: it meets whatever client
+ * the launcher runs, and a method added since it was compiled surfaces at runtime as
+ * {@link AbstractMethodError} inside the uploader - an {@code Error}, which the GPU plugin's
+ * {@code catch (Exception)} will not contain.
+ *
+ * <p>So the mitigation is upkeep rather than a version range: when {@code Model} changes, this
+ * class changes with it. The interface was last read in full against client 1.12.38.
  */
 @Slf4j
 public class RetroModel implements Model
@@ -194,20 +203,44 @@ public class RetroModel implements Model
 	 */
 	public void copyFrom(Model source)
 	{
-		verticesCount = source.getVerticesCount();
-		faceCount = source.getFaceCount();
+		float[] sourceX = source.getVerticesX();
+		float[] sourceY = source.getVerticesY();
+		float[] sourceZ = source.getVerticesZ();
 
-		verticesX = copy(source.getVerticesX(), verticesX, verticesCount);
-		verticesY = copy(source.getVerticesY(), verticesY, verticesCount);
-		verticesZ = copy(source.getVerticesZ(), verticesZ, verticesCount);
+		int[] sourceI1 = source.getFaceIndices1();
+		int[] sourceI2 = source.getFaceIndices2();
+		int[] sourceI3 = source.getFaceIndices3();
 
-		faceIndices1 = copy(source.getFaceIndices1(), faceIndices1, faceCount);
-		faceIndices2 = copy(source.getFaceIndices2(), faceIndices2, faceCount);
-		faceIndices3 = copy(source.getFaceIndices3(), faceIndices3, faceCount);
+		int[] sourceC1 = source.getFaceColors1();
+		int[] sourceC2 = source.getFaceColors2();
+		int[] sourceC3 = source.getFaceColors3();
 
-		faceColors1 = copy(source.getFaceColors1(), faceColors1, faceCount);
-		faceColors2 = copy(source.getFaceColors2(), faceColors2, faceCount);
-		faceColors3 = copy(source.getFaceColors3(), faceColors3, faceCount);
+		// The counts are settled against what actually arrived, before anything is copied, rather
+		// than taken from the source's own getters and trusted. A count that overruns its arrays is
+		// worse than an empty model: every consumer reads these by count, starting with
+		// calculateBoundsCylinder below, and the buffers here are reused between NPCs - so a short
+		// column would not read zeroes, it would read the previous NPC's geometry.
+		//
+		// A client model should never present this way. This class exists to hold geometry the
+		// client never made, so it does not get to assume the shape of what it is handed. Nested
+		// rather than a varargs helper because this runs per NPC per frame.
+		verticesCount = Math.min(source.getVerticesCount(),
+			Math.min(length(sourceX), Math.min(length(sourceY), length(sourceZ))));
+		faceCount = Math.min(source.getFaceCount(), Math.min(
+			Math.min(length(sourceI1), Math.min(length(sourceI2), length(sourceI3))),
+			Math.min(length(sourceC1), Math.min(length(sourceC2), length(sourceC3)))));
+
+		verticesX = copy(sourceX, verticesX, verticesCount);
+		verticesY = copy(sourceY, verticesY, verticesCount);
+		verticesZ = copy(sourceZ, verticesZ, verticesCount);
+
+		faceIndices1 = copy(sourceI1, faceIndices1, faceCount);
+		faceIndices2 = copy(sourceI2, faceIndices2, faceCount);
+		faceIndices3 = copy(sourceI3, faceIndices3, faceCount);
+
+		faceColors1 = copy(sourceC1, faceColors1, faceCount);
+		faceColors2 = copy(sourceC2, faceColors2, faceCount);
+		faceColors3 = copy(sourceC3, faceColors3, faceCount);
 
 		// These are legitimately null on most models, and null carries meaning to the renderer -
 		// a null transparency array is what puts a model on the opaque path - so do not
@@ -337,6 +370,17 @@ public class RetroModel implements Model
 			(double) xzRadius * xzRadius + (double) modelHeight * modelHeight));
 		diameter = radius + (int) Math.ceil(Math.sqrt(
 			(double) xzRadius * xzRadius + (double) bottomY * bottomY));
+	}
+
+	/** A null column is length zero rather than an error; the counts above are clamped to it. */
+	private static int length(float[] values)
+	{
+		return values == null ? 0 : values.length;
+	}
+
+	private static int length(int[] values)
+	{
+		return values == null ? 0 : values.length;
 	}
 
 	private static float[] copy(float[] source, float[] into, int length)

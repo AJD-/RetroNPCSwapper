@@ -677,6 +677,11 @@ public class RetroModelCache
 
 	public void clear()
 	{
+		// The bundle goes with everything else. This is a singleton that outlives the plugin, so
+		// keeping the decoded geometry here would hold it until the next start for nothing - and a
+		// restart reads it again anyway, which is what makes dropping it free.
+		bundle = RetroAssetBundle.empty();
+
 		substituted.clear();
 		reportedActions.clear();
 		baseModels.clear();

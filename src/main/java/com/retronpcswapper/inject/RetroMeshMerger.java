@@ -126,6 +126,11 @@ public final class RetroMeshMerger
 			groups.add(new ArrayList<>());
 		}
 
+		// Counted rather than reported as they are found: this is a per-face condition, and one bad
+		// merge would otherwise be hundreds of identical lines in a user's log
+		int overflowedFaces = 0;
+		int highestTriangle = -1;
+
 		int vertexBase = 0;
 		int faceBase = 0;
 		int triangleBase = 0;
@@ -175,7 +180,16 @@ public final class RetroMeshMerger
 				}
 				if (textureCoords != null)
 				{
-					textureCoords[face] = mergedCoord(id, partCoords, f, triangleBase);
+					int merged = mergedCoord(partCoords, f, triangleBase);
+					if (merged >= MAX_TEXTURE_TRIANGLES)
+					{
+						// Wrapping the byte would map this face onto some unrelated triangle, so
+						// it falls back to the renderer's own projection instead
+						overflowedFaces++;
+						highestTriangle = Math.max(highestTriangle, merged);
+						merged = -1;
+					}
+					textureCoords[face] = (byte) merged;
 				}
 			}
 
@@ -210,6 +224,16 @@ public final class RetroMeshMerger
 			triangleBase += part.getTextureTriangleCount();
 		}
 
+		if (overflowedFaces > 0)
+		{
+			// Unreachable from a bundle the generator produced - it refuses a set that would get
+			// here - so say it once, loudly, rather than once per face
+			log.warn("Merged mesh {} maps {} of its {} faces to texture triangles past the {} the "
+				+ "renderer can address, the highest being {}; those faces fall back to the "
+				+ "face-as-UV projection", id, overflowedFaces, totalFaces,
+				MAX_TEXTURE_TRIANGLES, highestTriangle);
+		}
+
 		int[][] vertexGroups = new int[groupCount][];
 		for (int group = 0; group < groupCount; group++)
 		{
@@ -233,26 +257,18 @@ public final class RetroMeshMerger
 	 *
 	 * <p>A part can decline a triangle two ways - a null array, meaning no face on it names one, or
 	 * a -1 entry, meaning that one face uses the renderer's projection - and both mean -1 here.
+	 *
+	 * <p>Returned as an {@code int} rather than a {@code byte} so the caller can tell an index the
+	 * renderer cannot address from one it can; narrowing here would wrap it into a valid-looking
+	 * triangle and lose exactly the thing worth reporting.
 	 */
-	private static byte mergedCoord(int id, byte[] partCoords, int face, int triangleBase)
+	private static int mergedCoord(byte[] partCoords, int face, int triangleBase)
 	{
 		if (partCoords == null || partCoords[face] == -1)
 		{
 			return -1;
 		}
 
-		int merged = (partCoords[face] & 0xFF) + triangleBase;
-		if (merged >= MAX_TEXTURE_TRIANGLES)
-		{
-			// Unreachable from a bundle the generator produced - it refuses a set that would get
-			// here - so say so loudly rather than wrapping the byte and mapping the face onto some
-			// unrelated triangle
-			log.warn("Merged mesh {} needs texture triangle {}, past the {} the renderer can "
-				+ "address; that face falls back to the face-as-UV projection",
-				id, merged, MAX_TEXTURE_TRIANGLES);
-			return -1;
-		}
-
-		return (byte) merged;
+		return (partCoords[face] & 0xFF) + triangleBase;
 	}
 }

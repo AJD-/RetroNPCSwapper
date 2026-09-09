@@ -119,6 +119,59 @@ public class RetroModelTest
 			model.getVerticesX().length >= model.getVerticesCount());
 	}
 
+	/**
+	 * A count that overruns its own arrays must be believed no further than the arrays go.
+	 *
+	 * <p>This is the reused-buffer case, which is why it is worth a test rather than a shrug: the
+	 * previous model's vertices are still sitting in the buffer past the new one's end, so trusting
+	 * the larger count would not read zeroes - it would read the last NPC's geometry and size the
+	 * bounding cylinder around it. {@code ModelUploader.uploadSortedModel} buckets faces into an
+	 * array of {@code diameter} slots and asserts the index lands inside it, so bounds taken from
+	 * the wrong geometry are an {@code AssertionError} in the renderer.
+	 */
+	@Test
+	public void testACountThatOverrunsItsArraysIsClampedToThem()
+	{
+		RetroModel model = new RetroModel();
+
+		Source big = source(64, 32);
+		big.y[0] = -400f;                       // Y is negative upward, so this is a tall model
+		model.copyFrom(big);
+		assertEquals(400, model.getModelHeight());
+
+		// Claims 64 vertices and 32 faces but carries four and two. The buffers still hold the
+		// tall model, so a clamp that did not happen would show up as its height coming back.
+		Source lying = source(4, 2);
+		lying.verticesCount = 64;
+		lying.faceCount = 32;
+		model.copyFrom(lying);
+
+		assertEquals(4, model.getVerticesCount());
+		assertEquals(2, model.getFaceCount());
+		assertEquals("bounds must come from the geometry that arrived, not the buffer's tail",
+			0, model.getModelHeight());
+	}
+
+	/**
+	 * A null column is the degenerate form of the same thing - {@code copy} hands back an empty
+	 * array for one, so the count has to follow it down to zero rather than describe it.
+	 */
+	@Test
+	public void testANullColumnTakesTheCountToZero()
+	{
+		RetroModel model = new RetroModel();
+		model.copyFrom(source(64, 32));
+
+		Source missing = source(8, 4);
+		missing.z = null;
+		model.copyFrom(missing);
+
+		assertEquals(0, model.getVerticesCount());
+
+		// The faces are intact, so their count stands; only the vertex side collapsed
+		assertEquals(4, model.getFaceCount());
+	}
+
 	@Test
 	public void testBoundsFollowTheGeometry()
 	{

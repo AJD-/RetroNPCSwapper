@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 
@@ -136,10 +137,28 @@ public class RetroNpcSwapperPlugin extends Plugin
 	// Whether we are currently drawing Interact Highlight's NPC outlines in its place
 	private boolean outlineTakeover;
 
+	/**
+	 * The in-flight bundle read, so shutDown can cancel it.
+	 *
+	 * <p>Volatile because startUp and shutDown are not guaranteed to be the same thread.
+	 */
+	private volatile Future<?> bundleLoad;
+
+	/**
+	 * Whether this plugin is still running, read by anything coming back from another thread.
+	 *
+	 * <p>Volatile for real here rather than defensively: this is written in shutDown and read on
+	 * the executor's thread. Cancelling a task cannot stop one already past its own read, nor a
+	 * {@code clientThread} runnable it has already queued, so the flag is what actually closes the
+	 * window - cancel only keeps a task that never started from starting.
+	 */
+	private volatile boolean active;
+
 	@Override
 	protected void startUp() throws Exception
 	{
 		log.info("Retro NPC Swapper started");
+		active = true;
 		migrateLegacyToggles();
 		loadMappings();
 		loadAssetBundle();
@@ -200,6 +219,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 	protected void shutDown() throws Exception
 	{
 		log.info("Retro NPC Swapper stopped");
+		active = false;
+
+		// The executor is RuneLite's own and is not ours to shut down, but the read we put on it is.
+		// Cancelling does not interrupt one already in progress - hence the active flag it also
+		// checks - it only keeps a queued one from ever starting.
+		Future<?> load = bundleLoad;
+		if (load != null)
+		{
+			load.cancel(false);
+			bundleLoad = null;
+		}
+
 		clientThread.invoke(() ->
 		{
 			// detach() stands the Interact Highlight takeover down as part of dropping the wrapper
@@ -650,8 +681,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void loadAssetBundle()
 	{
-		executor.execute(() ->
+		bundleLoad = executor.submit(() ->
 		{
+			if (!active)
+			{
+				return;
+			}
+
 			RetroAssetBundle bundle;
 			try
 			{
@@ -674,6 +710,15 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 			clientThread.invoke(() ->
 			{
+				// A read that finishes after shutDown must not put the bundle back into a cache
+				// that was just cleared, nor sweep the scene on behalf of a plugin that is no
+				// longer running
+				if (!active)
+				{
+					log.debug("Retro asset bundle finished reading after shutdown; dropping it");
+					return;
+				}
+
 				modelCache.setBundle(bundle);
 
 				// The load is off-thread, so NPCs are usually already on screen by the time it

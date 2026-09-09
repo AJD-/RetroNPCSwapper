@@ -308,6 +308,35 @@ public class RetroMeshMergerTest
 		assertArrayEquals(new int[]{2, 2, 5}, merged.getTexIndices3());
 	}
 
+	/**
+	 * The renderer reads a per-face triangle index as {@code textureFaces[face] & 0xff}, so 255 is
+	 * indistinguishable from the -1 that means "no triangle" and only 0..254 are addressable. A
+	 * merge that pushes a face past that must drop it to the face-as-UV projection rather than let
+	 * the byte wrap onto some unrelated triangle.
+	 *
+	 * <p>Three indices are needed to pin this, because two of them cannot tell the behaviours apart:
+	 * 254 is the last index that still works, so it separates a correct boundary from one off by
+	 * one; 255 narrows to -1 whether it wrapped or fell back, so it proves nothing on its own; 256
+	 * is the one that matters, because wrapping it yields 0 and silently maps the face onto the
+	 * first part's own first triangle - a corruption with nothing on screen to announce it.
+	 */
+	@Test
+	public void testAFaceMappedPastTheAddressableTrianglesFallsBackRatherThanWrapping()
+	{
+		RetroMesh first = textured(1, 1, new byte[]{0}, 254);
+		RetroMesh second = textured(2, 3, new byte[]{0, 1, 2}, 3);
+
+		RetroMesh merged = RetroMeshMerger.merge(1, Arrays.asList(first, second));
+
+		// second's triangles shift by first's 254 to 254, 255 and 256. Only the first is
+		// addressable; the other two must read as "no triangle", never as 255 & 0xff or 0
+		assertArrayEquals(new byte[]{0, (byte) 254, -1, -1}, merged.getTextureCoords());
+
+		// The table itself still concatenates in full - it is the per-face index that cannot reach
+		// the tail, not the triangles that go missing
+		assertEquals(257, merged.getTextureTriangleCount());
+	}
+
 	/** Three vertices, {@code coords.length} faces and {@code triangles} texture triangles. */
 	private static RetroMesh textured(int id, int faceCount, byte[] coords, int triangles)
 	{
