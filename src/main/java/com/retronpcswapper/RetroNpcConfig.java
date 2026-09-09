@@ -178,7 +178,7 @@ public interface RetroNpcConfig extends Config
 	)
 	default boolean swapDragons()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -192,7 +192,7 @@ public interface RetroNpcConfig extends Config
 	)
 	default boolean swapDemons()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -206,7 +206,7 @@ public interface RetroNpcConfig extends Config
 	)
 	default boolean swapImps()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -219,7 +219,7 @@ public interface RetroNpcConfig extends Config
 	)
 	default boolean swapCyclops()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigItem(
@@ -233,7 +233,7 @@ public interface RetroNpcConfig extends Config
 	)
 	default boolean swapGuards()
 	{
-		return false;
+		return true;
 	}
 
 	@ConfigSection(
@@ -290,6 +290,6 @@ public interface RetroNpcConfig extends Config
 	)
 	default boolean overrideInteractHighlight()
 	{
-		return false;
+		return true;
 	}
 }
