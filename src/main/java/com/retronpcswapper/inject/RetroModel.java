@@ -286,7 +286,10 @@ public class RetroModel implements Model
 	 */
 	private void compareBoundsAgainst(Model source)
 	{
-		if (boundsChecked)
+		// A debug line is the whole output, and this runs per NPC per frame, so it does not run at
+		// all unless someone is reading - it also forces a bounds recompute on the client's model
+		// below. Tested before the one-shot flag so enabling debug mid-session still gets a check.
+		if (!log.isDebugEnabled() || boundsChecked)
 		{
 			return;
 		}

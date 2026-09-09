@@ -13,6 +13,7 @@ import com.retronpcswapper.RetroNpcMappingEntry;
 import com.retronpcswapper.RetroNpcSwapperPlugin;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 public class RetroCacheTest
 {
@@ -30,7 +31,7 @@ public class RetroCacheTest
 	@Test
 	public void testEvery2005SequenceDecodes() throws Exception
 	{
-		if (!CACHE_DIR.exists()) return;
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
 
 		RetroCacheReader reader = new RetroCacheReader(CACHE_DIR);
 		assertTrue("could not open the 2005 cache", reader.init());
@@ -58,7 +59,7 @@ public class RetroCacheTest
 	@Test
 	public void test317NpcDecoder() throws Exception
 	{
-		if (!CACHE_DIR.exists()) return;
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
 
 		Map<Integer, RetroNpcDefinition> defs = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
 		assertTrue(defs.size() > 1000);
@@ -93,7 +94,7 @@ public class RetroCacheTest
 	@Test
 	public void testCommittedMappingsMatchGenerator() throws Exception
 	{
-		if (!CACHE_DIR.exists()) return;
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
 
 		List<RetroNpcMappingEntry> generated =
 			NpcMappingGenerator.buildEntries(NpcMappingGenerator.decodeDefinitions(CACHE_DIR));

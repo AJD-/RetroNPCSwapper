@@ -633,17 +633,14 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case MOSS_GIANTS:
 				// Their 2005 heads are gone from the live cache, so the cache-backed path would load
 				// unrelated geometry. Only the bundle can supply them.
-				return config.swapGiants() && config.useInjectionPipeline()
-					&& modelCache.isInjectionPipelineEnabled();
+				return config.swapGiants() && injectionEnabled();
 			case CYCLOPS:
-				return config.swapCyclops() && config.useInjectionPipeline()
-					&& modelCache.isInjectionPipelineEnabled();
+				return config.swapCyclops() && injectionEnabled();
 			case GUARDS:
 				// Three of the nine kit parts are gone from the live cache, and the six that remain
 				// were re-bound to a different rig, so both the geometry and the animation have to
 				// come from the bundle
-				return config.swapGuards() && config.useInjectionPipeline()
-					&& modelCache.isInjectionPipelineEnabled();
+				return config.swapGuards() && injectionEnabled();
 			case GHOSTS:
 				return config.swapGhosts();
 			case ADULT_DRAGONS:
@@ -651,22 +648,31 @@ public class RetroNpcSwapperPlugin extends Plugin
 				// The adult mesh has no usable live counterpart at all - the ids resolve, but to
 				// unrelated geometry. The baby mesh survives, but both had their frames re-authored,
 				// so both need the injected path to be animated from the 2005 data
-				return config.useInjectionPipeline() && config.swapDragons()
-					&& modelCache.isInjectionPipelineEnabled();
+				return config.swapDragons() && injectionEnabled();
 			case LESSER_DEMONS:
 			case GREATER_DEMONS:
 			case BLACK_DEMONS:
-				return config.useInjectionPipeline() && config.swapDemons()
-					&& modelCache.isInjectionPipelineEnabled();
+				return config.swapDemons() && injectionEnabled();
 			case IMPS:
 				// The imp mesh survives, so this is not about geometry: the frames behind its
 				// sequence ids were re-authored for the modern rig, and applying the 2005 ones
 				// means skinning the model ourselves
-				return config.useInjectionPipeline() && config.swapImps()
-					&& modelCache.isInjectionPipelineEnabled();
+				return config.swapImps() && injectionEnabled();
 			default:
 				return false;
 		}
+	}
+
+	/**
+	 * Whether the categories that can only be drawn from the bundle are allowed to draw at all.
+	 *
+	 * <p>The config value rather than the cache's copy of it. The two are the same by the time this
+	 * decides anything: recheckLoadedNpcs hands the config value to the cache, and processNpc will
+	 * not reach here until attach() has run, which happens after that on every path.
+	 */
+	private boolean injectionEnabled()
+	{
+		return config.useInjectionPipeline();
 	}
 
 	/**

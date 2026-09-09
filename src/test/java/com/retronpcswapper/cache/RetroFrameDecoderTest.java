@@ -13,12 +13,14 @@ import net.runelite.cache.IndexType;
 import net.runelite.cache.fs.Store;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests for the 2005 index 2 frame decoder.
  *
- * <p>Both caches are untracked, so every test here no-ops when its input is missing. The container
- * test needs only the 2005 cache; the two oracles need the live cache as well.
+ * <p>Both caches are untracked, so every test here is skipped when its input is missing rather than
+ * passing vacuously. The container test needs only the 2005 cache; the two oracles need the live
+ * cache as well.
  */
 public class RetroFrameDecoderTest
 {
@@ -39,10 +41,6 @@ public class RetroFrameDecoderTest
 	public void testEveryFrameGroupDecodes()
 	{
 		RetroCacheReader retro = openRetro();
-		if (retro == null)
-		{
-			return;
-		}
 
 		try
 		{
@@ -101,11 +99,8 @@ public class RetroFrameDecoderTest
 	public void testSkeletonFramemapMatchesLive() throws Exception
 	{
 		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not present", liveDir != null);
 		RetroCacheReader retro = openRetro();
-		if (liveDir == null || retro == null)
-		{
-			return;
-		}
 
 		try (Store store = new Store(liveDir))
 		{
@@ -145,11 +140,8 @@ public class RetroFrameDecoderTest
 	public void testSkeletonFrameValuesMatchLive() throws Exception
 	{
 		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not present", liveDir != null);
 		RetroCacheReader retro = openRetro();
-		if (liveDir == null || retro == null)
-		{
-			return;
-		}
 
 		try (Store store = new Store(liveDir))
 		{
@@ -233,14 +225,18 @@ public class RetroFrameDecoderTest
 		return RetroSeqDecoder.decodeAll(seqDat, seqIdx);
 	}
 
+	/**
+	 * The 2005 cache, or a skipped test when it is not present.
+	 *
+	 * <p>A cache that is present but will not open is a failure rather than a skip. Treating the
+	 * two the same reports green for a corrupt cache, which is the outcome worth knowing about.
+	 */
 	private static RetroCacheReader openRetro()
 	{
-		if (!RETRO_CACHE_DIR.exists())
-		{
-			return null;
-		}
+		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
 
 		RetroCacheReader retro = new RetroCacheReader(RETRO_CACHE_DIR);
-		return retro.init() ? retro : null;
+		assertTrue("could not open the 2005 cache", retro.init());
+		return retro;
 	}
 }

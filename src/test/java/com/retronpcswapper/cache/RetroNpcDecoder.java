@@ -56,6 +56,7 @@ public class RetroNpcDecoder
 			}
 
 			Buffer datBuffer = new Buffer(npcDat);
+			int failed = 0;
 			for (int j = 0; j < totalNpcs; j++)
 			{
 				int npcOffset = streamIndices[j];
@@ -63,7 +64,11 @@ public class RetroNpcDecoder
 				{
 					datBuffer.setOffset(npcOffset);
 					RetroNpcDefinition def = decodeNpc(j, datBuffer, npcDat.length);
-					if (def != null && def.getName() != null && !def.getName().isEmpty())
+					if (def == null)
+					{
+						failed++;
+					}
+					else if (def.getName() != null && !def.getName().isEmpty())
 					{
 						defs.put(j, def);
 					}
@@ -71,6 +76,13 @@ public class RetroNpcDecoder
 			}
 
 			log.info("Successfully decoded {} 2005 Retro NPC definitions", defs.size());
+			if (failed > 0)
+			{
+				// Said out loud rather than left to the count: a drop here changes what
+				// generateNpcMappings writes, and RetroCacheTest compares that against the
+				// committed resource
+				log.warn("{} 2005 NPC definitions did not decode and were dropped", failed);
+			}
 		}
 		catch (Exception e)
 		{
@@ -231,8 +243,15 @@ public class RetroNpcDecoder
 			}
 		}
 		}
-		catch (Exception ignored)
+		catch (Exception e)
 		{
+			// Everything after a failed read is garbage, so the entry goes rather than keeping
+			// however much of it was decoded before the stream position was lost. A definition that
+			// looks decoded but is not is worse than a missing one: it reaches npc-mappings.json
+			// and nothing downstream can tell the two apart. Same contract as RetroSeqDecoder,
+			// whose javadoc records what keeping the partial reads cost there.
+			log.debug("2005 NPC {} did not decode", id, e);
+			return null;
 		}
 
 		return def;

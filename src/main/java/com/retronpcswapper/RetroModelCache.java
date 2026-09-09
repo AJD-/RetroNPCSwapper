@@ -550,7 +550,10 @@ public class RetroModelCache
 	 */
 	private void verifySkinning(NPC npc, Model posed)
 	{
-		if (skinningVerified || posed == null || npc.getAnimation() != -1)
+		// Nothing but a debug line comes of this, and it runs per NPC per frame, so it does not run
+		// at all unless someone is reading. Tested before the one-shot flag, so enabling debug
+		// mid-session still gets a comparison rather than finding the shot already spent.
+		if (!log.isDebugEnabled() || skinningVerified || posed == null || npc.getAnimation() != -1)
 		{
 			return;
 		}
@@ -672,12 +675,6 @@ public class RetroModelCache
 		unbuildable.clear();
 	}
 
-	/** Whether injected geometry is currently in use. */
-	public boolean isInjectionPipelineEnabled()
-	{
-		return useInjectionPipeline;
-	}
-
 	public void clear()
 	{
 		// The bundle goes with everything else. This is a singleton that outlives the plugin, so
@@ -765,7 +762,9 @@ public class RetroModelCache
 	 */
 	private void verifyLighting(ModelData source, Model lit)
 	{
-		if (lightingVerified || lit == null)
+		// As verifySkinning: a debug line is the whole output, so it is not worth the three face
+		// arrays compareLighting allocates unless someone is reading
+		if (!log.isDebugEnabled() || lightingVerified || lit == null)
 		{
 			return;
 		}

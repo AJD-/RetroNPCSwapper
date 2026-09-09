@@ -1211,12 +1211,28 @@ public class RetroNpcCategoryTest
 		assertTrue("disablePvpWorld must default to true", config.disablePvpWorld());
 		assertTrue("disableWilderness must default to true", config.disableWilderness());
 
-		// The five live category toggles default to on
+		// Every category that renders without the bundle defaults to on
 		assertTrue("swapChickens must default to true", config.swapChickens());
 		assertTrue("swapGoblins must default to true", config.swapGoblins());
 		assertTrue("swapSkeletons must default to true", config.swapSkeletons());
 		assertTrue("swapZombies must default to true", config.swapZombies());
 		assertTrue("swapGiants must default to true", config.swapGiants());
+		assertTrue("swapGhosts must default to true", config.swapGhosts());
+
+		// The pipeline toggle carries the six bundle-only categories, so its default decides
+		// whether they can render at all - see isCategoryEnabled
+		assertTrue("useInjectionPipeline must default to true", config.useInjectionPipeline());
+
+		// The bundle-only categories are opt-in, because they are what the plugin distributes
+		assertFalse("swapDragons must default to false", config.swapDragons());
+		assertFalse("swapDemons must default to false", config.swapDemons());
+		assertFalse("swapImps must default to false", config.swapImps());
+		assertFalse("swapCyclops must default to false", config.swapCyclops());
+		assertFalse("swapGuards must default to false", config.swapGuards());
+
+		// Off by default: it turns another plugin's settings off while it is on
+		assertFalse("overrideInteractHighlight must default to false",
+			config.overrideInteractHighlight());
 	}
 
 	@Test

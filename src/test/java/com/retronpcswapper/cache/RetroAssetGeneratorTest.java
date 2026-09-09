@@ -12,6 +12,7 @@ import net.runelite.cache.definitions.ModelDefinition;
 import net.runelite.cache.fs.Store;
 import org.junit.Test;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * Tests the clip-building half of the generator, which the decoder oracles in
@@ -41,16 +42,10 @@ public class RetroAssetGeneratorTest
 	@Test
 	public void testTheRuntimeMergeMatchesTheGeneratorsOwn() throws Exception
 	{
-		if (!RETRO_CACHE_DIR.exists())
-		{
-			return;
-		}
+		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
 
 		RetroCacheReader retro = new RetroCacheReader(RETRO_CACHE_DIR);
-		if (!retro.init())
-		{
-			return;
-		}
+		assertTrue("could not open the 2005 cache", retro.init());
 
 		try
 		{
@@ -194,16 +189,11 @@ public class RetroAssetGeneratorTest
 	public void testRetroAndLiveClipPathsAgreeOnTheSkeleton() throws Exception
 	{
 		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
-		if (liveDir == null || !RETRO_CACHE_DIR.exists())
-		{
-			return;
-		}
+		assumeTrue("live cache not present", liveDir != null);
+		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
 
 		RetroCacheReader retro = new RetroCacheReader(RETRO_CACHE_DIR);
-		if (!retro.init())
-		{
-			return;
-		}
+		assertTrue("could not open the 2005 cache", retro.init());
 
 		try (Store store = new Store(liveDir))
 		{
