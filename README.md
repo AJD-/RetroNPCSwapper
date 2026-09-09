@@ -18,11 +18,11 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets* (on by default):
 
 - **Giants** — Fire, Ice and Moss, under the same Giants toggle as Hill
-- **Dragons** — adult and baby, in all four colors *(off by default)*
-- **Demons** — lesser, greater and black *(off by default)*
-- **Imps** *(off by default)*
-- **Cyclopes** *(off by default)*
-- **Guards** *(off by default)*
+- **Dragons** — adult and baby
+- **Demons** — lesser, greater and black
+- **Imps**
+- **Cyclopes**
+- **Guards**
 
 These need converted 2005 assets because swapping IDs is not enough for them, and they fail in two
 different ways. Some lost the mesh outright: the adult dragon and demon meshes were removed from the
