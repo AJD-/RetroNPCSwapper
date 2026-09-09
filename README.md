@@ -5,7 +5,7 @@ still live in the Old School RuneScape cache.
 
 ## What gets swapped
 
-Each category can be toggled individually in the plugin config:
+Each category can be toggled individually under **NPC Toggles** in the plugin config:
 
 - **Chickens**
 - **Goblins**
@@ -14,7 +14,7 @@ Each category can be toggled individually in the plugin config:
 - **Giants** — Hill, Fire, Ice and Moss
 - **Ghosts**
 
-Under **Experimental**, behind the *Use the injection pipeline* toggle:
+Also in **NPC Toggles**, off by default and gated behind *Use Converted 2005 Assets*:
 
 - **Dragons** — adult and baby, in all four colors
 - **Demons** — lesser, greater and black
@@ -22,35 +22,12 @@ Under **Experimental**, behind the *Use the injection pipeline* toggle:
 - **Cyclopes**
 - **Guards**
 
-These need the injection pipeline because swapping IDs is not enough for them. The adult dragon and
+These need converted 2005 assets because swapping IDs is not enough for them. The adult dragon and
 demon meshes were removed from the OSRS cache outright — the IDs were reused for unrelated geometry
 such as statues and skulls — so there is nothing to swap to. The imp and baby dragon meshes
 survived, but for all of them the animation *frames* behind the surviving sequence IDs were
 re-authored for the modern skeletons, so the sequences no longer drive the retro meshes. Both the
 geometry and the animation therefore come from the 2005 data instead of the live cache.
-
-The giant family is a mixed case, which is why it sits under one toggle in the first list. All five
-— the four giants and the cyclops — are the same 2005 body mesh (2870) wearing a different head, and
-that body survives in the live cache. Only the fire giant's head survived with it; the hill, ice,
-moss and cyclops heads were all reused for unrelated geometry. So **Hill Giants** render either way
-(the cache-backed path substitutes a Jogre head for the one that is gone, while the injected path
-carries the real 2005 head), and the rest need the injection pipeline to get a head at all. Their
-animations were never the problem: sequences 127-131 still resolve to framemap 302 and still fit the
-2005 body, so the clips come from the live cache.
-
-**Guards** are the odd one out, and the reason is worth stating. The 2005 definition builds them
-from nine parts of generic human kit, and six of the nine survive in the live cache byte for byte —
-but head 294, arms 151 and hands 254 had their ids reused, which is why the cache-backed path could
-never assemble a whole guard. The six that did survive turn out to need the 2005 animation anyway:
-they are geometrically identical in both caches, but their vertex groups were **renumbered**, from a
-roughly 35-group 2005 human rig to the 218 groups of the modern framemap 0. Same mesh, different
-bones — so a live sequence would drive the right geometry off the wrong joints.
-
-Note that rig *reach* cannot validate guards the way it validates the other categories. Their rig is
-the full 2005 player rig, which addresses every equipment slot a player can wear, while a guard
-wears nine parts using about 32 groups — so a large share of the ops in any player animation target
-slots this NPC does not have. The 2005 clips score 65-80% where the modern rig scores 48-63% on the
-same meshes, which says the 2005 pairing is the better one, but not that it is right.
 
 `./gradlew compareRetroModels -Pmodels=<ids> -Pfindmoved` is the tool that settles whether an ID
 still holds its 2005 mesh; `./gradlew verifyRetroRigs` settles whether its animation still fits.
@@ -87,12 +64,12 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
 - **Nothing is downloaded.** For the categories in the first list, the plugin ships only a table of
   numeric model and animation IDs, and every asset it displays already comes from your own game
   cache. Resolving an ID is not the same as it still being the 2005 asset, which is what separates
-  those categories from the experimental ones.
+  those categories from the injected ones.
 - **The injected categories ship their assets.** Dragons, demons, imps, the cyclops and the giant
   heads have no usable 2005 asset left in the live cache, so `retro-assets.dat` (~46 KB) is bundled
   in the jar and carries their meshes, rigs and animation clips, extracted from the February 2005
   cache. This is the one thing the plugin distributes rather than reads from your own installation,
-  which is why those categories are gated behind a toggle that is off by default. Parts are stored
+  which is why it is all gated behind a single toggle you can switch off. Parts are stored
   individually and joined at spawn, so the body the whole giant family shares is carried once.
 - Safety settings (on by default) disable all swapping on PvP worlds and in the Wilderness.
 
