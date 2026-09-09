@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>The container is the same shape as {@code npc.dat}/{@code npc.idx}: a count, then a per-entry
  * length table, then concatenated opcode streams. Only opcode 1 carries anything this needs - the
- * frame list - but the rest are still walked, because an unrecognised opcode means the stream
+ * frame list - but the rest are still walked, because an unrecognized opcode means the stream
  * position is lost and everything after it in that entry decodes as garbage.
  *
  * <h2>Two ways this differs from the modern format</h2>

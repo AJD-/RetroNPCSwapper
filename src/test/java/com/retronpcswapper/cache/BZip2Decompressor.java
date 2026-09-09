@@ -40,7 +40,7 @@ import lombok.extern.slf4j.Slf4j;
  * block's own bytes over the rest of the buffer. The result reads as correct data followed by
  * plausible-looking garbage. That cost 545 of the 1,670 sequences and 661 of the 1,709 NPC
  * definitions, and was misread for a long time as unfinished opcode coverage in the decoders
- * downstream. Hence the block loop, the per-block symbol bound on the output walk, and the refusal
+ * downstream. Hence, the block loop, the per-block symbol bound on the output walk, and the refusal
  * to return a buffer whose length does not match the one declared.
  */
 @Slf4j
@@ -539,10 +539,7 @@ public class BZip2Decompressor
 		}
 
 		s.cftab[0] = 0;
-		for (int i = 1; i <= 256; i++)
-		{
-			s.cftab[i] = s.unRLE[i - 1];
-		}
+        System.arraycopy(s.unRLE, 0, s.cftab, 1, 256);
 		for (int i = 1; i <= 256; i++)
 		{
 			s.cftab[i] += s.cftab[i - 1];

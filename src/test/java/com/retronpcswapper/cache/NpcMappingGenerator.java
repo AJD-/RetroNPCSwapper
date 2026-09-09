@@ -47,7 +47,7 @@ import com.retronpcswapper.RetroNpcMappingEntry;
  * Dev-only tool that regenerates the bundled npc-mappings.json resource from a
  * local copy of the 2005 cache. Run with {@code ./gradlew generateNpcMappings}
  * from the repo root (the cache folder itself is not committed).
- *
+ * <p>
  * This class lives in the test sourceSet and is never shipped with the plugin,
  * so a plain GsonBuilder and direct file writes outside .runelite are fine here;
  * the @Inject Gson / .runelite-only rules apply to src/main runtime code.

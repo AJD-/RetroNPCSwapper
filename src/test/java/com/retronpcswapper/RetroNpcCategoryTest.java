@@ -355,7 +355,8 @@ public class RetroNpcCategoryTest
 		// guard kit with 2005 battleaxe 550 where the rest carry sword 519. Derived after the
 		// recolor graft, so losing the 2005 colors here is the thing to watch.
 		RetroNpcData axeGuard = RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3, "Guard");
-		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 550, 541},
+        assertNotNull(axeGuard);
+        assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 550, 541},
 			axeGuard.getRetroModelIds());
 		assertArrayEquals(axeGuard.getRetroModelIds(), axeGuard.getInjectedModelIds());
 		assertEquals(RetroNpcCategory.GUARDS, axeGuard.getCategory());
@@ -365,9 +366,9 @@ public class RetroNpcCategoryTest
 		// Female guards are recent content with no 2005 counterpart, so they wear the male kit -
 		// and the female of the axe guard gets the axe, not the sword
 		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 550, 541},
-			RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3_F, "Guard").getRetroModelIds());
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD3_F, "Guard")).getRetroModelIds());
 		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
-			RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1_F, "Guard").getRetroModelIds());
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1_F, "Guard")).getRetroModelIds());
 
 		// The female bow guard is replaced by the male one, taken from the live cache: the archer
 		// guard is 2006 content unchanged since, and head 9458 and arms 9450 have no 2005 original.
@@ -386,7 +387,7 @@ public class RetroNpcCategoryTest
 
 		// and the sword guards keep the sword
 		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
-			RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1, "Guard").getRetroModelIds());
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.FAI_FALADOR_GUARD1, "Guard")).getRetroModelIds());
 
 		// "Guard" is a job rather than a costume: 184 NPCs carry the name and only the town guard
 		// wears this kit, so the category resolves by registered id and the name alone buys
@@ -403,9 +404,9 @@ public class RetroNpcCategoryTest
 		// The Ratcatchers guards do wear the kit and were only ever reached by name, so they are
 		// registered by id now rather than lost
 		assertEquals(RetroNpcCategory.GUARDS,
-			RetroNpcMapping.get(NpcID.RATCATCHER_CHIEFGUARD, "Guard").getCategory());
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.RATCATCHER_CHIEFGUARD, "Guard")).getCategory());
 		assertEquals(RetroNpcCategory.GUARDS,
-			RetroNpcMapping.get(NpcID.RATCATCHER_GUARD_LEFT_INSIDE, "Guard").getCategory());
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.RATCATCHER_GUARD_LEFT_INSIDE, "Guard")).getCategory());
 		// 451 (chathead), 7041 (crawl), 7043 (run) and 7044 (turn) are not combat sequences
 		assertFalse(guard.isAttackAnimation(451));
 		assertFalse(guard.isAttackAnimation(7041));
@@ -489,13 +490,13 @@ public class RetroNpcCategoryTest
 		// Resolving by name matters as much as by id: a color added or renamed upstream falls back
 		// to the name, and the four must not collapse onto one shared instance
 		assertEquals((short) -25049,
-			RetroNpcMapping.get(-1, "Baby blue dragon").getReplacementColors()[0]);
+			Objects.requireNonNull(RetroNpcMapping.get(-1, "Baby blue dragon")).getReplacementColors()[0]);
 		assertEquals((short) 687,
-			RetroNpcMapping.get(-1, "Baby red dragon").getReplacementColors()[0]);
+			Objects.requireNonNull(RetroNpcMapping.get(-1, "Baby red dragon")).getReplacementColors()[0]);
 		assertEquals((short) 22051,
-			RetroNpcMapping.get(-1, "Baby green dragon").getReplacementColors()[0]);
+			Objects.requireNonNull(RetroNpcMapping.get(-1, "Baby green dragon")).getReplacementColors()[0]);
 		assertEquals((short) 16,
-			RetroNpcMapping.get(-1, "Baby black dragon").getReplacementColors()[0]);
+			Objects.requireNonNull(RetroNpcMapping.get(-1, "Baby black dragon")).getReplacementColors()[0]);
 	}
 
 	@Test
@@ -749,16 +750,7 @@ public class RetroNpcCategoryTest
 		assertFalse(restless.isAttackAnimation(AnimationID.GHOST_UPDATE_NORMAL_ATTACK));
 	}
 
-	/**
-	 * The recolor plumbing is live but nothing opts into it yet, and that has to stay deliberate.
-	 *
-	 * <p>Plenty of 2005 definitions carry opcode-40 recolors - goblins, guards, skeleton mages and
-	 * the restless ghost among them - and {@code buildEntries} collapses rows by name with the
-	 * lowest def id winning, so seeding {@code createMappingData} from the entry would repaint a
-	 * live category with one arbitrary variant's colors. This pins that no shipping category picks
-	 * them up by accident; a branch that needs them opts in explicitly.
-	 */
-	/**
+    /**
 	 * Black and greater demons are the same mesh (2942) and differ only by the 2005 opcode 40
 	 * pairs, so a black demon without them renders in greater demon colors. The pairs reach it
 	 * through a static archetype, which normally shadows the generated JSON row entirely.
@@ -857,10 +849,10 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testNoCategoryForwardsRecolorsByDefault()
 	{
-		assertFalse(RetroNpcMapping.get(0, "Goblin").hasRecolors());
-		assertFalse(RetroNpcMapping.get(0, "Skeleton mage").hasRecolors());
-		assertFalse(RetroNpcMapping.get(0, "Restless ghost").hasRecolors());
-		assertFalse(RetroNpcMapping.get(0, "Chicken").hasRecolors());
+		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Goblin")).hasRecolors());
+		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Skeleton mage")).hasRecolors());
+		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Restless ghost")).hasRecolors());
+		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Chicken")).hasRecolors());
 	}
 
 	/**

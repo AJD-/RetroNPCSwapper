@@ -6,10 +6,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import com.retronpcswapper.inject.RetroClip;
-import com.retronpcswapper.inject.RetroMesh;
-import com.retronpcswapper.inject.RetroMeshMerger;
-import com.retronpcswapper.inject.RetroRig;
+
+import com.retronpcswapper.inject.*;
 import net.runelite.cache.definitions.ModelDefinition;
 import net.runelite.cache.fs.Store;
 import org.junit.Test;

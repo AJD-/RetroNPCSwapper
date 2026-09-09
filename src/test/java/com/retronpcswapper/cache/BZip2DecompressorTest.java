@@ -27,6 +27,7 @@ package com.retronpcswapper.cache;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
@@ -125,7 +126,7 @@ public class BZip2DecompressorTest
 	public void testGzipPayloadsStillTakeTheGzipPath() throws Exception
 	{
 		// Index 2 is gzip rather than bzip2, and the same entry point serves both
-		byte[] raw = "the quick brown fox jumps over the lazy dog".getBytes("UTF-8");
+		byte[] raw = "the quick brown fox jumps over the lazy dog".getBytes(StandardCharsets.UTF_8);
 		ByteArrayOutputStream gz = new ByteArrayOutputStream();
 		try (java.util.zip.GZIPOutputStream out = new java.util.zip.GZIPOutputStream(gz))
 		{

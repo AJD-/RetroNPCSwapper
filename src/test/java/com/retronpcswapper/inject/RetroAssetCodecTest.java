@@ -175,7 +175,7 @@ public class RetroAssetCodecTest
 	@Test
 	public void testEmptyBundleRoundTrips() throws IOException
 	{
-		assertEquals(true, roundTrip(RetroAssetBundle.empty()).isEmpty());
+        assertTrue(roundTrip(RetroAssetBundle.empty()).isEmpty());
 	}
 
 	@Test

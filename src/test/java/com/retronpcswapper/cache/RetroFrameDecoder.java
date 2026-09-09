@@ -79,7 +79,7 @@ public class RetroFrameDecoder
 	public static final int RETRO_FRAME_INDEX = 2;
 
 	/**
-	 * An embedded 2005 framemap has no id, so one is synthesised from its file id. Offset far enough
+	 * An embedded 2005 framemap has no id, so one is synthesized from its file id. Offset far enough
 	 * to never collide with a live framemap id, which the same bundle also carries.
 	 */
 	public static final int RETRO_RIG_ID_BASE = 100_000;
