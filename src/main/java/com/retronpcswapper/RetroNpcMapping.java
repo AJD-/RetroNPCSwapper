@@ -248,14 +248,19 @@ public class RetroNpcMapping
 		AnimationID.GIANT_DEATH
 	);
 
+	// Ernest's rooster is on the rooster sequences rather than the chicken ones, so those ids
+	// belong here too - left out they would drive the 2005 mesh off a modern framemap. Its stand
+	// and walk (ROOSTERREADY, ROOSTERWALK) are deliberately absent: applyRetroSwap replaces the
+	// pose slots outright rather than intercepting them. ROOSTERMAGIC is absent too - no rooster
+	// casts anything, and nothing that does is mapped to this category.
 	public static final Set<Integer> CHICKEN_MODERN_ATTACKS = Set.of(
-		AnimationID.LORE_CHICKEN_ATTACK, AnimationID.CHICKEN_ATTACK
+		AnimationID.LORE_CHICKEN_ATTACK, AnimationID.CHICKEN_ATTACK, AnimationID.ROOSTERATTACK
 	);
 	public static final Set<Integer> CHICKEN_MODERN_DEFENDS = Set.of(
-		AnimationID.LORE_CHICKEN_DEFEND, AnimationID.CHICKEN_BLOCK
+		AnimationID.LORE_CHICKEN_DEFEND, AnimationID.CHICKEN_BLOCK, AnimationID.ROOSTERPARRY
 	);
 	public static final Set<Integer> CHICKEN_MODERN_DEATHS = Set.of(
-		AnimationID.LORE_CHICKEN_DEATH, AnimationID.CHICKEN_DEATH
+		AnimationID.LORE_CHICKEN_DEATH, AnimationID.CHICKEN_DEATH, AnimationID.ROOSTERDEATH
 	);
 
 	public static final Set<Integer> COW_MODERN_ATTACKS = Set.of(
@@ -567,6 +572,54 @@ public class RetroNpcMapping
 
 	public static final RetroNpcData CYCLOPS_DEFAULT =
 		giant(RetroNpcCategory.CYCLOPS, new int[]{GIANT_BODY, 2867}, null);
+
+	// Every 2005 bird in this family is mesh 2849 - the plain chicken, the brown one, the rooster
+	// and the undead chicken all differ by opcode 40 alone, which allows us to use the live cache
+	private static final int CHICKEN_BODY = 2849;
+
+	// Hand-matched. The 2005 definition asked for no resize at all (128) and the modern Chicken
+	// composition's own scale is 80, so neither source gets us to a bird the size of the live one.
+	private static final int CHICKEN_SCALE = 204;
+
+	/**
+	 * A 2005 chicken variant: the shared mesh, the 2005 chicken sequences, and the opcode 40 pairs
+	 * that are the only thing telling one bird from another.
+	 *
+	 * <p>Scale is a parameter rather than a constant because this family spans two sizes.
+	 * {@link #CHICKEN_SCALE} is the only one that was measured against the live bird; every other is
+	 * that number times the ratio the definitions themselves ask for, and so is a starting point for
+	 * the same eyeball matching rather than a measurement of its own.
+	 */
+	private static RetroNpcData chicken(short[] find, short[] replace, int scale)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.CHICKENS)
+			.retroModelIds(new int[]{CHICKEN_BODY})
+			.idleAnimationId(AnimationID.CHICKEN_READY)
+			.walkAnimationId(AnimationID.CHICKEN_WALK)
+			.attackAnimationId(AnimationID.CHICKEN_ATTACK)
+			.defendAnimationId(AnimationID.CHICKEN_BLOCK)
+			.deathAnimationId(AnimationID.CHICKEN_DEATH)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.recolors(find, replace)
+			.modernAttackAnims(CHICKEN_MODERN_ATTACKS)
+			.modernDefendAnims(CHICKEN_MODERN_DEFENDS)
+			.modernDeathAnims(CHICKEN_MODERN_DEATHS)
+			.build();
+	}
+
+	// 2005 def 1018 "Rooster" - mesh 2849 in a dark red-brown, which is the whole of what separates
+	// it from the plain bird. Written here rather than read from npc-mappings.json because the
+	// generator only categorizes names containing "chicken", so it emits no rooster row at all -
+	// and a row would not carry the resize anyway, since the CHICKENS branch of createMappingData
+	// overwrites it with the hen's. All four find indices are still in the live copy of 2849, so
+	// the pairs land on the cache-backed path.
+	private static final short[] ROOSTER_FIND = {127, 11200, 8394, 61};
+	private static final short[] ROOSTER_REPLACE = {3998, 6720, 1942, 1942};
+
+	// Def 1018 asked for 172 against the chicken's 128, so 204 * 172/128 is the rooster.
+	public static final RetroNpcData ROOSTER = chicken(ROOSTER_FIND, ROOSTER_REPLACE, 274);
 
 	// Cows are the guard case: both 2005 meshes are still at their own ids and 98% intact, but their
 	// vertex groups were renumbered onto a different rig, so the live copies animate off the wrong
@@ -1016,6 +1069,22 @@ public class RetroNpcMapping
 		registerMapping(COW_BROWN, NpcID.COW2);
 		registerMapping(COW_GREY, NpcID.COW3);
 		registerMapping(COW_CALF, NpcID.COW2_CALF, NpcID.COW3_CALF, NpcID.CALF);
+
+		// Roosters. The 2005 cache names this bird, but nothing reached it before: the generator
+		// only categorizes names containing "chicken", so there is no rooster row for the name
+		// lookup to find.
+		NAME_MAPPINGS.put("rooster", ROOSTER);
+		registerMapping(ROOSTER,
+			NpcID.ROOSTER,       // Fred's farm
+			NpcID.FARM_ROOSTER,  // Ernest the Chicken - the live mesh the evil chicken shares
+			NpcID.MISC_ROOSTER   // Miscellania
+		);
+
+		// No evil chicken is registered, deliberately. Live mesh 7728 is already the model the evil
+		// chicken wore in August 2005, so there is nothing retro to restore - and February 2005, the
+		// cache this plugin is built from, has no evil chicken at all to copy. Ernest's rooster above
+		// shares that same mesh but is registered, because the rooster does have a February 2005
+		// definition and it is a different bird: mesh 2849 in the palette above.
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
@@ -1106,17 +1175,18 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.CHICKENS)
 		{
-			// These are really tiny compared to modern chickens. The 2005 definition asked for no
-			// resize at all (128), and the modern composition's own scale is 80, so neither
-			// source gets us there - this is a hand-matched value.
-			scaleXZ = 204;
-			scaleY = 204;
-			models = new int[]{2849};
-			stanceAnim = 54;
-			walkAnim = 53;
-			attackAnim = 55;
-			defendAnim = 56;
-			deathAnim = 57;
+			// The plain chicken and the undead chicken reach here; the rooster is an id-registered
+			// archetype instead, because it needs a resize of its own and this branch would overwrite
+			// it with the hen's. The two paths have to agree on every other slot, so both read the
+			// same constants - see chicken(...).
+			scaleXZ = CHICKEN_SCALE;
+			scaleY = CHICKEN_SCALE;
+			models = new int[]{CHICKEN_BODY};
+			stanceAnim = AnimationID.CHICKEN_READY;
+			walkAnim = AnimationID.CHICKEN_WALK;
+			attackAnim = AnimationID.CHICKEN_ATTACK;
+			defendAnim = AnimationID.CHICKEN_BLOCK;
+			deathAnim = AnimationID.CHICKEN_DEATH;
 			modernAttacks = CHICKEN_MODERN_ATTACKS;
 			modernDefends = CHICKEN_MODERN_DEFENDS;
 			modernDeaths = CHICKEN_MODERN_DEATHS;

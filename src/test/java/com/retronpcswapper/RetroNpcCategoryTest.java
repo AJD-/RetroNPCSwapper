@@ -995,6 +995,104 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
+	 * No evil chicken is swapped, and that is the point of this test. Live mesh 7728 is already the
+	 * model it wore in August 2005, so there is nothing retro to restore; February 2005 - the cache
+	 * this plugin is built from - has no evil chicken at all, so there is nothing to copy either.
+	 * Every variant has to stay unmapped, including the two the name row would otherwise catch.
+	 */
+	@Test
+	public void testEvilChickensAreLeftAlone()
+	{
+		for (int id : new int[]{
+			NpcID.CHICKENQUEST_EVIL_CHICKEN,
+			NpcID.NZONE_CHICKENQUEST_EVIL_CHICKEN_NORMAL,
+			NpcID.EVIL_CHICKEN})
+		{
+			assertNull("evil chicken " + id + " must keep its own model",
+				RetroNpcMapping.get(id, "Evil Chicken"));
+		}
+
+		assertNull(RetroNpcMapping.get(
+			NpcID.NZONE_CHICKENQUEST_EVIL_CHICKEN_HARD, "Evil Chicken (hard)"));
+		assertNull(RetroNpcMapping.get(NpcID.DEADMAN_BREACH_EVIL_CHICKEN, "Big Evil Chicken"));
+
+		// and no name row may creep back in and catch a variant added later
+		assertNull(RetroNpcMapping.get(0, "Evil Chicken"));
+	}
+
+	/**
+	 * The rooster is the bird the 2005 palette belongs to, and nothing reached it before: the
+	 * generator only categorizes names containing "chicken", so no rooster row exists for the name
+	 * lookup to find. All three live variants have to resolve through the archetype - including
+	 * Ernest's, which wears the same live mesh as the evil chicken but, unlike it, has a February
+	 * 2005 definition of its own to go back to.
+	 */
+	@Test
+	public void testRoosterResolvesForEveryLiveVariant()
+	{
+		for (int id : new int[]{NpcID.ROOSTER, NpcID.FARM_ROOSTER, NpcID.MISC_ROOSTER})
+		{
+			assertRooster("rooster " + id, RetroNpcMapping.get(id, "Rooster"));
+		}
+		assertRooster("the name row", RetroNpcMapping.get(0, "Rooster"));
+	}
+
+	/**
+	 * Ernest's rooster fights on the rooster sequences, not the chicken ones. Uncaught they would
+	 * play a modern clip on 2005 geometry, so each has to land in its own slot and in no other -
+	 * the mistake {@code testZombieDeathVsFlinchAnimations} exists to catch.
+	 */
+	@Test
+	public void testRoosterInterceptsItsOwnSequences()
+	{
+		RetroNpcData rooster = RetroNpcMapping.get(NpcID.FARM_ROOSTER, "Rooster");
+		assertNotNull(rooster);
+
+		assertTrue("ROOSTERATTACK must become the retro peck", rooster.isAttackAnimation(2299));
+		assertTrue("ROOSTERPARRY must become the retro block", rooster.isDefendAnimation(2300));
+		assertTrue("ROOSTERDEATH must become the retro death", rooster.isDeathAnimation(2301));
+
+		// No sequence may register as more than one state
+		assertFalse(rooster.isDeathAnimation(2299));
+		assertFalse(rooster.isDefendAnimation(2299));
+		assertFalse(rooster.isAttackAnimation(2301));
+		assertFalse(rooster.isDefendAnimation(2301));
+		assertFalse(rooster.isAttackAnimation(2300));
+		assertFalse(rooster.isDeathAnimation(2300));
+
+		// ROOSTERWALK and ROOSTERREADY are poses, replaced outright rather than intercepted; 5385 is
+		// the modern chicken walk; ROOSTERMAGIC belongs to no mapped bird - none of the four is combat
+		assertFalse(rooster.isAttackAnimation(2297));
+		assertFalse(rooster.isAttackAnimation(2298));
+		assertFalse(rooster.isAttackAnimation(5385));
+		assertFalse(rooster.isAttackAnimation(2302));
+	}
+
+	/**
+	 * A 2005 rooster: the chicken mesh on the chicken sequences, wearing def 1018's palette, which
+	 * is the whole of what separates it from the hen, at the size that definition asked for.
+	 */
+	private static void assertRooster(String name, RetroNpcData data)
+	{
+		assertNotNull(name + " must resolve", data);
+		assertEquals(name, RetroNpcCategory.CHICKENS, data.getCategory());
+		assertArrayEquals(name, new int[]{2849}, data.getRetroModelIds());
+		assertEquals(name, 54, data.getIdleAnimationId());
+		assertEquals(name, 53, data.getWalkAnimationId());
+		assertEquals(name, 55, data.getAttackAnimationId());
+		assertEquals(name, 56, data.getDefendAnimationId());
+		assertEquals(name, 57, data.getDeathAnimationId());
+
+		assertTrue(name + " is only a rooster by its palette", data.hasRecolors());
+		assertArrayEquals(name, new short[]{127, 11200, 8394, 61}, data.getOriginalColors());
+		assertArrayEquals(name, new short[]{3998, 6720, 1942, 1942}, data.getReplacementColors());
+
+		// 204 * 172/128 - the ratio def 1018 asked for against the hen
+		assertEquals(name, 274, data.getScaleXZ());
+		assertEquals(name, 274, data.getScaleY());
+	}
+
+	/**
 	 * Cows resolve two different ways and both have to end up with the same six slots. Every cow
 	 * but the undead one is an id-registered archetype built by {@code cow(...)}; the undead cow is
 	 * the only one that reaches {@code createMappingData}. Asserting one path would pass while the
