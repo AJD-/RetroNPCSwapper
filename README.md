@@ -22,7 +22,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets* (on by default
 - **Demons** — lesser, greater and black
 - **Imps**
 - **Cyclopes**
-- **Guards**
+- **Guards** — Varrock, Falador and Ardougne, each in its own town's 2005 kit
 
 These need converted 2005 assets because swapping IDs is not enough for them, and they fail in two
 different ways. Some lost the mesh outright: the adult dragon and demon meshes were removed from the

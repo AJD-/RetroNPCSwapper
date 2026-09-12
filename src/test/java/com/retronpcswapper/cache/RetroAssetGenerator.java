@@ -125,8 +125,15 @@ public class RetroAssetGenerator
 		// 2005 bindings all sit in [0..34]; live framemap 0 is a 218-group rig. Live clips would drive
 		// the right geometry off the wrong bones.
 		new Spec("Guards", Source.RETRO, Source.RETRO,
-			// 550 is the battleaxe the Falador axe guard carries in place of sword 519
-			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541, 550},
+			// 550 is the battleaxe the Falador axe guard carries in place of sword 519.
+			//
+			// 225, 301, 162, 179, 274 and 502 are the Ardougne guard - a second costume rather than
+			// a recolor of the first, sharing only the boots (185). It rides on this spec's clips
+			// because both costumes are 2005 human kit bound into the same range: 2005 definition
+			// 32 names the same 808/819 stance and walk, and its parts bind into [0..36] the way
+			// the town guard's bind into [0..34].
+			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541, 550,
+				225, 301, 162, 179, 274, 502},
 			// 386 sword stab and 1156 shield block are what a guard actually plays in a fight;
 			// 422/423/424 are the unarmed set. All are classic ids the live game still uses, so they
 			// need the 2005 frames rather than any interception. 1156 was once left out as
