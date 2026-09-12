@@ -76,10 +76,12 @@ public class RetroClipReachTest
 		{79, 2853, 2854}, {80, 2853, 2854}, {89, 2853, 2854},
 		{90, 2853, 2854}, {91, 2853, 2854}, {92, 2853, 2854},
 		// The firebreath set. 81 lands at 100%, 82/83/84 at 90-91% - some of their ops address
-		// groups this mesh does not have, which the ALL/LEFT/RIGHT/MIDDLE naming suggests is the
-		// extra heads, though that is a guess and only the percentage is measured. Either way it is
-		// nowhere near the 47-68% signature of a rig mismatch, and their coverage matches the melee
-		// clips exactly, which is what says they are full-body animations rather than overlays.
+		// groups a one-headed dragon does not have. That used to be a guess off the
+		// ALL/LEFT/RIGHT/MIDDLE naming; the King Black Dragon rows below measure it, since the same
+		// three clips reach 100% on the three-headed mesh and their coverage rises from 38 groups
+		// to 44. Either way it is nowhere near the 47-68% signature of a rig mismatch, and the
+		// coverage matches the melee clips, which is what says these are full-body animations
+		// rather than overlays.
 		{81, 2853, 2854}, {82, 2853, 2854}, {83, 2853, 2854}, {84, 2853, 2854},
 		// The metal dragons - one merged mesh for bronze, iron and steel - on the same rig and the
 		// same clips as the chromatic pair, and scoring the same.
@@ -87,6 +89,12 @@ public class RetroClipReachTest
 		{90, 4986, 5022, 4987}, {91, 4986, 5022, 4987}, {92, 4986, 5022, 4987},
 		{81, 4986, 5022, 4987}, {82, 4986, 5022, 4987}, {83, 4986, 5022, 4987},
 		{84, 4986, 5022, 4987},
+		// The King Black Dragon: the same body 2853 as the chromatics wearing the three-headed head
+		// 2855. The six extra groups that head brings are what 82/83/84 were missing above - here
+		// all four firebreath clips reach 100%.
+		{79, 2853, 2855}, {80, 2853, 2855}, {89, 2853, 2855},
+		{90, 2853, 2855}, {91, 2853, 2855}, {92, 2853, 2855},
+		{81, 2853, 2855}, {82, 2853, 2855}, {83, 2853, 2855}, {84, 2853, 2855},
 		{63, 2943}, {64, 2943}, {65, 2943}, {66, 2943}, {67, 2943}, {69, 2943},
 		{68, 2942},
 		{168, 2887}, {169, 2887}, {170, 2887}, {171, 2887}, {172, 2887},

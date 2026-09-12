@@ -127,7 +127,11 @@ public class RetroNpcMapping
 	public static final Set<Integer> DRAGON_MODERN_ATTACKS = Set.of(
 		AnimationID.DRAGON_RANGED_ATTACKS
 	);
-	public static final Set<Integer> DRAGON_MODERN_DEFENDS = Set.of();
+	// The King Black Dragon is the one adult dragon with a post-2005 sequence of its own: it blocks
+	// on DRAGON_BLOCK_KBD 4638 rather than the 2005 DRAGON_BLOCK 89.
+	public static final Set<Integer> DRAGON_MODERN_DEFENDS = Set.of(
+		AnimationID.DRAGON_BLOCK_KBD
+	);
 	public static final Set<Integer> DRAGON_MODERN_DEATHS = Set.of();
 
 	public static final Set<Integer> GOBLIN_MODERN_ATTACKS = Set.of(
@@ -956,6 +960,9 @@ public class RetroNpcMapping
 		else if (category == RetroNpcCategory.ADULT_DRAGONS)
 		{
 			attackAnim = AnimationID.DRAGON_ATTACK;
+			// Filled for the King Black Dragon's sake - isDefendAnimation short-circuits while the
+			// slot is -1, so this enables the 'defend' category
+			defendAnim = AnimationID.DRAGON_BLOCK;
 			modernAttacks = DRAGON_MODERN_ATTACKS;
 			modernDefends = DRAGON_MODERN_DEFENDS;
 			modernDeaths = DRAGON_MODERN_DEATHS;

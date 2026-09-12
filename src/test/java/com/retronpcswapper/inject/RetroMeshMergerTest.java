@@ -213,6 +213,37 @@ public class RetroMeshMergerTest
 		}
 	}
 
+	/**
+	 * The King Black Dragon is the chromatic body wearing a different head, so 2853 is carried once
+	 * and serves both. The head is where its three heads live: 2855 brings twelve vertex groups
+	 * over [34..80] against the single head 2854's ten over [18..80]. Those extra groups are what
+	 * firebreath clips 82/83/84 were missing on a one-headed dragon - see {@code RetroClipReachTest},
+	 * where the same three clips reach 100% on this merge and 90% on the chromatic one.
+	 */
+	@Test
+	public void testTheKingBlackDragonSharesTheChromaticBody() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+
+		RetroMesh body = bundle.getMesh(2853);
+		RetroMesh threeHeaded = bundle.getMesh(2855);
+		RetroMesh singleHeaded = bundle.getMesh(2854);
+		assertNotNull("dragon body 2853 is missing from the bundle", body);
+		assertNotNull("king black dragon head 2855 is missing from the bundle", threeHeaded);
+		assertNotNull("dragon head 2854 is missing from the bundle", singleHeaded);
+		assertSame("the body is stored once and shared with the chromatic dragons",
+			body, bundle.getMesh(2853));
+
+		RetroMesh merged = RetroMeshMerger.merge(2853, Arrays.asList(body, threeHeaded));
+		assertEquals(303 + 197, merged.getVerticesCount());
+		assertEquals(634 + 360, merged.getFaceCount());
+
+		// The three-headed head is the bigger of the two, which is the whole reason it is a
+		// separate mesh rather than a recolor
+		assertTrue("the three-headed head must carry more geometry than the single head",
+			threeHeaded.getVerticesCount() > singleHeaded.getVerticesCount());
+	}
+
 	@Test
 	public void testTheGiantFamilySharesOneBodyMesh() throws Exception
 	{
@@ -268,7 +299,7 @@ public class RetroMeshMergerTest
 		assertEquals(8, coords.length - mapped);
 
 		for (int meshId : new int[]{233, 246, 151, 176, 254, 185, 519, 541, 550, 2870, 2944,
-			4986, 5022, 4987})
+			4986, 5022, 4987, 2855})
 		{
 			RetroMesh mesh = bundle.getMesh(meshId);
 			assertNotNull("mesh " + meshId + " is missing from the bundle", mesh);
