@@ -1127,24 +1127,33 @@ public class RetroNpcMapping
 
 		// Goblins resolve by id where the color matters and by name everywhere else. The 2005
 		// family is six definitions over one name, so the generated row can only ever carry one of
-		// them - the same problem the cows had. Unlike the cows, the name row is doing most of the
-		// work here and keeps doing it: 147 live NPCs are called exactly "Goblin" and the great
-		// majority are the plain one, so only the varieties that need a different palette, a
-		// different part list, or that are not called "Goblin" at all are listed by id.
+		// them - the same problem the cows had.
 		NAME_MAPPINGS.put("goblin", GOBLIN_DEFAULT);
 
-		// The plain armed goblin. 2005 def 101 is def 100 plus the weapon mesh, and the live kit
-		// says the same thing structurally: an unarmed goblin is six parts, an armed one seven or
-		// eight. Listed here are the ids where the gameval name and the part count agree. They
-		// disagree on GOBLIN_ARMED_MELEE_2, _3 and _4, which are six parts like every unarmed
-		// goblin, so those are left to the name row rather than handed a weapon they do not carry.
+		// The spear-armed goblin
 		registerMapping(GOBLIN_ARMED_DEFAULT,
+			// Lumbridge
 			NpcID.GOBLIN_ARMED, NpcID.GOBLIN_ARMED_MELEE_1,
+			NpcID.GOBLIN_UNARMED_MELEE_6, NpcID.GOBLIN_UNARMED_MELEE_7,
+			NpcID.GOBLIN_UNARMED_MELEE_IN_6, NpcID.GOBLIN_UNARMED_MELEE_IN_7,
+			// Barbarian village and the Dwarf Cannon mine
 			NpcID.FAI_BARBARIAN_GOBLIN_ARMED_1, NpcID.FAI_BARBARIAN_GOBLIN_ARMED_2,
 			NpcID.FAI_BARBARIAN_GOBLIN_ARMED_3, NpcID.FAI_BARBARIAN_GOBLIN_ARMED_4,
+			NpcID.MCANNON_GOBLIN_GUARD,
 			NpcID.GOBLIN_ARMED_MCANNON_1, NpcID.GOBLIN_ARMED_MCANNON_2, NpcID.GOBLIN_ARMED_MCANNON_3,
 			NpcID.GOBLIN_ARMED_MCANNON_4, NpcID.GOBLIN_ARMED_MCANNON_5,
-			NpcID.SOS_WAR_GOBLIN_ARMED, NpcID.SOS_WAR_GOBLIN_ARMED2
+			// The Eye of Glouphrie soldiers, and the Shield of Arrav war goblins. The two named
+			// HELMET are level 13 and 25, but 2005 has no armed counterpart to its level 13
+			// definition - def 102 is unarmed - so they take the armed kit rather than a
+			// strong-bodied one that never existed
+			NpcID.EYEGLO_GOBLIN_SOLDIER_1, NpcID.EYEGLO_GOBLIN_SOLDIER_2, NpcID.EYEGLO_GOBLIN_SOLDIER_3,
+			NpcID.EYEGLO_GOBLIN_SOLDIER_4, NpcID.EYEGLO_GOBLIN_SOLDIER_5,
+			NpcID.SOS_WAR_GOBLIN_ARMED, NpcID.SOS_WAR_GOBLIN_ARMED2,
+			NpcID.SOS_WAR_GOBLIN_HELMET, NpcID.SOS_WAR_GOBLIN_HELMET2,
+			NpcID.SOS_WAR_GOBLIN_GREEN_SOLDIER_1, NpcID.SOS_WAR_GOBLIN_GREEN_SOLDIER_2,
+			// God Wars
+			NpcID.GODWARS_GOBLIN1, NpcID.GODWARS_GOBLIN2, NpcID.GODWARS_GOBLIN3,
+			NpcID.GODWARS_GOBLIN4, NpcID.GODWARS_GOBLIN5
 		);
 
 		// Live GOBLIN_HELMET is the level 13 goblin, and 2005 def 102 is the only level 13 goblin

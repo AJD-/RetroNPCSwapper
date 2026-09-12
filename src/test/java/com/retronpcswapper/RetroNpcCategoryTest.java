@@ -1206,8 +1206,8 @@ public class RetroNpcCategoryTest
 	public void testUnlistedGoblinsFallBackToTheNameRow()
 	{
 		for (int npcId : new int[]{
-			NpcID.GODWARS_GOBLIN1, NpcID.CHAMPIONS_GOBLIN, NpcID.GOBLIN_UNARMED_MELEE_1,
-			NpcID.GOBLIN_ARMED_MELEE_2, NpcID.EYEGLO_GOBLIN_SOLDIER_1})
+			NpcID.CHAMPIONS_GOBLIN, NpcID.GOBLIN_UNARMED_MELEE_1,
+			NpcID.GOBLIN_ARMED_MELEE_2, NpcID.GOBLIN_UNARMED_MELEE_IN_1})
 		{
 			RetroNpcData data = RetroNpcMapping.get(npcId, "Goblin");
 			assertNotNull("goblin " + npcId + " must still swap by name", data);
@@ -1235,6 +1235,33 @@ public class RetroNpcCategoryTest
 			// not also register as combat
 			assertFalse(goblin.isAttackAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_SHIELD_SPEAR_READY));
 			assertFalse(goblin.isDefendAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_WALK_SHIELD_ARMED));
+		}
+	}
+
+	/**
+	 * Armed is read off the live kit, not off the name: 12 of the goblin family's part meshes only
+	 * ever appear in slot 6 or later and 66 only ever appear before it, with nothing in both. The
+	 * names disagree with that in both directions, and the kit is what the player sees.
+	 */
+	@Test
+	public void testArmedGoblinsAreChosenByKitNotByName()
+	{
+		// Named unarmed, holds a weapon
+		for (int npcId : new int[]{NpcID.GOBLIN_UNARMED_MELEE_6, NpcID.GOBLIN_UNARMED_MELEE_IN_7})
+		{
+			RetroNpcData goblin = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull(goblin);
+			assertArrayEquals("a goblin holding a weapon must carry 2957",
+				new int[]{2951, 2953, 2955, 2956, 2957}, goblin.getRetroModelIds());
+		}
+
+		// Named armed, holds nothing
+		for (int npcId : new int[]{NpcID.GOBLIN_ARMED_MELEE_2, NpcID.GOBLIN_ARMED_MELEE_4})
+		{
+			RetroNpcData goblin = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull(goblin);
+			assertArrayEquals("a goblin holding nothing must not be handed a weapon",
+				new int[]{2951, 2953, 2955, 2956}, goblin.getRetroModelIds());
 		}
 	}
 
