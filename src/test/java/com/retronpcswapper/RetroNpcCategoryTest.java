@@ -1291,14 +1291,17 @@ public class RetroNpcCategoryTest
 		// whether they can render at all - see isCategoryEnabled
 		assertTrue("useInjectionPipeline must default to true", config.useInjectionPipeline());
 
-		// The bundle-only categories are opt-in, because they are what the plugin distributes
-		assertFalse("swapDragons must default to false", config.swapDragons());
-		assertFalse("swapDemons must default to false", config.swapDemons());
-		assertFalse("swapImps must default to false", config.swapImps());
-		assertFalse("swapCyclops must default to false", config.swapCyclops());
-		assertFalse("swapGuards must default to false", config.swapGuards());
+		// So do the bundle-only categories. These were opt-in while the 2005 assets were something
+		// a user had to supply; the Custom Cache release ships them in the jar and turns the
+		// pipeline on by default, and each of these toggles says so in its own description ("Needs
+		// Use Converted 2005 Assets, which is on by default"). A category that the plugin both
+		// distributes assets for and enables the pipeline for has nothing left to opt in to.
+		assertTrue("swapDragons must default to true", config.swapDragons());
+		assertTrue("swapDemons must default to true", config.swapDemons());
+		assertTrue("swapImps must default to true", config.swapImps());
+		assertTrue("swapCyclops must default to true", config.swapCyclops());
+		assertTrue("swapGuards must default to true", config.swapGuards());
 
-		// Off by default: it turns another plugin's settings off while it is on
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
 	}

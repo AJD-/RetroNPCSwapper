@@ -290,6 +290,6 @@ public interface RetroNpcConfig extends Config
 	)
 	default boolean overrideInteractHighlight()
 	{
-		return true;
+		return false;
 	}
 }
