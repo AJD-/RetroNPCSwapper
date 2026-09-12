@@ -75,6 +75,18 @@ public class RetroClipReachTest
 		{262, 2944}, {259, 2944},
 		{79, 2853, 2854}, {80, 2853, 2854}, {89, 2853, 2854},
 		{90, 2853, 2854}, {91, 2853, 2854}, {92, 2853, 2854},
+		// The firebreath set. 81 lands at 100%, 82/83/84 at 90-91% - some of their ops address
+		// groups this mesh does not have, which the ALL/LEFT/RIGHT/MIDDLE naming suggests is the
+		// extra heads, though that is a guess and only the percentage is measured. Either way it is
+		// nowhere near the 47-68% signature of a rig mismatch, and their coverage matches the melee
+		// clips exactly, which is what says they are full-body animations rather than overlays.
+		{81, 2853, 2854}, {82, 2853, 2854}, {83, 2853, 2854}, {84, 2853, 2854},
+		// The metal dragons - one merged mesh for bronze, iron and steel - on the same rig and the
+		// same clips as the chromatic pair, and scoring the same.
+		{79, 4986, 5022, 4987}, {80, 4986, 5022, 4987}, {89, 4986, 5022, 4987},
+		{90, 4986, 5022, 4987}, {91, 4986, 5022, 4987}, {92, 4986, 5022, 4987},
+		{81, 4986, 5022, 4987}, {82, 4986, 5022, 4987}, {83, 4986, 5022, 4987},
+		{84, 4986, 5022, 4987},
 		{63, 2943}, {64, 2943}, {65, 2943}, {66, 2943}, {67, 2943}, {69, 2943},
 		{68, 2942},
 		{168, 2887}, {169, 2887}, {170, 2887}, {171, 2887}, {172, 2887},

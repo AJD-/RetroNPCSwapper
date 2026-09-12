@@ -29,8 +29,11 @@ import com.google.gson.reflect.TypeToken;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.NpcID;
@@ -237,6 +240,57 @@ public class RetroNpcCategoryTest
 		assertFalse(blueDragon.isAttackAnimation(79));
 		assertFalse(blueDragon.isDefendAnimation(90));
 		assertFalse(blueDragon.isAttackAnimation(99999));
+	}
+
+	/**
+	 * The metal dragons are the same category on a different 2005 mesh set: three parts rather
+	 * than two, and three opcode 40 pairs rather than one, because bronze, iron and steel are one
+	 * greyscale mesh told apart entirely by colour. They resolve by name like the chromatics -
+	 * ADULT_DRAGONS is not an id-only category and no static archetype shadows these rows.
+	 */
+	@Test
+	public void testMetalDragonsCategory()
+	{
+		int[] ids = {NpcID.BRONZE_DRAGON, NpcID.IRON_DRAGON, NpcID.STEEL_DRAGON};
+		String[] names = {"Bronze dragon", "Iron dragon", "Steel dragon"};
+
+		Set<List<Short>> palettes = new HashSet<>();
+		for (int i = 0; i < ids.length; i++)
+		{
+			RetroNpcData dragon = RetroNpcMapping.get(ids[i], names[i]);
+			assertNotNull(names[i] + " mapping must exist", dragon);
+			assertEquals(RetroNpcCategory.ADULT_DRAGONS, dragon.getCategory());
+
+			assertArrayEquals(names[i] + " is a three part 2005 mesh",
+				new int[]{4986, 5022, 4987}, dragon.getInjectedModelIds());
+
+			// Without the pairs all three render as the same grey lump, so this is structural
+			assertTrue(names[i] + " must carry its 2005 recolors", dragon.hasRecolors());
+			assertArrayEquals(new short[]{61, 33, 41}, dragon.getOriginalColors());
+			assertEquals(3, dragon.getReplacementColors().length);
+
+			List<Short> palette = new ArrayList<>();
+			for (short color : dragon.getReplacementColors())
+			{
+				palette.add(color);
+			}
+			assertTrue(names[i] + " must not share a palette with another metal",
+				palettes.add(palette));
+
+			// Same policy as the chromatics: only the post-2005 ranged attack is intercepted, and
+			// the retro-native sequences - firebreath included - pass straight through
+			assertEquals(AnimationID.DRAGON_READY, dragon.getIdleAnimationId());
+			assertEquals(AnimationID.DRAGON_WALK, dragon.getWalkAnimationId());
+			assertEquals(AnimationID.DRAGON_ATTACK, dragon.getAttackAnimationId());
+			assertTrue(dragon.isAttackAnimation(AnimationID.DRAGON_RANGED_ATTACKS));
+			for (int retroNative : new int[]{80, 81, 82, 83, 84, 91})
+			{
+				assertFalse("sequence " + retroNative + " is already the retro one",
+					dragon.isAttackAnimation(retroNative));
+			}
+			assertEquals(-1, dragon.getDefendAnimationId());
+			assertEquals(-1, dragon.getDeathAnimationId());
+		}
 	}
 
 	@Test

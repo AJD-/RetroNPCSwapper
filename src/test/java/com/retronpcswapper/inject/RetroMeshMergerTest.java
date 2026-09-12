@@ -31,6 +31,7 @@ import java.util.Collections;
 import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -173,6 +174,45 @@ public class RetroMeshMergerTest
 		assertEquals(776, merged.getFaceCount());
 	}
 
+	/**
+	 * The metal dragons - bronze, iron and steel - are one 2005 mesh set of three parts, told
+	 * apart only by their opcode 40 pairs. buildInjected is all-or-nothing on parts, so a missing
+	 * one draws nothing at all rather than a dragon with a hole in it, which is exactly how these
+	 * three NPCs stayed vanilla for as long as the bundle carried none of them.
+	 */
+	@Test
+	public void testTheMetalDragonMergesFromAllThreeParts() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+
+		RetroMesh body = bundle.getMesh(4986);
+		RetroMesh second = bundle.getMesh(5022);
+		// 20 verts bound entirely to group 255, the old format's "no bone" value, so this part
+		// rides the dragon without ever being transformed. Asserted against the rig below rather
+		// than assumed.
+		RetroMesh unbound = bundle.getMesh(4987);
+		assertNotNull("metal dragon body 4986 is missing from the bundle", body);
+		assertNotNull("metal dragon part 5022 is missing from the bundle", second);
+		assertNotNull("metal dragon part 4987 is missing from the bundle", unbound);
+
+		RetroMesh merged = RetroMeshMerger.merge(4986, Arrays.asList(body, second, unbound));
+		assertEquals(348 + 122 + 20, merged.getVerticesCount());
+		assertEquals(674 + 162 + 16, merged.getFaceCount());
+
+		// The dragon rig never names group 255, so those vertices hold their rest position no
+		// matter which clip plays. That is the behaviour to pin: if a future rig did address 255
+		// it would drag every "unbound" vertex in the bundle along with it.
+		RetroRig rig = bundle.getRig(100049);
+		assertNotNull("dragon rig 100049 is missing from the bundle", rig);
+		for (int transform = 0; transform < rig.getTransformCount(); transform++)
+		{
+			for (int group : rig.getGroups(transform))
+			{
+				assertNotEquals("rig 100049 addresses the no-bone group 255", 255, group);
+			}
+		}
+	}
+
 	@Test
 	public void testTheGiantFamilySharesOneBodyMesh() throws Exception
 	{
@@ -227,7 +267,8 @@ public class RetroMeshMergerTest
 		assertEquals("34 of the head's 42 faces are textured", 34, mapped);
 		assertEquals(8, coords.length - mapped);
 
-		for (int meshId : new int[]{233, 246, 151, 176, 254, 185, 519, 541, 550, 2870, 2944})
+		for (int meshId : new int[]{233, 246, 151, 176, 254, 185, 519, 541, 550, 2870, 2944,
+			4986, 5022, 4987})
 		{
 			RetroMesh mesh = bundle.getMesh(meshId);
 			assertNotNull("mesh " + meshId + " is missing from the bundle", mesh);
