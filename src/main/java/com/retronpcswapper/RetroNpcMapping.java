@@ -80,7 +80,11 @@ public class RetroNpcMapping
 		NpcID.FAI_VARROCK_GUARD,
 		// Named "Cow" so the name row reaches it, but it is model 14102 on anims 180/229 - a mount,
 		// not a cow, and it would be handed the retro cow mesh
-		NpcID.OSB8_COW
+		NpcID.OSB8_COW,
+		// Named "Goblin", but these two are the goblins sitting at the Recruitment Drive desks:
+		// one merged mesh each, size 2 rather than 1, and no walk animation at all. The 2005
+		// goblin is a four-part standing kit and would replace a seated NPC with it
+		NpcID.PATTERN_GOBLIN1_DESK, NpcID.PATTERN_GOBLIN2_DESK
 	);
 
 	/**
@@ -629,6 +633,114 @@ public class RetroNpcMapping
 	public static final RetroNpcData COW_CALF = cow(
 		new short[]{26, 10363, 30}, new short[]{10365, 5784, 10365}, 68);
 
+	// The 2005 goblin is a four-part kit - 2951 body, 2953 torso, 2955 legs, 2956 arms - with two
+	// substitutions on top, and that is the whole of the family. 2957 is the weapon an armed goblin
+	// holds, and 2952 replaces the body on the one definition that describes its goblins as having
+	// "grown strong". Everything else the 2005 client varied with opcode 40 alone, exactly as it did
+	// the dragons and cows.
+	private static final int GOBLIN_BODY = 2951;
+	private static final int GOBLIN_STRONG_BODY = 2952;
+	private static final int[] GOBLIN_PARTS = {GOBLIN_BODY, 2953, 2955, 2956};
+	private static final int[] GOBLIN_ARMED_PARTS = {GOBLIN_BODY, 2953, 2955, 2956, 2957};
+	private static final int[] GOBLIN_STRONG_PARTS = {GOBLIN_STRONG_BODY, 2953, 2955, 2956};
+
+	/**
+	 * Restores the 2005 colors of the weapon mesh 2957, which the live cache repainted whole.
+	 *
+	 * <p>Every other goblin part still holds its 2005 palette - 2951, 2952, 2955 and 2956 kept every
+	 * face color they had, and 2953 drifted by a single shade across twelve faces. 2957 kept none:
+	 * both its colors were replaced, 9 faces of blade and 26 of haft, over geometry that is still
+	 * the 2005 mesh vertex for vertex. The pairs below therefore run backwards, live to 2005,
+	 * because the mesh being painted here is the live one.
+	 *
+	 * <p>Safe to apply to the merged model because neither 70 nor 8084 appears on any other goblin
+	 * part. The twelve drifted faces of 2953 get no such correction deliberately: they became
+	 * 14238, the goblin's own skin color, which every other part legitimately carries - correcting
+	 * them would repaint the whole goblin.
+	 */
+	private static final short[] GOBLIN_WEAPON_DRIFT_FIND = {70, 8084};
+	private static final short[] GOBLIN_WEAPON_DRIFT_REPLACE = {-22417, 528};
+
+	/**
+	 * A 2005 goblin variant: a part list, and the opcode 40 pairs that are the only thing telling
+	 * one colored goblin from another.
+	 *
+	 * <p>The pairs are carried inline rather than grafted from the generated row. "Goblin" is one
+	 * 2005 name over six definitions, and the generator keeps only the lowest id per name, so the
+	 * row has no pairs at all to give - and {@link #categoryUsesRecolors} excludes goblins for
+	 * exactly that reason. Setting them here also makes {@code hasRecolors()} true, so
+	 * {@link #applyCacheDefinitions} could never repaint one variety in another's colors even if
+	 * that scoping changed.
+	 *
+	 * <p>Goblins stay on the cache-backed path: their meshes survive at their own ids, and the
+	 * animation comes from the live sequences the client already drives, so the renumbered 2005
+	 * vertex groups never enter into it.
+	 */
+	private static RetroNpcData goblin(int[] models, short[] find, short[] replace)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.GOBLINS)
+			.retroModelIds(models)
+			.idleAnimationId(AnimationID.GOBLIN_READY)
+			.walkAnimationId(AnimationID.GOBLIN_WALK)
+			.attackAnimationId(AnimationID.GOBLIN_ATTACK_UNARMED)
+			.defendAnimationId(AnimationID.GOBLIN_BLOCK)
+			.deathAnimationId(AnimationID.GOBLIN_DEATH)
+			.recolors(find, replace)
+			.modernAttackAnims(GOBLIN_MODERN_ATTACKS)
+			.modernDefendAnims(GOBLIN_MODERN_DEFENDS)
+			.modernDeathAnims(GOBLIN_MODERN_DEATHS)
+			.build();
+	}
+
+	/**
+	 * Builds an armed variant: the weapon part, plus the drift correction that makes it 2005's
+	 * weapon rather than the modern repaint, plus whatever pairs the variety itself carries.
+	 */
+	private static RetroNpcData armedGoblin(int[] models, short[] find, short[] replace)
+	{
+		int own = find == null ? 0 : find.length;
+		short[] allFind = new short[own + GOBLIN_WEAPON_DRIFT_FIND.length];
+		short[] allReplace = new short[allFind.length];
+		if (own > 0)
+		{
+			System.arraycopy(find, 0, allFind, 0, own);
+			System.arraycopy(replace, 0, allReplace, 0, own);
+		}
+		System.arraycopy(GOBLIN_WEAPON_DRIFT_FIND, 0, allFind, own, GOBLIN_WEAPON_DRIFT_FIND.length);
+		System.arraycopy(GOBLIN_WEAPON_DRIFT_REPLACE, 0, allReplace, own, GOBLIN_WEAPON_DRIFT_REPLACE.length);
+		return goblin(models, allFind, allReplace);
+	}
+
+	// The six 2005 goblin definitions, by their def ids in the February 2005 cache.
+	//
+	// Def 100 - the plain level 2 goblin, no opcode 40 data at all. Its armour is the mesh's own
+	// 916, a dark red, which is also what the modern red-tinted goblins are recolored to.
+	public static final RetroNpcData GOBLIN_DEFAULT = goblin(GOBLIN_PARTS, null, null);
+
+	// Def 101 - the same goblin at level 5, carrying 2957.
+	public static final RetroNpcData GOBLIN_ARMED_DEFAULT = armedGoblin(GOBLIN_ARMED_PARTS, null, null);
+
+	// Def 102 - "These goblins have grown strong": level 13, and the only definition that swaps the
+	// body mesh rather than a color. Unarmed, and the modern level 13 goblin is unarmed too.
+	public static final RetroNpcData GOBLIN_STRONG = goblin(GOBLIN_STRONG_PARTS, null, null);
+
+	// Def 298 - green armour, 916 -> 22443. Live GOBLIN_GREENARMOUR still carries this pair
+	// verbatim over the 2005 meshes themselves, which is what pins green to this definition.
+	public static final RetroNpcData GOBLIN_GREEN = armedGoblin(
+		GOBLIN_ARMED_PARTS, new short[]{916}, new short[]{22443});
+
+	// Def 299 - red armour, 916 -> 933, and live GOBLIN_REDARMOUR carries that pair verbatim too.
+	// A lighter red than the 916 the plain goblin wears; the two 2005 definitions are a pair, so
+	// the modern red and green soldiers are mapped onto them as a pair.
+	public static final RetroNpcData GOBLIN_RED = armedGoblin(
+		GOBLIN_ARMED_PARTS, new short[]{916}, new short[]{933});
+
+	// Def 489 - the Goblin guard. The same armed kit as def 101 in the plain colors; it is a
+	// separate archetype only so that it stops resolving through the generated row and picks up
+	// the weapon drift correction with every other armed goblin.
+	public static final RetroNpcData GOBLIN_GUARD_DEFAULT = armedGoblin(GOBLIN_ARMED_PARTS, null, null);
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -1016,6 +1128,56 @@ public class RetroNpcMapping
 		registerMapping(COW_BROWN, NpcID.COW2);
 		registerMapping(COW_GREY, NpcID.COW3);
 		registerMapping(COW_CALF, NpcID.COW2_CALF, NpcID.COW3_CALF, NpcID.CALF);
+
+		// Goblins resolve by id where the color matters and by name everywhere else. The 2005
+		// family is six definitions over one name, so the generated row can only ever carry one of
+		// them - the same problem the cows had. Unlike the cows, the name row is doing most of the
+		// work here and keeps doing it: 147 live NPCs are called exactly "Goblin" and the great
+		// majority are the plain one, so only the varieties that need a different palette, a
+		// different part list, or that are not called "Goblin" at all are listed by id.
+		NAME_MAPPINGS.put("goblin", GOBLIN_DEFAULT);
+
+		// The plain armed goblin. 2005 def 101 is def 100 plus the weapon mesh, and the live kit
+		// says the same thing structurally: an unarmed goblin is six parts, an armed one seven or
+		// eight. Listed here are the ids where the gameval name and the part count agree. They
+		// disagree on GOBLIN_ARMED_MELEE_2, _3 and _4, which are six parts like every unarmed
+		// goblin, so those are left to the name row rather than handed a weapon they do not carry.
+		registerMapping(GOBLIN_ARMED_DEFAULT,
+			NpcID.GOBLIN_ARMED, NpcID.GOBLIN_ARMED_MELEE_1,
+			NpcID.FAI_BARBARIAN_GOBLIN_ARMED_1, NpcID.FAI_BARBARIAN_GOBLIN_ARMED_2,
+			NpcID.FAI_BARBARIAN_GOBLIN_ARMED_3, NpcID.FAI_BARBARIAN_GOBLIN_ARMED_4,
+			NpcID.GOBLIN_ARMED_MCANNON_1, NpcID.GOBLIN_ARMED_MCANNON_2, NpcID.GOBLIN_ARMED_MCANNON_3,
+			NpcID.GOBLIN_ARMED_MCANNON_4, NpcID.GOBLIN_ARMED_MCANNON_5,
+			NpcID.SOS_WAR_GOBLIN_ARMED, NpcID.SOS_WAR_GOBLIN_ARMED2
+		);
+
+		// Live GOBLIN_HELMET is the level 13 goblin, and 2005 def 102 is the only level 13 goblin
+		// in that cache. Both are unarmed; only the body mesh changes.
+		registerMapping(GOBLIN_STRONG, NpcID.GOBLIN_HELMET);
+
+		// The Goblin Village army. Which live goblin is which color is not a guess: each one's own
+		// opcode 40 data recolors the modern kit to 22414/22410 for green or 916/912 for red, and
+		// GOBLIN_GREENARMOUR and GOBLIN_REDARMOUR still carry the 2005 pairs 916 -> 22443 and
+		// 916 -> 933 over the 2005 meshes themselves.
+		registerMapping(GOBLIN_GREEN,
+			NpcID.GOBLIN_GREEN_SOLDIER_1, NpcID.GOBLIN_GREEN_SOLDIER_2, NpcID.GOBLIN_GREEN_SOLDIER_3,
+			NpcID.GOBLIN_GREEN_SOLDIER_4, NpcID.GOBLIN_GREEN_SOLDIER_5, NpcID.GOBLIN_GREEN_SOLDIER_6,
+			NpcID.GOBLIN_GREEN_SOLDIER_7, NpcID.GOBLIN_GREEN_SOLDIER_8,
+			NpcID.GOBLIN_GREENARMOUR, NpcID.XMAS20_GOBLIN_GREEN,
+			NpcID.SLICE_CUTSCENE_FIREBOLT_GOBLIN, NpcID.SLICE_CUTSCENE_ARROW_GOBLIN
+		);
+		registerMapping(GOBLIN_RED,
+			NpcID.GOBLIN_RED_SOLDIER_1, NpcID.GOBLIN_RED_SOLDIER_2, NpcID.GOBLIN_RED_SOLDIER_3,
+			NpcID.GOBLIN_RED_SOLDIER_4, NpcID.GOBLIN_RED_SOLDIER_5, NpcID.GOBLIN_RED_SOLDIER_6,
+			NpcID.GOBLIN_RED_SOLDIER_7, NpcID.GOBLIN_RED_SOLDIER_8,
+			NpcID.GOBLIN_RED_SOLDIER_UNDERGROUND, NpcID.GOBLIN_REDARMOUR, NpcID.XMAS20_GOBLIN_RED,
+			NpcID.SLICE_CUTSCENE_SCARED_GOBLIN_1
+		);
+
+		// "Goblin guard" is its own 2005 name, so the row would cover it; the archetype exists only
+		// to hand it the same weapon correction every other armed goblin gets.
+		NAME_MAPPINGS.put("goblin guard", GOBLIN_GUARD_DEFAULT);
+		registerMapping(GOBLIN_GUARD_DEFAULT, NpcID.GOBLIN_GUARD);
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
@@ -1084,11 +1246,23 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.GOBLINS)
 		{
-			stanceAnim = stanceAnim != -1 ? stanceAnim : 311;
-			walkAnim = walkAnim != -1 ? walkAnim : 308;
-			attackAnim = 309;
-			defendAnim = 312;
-			deathAnim = 313;
+			// Only the hobgoblin reaches here now. Every goblin proper is an archetype built by
+			// goblin(...), because the six 2005 definitions need five different part lists and
+			// palettes and the generator keeps only the lowest-id row per name. The two paths have
+			// to agree slot for slot, so this branch mirrors that factory - but it must not
+			// hardcode the models the way the chicken branch does: the hobgoblin is its own mesh,
+			// 2994, which the row is the only source of.
+			//
+			// Pre-existing and deliberately left alone: the generator's name rule is
+			// contains("goblin"), so the hobgoblin lands in this category and takes the goblin's
+			// combat slots, while HOBGOBLIN_ATTACK, HOBGOBLIN_BLOCK and HOBGOBLIN_DEATH
+			// (163/165/167) appear in none of the three sets below and so are never intercepted.
+			// Giving the hobgoblin its own archetype is a separate piece of work.
+			stanceAnim = stanceAnim != -1 ? stanceAnim : AnimationID.GOBLIN_READY;
+			walkAnim = walkAnim != -1 ? walkAnim : AnimationID.GOBLIN_WALK;
+			attackAnim = AnimationID.GOBLIN_ATTACK_UNARMED;
+			defendAnim = AnimationID.GOBLIN_BLOCK;
+			deathAnim = AnimationID.GOBLIN_DEATH;
 			modernAttacks = GOBLIN_MODERN_ATTACKS;
 			modernDefends = GOBLIN_MODERN_DEFENDS;
 			modernDeaths = GOBLIN_MODERN_DEATHS;

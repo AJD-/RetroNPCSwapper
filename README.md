@@ -9,7 +9,7 @@ where they did not.
 Each category can be toggled individually under **NPC Toggles** in the plugin config:
 
 - **Chickens**
-- **Goblins**
+- **Goblins** — plain, armed, the level 13 variant, and the red and green Goblin Village soldiers
 - **Skeletons** (armed and unarmed)
 - **Zombies** (armed and unarmed)
 - **Giants** — Hill only
@@ -103,6 +103,10 @@ utilizes the GPU plugin's draw callbacks.
   has to be built from: the cow body 3341 is 98% the same geometry with its whole hide
   repainted, and a distinct-palette diff cannot say which color became which. Faces are matched
   by position in space, because re-encoding reorders both the faces and the vertices.
+- `./gradlew dumpRetroNpcDefinitions -Pnpc=goblin -Pmax=200` prints 2005 NPC definitions (IDs or a
+  name substring) with their opcode 40 recolor pairs. `npc-mappings.json` keeps only the lowest-id
+  row per name, so it cannot answer a question about one particular NPC among several sharing a
+  name — which is every family whose 2005 varieties were one mesh in several palettes.
 - `./gradlew dumpNpcDefinitions -Pnpc=1173` prints live-cache NPC definitions (IDs or a name
   substring) — models, scales and pose animations, for comparing against the retro definition.
 - `./gradlew generateRetroAssets` rebuilds `retro-assets.dat` from the same local 2005 cache. It
