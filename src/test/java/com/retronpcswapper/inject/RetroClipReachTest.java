@@ -51,12 +51,13 @@ public class RetroClipReachTest
 	 * fit on every sequence - but reach cannot prove the pairing is right here, only an in-game look
 	 * can. Walk (819) has the thinnest margin, 65% against 60%.
 	 *
-	 * <p>All fifteen measured: 808 79%, 819 65%, 422 80%, 423 70%, 424 76%, 836 70%, 386 75%,
-	 * 389 76%, 390 70%, 1156 70%, and the blunt family 400 75%, 401 77%, 402 75%, 403 80%, 404 75%.
-	 * The sword-and-shield and blunt sets both sit in the same band as the unarmed clips, which is
-	 * the result wanted. The Ardougne kit scores identically to the town guard on the ten they
-	 * share, despite sharing only one mesh with it - both are 2005 human kit covering the same
-	 * joints, which is why one floor serves both.
+	 * <p>All twenty-two measured: 808 79%, 819 65%, 422 80%, 423 70%, 424 76%, 836 70%, 386 75%,
+	 * 389 76%, 390 70%, 1156 70%; the blunt family 400 75%, 401 77%, 402 75%, 403 80%, 404 75%; and
+	 * the axe family 393 77%, 394 79%, 395 78%, 396 75%, 397 80%, 398 80%, 399 81%. All three
+	 * weapon sets sit in the same band as the unarmed clips, which is the result wanted. The
+	 * Ardougne kit scores identically to the town guard on the ten they share, despite sharing only
+	 * one mesh with it - both are 2005 human kit covering the same joints, which is why one floor
+	 * serves all of them.
 	 */
 	private static final Map<Integer, Integer> CLIP_FLOORS = new HashMap<>();
 
@@ -64,7 +65,8 @@ public class RetroClipReachTest
 	{
 		CLIP_FLOORS.put(130, 80);
 		for (int guardClip : new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156,
-			400, 401, 402, 403, 404})
+			400, 401, 402, 403, 404,
+			393, 394, 395, 396, 397, 398, 399})
 		{
 			CLIP_FLOORS.put(guardClip, 60);
 		}
@@ -122,7 +124,18 @@ public class RetroClipReachTest
 		{401, 225, 301, 162, 179, 274, 185, 502},
 		{402, 225, 301, 162, 179, 274, 185, 502},
 		{403, 225, 301, 162, 179, 274, 185, 502},
-		{404, 225, 301, 162, 179, 274, 185, 502}
+		{404, 225, 301, 162, 179, 274, 185, 502},
+		// The axe family, against the Falador axe guard's own kit - battleaxe 550 where the rest
+		// carry sword 519, which is also the only row that measures 550 at all. 395 and 397 are the
+		// two seen in game. Between them, 393/395/397/398 use framemap 100082 and 394/399 use
+		// 100075, so the guards now span three rigs rather than one.
+		{393, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{394, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{395, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{396, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{397, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{398, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{399, 233, 246, 294, 151, 176, 254, 185, 550, 541}
 	};
 
 	@Test

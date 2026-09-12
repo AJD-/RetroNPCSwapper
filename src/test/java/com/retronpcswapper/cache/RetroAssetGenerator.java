@@ -144,8 +144,15 @@ public class RetroAssetGenerator
 			// the town guard stabs: 401 HUMAN_BLUNT_POUND is what it was seen playing in game, and
 			// the rest of its family ships with it because the same weapon selects between them and
 			// a guard with no shield has to block on 403/404 rather than the town guard's 1156.
+			//
+			// 393-399 are the axe family, for the Falador guard carrying battleaxe 550. Seen in
+			// game: 395 HUMAN_AXE_HACK and 397 HUMAN_AXE_BLOCK.
+			//
+			// Three weapons, three families. A guard's combat sequences follow what it is holding,
+			// not what kind of guard it is, so each weapon in the kit above brings its own set.
 			new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156,
-				400, 401, 402, 403, 404})
+				400, 401, 402, 403, 404,
+				393, 394, 395, 396, 397, 398, 399})
 	);
 
 	private enum Source

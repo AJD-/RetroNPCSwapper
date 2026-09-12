@@ -438,6 +438,10 @@ public class RetroNpcMapping
 	 * <p>2005 model 550 is byte-for-byte the mesh the live cache still holds at that id, so
 	 * the axe is authentic rather than approximated. The shield (541) stays: the live NPC
 	 * carries both, unlike the archers, who carry a bow and no shield at all.
+	 *
+	 * <p>Carrying an axe also means fighting with one. This guard plays the axe family (393-399,
+	 * seen in game as 395 {@code HUMAN_AXE_HACK} and 397 {@code HUMAN_AXE_BLOCK}), not the sword
+	 * set the rest of its town uses, so the bundle carries that family too.
 	 */
 	private static final int[] GUARD_AXE_PARTS = {233, 246, 294, 151, 176, 254, 185, 550, 541};
 
@@ -538,9 +542,11 @@ public class RetroNpcMapping
 	 * family alongside the town guard's sword set. Those are classic ids the live game still uses,
 	 * so they pass straight through with no interception, the way 386 and 1156 do.
 	 *
-	 * <p>This kit binds one group further out than the town guard's, to 36 rather than 34, and two
-	 * of the blunt clips resolve to framemap 100082 rather than 100083;
-	 * {@code RetroClipReachTest} asserts every rig addresses every group the mesh it animates binds.
+	 * <p>This kit binds one group further out than the town guard's, to 36 rather than 34, and the
+	 * guards' clips no longer share one framemap - between the three weapon families they resolve
+	 * to 100083, 100082 and 100075. Harmless, since a clip carries its own rig id, but
+	 * {@code RetroClipReachTest} asserts every one of them addresses every group the mesh it
+	 * animates binds.
 	 */
 	private static RetroNpcData ardougneGuard(int[] models)
 	{
