@@ -57,14 +57,19 @@ import net.runelite.cache.fs.Store;
 public class ModernNpcDumper
 {
 	private static final String CACHE_DIR_PROPERTY = "retronpcswapper.cacheDir";
+	private static final String MAX_MATCHES_PROPERTY = "retronpcswapper.maxMatches";
 
 	private static final String[] DEFAULT_CACHE_DIRS = {
 		".runelite/jagexcache/oldschool/LIVE",
 		"jagexcache/oldschool/LIVE"
 	};
 
-	/** Guard against a broad name search printing thousands of definitions. */
-	private static final int MAX_NAME_MATCHES = 40;
+	/**
+	 * Guard against a broad name search printing thousands of definitions. Raise it with
+	 * {@code -Pmax=N} when the whole family is the point - 184 NPCs are named exactly "Guard",
+	 * and picking out the ones wearing a particular town's kit means seeing all of them.
+	 */
+	private static final int DEFAULT_MAX_NAME_MATCHES = 40;
 
 	public static void main(String[] args) throws IOException
 	{
@@ -99,9 +104,10 @@ public class ModernNpcDumper
 				return;
 			}
 
+			int maxMatches = maxMatches();
 			for (String arg : args)
 			{
-				dump(npcManager, arg.trim());
+				dump(npcManager, arg.trim(), maxMatches);
 			}
 		}
 	}
@@ -132,9 +138,31 @@ public class ModernNpcDumper
 	}
 
 	/**
+	 * The print ceiling, from {@code -Pmax}, else {@link #DEFAULT_MAX_NAME_MATCHES}.
+	 */
+	private static int maxMatches()
+	{
+		String configured = System.getProperty(MAX_MATCHES_PROPERTY);
+		if (configured == null || configured.isEmpty())
+		{
+			return DEFAULT_MAX_NAME_MATCHES;
+		}
+
+		try
+		{
+			return Math.max(1, Integer.parseInt(configured.trim()));
+		}
+		catch (NumberFormatException ex)
+		{
+			System.err.println("Ignoring non-numeric -Pmax=" + configured);
+			return DEFAULT_MAX_NAME_MATCHES;
+		}
+	}
+
+	/**
 	 * Prints every definition matching a numeric id or a case-insensitive name substring.
 	 */
-	private static void dump(NpcManager npcManager, String query)
+	private static void dump(NpcManager npcManager, String query, int maxMatches)
 	{
 		if (query.isEmpty())
 		{
@@ -170,7 +198,7 @@ public class ModernNpcDumper
 			}
 		}
 
-		int shown = Math.min(matches.size(), MAX_NAME_MATCHES);
+		int shown = Math.min(matches.size(), maxMatches);
 		for (int i = 0; i < shown; i++)
 		{
 			print(matches.get(i));

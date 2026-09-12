@@ -44,23 +44,31 @@ public class RetroClipReachTest
 	 *
 	 * <p>The guard sequences are the harder case. Their rig is the 2005 <em>player</em> rig, which
 	 * addresses every equipment slot a player can wear - hair, beard, cape, weapon, shield - while a
-	 * guard wears nine parts using about 35 groups. A large share of the ops in any player animation
+	 * guard wears seven or nine parts using about 35 groups. A large share of the ops in any player animation
 	 * therefore targets slots this NPC simply does not have, and no correct pairing of a partial kit
 	 * with a full player animation can approach the skeleton's 96%. Measured against the modern rig
 	 * these same meshes score 48-63%, against the 2005 rig 65-80%, so the 2005 clips are the better
 	 * fit on every sequence - but reach cannot prove the pairing is right here, only an in-game look
 	 * can. Walk (819) has the thinnest margin, 65% against 60%.
 	 *
-	 * <p>All ten measured: 808 79%, 819 65%, 422 80%, 423 70%, 424 76%, 836 70%, 386 75%, 389 76%,
-	 * 390 70%, 1156 70%. The sword-and-shield set sits in the same band as the unarmed clips,
-	 * which is the result wanted.
+	 * <p>All twenty-six measured. Pose and death: 808 79%, 819 65%, 836 70%. Shield block 1156 70%.
+	 * Sword 386 75%, 387 74%, 388 75%, 389 76%, 390 70%, 391 71%, 392 75%. Axe 393 77%, 394 79%,
+	 * 395 78%, 396 75%, 397 80%, 398 80%, 399 81%. Blunt 400 75%, 401 77%, 402 75%, 403 80%,
+	 * 404 75%. Unarmed 422 80%, 423 70%, 424 76%. All four weapon sets sit in the same band, which
+	 * is the result wanted, and 819 is still the thinnest margin of the lot. The Ardougne kit scores
+	 * identically to the town guard on every clip they share, despite sharing only one mesh with it
+	 * - both are 2005 human kit covering the same joints, which is why one floor serves all of them.
 	 */
 	private static final Map<Integer, Integer> CLIP_FLOORS = new HashMap<>();
 
 	static
 	{
 		CLIP_FLOORS.put(130, 80);
-		for (int guardClip : new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156})
+		for (int guardClip : new int[]{808, 819, 836, 1156,
+			386, 387, 388, 389, 390, 391, 392,
+			393, 394, 395, 396, 397, 398, 399,
+			400, 401, 402, 403, 404,
+			422, 423, 424})
 		{
 			CLIP_FLOORS.put(guardClip, 60);
 		}
@@ -115,7 +123,47 @@ public class RetroClipReachTest
 		{386, 233, 246, 294, 151, 176, 254, 185, 519, 541},
 		{389, 233, 246, 294, 151, 176, 254, 185, 519, 541},
 		{390, 233, 246, 294, 151, 176, 254, 185, 519, 541},
-		{1156, 233, 246, 294, 151, 176, 254, 185, 519, 541}
+		{1156, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		// The rest of the sword family. 386, 390 and 1156 are what the town guard was seen playing;
+		// these complete it for a sword guard with no shield to block behind.
+		{387, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{388, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{391, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{392, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		// The Ardougne guard rides on the same clips: a second 2005 costume on the same human rig,
+		// sharing only the boots (185) with the kit above. Measured separately because a merge of
+		// seven different meshes uses a different set of groups, and a floor that only ever saw
+		// the town guard would not notice this one drifting.
+		{808, 225, 301, 162, 179, 274, 185, 502},
+		{819, 225, 301, 162, 179, 274, 185, 502},
+		{422, 225, 301, 162, 179, 274, 185, 502},
+		{423, 225, 301, 162, 179, 274, 185, 502},
+		{424, 225, 301, 162, 179, 274, 185, 502},
+		{836, 225, 301, 162, 179, 274, 185, 502},
+		{386, 225, 301, 162, 179, 274, 185, 502},
+		{389, 225, 301, 162, 179, 274, 185, 502},
+		{390, 225, 301, 162, 179, 274, 185, 502},
+		{1156, 225, 301, 162, 179, 274, 185, 502},
+		// Weapon 502 is a mace, so this guard fights blunt where the town guard stabs. 401 is the
+		// one seen in game; its family ships with it. 401 and 403 resolve to framemap 100082 rather
+		// than 100083 - a clip carries its own rig id, and these are the only guard clips that use
+		// the second one, so they are the reason to measure the family rather than just 401.
+		{400, 225, 301, 162, 179, 274, 185, 502},
+		{401, 225, 301, 162, 179, 274, 185, 502},
+		{402, 225, 301, 162, 179, 274, 185, 502},
+		{403, 225, 301, 162, 179, 274, 185, 502},
+		{404, 225, 301, 162, 179, 274, 185, 502},
+		// The axe family, against the Falador axe guard's own kit - battleaxe 550 where the rest
+		// carry sword 519, which is also the only row that measures 550 at all. 395 and 397 are the
+		// two seen in game. Between them, 393/395/397/398 use framemap 100082 and 394/399 use
+		// 100075, so the guards now span three rigs rather than one.
+		{393, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{394, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{395, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{396, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{397, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{398, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		{399, 233, 246, 294, 151, 176, 254, 185, 550, 541}
 	};
 
 	@Test
@@ -185,6 +233,50 @@ public class RetroClipReachTest
 			int floor = CLIP_FLOORS.getOrDefault(sequenceId, MINIMUM_PERCENT);
 			assertTrue("clip " + sequenceId + " reaches only " + reach + "% of mesh " + meshId
 				+ ", below its " + floor + "% floor", reach >= floor);
+		}
+	}
+
+	/**
+	 * Every group a mesh binds must be reachable by some transform of the rig that animates it.
+	 *
+	 * <p>Reach cannot see this. It counts ops that land, and an op lands on the first group of its
+	 * transform that the mesh has - so a group no transform names at all costs nothing and shows up
+	 * nowhere, while in game that slice of the mesh holds its rest pose while the body around it
+	 * moves. The Ardougne guard is what made it worth asserting: its hands (274) bind up to group
+	 * 36, past the [0..34] the town guard's kit had established.
+	 */
+	@Test
+	public void testNoMeshGroupIsUnaddressedByItsRig() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+
+		for (int[] pair : CLIP_MESHES)
+		{
+			RetroClip clip = bundle.getClip(pair[0]);
+			assertNotNull("clip " + pair[0] + " is missing from the bundle", clip);
+			RetroRig rig = bundle.getRig(clip.getRigId());
+			assertNotNull("rig " + clip.getRigId() + " is missing from the bundle", rig);
+
+			List<RetroMesh> parts = new ArrayList<>();
+			for (int part = 1; part < pair.length; part++)
+			{
+				parts.add(bundle.getMesh(pair[part]));
+			}
+			RetroMesh mesh = RetroMeshMerger.merge(pair[1], parts);
+
+			Set<Integer> addressed = new HashSet<>();
+			for (int transform = 0; transform < rig.getTransformCount(); transform++)
+			{
+				for (int group : rig.getGroups(transform))
+				{
+					addressed.add(group);
+				}
+			}
+
+			Set<Integer> orphans = new HashSet<>(groupsUsedBy(mesh));
+			orphans.removeAll(addressed);
+			assertTrue("mesh " + pair[1] + " binds groups " + orphans + " that rig " + rig.getId()
+				+ " never addresses, so they would never move", orphans.isEmpty());
 		}
 	}
 

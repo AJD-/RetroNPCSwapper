@@ -147,14 +147,41 @@ public class RetroAssetGenerator
 		// 2005 bindings all sit in [0..34]; live framemap 0 is a 218-group rig. Live clips would drive
 		// the right geometry off the wrong bones.
 		new Spec("Guards", Source.RETRO, Source.RETRO,
-			// 550 is the battleaxe the Falador axe guard carries in place of sword 519
-			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541, 550},
-			// 386 sword stab and 1156 shield block are what a guard actually plays in a fight;
-			// 422/423/424 are the unarmed set. All are classic ids the live game still uses, so they
-			// need the 2005 frames rather than any interception. 1156 was once left out as
-			// undecodable, which was a truncated seq.dat rather than anything about the sequence - it
-			// ships like the rest now, and its 17 frames resolve to rig 100083 with the others.
-			new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156})
+			// 550 is the battleaxe the Falador axe guard carries in place of sword 519.
+			//
+			// 225, 301, 162, 179, 274 and 502 are the Ardougne guard - a second costume rather than
+			// a recolor of the first, sharing only the boots (185). It rides on this spec's clips
+			// because both costumes are 2005 human kit bound into the same range: 2005 definition
+			// 32 names the same 808/819 stance and walk, and its parts bind into [0..36] the way
+			// the town guard's bind into [0..34].
+			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541, 550,
+				225, 301, 162, 179, 274, 502},
+			// A guard's combat sequences follow what it is holding, not what kind of guard it is,
+			// so every weapon any registered guard carries brings its whole family. Surveyed across
+			// all 40 of them, the live weapon meshes reduce to three melee classes plus a bow:
+			//
+			//   sword     519, 518, 23178, 46758   25 verts, 38 faces, colors 61/11200
+			//   battleaxe 550                      38 verts, 56 faces, colors 61/7073
+			//   mace      502, 46755               35 verts, 62 faces, colors 61/8722
+			//   shield    541, 23179               36 verts, 62 faces
+			//   bow       563, 23177               only on FAI_FALADOR_GUARD4_F, which takes the
+			//                                      cache path and is animated by the client
+			//
+			// so the families below are the complete set a guard can play, and each is whole:
+			//
+			//   386-392  sword. 386 stab, 390 slash and 1156 shield block are what the town guard
+			//            was seen playing; 387/388/391/392 complete the family for the guards that
+			//            carry a sword and no shield. 1156 was once left out as undecodable, which
+			//            was a truncated seq.dat rather than anything about the sequence.
+			//   393-399  axe, for Falador's battleaxe guard. Seen in game: 395 and 397.
+			//   400-404  blunt, for Ardougne's mace. Seen in game: 401.
+			//   422-424  unarmed, for the Carnillean guards and FAI_FALADOR_GUARD3_F, who carries
+			//            a shield and no weapon at all.
+			new int[]{808, 819, 836, 1156,
+				386, 387, 388, 389, 390, 391, 392,
+				393, 394, 395, 396, 397, 398, 399,
+				400, 401, 402, 403, 404,
+				422, 423, 424})
 	);
 
 	private enum Source

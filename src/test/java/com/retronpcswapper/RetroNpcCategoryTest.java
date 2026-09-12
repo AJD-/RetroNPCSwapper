@@ -414,14 +414,15 @@ public class RetroNpcCategoryTest
 		assertEquals(424, guard.getDefendAnimationId());
 		assertEquals(836, guard.getDeathAnimationId());
 
-		// Verify Varrock/Falador/Ardougne Guard explicit ID mappings
+		// Verify Varrock/Falador Guard explicit ID mappings. Ardougne is a different costume and
+		// has its own test - see testArdougneGuards.
 		int[] guardIds = {
 			NpcID.BIM_FAI_VARROCK_GUARD02, NpcID.BIM_FAI_VARROCK_GUARD02_F, NpcID.FAI_VARROCK_GUARD02,
-			NpcID.GUARD1_VARIANT01, NpcID.ARDOUGNE_GUARD_VARIANT01,
+			NpcID.GUARD1_VARIANT01,
 			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD3_F,
 			// The base row of each family. The list above enumerates the _F and _VARIANT
 			// derivatives of exactly these NPCs and used to skip the NPCs themselves.
-			NpcID.GUARD1, NpcID.ARDOUGNE_GUARD,
+			NpcID.GUARD1,
 			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD3};
 		for (int id : guardIds)
 		{
@@ -523,6 +524,73 @@ public class RetroNpcCategoryTest
 		assertFalse(guard.isAttackAnimation(7041));
 		assertFalse(guard.isDefendAnimation(7043));
 		assertFalse(guard.isDeathAnimation(7044));
+	}
+
+	@Test
+	public void testArdougneGuards()
+	{
+		// Ardougne's guards were registered against GUARD_DEFAULT, which put every one of them in
+		// a Varrock uniform. They are a different 2005 costume, not a recolor: definition 32's
+		// seven parts against definition 9's nine, sharing only the boots.
+		RetroNpcData ardougne = RetroNpcMapping.get(NpcID.ARDOUGNE_GUARD, "Guard");
+		assertNotNull("the Ardougne guard must resolve by id", ardougne);
+		assertEquals(RetroNpcCategory.GUARDS, ardougne.getCategory());
+		assertArrayEquals(new int[]{225, 301, 162, 179, 274, 185, 502}, ardougne.getRetroModelIds());
+		assertArrayEquals(ardougne.getRetroModelIds(), ardougne.getInjectedModelIds());
+
+		// Live ARDOUGNE_GUARD carries these same pairs, byte for byte, 20 years on - they are what
+		// separates the two towns' kit. Held inline on the archetype rather than grafted: the one
+		// "guard" name key belongs to the town guard, and applyCacheDefinitions only reaches
+		// archetypes that hold one.
+		assertTrue("the Ardougne colors must survive load()", ardougne.hasRecolors());
+		assertArrayEquals(new short[]{25238, 8741}, ardougne.getOriginalColors());
+		assertArrayEquals(new short[]{811, -21597}, ardougne.getReplacementColors());
+
+		// Same 2005 human rig and the same clips - definition 32 names the same stance and walk
+		assertEquals(808, ardougne.getIdleAnimationId());
+		assertEquals(819, ardougne.getWalkAnimationId());
+		assertEquals(422, ardougne.getAttackAnimationId());
+		assertEquals(424, ardougne.getDefendAnimationId());
+		assertEquals(836, ardougne.getDeathAnimationId());
+
+		// The variant and both females. Female guards are recent content with no 2005 counterpart,
+		// so they take the male kit, as Varrock's and Falador's do.
+		for (int id : new int[]{NpcID.ARDOUGNE_GUARD_VARIANT01, NpcID.ARDOUGNE_GUARD_F,
+			NpcID.ARDOUGNE_GUARD_F_VARIANT01})
+		{
+			RetroNpcData variant = RetroNpcMapping.get(id, "Guard");
+			assertNotNull("Ardougne guard " + id + " must map to data", variant);
+			assertArrayEquals("Ardougne guard " + id + " must wear the Ardougne kit",
+				new int[]{225, 301, 162, 179, 274, 185, 502}, variant.getRetroModelIds());
+		}
+
+		// The Carnillean mansion guards are the town's guards posted indoors: the same kit with the
+		// weapon slot dropped, matching 2005 definition 887 exactly.
+		for (int id : new int[]{NpcID.SOTN_GUARD_CARNILLEAN_UPSTAIRS, NpcID.GUARD_CARNILLEAN_VIS,
+			NpcID.GUARD_CARNILLEAN_CUTSCENE})
+		{
+			RetroNpcData carnillean = RetroNpcMapping.get(id, "Guard");
+			assertNotNull("Carnillean guard " + id + " must map to data", carnillean);
+			assertArrayEquals(new int[]{225, 301, 162, 179, 274, 185}, carnillean.getRetroModelIds());
+			assertTrue(carnillean.hasRecolors());
+		}
+
+		// The regression this whole change exists to prevent, in both directions: Varrock and
+		// Falador keep definition 9's kit and its colors, and Ardougne never acquires them.
+		RetroNpcData townGuard = RetroNpcMapping.get(NpcID.GUARD1, "Guard");
+		assertNotNull(townGuard);
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			townGuard.getRetroModelIds());
+		assertArrayEquals("the town guard keeps its own 2005 colors",
+			new short[]{25238, 8741, 61}, townGuard.getOriginalColors());
+		assertArrayEquals(new short[]{10508, 6930, 5652}, townGuard.getReplacementColors());
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.FAI_VARROCK_GUARD02, "Guard")).getRetroModelIds());
+
+		// Deadman guards wear this kit too and are registered for no town at all - level 1337 with
+		// no stance animation. Unreachable rather than excluded, the category resolving by id.
+		assertNull(RetroNpcMapping.get(NpcID.DEADMAN_GUARD_ARDOUGNE_VIS, "Guard"));
+		assertNull(RetroNpcMapping.get(NpcID.DEADMAN_GUARD_ARDOUGNE_RANGE_VIS, "Guard"));
 	}
 
 	@Test
@@ -1343,10 +1411,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapCyclops must default to true", config.swapCyclops());
 		assertTrue("swapGuards must default to true", config.swapGuards());
 
-		// On by default, so the outlines follow the model actually being drawn. Note this one does
-		// reach outside the plugin - while it is on it turns Interact Highlight's own NPC hover and
-		// interact settings off and draws those outlines itself, restoring them on shutdown.
-		assertTrue("overrideInteractHighlight must default to true",
+		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
 	}
 

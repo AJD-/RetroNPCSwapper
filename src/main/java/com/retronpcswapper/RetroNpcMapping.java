@@ -442,8 +442,51 @@ public class RetroNpcMapping
 	 * <p>2005 model 550 is byte-for-byte the mesh the live cache still holds at that id, so
 	 * the axe is authentic rather than approximated. The shield (541) stays: the live NPC
 	 * carries both, unlike the archers, who carry a bow and no shield at all.
+	 *
+	 * <p>Carrying an axe also means fighting with one. This guard plays the axe family (393-399,
+	 * seen in game as 395 {@code HUMAN_AXE_HACK} and 397 {@code HUMAN_AXE_BLOCK}), not the sword
+	 * set the rest of its town uses, so the bundle carries that family too.
 	 */
 	private static final int[] GUARD_AXE_PARTS = {233, 246, 294, 151, 176, 254, 185, 550, 541};
+
+	/**
+	 * The seven 2005 parts of an Ardougne guard, in the order the definition lists them. Six of
+	 * body and kit plus one held weapon - no shield, and the live NPC carries none either.
+	 *
+	 * <p>This is 2005 definition <b>32</b>, a different costume from the Varrock and Falador town
+	 * guard rather than a recolor of it: seven meshes against nine, sharing only 185. Live
+	 * {@code ARDOUGNE_GUARD} names the same seven slots in the same order, at the same combat
+	 * level, and carries the same opcode 40 pairs byte for byte, with only 162 and 274 swapped for
+	 * modern replacements (26630 and 28346) - the same two positions the Varrock guard's rework
+	 * touched.
+	 *
+	 * <p>Four of the seven survive in the live cache byte for byte. 301, 162 and 274 do not - their
+	 * ids were reused, 301 going from 30 vertices to 424 - which is the same reason the town guard
+	 * is injection-only, and it holds here too.
+	 */
+	private static final int[] ARDOUGNE_GUARD_PARTS = {225, 301, 162, 179, 274, 185, 502};
+
+	/**
+	 * The same kit with no weapon, for the guards posted inside the Carnillean mansion.
+	 *
+	 * <p>2005 definition <b>887</b> - "On special duty to protect the Carnilleans" - is exactly
+	 * {@link #ARDOUGNE_GUARD_PARTS} minus its last entry, and the live Carnillean guards drop the
+	 * same slot from the same list. The mansion is in East Ardougne and the guards are the town's,
+	 * so they wear the town's colors.
+	 */
+	private static final int[] ARDOUGNE_CARNILLEAN_PARTS = {225, 301, 162, 179, 274, 185};
+
+	/**
+	 * The 2005 Ardougne guard's opcode 40 pairs, from definition 32.
+	 *
+	 * <p>Carried inline rather than grafted. {@link #applyCacheDefinitions} only reaches archetypes
+	 * that hold a {@code NAME_MAPPINGS} key, and the single "guard" key belongs to the town guard -
+	 * an Ardougne row cannot be added there without costing Varrock its colors. Holding the pairs
+	 * here also makes {@code hasRecolors()} true, so the graft could never repaint these meshes in
+	 * Varrock's palette even if the wiring changed.
+	 */
+	private static final short[] ARDOUGNE_RECOLOR_FIND = {25238, 8741};
+	private static final short[] ARDOUGNE_RECOLOR_REPLACE = {811, -21597};
 
 	/**
 	 * The male bow guard, taken from the live cache rather than the bundle.
@@ -491,6 +534,44 @@ public class RetroNpcMapping
 		.modernDefendAnims(GUARD_MODERN_DEFENDS)
 		.modernDeathAnims(GUARD_MODERN_DEATHS)
 		.build();
+
+	/**
+	 * Builds an Ardougne guard. The town's own 2005 costume, not the Varrock kit in other colors:
+	 * seven different meshes, of which only the boots (185) are shared with the town guard.
+	 *
+	 * <p>The animation slots are the town guard's because the 2005 definition names the same
+	 * stance and walk (808/819) and the combat sequences are not part of a definition at all. What
+	 * an Ardougne guard actually fights with is blunt rather than sword - weapon 502 is a mace, and
+	 * it was seen playing 401 {@code HUMAN_BLUNT_POUND} in game - so the bundle carries the blunt
+	 * family alongside the town guard's sword set. Those are classic ids the live game still uses,
+	 * so they pass straight through with no interception, the way 386 and 1156 do.
+	 *
+	 * <p>This kit binds one group further out than the town guard's, to 36 rather than 34, and the
+	 * guards' clips no longer share one framemap - between the three weapon families they resolve
+	 * to 100083, 100082 and 100075. Harmless, since a clip carries its own rig id, but
+	 * {@code RetroClipReachTest} asserts every one of them addresses every group the mesh it
+	 * animates binds.
+	 */
+	private static RetroNpcData ardougneGuard(int[] models)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.GUARDS)
+			.retroModelIds(models)
+			.idleAnimationId(808)
+			.walkAnimationId(819)
+			.attackAnimationId(422)
+			.defendAnimationId(424)
+			.deathAnimationId(836)
+			.modernAttackAnims(GUARD_MODERN_ATTACKS)
+			.modernDefendAnims(GUARD_MODERN_DEFENDS)
+			.modernDeathAnims(GUARD_MODERN_DEATHS)
+			.recolors(ARDOUGNE_RECOLOR_FIND, ARDOUGNE_RECOLOR_REPLACE)
+			.build();
+	}
+
+	public static final RetroNpcData ARDOUGNE_GUARD_DEFAULT = ardougneGuard(ARDOUGNE_GUARD_PARTS);
+
+	public static final RetroNpcData CARNILLEAN_GUARD_DEFAULT = ardougneGuard(ARDOUGNE_CARNILLEAN_PARTS);
 
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
@@ -851,7 +932,7 @@ public class RetroNpcMapping
 			// The base rows of each family. GUARDS is in ID_ONLY_CATEGORIES, so the name no longer
 			// resolves and every guard has to be named here - including the _F and _VARIANT
 			// derivatives below, which the name lookup used to cover.
-			NpcID.GUARD1, NpcID.ARDOUGNE_GUARD,
+			NpcID.GUARD1,
 			// Only the melee half of the Falador family. GUARD2, GUARD4, GUARD5 and GUARD6 carry
 			// a bow or crossbow - see EXCLUDED_IDS. GUARD4_F is listed below: she is the female
 			// of GUARD4, replaced by the male archer rather than excluded.
@@ -861,7 +942,6 @@ public class RetroNpcMapping
 			NpcID.FAI_VARROCK_GUARD02_F, NpcID.FAI_VARROCK_GUARD02_F_VARIANT01, NpcID.FAI_VARROCK_GUARD02_F_VARIANT02,
 			NpcID.FAI_VARROCK_GUARD_CAPTAIN02,
 			NpcID.GUARD1_VARIANT01, NpcID.GUARD1_F, NpcID.GUARD1_F_VARIANT01,
-			NpcID.ARDOUGNE_GUARD_VARIANT01, NpcID.ARDOUGNE_GUARD_F, NpcID.ARDOUGNE_GUARD_F_VARIANT01,
 			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD1_F, NpcID.FAI_FALADOR_GUARD1_VARIANT02,
 			NpcID.FAI_FALADOR_GUARD3_F, NpcID.FAI_FALADOR_GUARD4_F,
 			// The Ratcatchers mansion guards wear the town guard kit exactly - 233, 246, 294,
@@ -874,6 +954,32 @@ public class RetroNpcMapping
 			NpcID.RATCATCHER_GUARD_RIGHT_BACK, NpcID.RATCATCHER_GUARD_RIGHT_FULLBACK,
 			NpcID.RATCATCHER_GUARD_LEFT_INSIDE, NpcID.RATCATCHER_GUARD_RIGHT_INSIDE
 		);
+
+		// Ardougne dresses its guards differently, and always has: the live NPCs carry 2005
+		// definition 32's seven parts and its opcode 40 pairs, where Varrock and Falador carry
+		// definition 9's nine. Registering them against GUARD_DEFAULT put every Ardougne guard in
+		// a Varrock uniform.
+		//
+		// No name row: GUARDS resolves by id, and the one "guard" key has to stay pointed at the
+		// town guard for applyCacheDefinitions to graft its colors.
+		registerMapping(ARDOUGNE_GUARD_DEFAULT,
+			NpcID.ARDOUGNE_GUARD, NpcID.ARDOUGNE_GUARD_VARIANT01,
+			// Female guards are recent content with no 2005 counterpart, so they take the male
+			// kit, as the Varrock and Falador females do
+			NpcID.ARDOUGNE_GUARD_F, NpcID.ARDOUGNE_GUARD_F_VARIANT01
+		);
+
+		// The Carnillean mansion guards are the town's guards posted indoors - same kit, no weapon,
+		// matching 2005 definition 887 exactly. Reached by id like every other guard.
+		registerMapping(CARNILLEAN_GUARD_DEFAULT,
+			NpcID.SOTN_GUARD_CARNILLEAN_UPSTAIRS, NpcID.GUARD_CARNILLEAN_VIS,
+			NpcID.GUARD_CARNILLEAN_CUTSCENE
+		);
+
+		// Deliberately left out: DEADMAN_GUARD_ARDOUGNE_VIS, DEADMAN_GUARD_YANILLE_VIS and their
+		// _RANGE_VIS siblings wear this kit too, but no Deadman guard is registered for any town -
+		// they are level 1337 with no stance animation - and Ardougne is not the place to change
+		// that. They are unreachable rather than excluded, the category resolving by id only.
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.
