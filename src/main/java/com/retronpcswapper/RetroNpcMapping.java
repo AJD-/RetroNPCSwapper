@@ -654,7 +654,8 @@ public class RetroNpcMapping
 	 * because the mesh being painted here is the live one.
 	 *
 	 * <p>Safe to apply to the merged model because neither 70 nor 8084 appears on any other goblin
-	 * part. The twelve drifted faces of 2953 get no such correction deliberately: they became
+	 * part. The two colored varieties spell the same two pairs out after their own, rather than
+	 * reaching for these constants, so that what they carry reads in one line. The twelve drifted faces of 2953 get no such correction deliberately: they became
 	 * 14238, the goblin's own skin color, which every other part legitimately carries - correcting
 	 * them would repaint the whole goblin.
 	 */
@@ -693,33 +694,16 @@ public class RetroNpcMapping
 			.build();
 	}
 
-	/**
-	 * Builds an armed variant: the weapon part, plus the drift correction that makes it 2005's
-	 * weapon rather than the modern repaint, plus whatever pairs the variety itself carries.
-	 */
-	private static RetroNpcData armedGoblin(int[] models, short[] find, short[] replace)
-	{
-		int own = find == null ? 0 : find.length;
-		short[] allFind = new short[own + GOBLIN_WEAPON_DRIFT_FIND.length];
-		short[] allReplace = new short[allFind.length];
-		if (own > 0)
-		{
-			System.arraycopy(find, 0, allFind, 0, own);
-			System.arraycopy(replace, 0, allReplace, 0, own);
-		}
-		System.arraycopy(GOBLIN_WEAPON_DRIFT_FIND, 0, allFind, own, GOBLIN_WEAPON_DRIFT_FIND.length);
-		System.arraycopy(GOBLIN_WEAPON_DRIFT_REPLACE, 0, allReplace, own, GOBLIN_WEAPON_DRIFT_REPLACE.length);
-		return goblin(models, allFind, allReplace);
-	}
-
 	// The six 2005 goblin definitions, by their def ids in the February 2005 cache.
 	//
 	// Def 100 - the plain level 2 goblin, no opcode 40 data at all. Its armour is the mesh's own
 	// 916, a dark red, which is also what the modern red-tinted goblins are recolored to.
 	public static final RetroNpcData GOBLIN_DEFAULT = goblin(GOBLIN_PARTS, null, null);
 
-	// Def 101 - the same goblin at level 5, carrying 2957.
-	public static final RetroNpcData GOBLIN_ARMED_DEFAULT = armedGoblin(GOBLIN_ARMED_PARTS, null, null);
+	// Def 101 - the same goblin at level 5, carrying 2957, so it needs the weapon correction and
+	// nothing else.
+	public static final RetroNpcData GOBLIN_ARMED_DEFAULT = goblin(
+		GOBLIN_ARMED_PARTS, GOBLIN_WEAPON_DRIFT_FIND, GOBLIN_WEAPON_DRIFT_REPLACE);
 
 	// Def 102 - "These goblins have grown strong": level 13, and the only definition that swaps the
 	// body mesh rather than a color. Unarmed, and the modern level 13 goblin is unarmed too.
@@ -727,19 +711,20 @@ public class RetroNpcMapping
 
 	// Def 298 - green armour, 916 -> 22443. Live GOBLIN_GREENARMOUR still carries this pair
 	// verbatim over the 2005 meshes themselves, which is what pins green to this definition.
-	public static final RetroNpcData GOBLIN_GREEN = armedGoblin(
-		GOBLIN_ARMED_PARTS, new short[]{916}, new short[]{22443});
+	public static final RetroNpcData GOBLIN_GREEN = goblin(GOBLIN_ARMED_PARTS,
+		new short[]{916, 70, 8084}, new short[]{22443, -22417, 528});
 
 	// Def 299 - red armour, 916 -> 933, and live GOBLIN_REDARMOUR carries that pair verbatim too.
 	// A lighter red than the 916 the plain goblin wears; the two 2005 definitions are a pair, so
 	// the modern red and green soldiers are mapped onto them as a pair.
-	public static final RetroNpcData GOBLIN_RED = armedGoblin(
-		GOBLIN_ARMED_PARTS, new short[]{916}, new short[]{933});
+	public static final RetroNpcData GOBLIN_RED = goblin(GOBLIN_ARMED_PARTS,
+		new short[]{916, 70, 8084}, new short[]{933, -22417, 528});
 
 	// Def 489 - the Goblin guard. The same armed kit as def 101 in the plain colors; it is a
 	// separate archetype only so that it stops resolving through the generated row and picks up
 	// the weapon drift correction with every other armed goblin.
-	public static final RetroNpcData GOBLIN_GUARD_DEFAULT = armedGoblin(GOBLIN_ARMED_PARTS, null, null);
+	public static final RetroNpcData GOBLIN_GUARD_DEFAULT = goblin(
+		GOBLIN_ARMED_PARTS, GOBLIN_WEAPON_DRIFT_FIND, GOBLIN_WEAPON_DRIFT_REPLACE);
 
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
