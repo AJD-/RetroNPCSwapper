@@ -136,6 +136,28 @@
     "scaleY": 128
   },
   {
+    "name": "cow",
+    "category": "COWS",
+    "modelIds": [
+      3341,
+      3342
+    ],
+    "idleAnim": 61,
+    "walkAnim": 58,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      26,
+      10363,
+      30
+    ],
+    "replacementColors": [
+      10365,
+      5784,
+      10365
+    ]
+  },
+  {
     "name": "cyclops",
     "category": "CYCLOPS",
     "modelIds": [
@@ -913,6 +935,33 @@
       12475,
       4771,
       8101
+    ]
+  },
+  {
+    "name": "undead cow",
+    "category": "COWS",
+    "modelIds": [
+      5237
+    ],
+    "idleAnim": 61,
+    "walkAnim": 58,
+    "scaleXZ": 128,
+    "scaleY": 128,
+    "originalColors": [
+      26,
+      10363,
+      30,
+      14680,
+      334,
+      -19176
+    ],
+    "replacementColors": [
+      10514,
+      16582,
+      13840,
+      14408,
+      5314,
+      10638
     ]
   },
   {

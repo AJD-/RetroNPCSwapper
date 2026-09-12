@@ -236,6 +236,20 @@ public interface RetroNpcConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "swapCows",
+		name = "Cows",
+		description = "<html><body style='width:170px'>Swap modern Cow models and animations to "
+			+ "their 2004/2005 retro variants.<br><br>Needs <b>Use Converted 2005 Assets</b>, "
+			+ "which is on by default.</body></html>",
+		section = npcTogglesSection,
+		position = 12
+	)
+	default boolean swapCows()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Safety",
 		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",

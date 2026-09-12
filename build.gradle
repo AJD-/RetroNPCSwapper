@@ -94,6 +94,21 @@ tasks.register('dumpNpcDefinitions', JavaExec) {
 	}
 }
 
+// Prints object (scenery) definitions from the live OSRS cache, eg:
+//   ./gradlew dumpObjectDefinitions -Pobj=dairy
+tasks.register('dumpObjectDefinitions', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.retronpcswapper.cache.ModernObjectDumper'
+	workingDir = rootDir
+
+	if (project.hasProperty('obj')) {
+		args project.property('obj').toString().split(',')
+	}
+	if (project.hasProperty('cacheDir')) {
+		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+}
+
 // Compares 2005 model geometry against the live cache, to tell a preserved retro asset from an
 // id that was reused, eg:
 //   ./gradlew compareRetroModels -Pmodels=2853,2854
@@ -108,6 +123,9 @@ tasks.register('compareRetroModels', JavaExec) {
 	}
 	if (project.hasProperty('findmoved')) {
 		systemProperty 'retronpcswapper.findmoved', 'true'
+	}
+	if (project.hasProperty('facediff')) {
+		systemProperty 'retronpcswapper.facediff', 'true'
 	}
 	if (project.hasProperty('cacheDir')) {
 		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')

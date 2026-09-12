@@ -30,7 +30,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.zip.GZIPInputStream;
 import net.runelite.cache.IndexType;
@@ -74,6 +78,7 @@ public class RetroModelComparator
 	private static final String CACHE_DIR_PROPERTY = "retronpcswapper.cacheDir";
 	private static final String RETRO_DIR_PROPERTY = "retronpcswapper.retroDir";
 	private static final String FIND_MOVED_PROPERTY = "retronpcswapper.findmoved";
+	private static final String FACE_DIFF_PROPERTY = "retronpcswapper.facediff";
 	private static final String RETRO_CACHE_DIR = "retrocache/2005cache";
 
 	/** Index 1 of the RS2 cache holds models. */
@@ -83,7 +88,7 @@ public class RetroModelComparator
 	{
 		if (args.length == 0)
 		{
-			System.out.println("Usage: ./gradlew compareRetroModels -Pmodels=2853,2854 [-Pfindmoved]");
+			System.out.println("Usage: ./gradlew compareRetroModels -Pmodels=2853,2854 [-Pfindmoved] [-Pfacediff]");
 			return;
 		}
 
@@ -156,16 +161,307 @@ public class RetroModelComparator
 	 */
 	private static Geometry compare(Store store, RetroCacheReader retro, int modelId) throws IOException
 	{
-		Geometry live = decode(modelId, loadLive(store, modelId));
-		Geometry old = decode(modelId, gunzipIfNeeded(retro.readFile(RETRO_MODEL_INDEX, modelId)));
+		byte[] liveData = loadLive(store, modelId);
+		byte[] oldData = gunzipIfNeeded(retro.readFile(RETRO_MODEL_INDEX, modelId));
+
+		ModelDefinition liveModel = decodeModel(modelId, liveData);
+		ModelDefinition oldModel = decodeModel(modelId, oldData);
+
+		Geometry live = describeOf(liveModel, liveData);
+		Geometry old = describeOf(oldModel, oldData);
 
 		System.out.println("model " + modelId);
 		System.out.println("  2005  " + describe(old));
 		System.out.println("  live  " + describe(live));
 		System.out.println("  ->    " + verdict(old, live));
+
+		if (Boolean.getBoolean(FACE_DIFF_PROPERTY))
+		{
+			printFaceDiff(oldModel, liveModel);
+		}
 		System.out.println();
 
 		return old != null && live != null && !old.sameShapeAs(live) ? old : null;
+	}
+
+	/**
+	 * Walks the two decodes face by face and reports every 2005 color that became a different live
+	 * color. A distinct-palette diff can only say which colors left and which arrived, never which
+	 * became which - and where a whole palette shifted, guessing the pairing by similarity is how a
+	 * correction recolor ends up inverted. Face order survives re-encoding when the counts match,
+	 * so pairing them positionally is exact.
+	 */
+	private static void printFaceDiff(ModelDefinition old, ModelDefinition live)
+	{
+		if (old == null || live == null || old.faceColors == null || live.faceColors == null)
+		{
+			System.out.println("  face diff: unavailable - one side did not decode");
+			return;
+		}
+
+		System.out.println("  vertices: " + vertexOverlap(old, live));
+		printRigDiff(old, live);
+
+		// Keyed 2005 -> live, counting the faces that agree on the pairing. A 2005 color reaching
+		// more than one live color means the faces were not matched up correctly.
+		//
+		// Two ways to line the faces up, cheapest first. Face order usually survives re-encoding,
+		// but not always - model 3341 is re-ordered, and a mesh that gained or lost a face cannot
+		// be paired by position at all - so fall back to matching each face by where it sits in
+		// space, which survives both the faces and the vertices being renumbered.
+		Map<Short, Map<Short, Integer>> pairs = old.faceCount == live.faceCount
+			? pairByIndex(old, live)
+			: null;
+
+		if (pairs == null || isAmbiguous(pairs))
+		{
+			System.out.println("  face diff: " + (pairs == null
+				? "face counts differ (" + old.faceCount + " vs " + live.faceCount + "), matching by position in space"
+				: "face order did not survive, matching by position in space instead"));
+			pairs = pairByVertices(old, live);
+		}
+
+		if (pairs.isEmpty())
+		{
+			System.out.println("  face diff: every face kept its 2005 color");
+			return;
+		}
+
+		System.out.println("  face diff (2005 -> live, by face):");
+		for (Map.Entry<Short, Map<Short, Integer>> entry : pairs.entrySet())
+		{
+			StringBuilder line = new StringBuilder("    " + entry.getKey() + " ->");
+			for (Map.Entry<Short, Integer> target : entry.getValue().entrySet())
+			{
+				line.append(' ').append(target.getKey()).append(" (").append(target.getValue()).append(" faces)");
+			}
+			if (entry.getValue().size() > 1)
+			{
+				line.append("   AMBIGUOUS - faces could not be matched up");
+			}
+			System.out.println(line);
+		}
+	}
+
+	/**
+	 * The share of the 2005 mesh's vertex positions that the live mesh also has, order aside.
+	 *
+	 * <p>This is the check that settles what the palette cannot. A mesh that survived can still be
+	 * re-encoded with a few vertices moved and its whole palette repainted, which reads as
+	 * {@code REPLACED} on colors alone - the cow body 3341 is repainted across four of its six
+	 * colors and still 98% the same geometry. Read it by magnitude against the calibration points:
+	 * the preserved chicken 2849 scores 97%, the undead cow 5237 97%, the skeleton 2944 and the imp
+	 * 2887 100%. A genuinely reused id scores nothing like that - 2942 went 479 vertices to 68.
+	 *
+	 * <p>Requiring an exact match is too strict and reads a surviving mesh as a lost one: three of
+	 * 3341's 239 vertices moved.
+	 */
+	private static String vertexOverlap(ModelDefinition old, ModelDefinition live)
+	{
+		Map<String, Integer> liveVertices = new HashMap<>();
+		for (int i = 0; i < live.vertexCount; i++)
+		{
+			liveVertices.merge(live.vertexX[i] + "," + live.vertexY[i] + "," + live.vertexZ[i], 1, Integer::sum);
+		}
+
+		int shared = 0;
+		for (int i = 0; i < old.vertexCount; i++)
+		{
+			String key = old.vertexX[i] + "," + old.vertexY[i] + "," + old.vertexZ[i];
+			Integer remaining = liveVertices.get(key);
+			if (remaining != null && remaining > 0)
+			{
+				liveVertices.put(key, remaining - 1);
+				shared++;
+			}
+		}
+
+		int percent = old.vertexCount == 0 ? 0 : (shared * 100) / old.vertexCount;
+		return shared + "/" + old.vertexCount + " of the 2005 positions are in the live mesh (" + percent + "%)";
+	}
+
+	/**
+	 * Whether the two decodes bind the same geometry to the same transform groups.
+	 *
+	 * <p>The other half of "is this still the retro asset". A mesh can survive intact and still be
+	 * useless to swap to, because its vertex groups were renumbered onto a different rig - the
+	 * guard parts are byte-identical in both caches with exactly that done to them. Reach cannot
+	 * see it: a renumbered group is still <em>a</em> group the framemap addresses, so
+	 * verifyRetroRigs reports 100% while every joint drives the wrong vertices.
+	 *
+	 * <p>Vertices are matched by position, since re-encoding renumbers them.
+	 */
+	private static void printRigDiff(ModelDefinition old, ModelDefinition live)
+	{
+		int[] oldGroups = perVertexGroups(old);
+		int[] liveGroups = perVertexGroups(live);
+		if (oldGroups == null || liveGroups == null)
+		{
+			System.out.println("  rig: one side carries no vertex groups");
+			return;
+		}
+
+		Map<String, Integer> liveByPosition = new HashMap<>();
+		for (int i = 0; i < live.vertexCount; i++)
+		{
+			liveByPosition.put(vertexKey(live, i), liveGroups[i]);
+		}
+
+		Map<Integer, Map<Integer, Integer>> pairs = new TreeMap<>();
+		int matched = 0;
+		int same = 0;
+		for (int i = 0; i < old.vertexCount; i++)
+		{
+			Integer liveGroup = liveByPosition.get(vertexKey(old, i));
+			if (liveGroup == null)
+			{
+				continue;
+			}
+			matched++;
+			if (liveGroup == oldGroups[i])
+			{
+				same++;
+			}
+			else
+			{
+				pairs.computeIfAbsent(oldGroups[i], k -> new TreeMap<>()).merge(liveGroup, 1, Integer::sum);
+			}
+		}
+
+		if (matched == 0)
+		{
+			System.out.println("  rig: no shared vertices to compare");
+			return;
+		}
+
+		int percent = (same * 100) / matched;
+		System.out.println("  rig: " + same + "/" + matched + " shared vertices keep their 2005 group ("
+			+ percent + "%)" + (percent == 100 ? "" : "  <-- RENUMBERED, the 2005 clips will drive the wrong vertices"));
+		for (Map.Entry<Integer, Map<Integer, Integer>> entry : pairs.entrySet())
+		{
+			StringBuilder line = new StringBuilder("    group " + entry.getKey() + " ->");
+			for (Map.Entry<Integer, Integer> target : entry.getValue().entrySet())
+			{
+				line.append(' ').append(target.getKey()).append(" (").append(target.getValue()).append(" verts)");
+			}
+			System.out.println(line);
+		}
+	}
+
+	/**
+	 * Inverts {@code getVertexGroups()} - a group-indexed table of vertex indices - into a
+	 * vertex-indexed array of group ids. Never read {@code packedVertexGroups}: ModelLoader.load
+	 * unpacks it into the table and nulls it, so it is null for every model ever loaded.
+	 */
+	private static int[] perVertexGroups(ModelDefinition model)
+	{
+		int[][] table = model.getVertexGroups();
+		if (table == null)
+		{
+			return null;
+		}
+
+		int[] byVertex = new int[model.vertexCount];
+		Arrays.fill(byVertex, -1);
+		for (int group = 0; group < table.length; group++)
+		{
+			if (table[group] == null)
+			{
+				continue;
+			}
+			for (int vertex : table[group])
+			{
+				if (vertex >= 0 && vertex < byVertex.length)
+				{
+					byVertex[vertex] = group;
+				}
+			}
+		}
+		return byVertex;
+	}
+
+	private static String vertexKey(ModelDefinition model, int i)
+	{
+		return model.vertexX[i] + "," + model.vertexY[i] + "," + model.vertexZ[i];
+	}
+
+	private static boolean isAmbiguous(Map<Short, Map<Short, Integer>> pairs)
+	{
+		for (Map<Short, Integer> targets : pairs.values())
+		{
+			if (targets.size() > 1)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static Map<Short, Map<Short, Integer>> pairByIndex(ModelDefinition old, ModelDefinition live)
+	{
+		Map<Short, Map<Short, Integer>> pairs = new TreeMap<>();
+		for (int i = 0; i < old.faceCount; i++)
+		{
+			record(pairs, old.faceColors[i], live.faceColors[i]);
+		}
+		return pairs;
+	}
+
+	/**
+	 * Matches faces by where they sit in space rather than by position in the array. Vertex indices
+	 * cannot be used directly - re-encoding renumbers the vertex array too - but a face's three
+	 * corner coordinates summed per axis is the same number whichever order its corners are stored
+	 * in and whichever slot the face occupies.
+	 *
+	 * <p>Faces whose corners moved match nothing and are counted as unmatched rather than guessed.
+	 */
+	private static Map<Short, Map<Short, Integer>> pairByVertices(ModelDefinition old, ModelDefinition live)
+	{
+		Map<String, List<Short>> byCentroid = new HashMap<>();
+		for (int i = 0; i < old.faceCount; i++)
+		{
+			byCentroid.computeIfAbsent(centroidKey(old, i), k -> new ArrayList<>()).add(old.faceColors[i]);
+		}
+
+		Map<Short, Map<Short, Integer>> pairs = new TreeMap<>();
+		int unmatched = 0;
+		for (int i = 0; i < live.faceCount; i++)
+		{
+			List<Short> candidates = byCentroid.get(centroidKey(live, i));
+			if (candidates == null || candidates.isEmpty())
+			{
+				unmatched++;
+				continue;
+			}
+			record(pairs, candidates.remove(candidates.size() - 1), live.faceColors[i]);
+		}
+
+		if (unmatched > 0)
+		{
+			System.out.println("  face diff: " + unmatched + " live face(s) sit where no 2005 face does");
+		}
+		return pairs;
+	}
+
+	/**
+	 * A face's three corners summed per axis - independent of both corner order and face order.
+	 */
+	private static String centroidKey(ModelDefinition model, int face)
+	{
+		int a = model.faceIndices1[face];
+		int b = model.faceIndices2[face];
+		int c = model.faceIndices3[face];
+		return (model.vertexX[a] + model.vertexX[b] + model.vertexX[c]) + ","
+			+ (model.vertexY[a] + model.vertexY[b] + model.vertexY[c]) + ","
+			+ (model.vertexZ[a] + model.vertexZ[b] + model.vertexZ[c]);
+	}
+
+	private static void record(Map<Short, Map<Short, Integer>> pairs, short from, short to)
+	{
+		if (from != to)
+		{
+			pairs.computeIfAbsent(from, k -> new TreeMap<>()).merge(to, 1, Integer::sum);
+		}
 	}
 
 	private static String verdict(Geometry old, Geometry live)
@@ -273,6 +569,11 @@ public class RetroModelComparator
 
 	private static Geometry decode(int modelId, byte[] data)
 	{
+		return describeOf(decodeModel(modelId, data), data);
+	}
+
+	private static ModelDefinition decodeModel(int modelId, byte[] data)
+	{
 		if (data == null)
 		{
 			return null;
@@ -280,14 +581,24 @@ public class RetroModelComparator
 
 		try
 		{
-			Geometry geometry = Geometry.of(new ModelLoader().load(modelId, data));
-			geometry.byteLength = data.length;
-			return geometry;
+			return new ModelLoader().load(modelId, data);
 		}
 		catch (RuntimeException e)
 		{
 			return null;
 		}
+	}
+
+	private static Geometry describeOf(ModelDefinition model, byte[] data)
+	{
+		if (model == null)
+		{
+			return null;
+		}
+
+		Geometry geometry = Geometry.of(model);
+		geometry.byteLength = data.length;
+		return geometry;
 	}
 
 	private static String describe(Geometry geometry)

@@ -974,6 +974,149 @@ public class RetroNpcCategoryTest
 		assertFalse(chicken.isDeathAnimation(5390));
 	}
 
+	/**
+	 * Cows resolve two different ways and both have to end up with the same six slots. Every cow
+	 * but the undead one is an id-registered archetype built by {@code cow(...)}; the undead cow is
+	 * the only one that reaches {@code createMappingData}. Asserting one path would pass while the
+	 * other silently carried -1 for attack, defend, death and misc.
+	 */
+	@Test
+	public void testCowsCategory()
+	{
+		RetroNpcData cow = RetroNpcMapping.get(NpcID.COW, "Cow");
+		assertNotNull("Cow mapping must exist", cow);
+		assertEquals(RetroNpcCategory.COWS, cow.getCategory());
+		assertArrayEquals(new int[]{3341, 3342}, cow.getRetroModelIds());
+		assertCowAnimations(cow);
+
+		// The undead cow is its own 2005 mesh, and the only cow built from the generated row
+		RetroNpcData undead = RetroNpcMapping.get(NpcID.AHOY_UNDEAD_COW, "Undead cow");
+		assertNotNull("Undead cow mapping must exist", undead);
+		assertEquals(RetroNpcCategory.COWS, undead.getCategory());
+		assertArrayEquals(new int[]{5237}, undead.getRetroModelIds());
+		assertCowAnimations(undead);
+	}
+
+	private static void assertCowAnimations(RetroNpcData cow)
+	{
+		assertEquals(61, cow.getIdleAnimationId());
+		assertEquals(58, cow.getWalkAnimationId());
+		assertEquals(59, cow.getAttackAnimationId());
+		assertEquals(60, cow.getDefendAnimationId());
+		assertEquals(62, cow.getDeathAnimationId());
+		assertEquals(61, cow.getMiscAnimationId());
+
+		assertTrue(cow.isAttackAnimation(59));
+		assertTrue(cow.isAttackAnimation(5849));
+		assertTrue(cow.isDefendAnimation(60));
+		assertTrue(cow.isDefendAnimation(5850));
+		assertTrue(cow.isDeathAnimation(62));
+		assertTrue(cow.isDeathAnimation(5851));
+
+		// The modern-only animations: no 2005 counterpart, and keyed to a framemap the retro mesh
+		// is not rigged to, so they are redirected to the retro idle rather than left to bend it
+		assertTrue(cow.isMiscAnimation(1735));
+		assertTrue(cow.isMiscAnimation(5853));
+		assertTrue(cow.isMiscAnimation(5854));
+		assertTrue(cow.isMiscAnimation(5855));
+
+		// 2162, 2303 and 2312 are legacy cow animations on framemap 282 - they fit the retro mesh
+		// and must keep playing
+		assertFalse(cow.isMiscAnimation(2162));
+		assertFalse(cow.isMiscAnimation(2303));
+		assertFalse(cow.isMiscAnimation(2312));
+		assertFalse(cow.isAttackAnimation(5848));
+	}
+
+	/**
+	 * The three 2005 cows are one mesh in three palettes, so each live variant has to come back
+	 * with its own pairs - and every one of them has to start with the drift correction, without
+	 * which the 2005 pairs miss the repainted hide and the cow renders white.
+	 */
+	@Test
+	public void testCowVariantsCarryTheirOwnPalettes()
+	{
+		RetroNpcData white = RetroNpcMapping.get(NpcID.COW, "Cow");
+		RetroNpcData brown = RetroNpcMapping.get(NpcID.COW2, "Cow");
+		RetroNpcData grey = RetroNpcMapping.get(NpcID.COW3, "Cow");
+
+		assertNotNull(white);
+		assertNotNull(brown);
+		assertNotNull(grey);
+		assertTrue(white.hasRecolors());
+		assertTrue(brown.hasRecolors());
+		assertTrue(grey.hasRecolors());
+
+		assertNotEquals("the 2005 cow variants differ only by palette", white, brown);
+		assertNotEquals("the 2005 cow variants differ only by palette", brown, grey);
+
+		// The 2005 definition's pairs verbatim. No palette-drift correction: the bundle carries the
+		// 2005 meshes, so the indices the 2005 client recolored are the ones that are there - unlike
+		// the live copies, whose hide was repainted 10363 -> 10365 across 135 faces
+		assertArrayEquals(new short[]{26, 10363, 30}, white.getOriginalColors());
+		assertArrayEquals(new short[]{10365, 5784, 10365}, white.getReplacementColors());
+
+		// 2005 asked for this one slightly smaller; the hand-set size must survive the graft
+		assertEquals(115, brown.getScaleXZ());
+		assertEquals(115, brown.getScaleY());
+	}
+
+	/**
+	 * February 2005 has no calf, so it is the cow mesh scaled down - which means it must still be
+	 * the cow mesh, and must still be smaller than the cow.
+	 */
+	@Test
+	public void testCowCalvesAreTheCowMeshScaledDown()
+	{
+		for (int calfId : new int[]{NpcID.COW2_CALF, NpcID.COW3_CALF, NpcID.CALF})
+		{
+			RetroNpcData calf = RetroNpcMapping.get(calfId, "Cow calf");
+			assertNotNull("calf " + calfId + " must resolve", calf);
+			assertEquals(RetroNpcCategory.COWS, calf.getCategory());
+			assertArrayEquals(new int[]{3341, 3342}, calf.getRetroModelIds());
+			assertEquals(68, calf.getScaleXZ());
+			assertEquals(68, calf.getScaleY());
+			assertCowAnimations(calf);
+		}
+	}
+
+	/**
+	 * Cows render from the bundle, not the live cache: both 2005 meshes are still at their own ids
+	 * but their vertex groups were renumbered onto another rig, so the cache-backed path would
+	 * animate the right geometry off the wrong joints. requiresInjectedGeometry is what stops it
+	 * falling back to that path when the bundle is missing.
+	 */
+	@Test
+	public void testCowsAreBundleOnly()
+	{
+		assertTrue("cows must not fall back to live geometry",
+			RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.COWS));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.COWS));
+	}
+
+	/**
+	 * "Cow" is a name the plugin matches on, so anything else wearing it has to be kept out by id.
+	 * 10598 is a mount on animations 180/229, not a cow.
+	 */
+	@Test
+	public void testNonCowsNamedCowDoNotSwap()
+	{
+		assertNull(RetroNpcMapping.get(NpcID.OSB8_COW, "Cow"));
+	}
+
+	/**
+	 * The Zanaris and Nightmare Zone cows share the ordinary cow's look, and "Cow (hard)" does not
+	 * match the name row at all - it reaches the mapping only through its registered id.
+	 */
+	@Test
+	public void testCowVariantsOutsideLumbridgeResolve()
+	{
+		assertNotNull(RetroNpcMapping.get(NpcID.FAIRY_COW, "Cow"));
+		assertNotNull(RetroNpcMapping.get(NpcID.NZONE_COW_NORMAL, "Cow"));
+		assertNotNull(RetroNpcMapping.get(NpcID.NZONE_COW_HARD, "Cow (hard)"));
+		assertNotNull(RetroNpcMapping.get(NpcID.ANMA_COW_CUTSCENE, "Undead cow"));
+	}
+
 	@Test
 	public void testTheRestOfTheGiantFamily()
 	{

@@ -120,6 +120,13 @@ public class RetroAssetGenerator
 		new Spec("Ice giants", Source.RETRO, Source.LIVE, new int[]{2870, 2868}, new int[]{127, 128, 129, 130, 131}),
 		new Spec("Moss giants", Source.RETRO, Source.LIVE, new int[]{2870, 2865, 4990}, new int[]{127, 128, 129, 130, 131}),
 		new Spec("Cyclopes", Source.RETRO, Source.LIVE, new int[]{2870, 2867}, new int[]{127, 128, 129, 130, 131}),
+		// Cows are the guards' failure mode again, and the reason they are here rather than on the
+		// cache-backed path they shipped on first. Both meshes survive at their 2005 ids - 3341 keeps
+		// 98% of its 2005 vertex positions and 3342 all 11 - but their vertex groups were RENUMBERED:
+		// only 25% and 0% of shared vertices still sit in the group they had in 2005, a near-complete
+		// permutation (1 -> 14, 2 -> 15, 26 -> 1, 29 -> 34). The undead cow 5237 is the same at 20%.
+		new Spec("Cows", Source.RETRO, Source.RETRO, new int[]{3341, 3342}, new int[]{58, 59, 60, 61, 62}),
+		new Spec("Undead cows", Source.RETRO, Source.RETRO, new int[]{5237}, new int[]{58, 59, 60, 61, 62}),
 		// Guards are the first subject needing 2005 clips for a reason other than re-authored frames:
 		// the human meshes are byte-identical in both caches but their vertex groups were RENUMBERED.
 		// 2005 bindings all sit in [0..34]; live framemap 0 is a 218-group rig. Live clips would drive

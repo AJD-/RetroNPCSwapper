@@ -23,18 +23,21 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets* (on by default
 - **Imps**
 - **Cyclopes**
 - **Guards**
+- **Cows**
 
 These need converted 2005 assets because swapping IDs is not enough for them, and they fail in two
 different ways. Some lost the mesh outright: the adult dragon and demon meshes were removed from the
 OSRS cache and their IDs reused for unrelated geometry such as statues and skulls, and the fire, ice
 and moss giant heads and the cyclops head went the same way, so there is nothing to swap to. Others
 kept the mesh but lost the rig: the imp and baby dragon meshes survived, but the animation *frames*
-behind their surviving sequence IDs were re-authored for the modern skeletons, and the guard's parts
-are byte-identical in both caches with their vertex groups renumbered onto a different rig. Either
-way the geometry, the animation, or both have to come from the 2005 data instead of the live cache.
+behind their surviving sequence IDs were re-authored for the modern skeletons. Either way the 
+geometry, the animation, or both have to come from the 2005 data instead of the live cache.
 
 `./gradlew compareRetroModels -Pmodels=<ids> -Pfindmoved` is the tool that settles whether an ID
 still holds its 2005 mesh; `./gradlew verifyRetroRigs` settles whether its animation still fits.
+
+Scenery Objects are not currently swapped by this plugin, so the Dairy Cow and Varrock retextures
+are not supported (yet!)
 
 ## Requirements
 
@@ -93,6 +96,13 @@ utilizes the GPU plugin's draw callbacks.
   `-Pfindmoved` rescans the whole live model index to separate "the mesh moved to a new ID" from "the
   mesh is gone". The match is exact, so read a `REPLACED` verdict by its magnitude — the chicken
   drifted by one face and reports `REPLACED` while rendering perfectly.
+  `-Pfacediff` adds the two measurements that settle what the palette alone cannot: what share
+  of the 2005 vertex positions the live mesh still has — 97% for the preserved chicken and 100%
+  for the skeleton, against 479 vertices becoming 68 for a genuinely reused ID — and, face by
+  face, which 2005 color became which live one. That second number is what a correction recolor
+  has to be built from: the cow body 3341 is 98% the same geometry with its whole hide
+  repainted, and a distinct-palette diff cannot say which color became which. Faces are matched
+  by position in space, because re-encoding reorders both the faces and the vertices.
 - `./gradlew dumpNpcDefinitions -Pnpc=1173` prints live-cache NPC definitions (IDs or a name
   substring) — models, scales and pose animations, for comparing against the retro definition.
 - `./gradlew generateRetroAssets` rebuilds `retro-assets.dat` from the same local 2005 cache. It

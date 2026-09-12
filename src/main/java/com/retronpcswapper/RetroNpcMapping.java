@@ -77,7 +77,10 @@ public class RetroNpcMapping
 	private static final Set<Integer> EXCLUDED_IDS = Set.of(
 		NpcID.FAI_FALADOR_GUARD2, NpcID.FAI_FALADOR_GUARD2_F,
 		NpcID.FAI_FALADOR_GUARD4, NpcID.FAI_FALADOR_GUARD5, NpcID.FAI_FALADOR_GUARD6,
-		NpcID.FAI_VARROCK_GUARD
+		NpcID.FAI_VARROCK_GUARD,
+		// Named "Cow" so the name row reaches it, but it is model 14102 on anims 180/229 - a mount,
+		// not a cow, and it would be handed the retro cow mesh
+		NpcID.OSB8_COW
 	);
 
 	/**
@@ -253,6 +256,29 @@ public class RetroNpcMapping
 	);
 	public static final Set<Integer> CHICKEN_MODERN_DEATHS = Set.of(
 		AnimationID.LORE_CHICKEN_DEATH, AnimationID.CHICKEN_DEATH
+	);
+
+	public static final Set<Integer> COW_MODERN_ATTACKS = Set.of(
+		AnimationID.COW_UPDATE_ATTACK, AnimationID.COW_ATTACK
+	);
+	public static final Set<Integer> COW_MODERN_DEFENDS = Set.of(
+		AnimationID.COW_UPDATE_DEFEND, AnimationID.COW_BLOCK
+	);
+	public static final Set<Integer> COW_MODERN_DEATHS = Set.of(
+		AnimationID.COW_UPDATE_DEATH, AnimationID.COW_DEATH
+	);
+
+	/**
+	 * Modern cow animations with no 2005 counterpart, redirected to the retro idle.
+	 *
+	 * <p>Every one of these is keyed to framemap 1338, the modern cow rig, and reaches only 54-60%
+	 * of the retro mesh's vertex groups - they visibly bend it. The legacy cow animations 2162,
+	 * 2303 and 2312 are deliberately absent: they sit on framemap 282 like the 2005 sequences do
+	 * and reach 85-100%, so they animate the retro mesh correctly and are left to play.
+	 */
+	public static final Set<Integer> COW_MODERN_MISC = Set.of(
+		AnimationID.COW_GRAZE, AnimationID.COW_UPDATE_READY,
+		AnimationID.COW_UPDATE_GRAZE, AnimationID.COW_UPDATE_DAIRY
 	);
 
 	// Pre-instantiated immutable archetypes.
@@ -542,6 +568,67 @@ public class RetroNpcMapping
 	public static final RetroNpcData CYCLOPS_DEFAULT =
 		giant(RetroNpcCategory.CYCLOPS, new int[]{GIANT_BODY, 2867}, null);
 
+	// Cows are the guard case: both 2005 meshes are still at their own ids and 98% intact, but their
+	// vertex groups were renumbered onto a different rig, so the live copies animate off the wrong
+	// joints. Mesh, rig and clips all come from the bundle. The 2005 cow is one body mesh plus an
+	// 11-face companion, shared by all three variants - the 2005 client told them apart with
+	// opcode 40 alone, exactly as it did the dragons.
+	private static final int COW_BODY = 3341;
+	private static final int COW_UDDER = 3342;
+
+	/**
+	 * A 2005 cow variant: the shared mesh, the legacy cow sequences, and the opcode 40 pairs that
+	 * are the only thing telling one cow from another.
+	 *
+	 * <p>The pairs are the 2005 definition's verbatim, with nothing corrected for palette drift.
+	 * The live cache did repaint both meshes - 3341's hide went 10363 -> 10365 across 135 faces,
+	 * its beige patch 4446 -> 7566, and 3342 went 113 -> 231 - but the bundle carries the 2005
+	 * copies, so the indices the 2005 client recolored are the indices that are there.
+	 */
+	private static RetroNpcData cow(short[] find, short[] replace, int scale)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.COWS)
+			.retroModelIds(new int[]{COW_BODY, COW_UDDER})
+			.idleAnimationId(AnimationID.COW_READY)
+			.walkAnimationId(AnimationID.COW_WALK)
+			.attackAnimationId(AnimationID.COW_ATTACK)
+			.defendAnimationId(AnimationID.COW_BLOCK)
+			.deathAnimationId(AnimationID.COW_DEATH)
+			.miscAnimationId(AnimationID.COW_READY)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.recolors(find, replace)
+			.modernAttackAnims(COW_MODERN_ATTACKS)
+			.modernDefendAnims(COW_MODERN_DEFENDS)
+			.modernDeathAnims(COW_MODERN_DEATHS)
+			.modernMiscAnims(COW_MODERN_MISC)
+			.build();
+	}
+
+	// The three 2005 cow definitions, by their def ids in the February 2005 cache. Modern OSRS
+	// baked its cow variants into separate meshes instead, so which live cow wears which 2005
+	// palette is a choice rather than a lookup; they are paired in id order.
+	//
+	// Def 81 - white hide with dark brown patches, the Lumbridge field cow.
+	public static final RetroNpcData COW_DEFAULT = cow(
+		new short[]{26, 10363, 30}, new short[]{10365, 5784, 10365}, 128);
+
+	// Def 397 - brown all over, and 2005 asked for it slightly smaller than the others.
+	public static final RetroNpcData COW_BROWN = cow(
+		new short[]{10363, 26, 30}, new short[]{5784, 5784, 5784}, 115);
+
+	// Def 955 - brown hide keeping its dark markings, with the beige patch turned grey-brown.
+	public static final RetroNpcData COW_GREY = cow(
+		new short[]{10363, 26, 4446}, new short[]{5784, 5784, 5289}, 128);
+
+	// February 2005 has no calf: the modern one is a separate mesh Jagex added later. The honest
+	// stand-in is the 2005 cow scaled down by what the modern calf's own composition asks for -
+	// 68 against the cow's 128. The calf's own walk sequence (5856) needs no handling of its own;
+	// the walk slot replaces the pose animation outright rather than intercepting it.
+	public static final RetroNpcData COW_CALF = cow(
+		new short[]{26, 10363, 30}, new short[]{10365, 5784, 10365}, 68);
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -698,7 +785,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.ICE_GIANTS
 			|| category == RetroNpcCategory.MOSS_GIANTS
 			|| category == RetroNpcCategory.CYCLOPS
-			|| category == RetroNpcCategory.GUARDS;
+			|| category == RetroNpcCategory.GUARDS
+			|| category == RetroNpcCategory.COWS;
 	}
 
 	/**
@@ -912,6 +1000,19 @@ public class RetroNpcMapping
 			NpcID.WARGUILD_CYCLOPS4_HIGH, NpcID.WARGUILD_CYCLOPS5_HIGH, NpcID.WARGUILD_CYCLOPS6_HIGH,
 			NpcID.KOUREND_CYCLOPS1, NpcID.KOUREND_CYCLOPS2
 		);
+
+		// Cows resolve by id rather than by name alone, because the three 2005 variants are the
+		// same mesh in different colors while the modern ones are separate meshes - one name row
+		// cannot carry three palettes. The name row stays as the fallback for any cow not listed
+		// here. "Cow (hard)" and the calves do not match the row by name at all.
+		NAME_MAPPINGS.put("cow", COW_DEFAULT);
+		registerMapping(COW_DEFAULT,
+			NpcID.COW, NpcID.COW_BEEF, NpcID.FAIRY_COW,
+			NpcID.NZONE_COW_NORMAL, NpcID.NZONE_COW_HARD
+		);
+		registerMapping(COW_BROWN, NpcID.COW2);
+		registerMapping(COW_GREY, NpcID.COW3);
+		registerMapping(COW_CALF, NpcID.COW2_CALF, NpcID.COW3_CALF, NpcID.CALF);
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
@@ -920,6 +1021,7 @@ public class RetroNpcMapping
 		int attackAnim = -1;
 		int defendAnim = -1;
 		int deathAnim = -1;
+		int miscAnim = -1;
 		int[] models = entry.getModelIds();
 		int stanceAnim = entry.getIdleAnim();
 		int walkAnim = entry.getWalkAnim();
@@ -938,6 +1040,7 @@ public class RetroNpcMapping
 		Set<Integer> modernAttacks = Collections.emptySet();
 		Set<Integer> modernDefends = Collections.emptySet();
 		Set<Integer> modernDeaths = Collections.emptySet();
+		Set<Integer> modernMisc = Collections.emptySet();
 
 		if (category == RetroNpcCategory.LESSER_DEMONS
 			|| category == RetroNpcCategory.GREATER_DEMONS
@@ -1014,6 +1117,23 @@ public class RetroNpcMapping
 			modernAttacks = CHICKEN_MODERN_ATTACKS;
 			modernDefends = CHICKEN_MODERN_DEFENDS;
 			modernDeaths = CHICKEN_MODERN_DEATHS;
+		}
+		else if (category == RetroNpcCategory.COWS)
+		{
+			// Only the undead cow reaches here. Every other cow is an id-registered archetype that
+			// declares all six slots itself, because the three 2005 variants need three different
+			// palettes and the generator keeps only the lowest-id row per name. The two paths have
+			// to agree slot for slot, so this branch mirrors cow(...) - but it must not hardcode
+			// the models the way the chicken branch does: the undead cow is its own mesh, 5237,
+			// which the live cache still holds with its palette untouched.
+			attackAnim = AnimationID.COW_ATTACK;
+			defendAnim = AnimationID.COW_BLOCK;
+			deathAnim = AnimationID.COW_DEATH;
+			miscAnim = AnimationID.COW_READY;
+			modernAttacks = COW_MODERN_ATTACKS;
+			modernDefends = COW_MODERN_DEFENDS;
+			modernDeaths = COW_MODERN_DEATHS;
+			modernMisc = COW_MODERN_MISC;
 		}
 		else if (category == RetroNpcCategory.HILL_GIANTS
 			|| category == RetroNpcCategory.FIRE_GIANTS
@@ -1097,12 +1217,14 @@ public class RetroNpcMapping
 			.attackAnimationId(attackAnim)
 			.defendAnimationId(defendAnim)
 			.deathAnimationId(deathAnim)
+			.miscAnimationId(miscAnim)
 			.scaleXZ(scaleXZ)
 			.scaleY(scaleY)
 			.recolors(recolorFind, recolorReplace)
 			.modernAttackAnims(modernAttacks)
 			.modernDefendAnims(modernDefends)
 			.modernDeathAnims(modernDeaths)
+			.modernMiscAnims(modernMisc)
 			.build();
 	}
 
