@@ -852,7 +852,6 @@ public class RetroNpcCategoryTest
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Goblin")).hasRecolors());
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Skeleton mage")).hasRecolors());
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Restless ghost")).hasRecolors());
-		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Chicken")).hasRecolors());
 	}
 
 	/**
@@ -972,6 +971,27 @@ public class RetroNpcCategoryTest
 		// 5385 is the chicken walk and 5390 an unrelated sequence - neither is combat
 		assertFalse(chicken.isAttackAnimation(5385));
 		assertFalse(chicken.isDeathAnimation(5390));
+	}
+
+	/**
+	 * Both chickens are mesh 2849; the 2005 client told the undead one apart with opcode 40 alone.
+	 * Chickens are the only recoloring category that builds from the live cache, so this is also
+	 * the check that the pairs survive the graft for a cache-backed category - and that turning
+	 * them on for the category did not repaint the ordinary bird, which carries no pairs at all.
+	 */
+	@Test
+	public void testUndeadChickenKeepsIts2005Palette()
+	{
+		RetroNpcData undead = RetroNpcMapping.get(NpcID.AHOY_UNDEAD_CHICKEN, "Undead chicken");
+		assertNotNull("Undead chicken mapping must exist", undead);
+		assertEquals(RetroNpcCategory.CHICKENS, undead.getCategory());
+		assertArrayEquals(new int[]{2849}, undead.getRetroModelIds());
+		assertTrue("the undead chicken is only undead by its palette", undead.hasRecolors());
+		assertArrayEquals(new short[]{127, 11200, 8394, 926, 6080}, undead.getOriginalColors());
+		assertArrayEquals(new short[]{12480, 10566, 12475, 4771, 8101}, undead.getReplacementColors());
+
+		assertFalse("the living chicken must stay the mesh's own colors",
+			Objects.requireNonNull(RetroNpcMapping.get(0, "Chicken")).hasRecolors());
 	}
 
 	/**

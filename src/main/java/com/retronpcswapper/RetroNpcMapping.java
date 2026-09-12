@@ -810,9 +810,10 @@ public class RetroNpcMapping
 	/**
 	 * Whether a category's retro mesh needs the 2005 recolor pairs to look right.
 	 *
-	 * <p>These meshes carry no usable color of their own - the dragons are a greyscale ramp, and
-	 * black and greater demons are the same mesh - so recoloring is structural rather than
-	 * cosmetic. Every other category is left alone on purpose.
+	 * <p>What these have in common is that one mesh has to serve several NPCs, so the palette is
+	 * the only thing telling them apart - the dragons are a greyscale ramp, black and greater
+	 * demons are the same mesh, and the chicken and the undead chicken are both 2849. Recoloring is
+	 * structural for them rather than cosmetic. Every other category is left alone on purpose.
 	 */
 	private static boolean categoryUsesRecolors(RetroNpcCategory category)
 	{
@@ -829,7 +830,9 @@ public class RetroNpcMapping
 			// A guard's parts are generic 2005 human kit shared with everything else that wears it,
 			// so the opcode 40 pairs are what make the kit a guard's colors rather than a
 			// townsperson's. The pairs come from the definition the parts come from.
-			|| category == RetroNpcCategory.GUARDS;
+			|| category == RetroNpcCategory.GUARDS
+			// The undead chicken is just a recolored regular chicken
+			|| category == RetroNpcCategory.CHICKENS;
 	}
 
 	private static void registerMapping(RetroNpcData data, int... npcIds)
