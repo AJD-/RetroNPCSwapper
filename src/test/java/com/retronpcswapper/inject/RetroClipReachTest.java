@@ -51,18 +51,20 @@ public class RetroClipReachTest
 	 * fit on every sequence - but reach cannot prove the pairing is right here, only an in-game look
 	 * can. Walk (819) has the thinnest margin, 65% against 60%.
 	 *
-	 * <p>All ten measured: 808 79%, 819 65%, 422 80%, 423 70%, 424 76%, 836 70%, 386 75%, 389 76%,
-	 * 390 70%, 1156 70%. The sword-and-shield set sits in the same band as the unarmed clips,
-	 * which is the result wanted. The Ardougne kit scores identically on all ten despite sharing
-	 * only one mesh with the town guard - both are 2005 human kit covering the same joints, which
-	 * is why one floor serves both.
+	 * <p>All fifteen measured: 808 79%, 819 65%, 422 80%, 423 70%, 424 76%, 836 70%, 386 75%,
+	 * 389 76%, 390 70%, 1156 70%, and the blunt family 400 75%, 401 77%, 402 75%, 403 80%, 404 75%.
+	 * The sword-and-shield and blunt sets both sit in the same band as the unarmed clips, which is
+	 * the result wanted. The Ardougne kit scores identically to the town guard on the ten they
+	 * share, despite sharing only one mesh with it - both are 2005 human kit covering the same
+	 * joints, which is why one floor serves both.
 	 */
 	private static final Map<Integer, Integer> CLIP_FLOORS = new HashMap<>();
 
 	static
 	{
 		CLIP_FLOORS.put(130, 80);
-		for (int guardClip : new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156})
+		for (int guardClip : new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156,
+			400, 401, 402, 403, 404})
 		{
 			CLIP_FLOORS.put(guardClip, 60);
 		}
@@ -111,7 +113,16 @@ public class RetroClipReachTest
 		{386, 225, 301, 162, 179, 274, 185, 502},
 		{389, 225, 301, 162, 179, 274, 185, 502},
 		{390, 225, 301, 162, 179, 274, 185, 502},
-		{1156, 225, 301, 162, 179, 274, 185, 502}
+		{1156, 225, 301, 162, 179, 274, 185, 502},
+		// Weapon 502 is a mace, so this guard fights blunt where the town guard stabs. 401 is the
+		// one seen in game; its family ships with it. 401 and 403 resolve to framemap 100082 rather
+		// than 100083 - a clip carries its own rig id, and these are the only guard clips that use
+		// the second one, so they are the reason to measure the family rather than just 401.
+		{400, 225, 301, 162, 179, 274, 185, 502},
+		{401, 225, 301, 162, 179, 274, 185, 502},
+		{402, 225, 301, 162, 179, 274, 185, 502},
+		{403, 225, 301, 162, 179, 274, 185, 502},
+		{404, 225, 301, 162, 179, 274, 185, 502}
 	};
 
 	@Test

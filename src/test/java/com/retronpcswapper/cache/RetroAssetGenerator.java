@@ -139,7 +139,13 @@ public class RetroAssetGenerator
 			// need the 2005 frames rather than any interception. 1156 was once left out as
 			// undecodable, which was a truncated seq.dat rather than anything about the sequence - it
 			// ships like the rest now, and its 17 frames resolve to rig 100083 with the others.
-			new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156})
+			//
+			// 400-404 are the blunt family. Weapon 502 is a mace, so an Ardougne guard fights where
+			// the town guard stabs: 401 HUMAN_BLUNT_POUND is what it was seen playing in game, and
+			// the rest of its family ships with it because the same weapon selects between them and
+			// a guard with no shield has to block on 403/404 rather than the town guard's 1156.
+			new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156,
+				400, 401, 402, 403, 404})
 	);
 
 	private enum Source

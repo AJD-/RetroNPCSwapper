@@ -532,11 +532,15 @@ public class RetroNpcMapping
 	 * seven different meshes, of which only the boots (185) are shared with the town guard.
 	 *
 	 * <p>The animation slots are the town guard's because the 2005 definition names the same
-	 * stance and walk (808/819) and the combat sequences are not part of a definition at all. Both
-	 * costumes are 2005 human kit animated by the same clips on rig 100083, so the bundle needs no
-	 * new sequences - only the six meshes it did not already carry. This kit binds one group
-	 * further out than the town guard's, to 36 rather than 34; {@code RetroClipReachTest} asserts
-	 * the rig addresses every group either of them binds.
+	 * stance and walk (808/819) and the combat sequences are not part of a definition at all. What
+	 * an Ardougne guard actually fights with is blunt rather than sword - weapon 502 is a mace, and
+	 * it was seen playing 401 {@code HUMAN_BLUNT_POUND} in game - so the bundle carries the blunt
+	 * family alongside the town guard's sword set. Those are classic ids the live game still uses,
+	 * so they pass straight through with no interception, the way 386 and 1156 do.
+	 *
+	 * <p>This kit binds one group further out than the town guard's, to 36 rather than 34, and two
+	 * of the blunt clips resolve to framemap 100082 rather than 100083;
+	 * {@code RetroClipReachTest} asserts every rig addresses every group the mesh it animates binds.
 	 */
 	private static RetroNpcData ardougneGuard(int[] models)
 	{
