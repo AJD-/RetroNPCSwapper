@@ -31,6 +31,7 @@ import java.util.Collections;
 import org.junit.Test;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
@@ -173,6 +174,76 @@ public class RetroMeshMergerTest
 		assertEquals(776, merged.getFaceCount());
 	}
 
+	/**
+	 * The metal dragons - bronze, iron and steel - are one 2005 mesh set of three parts, told
+	 * apart only by their opcode 40 pairs. buildInjected is all-or-nothing on parts, so a missing
+	 * one draws nothing at all rather than a dragon with a hole in it, which is exactly how these
+	 * three NPCs stayed vanilla for as long as the bundle carried none of them.
+	 */
+	@Test
+	public void testTheMetalDragonMergesFromAllThreeParts() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+
+		RetroMesh body = bundle.getMesh(4986);
+		RetroMesh second = bundle.getMesh(5022);
+		// 20 verts bound entirely to group 255, the old format's "no bone" value, so this part
+		// rides the dragon without ever being transformed. Asserted against the rig below rather
+		// than assumed.
+		RetroMesh unbound = bundle.getMesh(4987);
+		assertNotNull("metal dragon body 4986 is missing from the bundle", body);
+		assertNotNull("metal dragon part 5022 is missing from the bundle", second);
+		assertNotNull("metal dragon part 4987 is missing from the bundle", unbound);
+
+		RetroMesh merged = RetroMeshMerger.merge(4986, Arrays.asList(body, second, unbound));
+		assertEquals(348 + 122 + 20, merged.getVerticesCount());
+		assertEquals(674 + 162 + 16, merged.getFaceCount());
+
+		// The dragon rig never names group 255, so those vertices hold their rest position no
+		// matter which clip plays. That is the behaviour to pin: if a future rig did address 255
+		// it would drag every "unbound" vertex in the bundle along with it.
+		RetroRig rig = bundle.getRig(100049);
+		assertNotNull("dragon rig 100049 is missing from the bundle", rig);
+		for (int transform = 0; transform < rig.getTransformCount(); transform++)
+		{
+			for (int group : rig.getGroups(transform))
+			{
+				assertNotEquals("rig 100049 addresses the no-bone group 255", 255, group);
+			}
+		}
+	}
+
+	/**
+	 * The King Black Dragon is the chromatic body wearing a different head, so 2853 is carried once
+	 * and serves both. The head is where its three heads live: 2855 brings twelve vertex groups
+	 * over [34..80] against the single head 2854's ten over [18..80]. Those extra groups are what
+	 * firebreath clips 82/83/84 were missing on a one-headed dragon - see {@code RetroClipReachTest},
+	 * where the same three clips reach 100% on this merge and 90% on the chromatic one.
+	 */
+	@Test
+	public void testTheKingBlackDragonSharesTheChromaticBody() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+
+		RetroMesh body = bundle.getMesh(2853);
+		RetroMesh threeHeaded = bundle.getMesh(2855);
+		RetroMesh singleHeaded = bundle.getMesh(2854);
+		assertNotNull("dragon body 2853 is missing from the bundle", body);
+		assertNotNull("king black dragon head 2855 is missing from the bundle", threeHeaded);
+		assertNotNull("dragon head 2854 is missing from the bundle", singleHeaded);
+		assertSame("the body is stored once and shared with the chromatic dragons",
+			body, bundle.getMesh(2853));
+
+		RetroMesh merged = RetroMeshMerger.merge(2853, Arrays.asList(body, threeHeaded));
+		assertEquals(303 + 197, merged.getVerticesCount());
+		assertEquals(634 + 360, merged.getFaceCount());
+
+		// The three-headed head is the bigger of the two, which is the whole reason it is a
+		// separate mesh rather than a recolor
+		assertTrue("the three-headed head must carry more geometry than the single head",
+			threeHeaded.getVerticesCount() > singleHeaded.getVerticesCount());
+	}
+
 	@Test
 	public void testTheGiantFamilySharesOneBodyMesh() throws Exception
 	{
@@ -227,7 +298,8 @@ public class RetroMeshMergerTest
 		assertEquals("34 of the head's 42 faces are textured", 34, mapped);
 		assertEquals(8, coords.length - mapped);
 
-		for (int meshId : new int[]{233, 246, 151, 176, 254, 185, 519, 541, 550, 2870, 2944})
+		for (int meshId : new int[]{233, 246, 151, 176, 254, 185, 519, 541, 550, 2870, 2944,
+			4986, 5022, 4987, 2855})
 		{
 			RetroMesh mesh = bundle.getMesh(meshId);
 			assertNotNull("mesh " + meshId + " is missing from the bundle", mesh);

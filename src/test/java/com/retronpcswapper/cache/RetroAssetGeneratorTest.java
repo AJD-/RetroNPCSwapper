@@ -53,6 +53,10 @@ public class RetroAssetGeneratorTest
 			// first NPC with more parts than the old path ever had to join
 			assertMergesAgree(retro, 2853, 2854);
 			assertMergesAgree(retro, 2870, 2864, 4991, 4990);
+			// The metal dragon, whose third part carries no rig binding of its own
+			assertMergesAgree(retro, 4986, 5022, 4987);
+			// The King Black Dragon, which shares its body with the chromatic pair
+			assertMergesAgree(retro, 2853, 2855);
 		}
 		finally
 		{

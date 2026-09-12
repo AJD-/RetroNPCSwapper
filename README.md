@@ -18,7 +18,7 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets* (on by default):
 
 - **Giants** — Fire, Ice and Moss, under the same Giants toggle as Hill
-- **Dragons** — adult and baby
+- **Dragons** — chromatic/metallic (up to steel) adults, the King Black Dragon, and baby dragons
 - **Demons** — lesser, greater and black
 - **Imps**
 - **Cyclopes**
@@ -71,7 +71,7 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
   those categories from the injected ones.
 - **The injected categories ship their assets.** Dragons, demons, imps, guards, the cyclops and the
   fire, ice and moss giant heads have no usable 2005 asset left in the live cache, so
-  `retro-assets.dat` (~52 KB) is bundled in the jar and carries their meshes, rigs and animation
+  `retro-assets.dat` (~61 KB) is bundled in the jar and carries their meshes, rigs and animation
   clips, extracted from the February 2005 cache. This is the one thing the plugin distributes rather
   than reads from your own installation, which is why it is all gated behind a single toggle you can
   switch off. Parts are stored individually and joined at spawn, so the body the whole giant family

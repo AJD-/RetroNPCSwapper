@@ -99,7 +99,29 @@ public class RetroAssetGenerator
 		// animate it, which makes it the only mesh the skinner can be checked against in game.
 		// Its clips stay live for the same reason.
 		new Spec("Skeleton", Source.LIVE, Source.LIVE, new int[]{2944}, new int[]{262, 259}),
-		new Spec("Adult dragons", Source.RETRO, Source.RETRO, new int[]{2853, 2854}, new int[]{79, 80, 89, 90, 91, 92}),
+		// The four firebreath clips 81-84 are bundled alongside the melee set. They are full-body
+		// animations on the same rig - coverage 55% of the merged mesh, the same band as the melee
+		// attack and the death - so replacing the movement pose with them outright, which is all
+		// poseInjected can do until interleaving exists, is correct. DRAGON_FIREBREATH_ATTACK 86 is
+		// deliberately absent: it decodes, but onto its own rig 100050 as 97 ops over 3 groups, which
+		// is an upper-body overlay meant to be layered onto a movement pose. Playing it outright
+		// would lock the whole dragon rigid and animate three groups, which is worse than the
+		// rest-pose fallback a missing clip already gives.
+		new Spec("Adult dragons", Source.RETRO, Source.RETRO,
+			new int[]{2853, 2854}, new int[]{79, 80, 81, 82, 83, 84, 89, 90, 91, 92}),
+		// The metal dragons are a second 2005 dragon mesh set - a body, a head and a small static
+		// part - on the same rig 100049 and the same sequences, reaching 100% on the melee set just
+		// as the chromatic pair does. Bronze, iron and steel are one mesh told apart by three
+		// opcode 40 pairs each, so they need categoryUsesRecolors the same way the chromatics do.
+		new Spec("Metal dragons", Source.RETRO, Source.RETRO,
+			new int[]{4986, 5022, 4987}, new int[]{79, 80, 81, 82, 83, 84, 89, 90, 91, 92}),
+		// The King Black Dragon is the chromatic dragon body 2853 wearing a three-headed head 2855
+		// in place of the single head 2854, so only the head is new geometry - 2853 is decoded once
+		// and shared with the Adult dragons spec above. Its 2005 definition asks for 160/160 rather
+		// than the 128 every other dragon asks for, and carries five opcode 40 pairs rather than
+		// one, both of which ride in on the generated row with no code here.
+		new Spec("King Black Dragon", Source.RETRO, Source.RETRO,
+			new int[]{2853, 2855}, new int[]{79, 80, 81, 82, 83, 84, 89, 90, 91, 92}),
 		new Spec("Lesser demons", Source.RETRO, Source.RETRO, new int[]{2943}, new int[]{63, 64, 65, 66, 67, 69}),
 		new Spec("Greater and black demons", Source.RETRO, Source.RETRO, new int[]{2942}, new int[]{63, 64, 65, 66, 67, 68, 69}),
 		// The imp mesh survived the 2006 update untouched - only its frames were re-authored. The

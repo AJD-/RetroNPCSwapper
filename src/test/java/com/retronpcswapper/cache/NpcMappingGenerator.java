@@ -172,7 +172,7 @@ public class NpcMappingGenerator
 		{
 			return RetroNpcCategory.BLACK_DEMONS;
 		}
-		if (nameLower.contains("dragon") && !nameLower.contains("baby") && !nameLower.contains("king"))
+		if (nameLower.contains("dragon") && !nameLower.contains("baby"))
 		{
 			return RetroNpcCategory.ADULT_DRAGONS;
 		}

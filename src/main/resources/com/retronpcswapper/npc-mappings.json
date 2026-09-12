@@ -585,6 +585,32 @@
     ]
   },
   {
+    "name": "king black dragon",
+    "category": "ADULT_DRAGONS",
+    "modelIds": [
+      2853,
+      2855
+    ],
+    "idleAnim": 90,
+    "walkAnim": 79,
+    "scaleXZ": 160,
+    "scaleY": 160,
+    "originalColors": [
+      61,
+      41,
+      0,
+      115,
+      127
+    ],
+    "replacementColors": [
+      11140,
+      11138,
+      937,
+      7853,
+      7853
+    ]
+  },
+  {
     "name": "lesser demon",
     "category": "LESSER_DEMONS",
     "modelIds": [

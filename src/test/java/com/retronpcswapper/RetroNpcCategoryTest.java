@@ -29,8 +29,11 @@ import com.google.gson.reflect.TypeToken;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.NpcID;
@@ -226,17 +229,125 @@ public class RetroNpcCategoryTest
 		assertFalse(blueDragon.isAttackAnimation(82));
 		assertFalse(blueDragon.isAttackAnimation(83));
 
-		// Block and death need no swap at all, so both slots are -1 and short-circuit
-		assertEquals(-1, blueDragon.getDefendAnimationId());
+		// Death needs no swap at all, so that slot is -1 and short-circuits
 		assertEquals(-1, blueDragon.getDeathAnimationId());
-		assertFalse(blueDragon.isDefendAnimation(89));
-		assertFalse(blueDragon.isDefendAnimation(4638));
 		assertFalse(blueDragon.isDeathAnimation(92));
+
+		// The defend slot is filled for KBD's sake - it is the one adult dragon
+		// with a post-2005 block, DRAGON_BLOCK_KBD 4638. A chromatic dragon carries the slot but
+		// never reaches the override, because it only fires on an id in DRAGON_MODERN_DEFENDS and
+		// an ordinary dragon already blocks on the 2005 sequence.
+		assertEquals(AnimationID.DRAGON_BLOCK, blueDragon.getDefendAnimationId());
+		assertFalse("block 89 is already the retro sequence", blueDragon.isDefendAnimation(89));
+		assertTrue(blueDragon.isDefendAnimation(AnimationID.DRAGON_BLOCK_KBD));
 
 		// Walk (79) and ready (90) are pose sequences, never combat anims
 		assertFalse(blueDragon.isAttackAnimation(79));
 		assertFalse(blueDragon.isDefendAnimation(90));
 		assertFalse(blueDragon.isAttackAnimation(99999));
+	}
+
+	/**
+	 * The metal dragons are the same category on a different 2005 mesh set: three parts rather
+	 * than two, and three opcode 40 pairs rather than one, because bronze, iron and steel are one
+	 * greyscale mesh told apart entirely by colour. They resolve by name like the chromatics -
+	 * ADULT_DRAGONS is not an id-only category and no static archetype shadows these rows.
+	 */
+	@Test
+	public void testMetalDragonsCategory()
+	{
+		int[] ids = {NpcID.BRONZE_DRAGON, NpcID.IRON_DRAGON, NpcID.STEEL_DRAGON};
+		String[] names = {"Bronze dragon", "Iron dragon", "Steel dragon"};
+
+		Set<List<Short>> palettes = new HashSet<>();
+		for (int i = 0; i < ids.length; i++)
+		{
+			RetroNpcData dragon = RetroNpcMapping.get(ids[i], names[i]);
+			assertNotNull(names[i] + " mapping must exist", dragon);
+			assertEquals(RetroNpcCategory.ADULT_DRAGONS, dragon.getCategory());
+
+			assertArrayEquals(names[i] + " is a three part 2005 mesh",
+				new int[]{4986, 5022, 4987}, dragon.getInjectedModelIds());
+
+			// Without the pairs all three render as the same grey lump, so this is structural
+			assertTrue(names[i] + " must carry its 2005 recolors", dragon.hasRecolors());
+			assertArrayEquals(new short[]{61, 33, 41}, dragon.getOriginalColors());
+			assertEquals(3, dragon.getReplacementColors().length);
+
+			List<Short> palette = new ArrayList<>();
+			for (short color : dragon.getReplacementColors())
+			{
+				palette.add(color);
+			}
+			assertTrue(names[i] + " must not share a palette with another metal",
+				palettes.add(palette));
+
+			// Same policy as the chromatics: only the post-2005 ranged attack is intercepted, and
+			// the retro-native sequences - firebreath included - pass straight through
+			assertEquals(AnimationID.DRAGON_READY, dragon.getIdleAnimationId());
+			assertEquals(AnimationID.DRAGON_WALK, dragon.getWalkAnimationId());
+			assertEquals(AnimationID.DRAGON_ATTACK, dragon.getAttackAnimationId());
+			assertTrue(dragon.isAttackAnimation(AnimationID.DRAGON_RANGED_ATTACKS));
+			for (int retroNative : new int[]{80, 81, 82, 83, 84, 91})
+			{
+				assertFalse("sequence " + retroNative + " is already the retro one",
+					dragon.isAttackAnimation(retroNative));
+			}
+			// The defend slot is category-wide, filled for the King Black Dragon's post-2005
+			// block; a metal dragon carries it but never sends 4638, so it never fires
+			assertEquals(AnimationID.DRAGON_BLOCK, dragon.getDefendAnimationId());
+			assertFalse(names[i] + " blocks on the retro sequence already",
+				dragon.isDefendAnimation(AnimationID.DRAGON_BLOCK));
+			assertEquals(-1, dragon.getDeathAnimationId());
+		}
+	}
+
+	/**
+	 * The King Black Dragon reaches the category the same way every other adult dragon does -
+	 * by name, off the generated row, with no id registration anywhere.
+	 */
+	@Test
+	public void testKingBlackDragonCategory()
+	{
+		for (int id : new int[]{
+			NpcID.KING_DRAGON, NpcID.CLANCUP_KING_DRAGON,
+			NpcID.TWOCATS_KBD_CUTSCENE, NpcID.DEADMAN_BREACH_KING_BLACK_DRAGON})
+		{
+			RetroNpcData kbd = RetroNpcMapping.get(id, "King Black Dragon");
+			assertNotNull("King Black Dragon mapping must exist for id " + id, kbd);
+			assertEquals(RetroNpcCategory.ADULT_DRAGONS, kbd.getCategory());
+
+			// The chromatic body wearing the three-headed head, in place of the single head 2854
+			assertArrayEquals(new int[]{2853, 2855}, kbd.getInjectedModelIds());
+
+			// The one dragon whose 2005 definition asks to be resized, and the one carrying five
+			// opcode 40 pairs rather than a single body tint
+			assertEquals(160, kbd.getScaleXZ());
+			assertEquals(160, kbd.getScaleY());
+			assertTrue(kbd.hasRecolors());
+			assertArrayEquals(new short[]{61, 41, 0, 115, 127}, kbd.getOriginalColors());
+			assertEquals(5, kbd.getReplacementColors().length);
+
+			assertEquals(AnimationID.DRAGON_READY, kbd.getIdleAnimationId());
+			assertEquals(AnimationID.DRAGON_WALK, kbd.getWalkAnimationId());
+
+			// Its block is the one post-2005 sequence in the whole category
+			assertTrue(kbd.isDefendAnimation(AnimationID.DRAGON_BLOCK_KBD));
+			assertEquals(AnimationID.DRAGON_BLOCK, kbd.getDefendAnimationId());
+
+			// Everything else it plays is retro-native and passes straight through
+			for (int retroNative : new int[]{80, 81, 82, 83, 84, 91})
+			{
+				assertFalse("sequence " + retroNative + " is already the retro one",
+					kbd.isAttackAnimation(retroNative));
+			}
+			assertTrue(kbd.isAttackAnimation(AnimationID.DRAGON_RANGED_ATTACKS));
+		}
+
+		// The wall trophies and the pet share the theme but not the name, so nothing extra is
+		// needed to keep them out - "Left head" and "Prince Black Dragon" simply never match
+		assertNull(RetroNpcMapping.get(NpcID.POH_MOUNTED_KBD_LEFT, "Left head"));
+		assertNull(RetroNpcMapping.get(NpcID.KBD_PET, "Prince Black Dragon"));
 	}
 
 	@Test
@@ -1291,11 +1402,9 @@ public class RetroNpcCategoryTest
 		// whether they can render at all - see isCategoryEnabled
 		assertTrue("useInjectionPipeline must default to true", config.useInjectionPipeline());
 
-		// So do the bundle-only categories. These were opt-in while the 2005 assets were something
-		// a user had to supply; the Custom Cache release ships them in the jar and turns the
-		// pipeline on by default, and each of these toggles says so in its own description ("Needs
-		// Use Converted 2005 Assets, which is on by default"). A category that the plugin both
-		// distributes assets for and enables the pipeline for has nothing left to opt in to.
+		// The bundle-only categories ship on as well. They are not individually opt-in: what the
+		// plugin distributes is gated once, by useInjectionPipeline above, and turning that off
+		// leaves every one of these unable to render whatever its own toggle says.
 		assertTrue("swapDragons must default to true", config.swapDragons());
 		assertTrue("swapDemons must default to true", config.swapDemons());
 		assertTrue("swapImps must default to true", config.swapImps());
