@@ -1217,6 +1217,45 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
+	 * The shield-and-spear goblins are a pose family of their own: GOBLIN_RED_SOLDIER_5 and
+	 * GOBLIN_GREEN_SOLDIER_4 stand on 6200 and walk on 6201, where every other live goblin uses
+	 * 6181 or 6186. Their attack, 6199, was the one goblin combat animation not intercepted, so
+	 * both swung a modern animation on the retro mesh while everything else about them swapped.
+	 */
+	@Test
+	public void testShieldSpearGoblinsAttackIsIntercepted()
+	{
+		for (int npcId : new int[]{NpcID.GOBLIN_RED_SOLDIER_5, NpcID.GOBLIN_GREEN_SOLDIER_4})
+		{
+			RetroNpcData goblin = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull(goblin);
+			assertTrue("the shield-and-spear attack must be rewritten to the 2005 attack",
+				goblin.isAttackAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_SPEAR_ATTACK_SHIELD));
+			// Its ready and walk poses are replaced outright rather than intercepted, so they must
+			// not also register as combat
+			assertFalse(goblin.isAttackAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_SHIELD_SPEAR_READY));
+			assertFalse(goblin.isDefendAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_WALK_SHIELD_ARMED));
+		}
+	}
+
+	/**
+	 * The two cutscene goblins are registered by id and are named after how each one dies, so their
+	 * scripted deaths have to be intercepted like any other.
+	 */
+	@Test
+	public void testCutsceneGoblinDeathsAreIntercepted()
+	{
+		RetroNpcData arrow = RetroNpcMapping.get(NpcID.SLICE_CUTSCENE_ARROW_GOBLIN, "Goblin");
+		RetroNpcData firebolt = RetroNpcMapping.get(NpcID.SLICE_CUTSCENE_FIREBOLT_GOBLIN, "Goblin");
+		assertNotNull(arrow);
+		assertNotNull(firebolt);
+		assertTrue(arrow.isDeathAnimation(AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_ARROW));
+		assertTrue(firebolt.isDeathAnimation(AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_FIREBOLT));
+		// Wormbrain is not called "Goblin" and reaches no mapping, so its death stays out
+		assertFalse(arrow.isDeathAnimation(AnimationID.SURFACE_GOBLIN_WORMBRAIN_DEATH));
+	}
+
+	/**
 	 * "Goblin" is a name the plugin matches on, so anything else wearing it has to be kept out by
 	 * id. The Recruitment Drive desk goblins are one merged mesh, size 2, and never walk.
 	 */

@@ -140,7 +140,12 @@ public class RetroNpcMapping
 	public static final Set<Integer> GOBLIN_MODERN_ATTACKS = Set.of(
 		AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_UNARMED_ATTACK, AnimationID.SLICE_SURFACE_GOBLIN_ARMED_ATTACK,
 			AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_ATTACK_SPEAR, AnimationID.SLICE_SURFACE_GOBLIN_SERGENT_ATTACK,
-			AnimationID.GOBLIN_ATTACK_UNARMED, AnimationID.GOBLIN_ATTACK_ARMED
+			AnimationID.GOBLIN_ATTACK_UNARMED, AnimationID.GOBLIN_ATTACK_ARMED,
+			// The shield-and-spear goblin is its own pose family - GOBLIN_RED_SOLDIER_5 and
+			// GOBLIN_GREEN_SOLDIER_4 stand on 6200 and walk on 6201 where every other goblin uses
+			// 6181/6186 - and its attack was the one left un-intercepted, so those two swung a
+			// modern animation on a retro mesh
+			AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_SPEAR_ATTACK_SHIELD
 	);
 	public static final Set<Integer> GOBLIN_MODERN_DEFENDS = Set.of(
 		AnimationID.SLICE_SURFACE_GOBLIN_DEFEND, AnimationID.GOBLIN_BLOCK,
@@ -148,7 +153,13 @@ public class RetroNpcMapping
 	);
 	public static final Set<Integer> GOBLIN_MODERN_DEATHS = Set.of(
 		AnimationID.SLICE_SURFACE_GOBLIN_DEATH, AnimationID.SLICE_SURFACE_GOBLIN_DEATH_SPEAR,
-			AnimationID.SLICE_ARROW_DEATH, AnimationID.GOBLIN_DEATH, AnimationID.SLICE_SURFACE_GOBLIN_SERGENT_DEATH
+			AnimationID.SLICE_ARROW_DEATH, AnimationID.GOBLIN_DEATH, AnimationID.SLICE_SURFACE_GOBLIN_SERGENT_DEATH,
+			// The two scripted deaths, which belong to the two cutscene goblins registered by id -
+			// SLICE_CUTSCENE_ARROW_GOBLIN and SLICE_CUTSCENE_FIREBOLT_GOBLIN are named after the
+			// way each one dies. SURFACE_GOBLIN_WORMBRAIN_DEATH is deliberately absent: Wormbrain
+			// is not called "Goblin" and reaches no mapping, so listing it would claim an NPC this
+			// plugin never swaps
+			AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_ARROW, AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_FIREBOLT
 	);
 
 	public static final Set<Integer> GUARD_MODERN_ATTACKS = Set.of(
