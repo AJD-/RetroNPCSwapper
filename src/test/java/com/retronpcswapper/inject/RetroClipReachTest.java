@@ -51,22 +51,24 @@ public class RetroClipReachTest
 	 * fit on every sequence - but reach cannot prove the pairing is right here, only an in-game look
 	 * can. Walk (819) has the thinnest margin, 65% against 60%.
 	 *
-	 * <p>All twenty-two measured: 808 79%, 819 65%, 422 80%, 423 70%, 424 76%, 836 70%, 386 75%,
-	 * 389 76%, 390 70%, 1156 70%; the blunt family 400 75%, 401 77%, 402 75%, 403 80%, 404 75%; and
-	 * the axe family 393 77%, 394 79%, 395 78%, 396 75%, 397 80%, 398 80%, 399 81%. All three
-	 * weapon sets sit in the same band as the unarmed clips, which is the result wanted. The
-	 * Ardougne kit scores identically to the town guard on the ten they share, despite sharing only
-	 * one mesh with it - both are 2005 human kit covering the same joints, which is why one floor
-	 * serves all of them.
+	 * <p>All twenty-six measured. Pose and death: 808 79%, 819 65%, 836 70%. Shield block 1156 70%.
+	 * Sword 386 75%, 387 74%, 388 75%, 389 76%, 390 70%, 391 71%, 392 75%. Axe 393 77%, 394 79%,
+	 * 395 78%, 396 75%, 397 80%, 398 80%, 399 81%. Blunt 400 75%, 401 77%, 402 75%, 403 80%,
+	 * 404 75%. Unarmed 422 80%, 423 70%, 424 76%. All four weapon sets sit in the same band, which
+	 * is the result wanted, and 819 is still the thinnest margin of the lot. The Ardougne kit scores
+	 * identically to the town guard on every clip they share, despite sharing only one mesh with it
+	 * - both are 2005 human kit covering the same joints, which is why one floor serves all of them.
 	 */
 	private static final Map<Integer, Integer> CLIP_FLOORS = new HashMap<>();
 
 	static
 	{
 		CLIP_FLOORS.put(130, 80);
-		for (int guardClip : new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156,
+		for (int guardClip : new int[]{808, 819, 836, 1156,
+			386, 387, 388, 389, 390, 391, 392,
+			393, 394, 395, 396, 397, 398, 399,
 			400, 401, 402, 403, 404,
-			393, 394, 395, 396, 397, 398, 399})
+			422, 423, 424})
 		{
 			CLIP_FLOORS.put(guardClip, 60);
 		}
@@ -102,6 +104,12 @@ public class RetroClipReachTest
 		{389, 233, 246, 294, 151, 176, 254, 185, 519, 541},
 		{390, 233, 246, 294, 151, 176, 254, 185, 519, 541},
 		{1156, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		// The rest of the sword family. 386, 390 and 1156 are what the town guard was seen playing;
+		// these complete it for a sword guard with no shield to block behind.
+		{387, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{388, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{391, 233, 246, 294, 151, 176, 254, 185, 519, 541},
+		{392, 233, 246, 294, 151, 176, 254, 185, 519, 541},
 		// The Ardougne guard rides on the same clips: a second 2005 costume on the same human rig,
 		// sharing only the boots (185) with the kit above. Measured separately because a merge of
 		// seven different meshes uses a different set of groups, and a floor that only ever saw
