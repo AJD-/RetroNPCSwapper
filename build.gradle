@@ -81,6 +81,7 @@ tasks.register('generateNpcMappings', JavaExec) {
 // Prints NPC definitions from the live OSRS cache, eg:
 //   ./gradlew dumpNpcDefinitions -Pnpc=1173
 //   ./gradlew dumpNpcDefinitions -Pnpc=chicken -PcacheDir=/path/to/LIVE
+//   ./gradlew dumpNpcDefinitions -Pnpc=Guard -Pmax=200
 tasks.register('dumpNpcDefinitions', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = 'com.retronpcswapper.cache.ModernNpcDumper'
@@ -91,6 +92,31 @@ tasks.register('dumpNpcDefinitions', JavaExec) {
 	}
 	if (project.hasProperty('cacheDir')) {
 		systemProperty 'retronpcswapper.cacheDir', project.property('cacheDir')
+	}
+	if (project.hasProperty('max')) {
+		systemProperty 'retronpcswapper.maxMatches', project.property('max')
+	}
+}
+
+// Prints NPC definitions from the 2005 cache, eg:
+//   ./gradlew dumpRetroNpcDefinitions -Pnpc=guard
+//   ./gradlew dumpRetroNpcDefinitions -Pnpc=277,278 -PretroDir=/path/to/2005cache
+//
+// npc-mappings.json keeps only the lowest-id row per name, so it cannot answer a question about
+// one particular 2005 NPC among several sharing a name.
+tasks.register('dumpRetroNpcDefinitions', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.retronpcswapper.cache.RetroNpcDumper'
+	workingDir = rootDir
+
+	if (project.hasProperty('npc')) {
+		args project.property('npc').toString().split(',')
+	}
+	if (project.hasProperty('retroDir')) {
+		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
+	}
+	if (project.hasProperty('max')) {
+		systemProperty 'retronpcswapper.maxMatches', project.property('max')
 	}
 }
 
