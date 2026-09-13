@@ -10,9 +10,9 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 
 - **Chickens**
 - **Goblins**
-- **Skeletons** (armed and unarmed)
-- **Zombies** (armed and unarmed)
-- **Giants** — Hill only
+- **Skeletons**
+- **Zombies**
+- **Giants**
 - **Ghosts**
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets* (on by default):

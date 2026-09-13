@@ -158,30 +158,12 @@ public class RetroNpcMapping
 	public static final Set<Integer> GOBLIN_MODERN_DEATHS = Set.of(
 		AnimationID.SLICE_SURFACE_GOBLIN_DEATH, AnimationID.SLICE_SURFACE_GOBLIN_DEATH_SPEAR,
 			AnimationID.SLICE_ARROW_DEATH, AnimationID.GOBLIN_DEATH, AnimationID.SLICE_SURFACE_GOBLIN_SERGENT_DEATH,
-			// The two scripted deaths, which belong to the two cutscene goblins registered by id -
-			// SLICE_CUTSCENE_ARROW_GOBLIN and SLICE_CUTSCENE_FIREBOLT_GOBLIN are named after the
-			// way each one dies. SURFACE_GOBLIN_WORMBRAIN_DEATH is deliberately absent: Wormbrain
-			// is not called "Goblin" and reaches no mapping, so listing it would claim an NPC this
-			// plugin never swaps
 			AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_ARROW, AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_FIREBOLT
 	);
 
 	public static final Set<Integer> GUARD_MODERN_ATTACKS = Set.of(
 		AnimationID.HUMAN_UNARMEDPUNCH, AnimationID.HUMAN_UNARMEDKICK
 	);
-	/**
-	 * A guard fights with a sword and shield, so it blocks with {@code HUMAN_SHIELD_DEFENCE}
-	 * rather than the unarmed block. That used to be rewritten onto the unarmed block 424,
-	 * because 1156 would not decode from the 2005 cache - a block with no shield raise. The cause
-	 * was a bzip2 decompressor that stopped after one block and truncated {@code seq.dat}, not
-	 * anything about the sequence, so 1156 now ships as its own 2005 clip and passes straight
-	 * through with no interception, exactly like the 386 sword stab.
-	 *
-	 * <p>What is left is the unarmed block on its own, which equals the guard's own
-	 * {@code defendAnimationId}, so {@code onAnimationChanged} short-circuits before this set is
-	 * ever consulted. It is kept rather than emptied so the archetype still answers
-	 * {@code isDefendAnimation(424)} the way every other category does.
-	 */
 	public static final Set<Integer> GUARD_MODERN_DEFENDS = Set.of(
 		AnimationID.HUMAN_UNARMEDBLOCK
 	);
@@ -206,17 +188,20 @@ public class RetroNpcMapping
 		AnimationID.HUMAN_SPEAR_SPIKE, AnimationID.HUMAN_SCYTHE_SWEEP,
 		AnimationID.SKELETON_UPDATE_ATTACK_WEAPON, AnimationID.SKELETON_UPDATE_ATTACK_WEAPON_TRANSPARENT,
 		AnimationID.SKELETON_UPDATE_ATTACK_SWORD, AnimationID.SKELETON_UPDATE_ATTACK_SWORD_TRANSPARENT,
+		AnimationID.SKELETON_UPDATE_GIANT_ATTACK, AnimationID.SKELETON_UPDATE_GIANT_ATTACK_TRANSPARENT,
 		AnimationID.SKELETON_UPDATE_GIANT_VARY3_ATTACK, AnimationID.SKELETON_UPDATE_CHAMPION_ATTACK
 	);
 	public static final Set<Integer> SKELETON_MODERN_DEFENDS = Set.of(
 		AnimationID.SKELETON_BLOCK,
 		AnimationID.HUMAN_UNARMEDBLOCK, AnimationID.HUMAN_UNARMED_DEF, AnimationID.HUMAN_SHIELD_DEFENCE,
 		AnimationID.SKELETON_UPDATE_DEFEND, AnimationID.SKELETON_UPDATE_DEFEND_TRANSPARENT,
+		AnimationID.SKELETON_UPDATE_GIANT_DEFEND, AnimationID.SKELETON_UPDATE_GIANT_DEFEND_TRANSPARENT,
 		AnimationID.SKELETON_UPDATE_GIANT_VARY3_DEFEND
 	);
 	public static final Set<Integer> SKELETON_MODERN_DEATHS = Set.of(
 		 AnimationID.SKELETON_DEATH, AnimationID.HUMAN_DEATH,
 		AnimationID.SKELETON_UPDATE_DEATH, AnimationID.SKELETON_UPDATE_DEATH_TRANSPARENT,
+		AnimationID.SKELETON_UPDATE_GIANT_DEATH, AnimationID.SKELETON_UPDATE_GIANT_DEATH_TRANSPARENT,
 		AnimationID.SKELETON_UPDATE_GIANT_VARY3_DEATH,
 		AnimationID.GODWARS_GOBLIN_UPDATE_BANNER_DEATH
 	);
@@ -441,6 +426,26 @@ public class RetroNpcMapping
 		.attackAnimationId(260)
 		.defendAnimationId(261)
 		.deathAnimationId(263)
+		.modernAttackAnims(SKELETON_MODERN_ATTACKS)
+		.modernDefendAnims(SKELETON_MODERN_DEFENDS)
+		.modernDeathAnims(SKELETON_MODERN_DEATHS)
+		.build();
+
+	// The 2005 giant skeleton is def 93: named plain "Skeleton", level 45, and nothing but the armed
+	// kit scaled up - the same name and level live GIANTSKELETON still carries. The generator keeps
+	// only the lowest id per name, which is why npc-mappings.json never showed it.
+	private static final int GIANT_SKELETON_SCALE = 170;
+
+	public static final RetroNpcData SKELETON_GIANT = RetroNpcData.builder()
+		.category(RetroNpcCategory.SKELETONS)
+		.retroModelIds(new int[]{2944, 2946})
+		.idleAnimationId(262)
+		.walkAnimationId(259)
+		.attackAnimationId(260)
+		.defendAnimationId(261)
+		.deathAnimationId(263)
+		.scaleXZ(GIANT_SKELETON_SCALE)
+		.scaleY(GIANT_SKELETON_SCALE)
 		.modernAttackAnims(SKELETON_MODERN_ATTACKS)
 		.modernDefendAnims(SKELETON_MODERN_DEFENDS)
 		.modernDeathAnims(SKELETON_MODERN_DEATHS)
@@ -1159,8 +1164,19 @@ public class RetroNpcMapping
 				NpcID.SKELETON_UNARMED4, NpcID.SKELETON_UNAGRESSIVE
 		);
 		registerMapping(SKELETON_ARMED,
-				NpcID.SKELETON_ARMED, NpcID.SKELETON_ARMED2, NpcID.SKELETON_UNAGRESSIVE2,
-				NpcID.SKELETON_UNAGRESSIVE3
+				NpcID.SKELETON_ARMED, NpcID.SKELETON_ARMED2, NpcID.SKELETON_ARMED3,
+				NpcID.SKELETON_ARMED4, NpcID.SKELETON_ARMED5,
+				NpcID.SKELETON_UNAGRESSIVE2, NpcID.SKELETON_UNAGRESSIVE3
+		);
+
+		// Giant skeletons. GIANTSKELETON and GIANTSKELETON2 are named plain "Skeleton", so without
+		// their ids the name row handed them the normal-size unarmed kit. The ones actually named
+		// "Giant skeleton" are later content with no 2005 definition, and take the same giant.
+		NAME_MAPPINGS.put("giant skeleton", SKELETON_GIANT);
+		registerMapping(SKELETON_GIANT,
+			NpcID.GIANTSKELETON, NpcID.GIANTSKELETON2,
+			NpcID.SWORD_SKELETON_3, NpcID.SWORD_SKELETON_3B,
+			NpcID.LOTR_GIANT_SKELETON
 		);
 
 		// Zombies
