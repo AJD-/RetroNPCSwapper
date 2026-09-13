@@ -131,8 +131,16 @@ public class RetroNpcSwapperPlugin extends Plugin
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
 
+	/** The renderer 117 HD registers by default; its legacy renderer lives in a sibling package. */
+	private static final String HD_ZONE_RENDERER_PACKAGE = "rs117.hd.renderer.zone.";
+
+	private static final String HD_PLUGIN_CLASS = "rs117.hd.HdPlugin";
+
 	// Our decorator, while it owns the client's draw callbacks slot
 	private RetroDrawCallbacks wrapper;
+
+	// Class of the last renderer attach() declined, so the decline is logged once rather than per tick
+	private String declinedHost;
 
 	// Resolved once - the plugin list does not change identity, and attach() is polled per tick
 	private Plugin gpuPlugin;
@@ -332,8 +340,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		targetTracker.onGameTick();
 
-		// Cheap guard: the GPU plugin sets and clears the draw callbacks slot unconditionally,
-		// so re-take it whenever we have lost it. Covers orderings PluginChanged misses.
+		// Cheap guard: the GPU plugin and 117 HD set and clear the draw callbacks slot
+		// unconditionally, so re-take it whenever we have lost it. Covers orderings PluginChanged
+		// misses - including 117 HD restarting itself on a settings change, which installs a new
+		// renderer without posting any plugin event.
 		if (wrapper == null || client.getDrawCallbacks() != wrapper)
 		{
 			attach();
@@ -343,9 +353,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onPluginChanged(PluginChanged event)
 	{
-		if (event.getPlugin() instanceof GpuPlugin)
+		if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin()))
 		{
-			// attach() declines on its own when the GPU plugin is no longer holding the slot
+			// attach() declines on its own when no supported renderer is holding the slot. 117 HD
+			// installs its renderer asynchronously once GL is up, so the per-tick guard is what
+			// usually catches it; this just avoids waiting a tick when it is already there.
 			clientThread.invoke(this::attach);
 		}
 		else if (interactHighlight.isInteractHighlightPlugin(event.getPlugin()))
@@ -800,10 +812,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Takes over the client's draw callbacks slot by wrapping whatever the GPU plugin registered.
+	 * Takes over the client's draw callbacks slot by wrapping whichever supported renderer holds it:
+	 * the GPU plugin, or 117 HD's zone renderer.
 	 *
-	 * <p>Declines when the GPU plugin is not holding the slot - either it is disabled, or another
-	 * renderer such as 117HD owns it. Must be called on the client thread.
+	 * <p>Declines for anything else - no renderer at all, an unknown one, or 117 HD's legacy
+	 * renderer. That last one is not an oversight: it implements no {@code drawTemp} and does not run
+	 * the ZBUF path, so wrapping it would substitute nothing while still letting processNpc apply
+	 * 2005 animations to modern rigs. Must be called on the client thread.
 	 */
 	private void attach()
 	{
@@ -818,13 +833,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 		boolean wasAttached = wrapper != null;
 		wrapper = null;
 
-		Plugin gpu = findGpuPlugin();
-		if (gpu != null && current == gpu)
+		if (isSupportedHost(current, findGpuPlugin()))
 		{
-			RetroDrawCallbacks callbacks = new RetroDrawCallbacks((DrawCallbacks) gpu, this::substitute);
+			RetroDrawCallbacks callbacks = new RetroDrawCallbacks(current, this::substitute);
 			client.setDrawCallbacks(callbacks);
 			wrapper = callbacks;
-			log.debug("Attached retro draw callbacks over the GPU plugin");
+			declinedHost = null;
+			log.debug("Attached retro draw callbacks over {}", current.getClass().getName());
+		}
+		else if (current != null && !current.getClass().getName().equals(declinedHost))
+		{
+			// Polled every tick while detached, so only said once per renderer
+			declinedHost = current.getClass().getName();
+			log.debug("Draw callbacks held by unsupported renderer {}; skipping model swap", declinedHost);
 		}
 
 		// Only on a real transition - the per-tick guard calls this repeatedly while detached,
@@ -859,6 +880,29 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		// Nothing is being swapped any more, so Interact Highlight's own outlines are correct again
 		syncInteractHighlight();
+	}
+
+	/**
+	 * Whether {@code current} is a renderer {@link RetroDrawCallbacks} can substitute models through.
+	 *
+	 * <p>117 HD is a Plugin Hub plugin loaded in its own classloader, so it is recognised by class
+	 * name alone - there is no compile or runtime dependency on it, and with it absent nothing here
+	 * matches. The zone renderer package is allowlisted rather than the legacy one denylisted, so a
+	 * renderer 117 HD adds or renames later is declined instead of wrapped blind.
+	 */
+	static boolean isSupportedHost(DrawCallbacks current, Plugin gpu)
+	{
+		return current != null && (current == gpu || isHdZoneRenderer(current.getClass().getName()));
+	}
+
+	static boolean isHdZoneRenderer(String className)
+	{
+		return className.startsWith(HD_ZONE_RENDERER_PACKAGE);
+	}
+
+	private static boolean isHdPlugin(Plugin plugin)
+	{
+		return plugin != null && HD_PLUGIN_CLASS.equals(plugin.getClass().getName());
 	}
 
 	private Plugin findGpuPlugin()

@@ -41,13 +41,14 @@ are not supported (yet!)
 
 ## Requirements
 
-**The `GPU plugin` must be enabled.** Models are substituted while the scene is drawn, so
-nothing changes while GPU rendering is off, or while another renderer such as 117 HD is in use.
-The plugin detects this and simply stands down until the GPU plugin holds the renderer slot again.
+**The `GPU` or `117 HD` plugin must be enabled.** Models are substituted while the scene is
+drawn, so nothing changes while neither is rendering. 117 HD's optional **Legacy renderer** is not
+supported. The plugin detects all of this and simply stands down until a supported renderer holds
+the renderer slot again. 117 HD is not a dependency; the plugin runs the same without it installed.
 
 ## How it works
 
-- The plugin wraps the GPU plugin's draw callbacks and hands the renderer a prebuilt retro model
+- The plugin wraps the renderer's draw callbacks and hands it a prebuilt retro model
   whenever an eligible NPC is drawn. Retro pose and combat animations are applied through the
   standard `Actor` animation setters, and the client animates the model as usual.
 - **The converted-2005-asset categories take a second path.** Their geometry is not something the
@@ -82,7 +83,7 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
 - Safety settings (on by default) disable all swapping on PvP worlds and in the Wilderness.
 
 There is currently no sanctioned RuneLite API for overriding NPC models, which is why the plugin
-utilizes the GPU plugin's draw callbacks.
+utilizes the GPU or 117 HD renderer's draw callbacks.
 
 ## Development
 

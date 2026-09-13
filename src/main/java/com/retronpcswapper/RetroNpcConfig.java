@@ -58,10 +58,11 @@ public interface RetroNpcConfig extends Config
 	 */
 	@ConfigItem(
 		keyName = "gpuRequiredNotice",
-		name = "<html><body style='width:170px'>This plugin requires the <b>GPU</b> plugin to be"
-			+ " enabled. Models are swapped as the scene is drawn, so nothing changes while GPU"
-			+ " rendering is off, or while another renderer such as 117 HD is in use.</body></html>",
-		description = "Retro models are substituted while the GPU plugin renders the scene, so it must be enabled.",
+		name = "<html><body style='width:170px'>This plugin requires the <b>GPU</b> or <b>117 HD</b>"
+			+ " plugin to be enabled. Models are swapped as the scene is drawn, so nothing changes"
+			+ " while neither is rendering, or while 117 HD's <b>Legacy renderer</b> option is on."
+			+ "</body></html>",
+		description = "Retro models are substituted while the GPU or 117 HD plugin renders the scene, so one must be enabled.",
 		position = 0
 	)
 	default void gpuRequiredNotice()
