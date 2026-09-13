@@ -1414,6 +1414,204 @@ public class RetroNpcCategoryTest
 		assertNotNull(RetroNpcMapping.get(NpcID.ANMA_COW_CUTSCENE, "Undead cow"));
 	}
 
+	/**
+	 * The 2005 goblin family is six definitions under one name, so every variety has to come back
+	 * with its own part list and palette while still agreeing with {@code createMappingData} on all
+	 * five animation slots - the archetypes supersede the generated row for "goblin", and a slot
+	 * the factory forgot would read as -1 rather than fail loudly.
+	 */
+	@Test
+	public void testGoblinVarietiesResolveByIdAndShareTheAnimations()
+	{
+		RetroNpcData green = RetroNpcMapping.get(NpcID.GOBLIN_GREENARMOUR, "Goblin");
+		RetroNpcData red = RetroNpcMapping.get(NpcID.GOBLIN_REDARMOUR, "Goblin");
+		RetroNpcData armed = RetroNpcMapping.get(NpcID.GOBLIN_ARMED, "Goblin");
+		RetroNpcData strong = RetroNpcMapping.get(NpcID.GOBLIN_HELMET, "Goblin");
+		RetroNpcData plain = RetroNpcMapping.get(NpcID.GOBLIN, "Goblin");
+
+		for (RetroNpcData variety : new RetroNpcData[]{green, red, armed, strong, plain})
+		{
+			assertNotNull("every goblin variety must resolve", variety);
+			// One category for the whole family, or get() would stop preferring the id over the
+			// name row and every variety would collapse back into the default
+			assertEquals(RetroNpcCategory.GOBLINS, variety.getCategory());
+			assertGoblinAnimations(variety);
+		}
+
+		// Def 100 - the plain goblin is the four-part kit with no weapon
+		assertArrayEquals(new int[]{2951, 2953, 2955, 2956}, plain.getRetroModelIds());
+		// Def 101 - level 5, the same kit carrying 2957
+		assertArrayEquals(new int[]{2951, 2953, 2955, 2956, 2957}, armed.getRetroModelIds());
+		// Def 102 - "grown strong": the only variety that swaps the body mesh rather than a color
+		assertArrayEquals(new int[]{2952, 2953, 2955, 2956}, strong.getRetroModelIds());
+	}
+
+	/**
+	 * Green and red are the whole of the 2005 goblin's opcode 40 data, and the live cache is what
+	 * pins each one down: GOBLIN_GREENARMOUR and GOBLIN_REDARMOUR still carry defs 298 and 299's
+	 * pairs verbatim over the 2005 meshes themselves.
+	 */
+	@Test
+	public void testGoblinVariantsCarryTheirOwnPalettes()
+	{
+		RetroNpcData green = RetroNpcMapping.get(NpcID.GOBLIN_GREENARMOUR, "Goblin");
+		RetroNpcData red = RetroNpcMapping.get(NpcID.GOBLIN_REDARMOUR, "Goblin");
+		RetroNpcData plain = RetroNpcMapping.get(NpcID.GOBLIN, "Goblin");
+
+		assertTrue(green.hasRecolors());
+		assertTrue(red.hasRecolors());
+		assertNotEquals("the two colored goblins differ only by palette", green, red);
+
+		// Def 298 and def 299's pairs, each followed by the live-to-2005 correction that gives the
+		// weapon mesh 2957 its 2005 colors back
+		assertArrayEquals(new short[]{916, 70, 8084}, green.getOriginalColors());
+		assertArrayEquals(new short[]{22443, -22417, 528}, green.getReplacementColors());
+		assertArrayEquals(new short[]{916, 70, 8084}, red.getOriginalColors());
+		assertArrayEquals(new short[]{933, -22417, 528}, red.getReplacementColors());
+
+		// The plain goblin carries no weapon, so it gets no correction and no pairs at all - its
+		// armour is the mesh's own 916
+		assertFalse(plain.hasRecolors());
+	}
+
+	/**
+	 * 147 live NPCs are called exactly "Goblin" and only a handful are listed by id, so the name
+	 * row carrying the rest is not a fallback of last resort - it is the main path. This is why
+	 * GOBLINS stays out of ID_ONLY_CATEGORIES.
+	 */
+	@Test
+	public void testUnlistedGoblinsFallBackToTheNameRow()
+	{
+		for (int npcId : new int[]{
+			NpcID.CHAMPIONS_GOBLIN, NpcID.GOBLIN_UNARMED_MELEE_1,
+			NpcID.GOBLIN_ARMED_MELEE_2, NpcID.GOBLIN_UNARMED_MELEE_IN_1})
+		{
+			RetroNpcData data = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull("goblin " + npcId + " must still swap by name", data);
+			assertEquals(RetroNpcCategory.GOBLINS, data.getCategory());
+			assertArrayEquals(new int[]{2951, 2953, 2955, 2956}, data.getRetroModelIds());
+		}
+	}
+
+	/**
+	 * The shield-and-spear goblins are a pose family of their own: GOBLIN_RED_SOLDIER_5 and
+	 * GOBLIN_GREEN_SOLDIER_4 stand on 6200 and walk on 6201, where every other live goblin uses
+	 * 6181 or 6186. Their attack, 6199, was the one goblin combat animation not intercepted, so
+	 * both swung a modern animation on the retro mesh while everything else about them swapped.
+	 */
+	@Test
+	public void testShieldSpearGoblinsAttackIsIntercepted()
+	{
+		for (int npcId : new int[]{NpcID.GOBLIN_RED_SOLDIER_5, NpcID.GOBLIN_GREEN_SOLDIER_4})
+		{
+			RetroNpcData goblin = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull(goblin);
+			assertTrue("the shield-and-spear attack must be rewritten to the 2005 attack",
+				goblin.isAttackAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_SPEAR_ATTACK_SHIELD));
+			// Its ready and walk poses are replaced outright rather than intercepted, so they must
+			// not also register as combat
+			assertFalse(goblin.isAttackAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_SHIELD_SPEAR_READY));
+			assertFalse(goblin.isDefendAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_WALK_SHIELD_ARMED));
+		}
+	}
+
+	/**
+	 * Armed is read off the live kit, not off the name: 12 of the goblin family's part meshes only
+	 * ever appear in slot 6 or later and 66 only ever appear before it, with nothing in both. The
+	 * names disagree with that in both directions, and the kit is what the player sees.
+	 */
+	@Test
+	public void testArmedGoblinsAreChosenByKitNotByName()
+	{
+		// Named unarmed, holds a weapon
+		for (int npcId : new int[]{NpcID.GOBLIN_UNARMED_MELEE_6, NpcID.GOBLIN_UNARMED_MELEE_IN_7})
+		{
+			RetroNpcData goblin = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull(goblin);
+			assertArrayEquals("a goblin holding a weapon must carry 2957",
+				new int[]{2951, 2953, 2955, 2956, 2957}, goblin.getRetroModelIds());
+		}
+
+		// Named armed, holds nothing
+		for (int npcId : new int[]{NpcID.GOBLIN_ARMED_MELEE_2, NpcID.GOBLIN_ARMED_MELEE_4})
+		{
+			RetroNpcData goblin = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull(goblin);
+			assertArrayEquals("a goblin holding nothing must not be handed a weapon",
+				new int[]{2951, 2953, 2955, 2956}, goblin.getRetroModelIds());
+		}
+	}
+
+	/**
+	 * The two cutscene goblins are registered by id and are named after how each one dies, so their
+	 * scripted deaths have to be intercepted like any other.
+	 */
+	@Test
+	public void testCutsceneGoblinDeathsAreIntercepted()
+	{
+		RetroNpcData arrow = RetroNpcMapping.get(NpcID.SLICE_CUTSCENE_ARROW_GOBLIN, "Goblin");
+		RetroNpcData firebolt = RetroNpcMapping.get(NpcID.SLICE_CUTSCENE_FIREBOLT_GOBLIN, "Goblin");
+		assertNotNull(arrow);
+		assertNotNull(firebolt);
+		assertTrue(arrow.isDeathAnimation(AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_ARROW));
+		assertTrue(firebolt.isDeathAnimation(AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_FIREBOLT));
+		// Wormbrain is not called "Goblin" and reaches no mapping, so its death stays out
+		assertFalse(arrow.isDeathAnimation(AnimationID.SURFACE_GOBLIN_WORMBRAIN_DEATH));
+	}
+
+	/**
+	 * "Goblin" is a name the plugin matches on, so anything else wearing it has to be kept out by
+	 * id. The Recruitment Drive desk goblins are one merged mesh, size 2, and never walk.
+	 */
+	@Test
+	public void testNonGoblinsNamedGoblinDoNotSwap()
+	{
+		assertNull(RetroNpcMapping.get(NpcID.PATTERN_GOBLIN1_DESK, "Goblin"));
+		assertNull(RetroNpcMapping.get(NpcID.PATTERN_GOBLIN2_DESK, "Goblin"));
+	}
+
+	/**
+	 * The goblin guard and the hobgoblin share the goblin's category but not its archetype: the
+	 * guard is the armed kit, and the hobgoblin is its own mesh on its own poses, still coming from
+	 * the generated row. Proves the goblin archetypes did not swallow the sibling names.
+	 */
+	@Test
+	public void testGoblinGuardAndHobgoblinKeepTheirOwnKit()
+	{
+		RetroNpcData guard = RetroNpcMapping.get(NpcID.GOBLIN_GUARD, "Goblin guard");
+		assertNotNull(guard);
+		assertEquals(RetroNpcCategory.GOBLINS, guard.getCategory());
+		assertArrayEquals(new int[]{2951, 2953, 2955, 2956, 2957}, guard.getRetroModelIds());
+		assertGoblinAnimations(guard);
+
+		RetroNpcData hobgoblin = RetroNpcMapping.get(0, "Hobgoblin");
+		assertNotNull(hobgoblin);
+		assertEquals(RetroNpcCategory.GOBLINS, hobgoblin.getCategory());
+		assertArrayEquals(new int[]{2994}, hobgoblin.getRetroModelIds());
+		// Its own 2005 poses, not the goblin's
+		assertEquals(AnimationID.HOBGOBLIN_READY, hobgoblin.getIdleAnimationId());
+		assertEquals(AnimationID.HOBGOBLIN_WALK, hobgoblin.getWalkAnimationId());
+	}
+
+	/**
+	 * Every goblin, however it resolved, plays the same 2005 sequences - the archetypes and
+	 * createMappingData have to agree slot for slot.
+	 */
+	private static void assertGoblinAnimations(RetroNpcData goblin)
+	{
+		assertEquals(AnimationID.GOBLIN_READY, goblin.getIdleAnimationId());
+		assertEquals(AnimationID.GOBLIN_WALK, goblin.getWalkAnimationId());
+		assertEquals(AnimationID.GOBLIN_ATTACK_UNARMED, goblin.getAttackAnimationId());
+		assertEquals(AnimationID.GOBLIN_BLOCK, goblin.getDefendAnimationId());
+		assertEquals(AnimationID.GOBLIN_DEATH, goblin.getDeathAnimationId());
+
+		assertTrue(goblin.isAttackAnimation(6184));
+		assertTrue(goblin.isAttackAnimation(6154));
+		assertTrue(goblin.isDefendAnimation(6183));
+		assertTrue(goblin.isDeathAnimation(6182));
+		assertFalse(goblin.isAttackAnimation(6186));
+	}
+
 	@Test
 	public void testTheRestOfTheGiantFamily()
 	{
