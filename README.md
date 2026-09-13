@@ -72,9 +72,9 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
   numeric model and animation IDs, and every asset it displays already comes from your own game
   cache. Resolving an ID is not the same as it still being the 2005 asset, which is what separates
   those categories from the injected ones.
-- **The injected categories ship their assets.** Dragons, demons, imps, guards, the cyclops and the
+- **The injected categories ship their assets.** Dragons, demons, imps, guards, cows, the cyclops and the
   fire, ice and moss giant heads have no usable 2005 asset left in the live cache, so
-  `retro-assets.dat` (~61 KB) is bundled in the jar and carries their meshes, rigs and animation
+  `retro-assets.dat` (~76 KB) is bundled in the jar and carries their meshes, rigs and animation
   clips, extracted from the February 2005 cache. This is the one thing the plugin distributes rather
   than reads from your own installation, which is why it is all gated behind a single toggle you can
   switch off. Parts are stored individually and joined at spawn, so the body the whole giant family

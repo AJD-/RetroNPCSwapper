@@ -34,6 +34,9 @@ public class RetroClipReachTest
 	 */
 	private static final int MINIMUM_PERCENT = 85;
 
+	/** The old model format's "no bone" group, which no 2005 rig names. */
+	private static final int NO_BONE = 255;
+
 	/**
 	 * Clips the default floor does not fit, and why. Each of these is a structural property of the
 	 * subject rather than a weak result, so the number is a regression tripwire - it says "this got
@@ -249,6 +252,10 @@ public class RetroClipReachTest
 	 * nowhere, while in game that slice of the mesh holds its rest pose while the body around it
 	 * moves. The Ardougne guard is what made it worth asserting: its hands (274) bind up to group
 	 * 36, past the [0..34] the town guard's kit had established.
+	 *
+	 * <p>The one exemption is the old format's no-bone group 255, which a part may use to stay static
+	 * on purpose - the metal dragon's ground shadow does. {@link #testNoFaceJoinsAStaticVertexToAMovingOne}
+	 * is what stops that exemption hiding a tear.
 	 */
 	@Test
 	public void testNoMeshGroupIsUnaddressedByItsRig() throws Exception
@@ -280,9 +287,84 @@ public class RetroClipReachTest
 
 			Set<Integer> orphans = new HashSet<>(groupsUsedBy(mesh));
 			orphans.removeAll(addressed);
+			orphans.remove(NO_BONE);
 			assertTrue("mesh " + pair[1] + " binds groups " + orphans + " that rig " + rig.getId()
 				+ " never addresses, so they would never move", orphans.isEmpty());
 		}
+	}
+
+	/**
+	 * No face may join a vertex its rig never moves to one it does.
+	 *
+	 * <p>A static part is fine - it holds its rest pose as a whole. A static vertex inside animated
+	 * geometry is not: the face stretches back to rest every time its other corners swing. That is how
+	 * the metal dragon's back ridge, hips and jaw tore on the head attack and fire breath while walk and
+	 * idle looked nearly right, and neither reach nor the orphan-group check could see it, because the
+	 * vertices sat on the no-bone group that check exempts. Every offender is collected before
+	 * asserting, so one mesh cannot hide another.
+	 */
+	@Test
+	public void testNoFaceJoinsAStaticVertexToAMovingOne() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+		List<String> tears = new ArrayList<>();
+
+		for (int[] pair : CLIP_MESHES)
+		{
+			RetroClip clip = bundle.getClip(pair[0]);
+			assertNotNull("clip " + pair[0] + " is missing from the bundle", clip);
+			RetroRig rig = bundle.getRig(clip.getRigId());
+			assertNotNull("rig " + clip.getRigId() + " is missing from the bundle", rig);
+
+			List<RetroMesh> parts = new ArrayList<>();
+			for (int part = 1; part < pair.length; part++)
+			{
+				parts.add(bundle.getMesh(pair[part]));
+			}
+			RetroMesh mesh = RetroMeshMerger.merge(pair[1], parts);
+
+			Set<Integer> addressed = new HashSet<>();
+			for (int transform = 0; transform < rig.getTransformCount(); transform++)
+			{
+				for (int group : rig.getGroups(transform))
+				{
+					addressed.add(group);
+				}
+			}
+
+			boolean[] moves = new boolean[mesh.getVerticesCount()];
+			int[][] vertexGroups = mesh.getVertexGroups();
+			for (int group = 0; vertexGroups != null && group < vertexGroups.length; group++)
+			{
+				if (vertexGroups[group] != null && addressed.contains(group))
+				{
+					for (int vertex : vertexGroups[group])
+					{
+						moves[vertex] = true;
+					}
+				}
+			}
+
+			int torn = 0;
+			int[] f1 = mesh.getFaceIndices1();
+			int[] f2 = mesh.getFaceIndices2();
+			int[] f3 = mesh.getFaceIndices3();
+			for (int face = 0; face < f1.length; face++)
+			{
+				int moving = (moves[f1[face]] ? 1 : 0) + (moves[f2[face]] ? 1 : 0) + (moves[f3[face]] ? 1 : 0);
+				if (moving != 0 && moving != 3)
+				{
+					torn++;
+				}
+			}
+			if (torn > 0)
+			{
+				tears.add("mesh " + pair[1] + " under clip " + pair[0] + ": " + torn + " faces");
+			}
+		}
+
+		assertTrue("faces join a vertex rig never moves to one it does, so they tear when animated: "
+			+ tears, tears.isEmpty());
 	}
 
 	private static Set<Integer> groupsUsedBy(RetroMesh mesh)

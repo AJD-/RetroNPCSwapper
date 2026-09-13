@@ -199,6 +199,13 @@ public class RetroMeshMergerTest
 		assertEquals(348 + 122 + 20, merged.getVerticesCount());
 		assertEquals(674 + 162 + 16, merged.getFaceCount());
 
+		// The 2005 art also left 26 body and 4 jaw vertices on 255, inside faces that animate, which
+		// tore on the head attack and fire breath. The generator binds those to their neighbours'
+		// groups, so the shadow's 20 must be the only static vertices left.
+		assertEquals("body 4986 still has vertices on the no-bone group", 0, verticesOn(body, 255));
+		assertEquals("head 5022 still has vertices on the no-bone group", 0, verticesOn(second, 255));
+		assertEquals("only the shadow should stay static", 20, verticesOn(merged, 255));
+
 		// The dragon rig never names group 255, so those vertices hold their rest position no
 		// matter which clip plays. That is the behaviour to pin: if a future rig did address 255
 		// it would drag every "unbound" vertex in the bundle along with it.
@@ -308,6 +315,12 @@ public class RetroMeshMergerTest
 			assertNull("mesh " + meshId + " should carry no per-face triangle index",
 				mesh.getTextureCoords());
 		}
+	}
+
+	private static int verticesOn(RetroMesh mesh, int group)
+	{
+		int[][] groups = mesh.getVertexGroups();
+		return groups == null || group >= groups.length || groups[group] == null ? 0 : groups[group].length;
 	}
 
 	/**

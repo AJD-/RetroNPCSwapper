@@ -113,6 +113,10 @@ public class RetroAssetGenerator
 		// part - on the same rig 100049 and the same sequences, reaching 100% on the melee set just
 		// as the chromatic pair does. Bronze, iron and steel are one mesh told apart by three
 		// opcode 40 pairs each, so they need categoryUsesRecolors the same way the chromatics do.
+		// The 2005 art left 26 body vertices (back ridge, hips) and 4 jaw vertices on the no-bone
+		// group 255, so the head attack and fire breath tore them away from the animated faces
+		// around them - bindStrayVertices gives them their neighbours' groups. The 20-vertex 4987
+		// is the ground shadow, all on 255 by design, and stays static.
 		new Spec("Metal dragons", Source.RETRO, Source.RETRO,
 			new int[]{4986, 5022, 4987}, new int[]{79, 80, 81, 82, 83, 84, 89, 90, 91, 92}),
 		// The King Black Dragon is the chromatic dragon body 2853 wearing a three-headed head 2855
@@ -143,6 +147,9 @@ public class RetroAssetGenerator
 		new Spec("Moss giants", Source.RETRO, Source.LIVE, new int[]{2870, 2865, 4990}, new int[]{127, 128, 129, 130, 131}),
 		new Spec("Cyclopes", Source.RETRO, Source.LIVE, new int[]{2870, 2867}, new int[]{127, 128, 129, 130, 131}),
 		new Spec("Cows", Source.RETRO, Source.RETRO, new int[]{3341, 3342}, new int[]{58, 59, 60, 61, 62}),
+		// The undead cow carries the metal dragons' flaw too. Of its 17 vertices on 255, the 7 inside
+		// animated faces are bound to their neighbours; the other 10 are a detached 8-face cluster on
+		// top of the head, joined to nothing that moves, so they stay static and cannot tear.
 		new Spec("Undead cows", Source.RETRO, Source.RETRO, new int[]{5237}, new int[]{58, 59, 60, 61, 62}),
 		// Guards are the first subject needing 2005 clips for a reason other than re-authored frames:
 		// the human meshes are byte-identical in both caches but their vertex groups were RENUMBERED.
@@ -391,6 +398,8 @@ public class RetroAssetGenerator
 			int[] members = partGroups[group];
 			vertexGroups[group] = members == null ? new int[0] : members.clone();
 		}
+		vertexGroups = bindStrayVertices(meshId, vertexGroups,
+			part.faceIndices1, part.faceIndices2, part.faceIndices3);
 
 		checkTextureMapping(meshId, part);
 
@@ -452,6 +461,140 @@ public class RetroAssetGenerator
 					+ "; only simple projection (0) can be injected");
 			}
 		}
+	}
+
+	/**
+	 * The old model format's "no bone" group. No 2005 rig names it, so a vertex bound here holds its
+	 * rest position whatever clip plays.
+	 */
+	private static final int NO_BONE = 255;
+
+	/**
+	 * Binds each vertex a 2005 mesh left on {@link #NO_BONE} to the group most of its face-neighbours
+	 * use, wherever it shares a face with a vertex that animates.
+	 *
+	 * <p>A vertex on 255 never moves, so a face joining it to animated vertices tears as soon as they
+	 * swing. The metal dragon's back ridge, hips and jaw did exactly that on the head attack and fire
+	 * breath, and the undead cow carries the same flaw. The 2005 client drew them the same way - no
+	 * rig of that era names 255 - so this corrects the art rather than restoring what shipped.
+	 *
+	 * <p>A part made only of 255 vertices, such as the metal dragon's ground shadow 4987, shares no
+	 * face with an animated vertex and is returned untouched. Stray vertices chained to each other
+	 * resolve over repeated passes; each pass decides every vertex before applying any, and a tie goes
+	 * to the lower group, so the result does not depend on vertex order.
+	 */
+	static int[][] bindStrayVertices(int meshId, int[][] groups, int[] faces1, int[] faces2, int[] faces3)
+	{
+		if (groups == null || groups.length <= NO_BONE
+			|| groups[NO_BONE] == null || groups[NO_BONE].length == 0)
+		{
+			return groups;
+		}
+
+		int vertexCount = 0;
+		for (int[] members : groups)
+		{
+			for (int vertex : members == null ? new int[0] : members)
+			{
+				vertexCount = Math.max(vertexCount, vertex + 1);
+			}
+		}
+		for (int face = 0; face < faces1.length; face++)
+		{
+			vertexCount = Math.max(vertexCount,
+				Math.max(faces1[face], Math.max(faces2[face], faces3[face])) + 1);
+		}
+
+		int[] owner = new int[vertexCount];
+		Arrays.fill(owner, -1);
+		for (int group = 0; group < groups.length; group++)
+		{
+			for (int vertex : groups[group] == null ? new int[0] : groups[group])
+			{
+				owner[vertex] = group;
+			}
+		}
+
+		List<Integer> reboundVertices = new ArrayList<>();
+		boolean changed = true;
+		while (changed)
+		{
+			int[][] tally = new int[vertexCount][];
+			for (int face = 0; face < faces1.length; face++)
+			{
+				int[] corners = {faces1[face], faces2[face], faces3[face]};
+				for (int corner : corners)
+				{
+					if (owner[corner] != NO_BONE)
+					{
+						continue;
+					}
+					for (int neighbour : corners)
+					{
+						int group = owner[neighbour];
+						if (group >= 0 && group != NO_BONE)
+						{
+							if (tally[corner] == null)
+							{
+								tally[corner] = new int[groups.length];
+							}
+							tally[corner][group]++;
+						}
+					}
+				}
+			}
+
+			changed = false;
+			for (int vertex = 0; vertex < vertexCount; vertex++)
+			{
+				if (tally[vertex] == null)
+				{
+					continue;
+				}
+				int best = 0;
+				for (int group = 1; group < tally[vertex].length; group++)
+				{
+					if (tally[vertex][group] > tally[vertex][best])
+					{
+						best = group;
+					}
+				}
+				owner[vertex] = best;
+				reboundVertices.add(vertex);
+				changed = true;
+			}
+		}
+
+		if (reboundVertices.isEmpty())
+		{
+			return groups;
+		}
+
+		// Keep every untouched group's member order, so meshes without strays encode identically
+		int[][] rebound = new int[groups.length][];
+		for (int group = 0; group < groups.length; group++)
+		{
+			List<Integer> members = new ArrayList<>();
+			for (int vertex : groups[group] == null ? new int[0] : groups[group])
+			{
+				if (owner[vertex] == group)
+				{
+					members.add(vertex);
+				}
+			}
+			for (int vertex : reboundVertices)
+			{
+				if (owner[vertex] == group)
+				{
+					members.add(vertex);
+				}
+			}
+			rebound[group] = members.stream().mapToInt(Integer::intValue).toArray();
+		}
+
+		System.out.println("  mesh " + meshId + ": bound " + reboundVertices.size()
+			+ " vertices off the no-bone group 255, " + rebound[NO_BONE].length + " stay static");
+		return rebound;
 	}
 
 	/**
@@ -540,7 +683,8 @@ public class RetroAssetGenerator
 				}
 			}
 
-			int[][] partGroups = part.getVertexGroups();
+			int[][] partGroups = bindStrayVertices(part.getId(), part.getVertexGroups(),
+				part.faceIndices1, part.faceIndices2, part.faceIndices3);
 			if (partGroups != null)
 			{
 				for (int group = 0; group < partGroups.length; group++)
