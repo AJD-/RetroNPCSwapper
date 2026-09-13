@@ -45,5 +45,6 @@ public enum RetroNpcCategory
 	ICE_GIANTS,
 	MOSS_GIANTS,
 	CYCLOPS,
-	CHICKENS
+	CHICKENS,
+	COWS
 }

@@ -77,7 +77,10 @@ public class RetroNpcMapping
 	private static final Set<Integer> EXCLUDED_IDS = Set.of(
 		NpcID.FAI_FALADOR_GUARD2, NpcID.FAI_FALADOR_GUARD2_F,
 		NpcID.FAI_FALADOR_GUARD4, NpcID.FAI_FALADOR_GUARD5, NpcID.FAI_FALADOR_GUARD6,
-		NpcID.FAI_VARROCK_GUARD
+		NpcID.FAI_VARROCK_GUARD,
+		// Named "Cow" so the name row reaches it, but it is model 14102 on anims 180/229 - a mount,
+		// not a cow, and it would be handed the retro cow mesh
+		NpcID.OSB8_COW
 	);
 
 	/**
@@ -249,14 +252,42 @@ public class RetroNpcMapping
 		AnimationID.GIANT_DEATH
 	);
 
+	// Ernest's rooster is on the rooster sequences rather than the chicken ones, so those ids
+	// belong here too - left out they would drive the 2005 mesh off a modern framemap. Its stand
+	// and walk (ROOSTERREADY, ROOSTERWALK) are deliberately absent: applyRetroSwap replaces the
+	// pose slots outright rather than intercepting them. ROOSTERMAGIC is absent too - no rooster
+	// casts anything, and nothing that does is mapped to this category.
 	public static final Set<Integer> CHICKEN_MODERN_ATTACKS = Set.of(
-		AnimationID.LORE_CHICKEN_ATTACK, AnimationID.CHICKEN_ATTACK
+		AnimationID.LORE_CHICKEN_ATTACK, AnimationID.CHICKEN_ATTACK, AnimationID.ROOSTERATTACK
 	);
 	public static final Set<Integer> CHICKEN_MODERN_DEFENDS = Set.of(
-		AnimationID.LORE_CHICKEN_DEFEND, AnimationID.CHICKEN_BLOCK
+		AnimationID.LORE_CHICKEN_DEFEND, AnimationID.CHICKEN_BLOCK, AnimationID.ROOSTERPARRY
 	);
 	public static final Set<Integer> CHICKEN_MODERN_DEATHS = Set.of(
-		AnimationID.LORE_CHICKEN_DEATH, AnimationID.CHICKEN_DEATH
+		AnimationID.LORE_CHICKEN_DEATH, AnimationID.CHICKEN_DEATH, AnimationID.ROOSTERDEATH
+	);
+
+	public static final Set<Integer> COW_MODERN_ATTACKS = Set.of(
+		AnimationID.COW_UPDATE_ATTACK, AnimationID.COW_ATTACK
+	);
+	public static final Set<Integer> COW_MODERN_DEFENDS = Set.of(
+		AnimationID.COW_UPDATE_DEFEND, AnimationID.COW_BLOCK
+	);
+	public static final Set<Integer> COW_MODERN_DEATHS = Set.of(
+		AnimationID.COW_UPDATE_DEATH, AnimationID.COW_DEATH
+	);
+
+	/**
+	 * Modern cow animations with no 2005 counterpart, redirected to the retro idle.
+	 *
+	 * <p>Every one of these is keyed to framemap 1338, the modern cow rig, and reaches only 54-60%
+	 * of the retro mesh's vertex groups - they visibly bend it. The legacy cow animations 2162,
+	 * 2303 and 2312 are deliberately absent: they sit on framemap 282 like the 2005 sequences do
+	 * and reach 85-100%, so they animate the retro mesh correctly and are left to play.
+	 */
+	public static final Set<Integer> COW_MODERN_MISC = Set.of(
+		AnimationID.COW_GRAZE, AnimationID.COW_UPDATE_READY,
+		AnimationID.COW_UPDATE_GRAZE, AnimationID.COW_UPDATE_DAIRY
 	);
 
 	// Pre-instantiated immutable archetypes.
@@ -627,6 +658,115 @@ public class RetroNpcMapping
 	public static final RetroNpcData CYCLOPS_DEFAULT =
 		giant(RetroNpcCategory.CYCLOPS, new int[]{GIANT_BODY, 2867}, null);
 
+	// Every 2005 bird in this family is mesh 2849 - the plain chicken, the brown one, the rooster
+	// and the undead chicken all differ by opcode 40 alone, which allows us to use the live cache
+	private static final int CHICKEN_BODY = 2849;
+
+	// Hand-matched. The 2005 definition asked for no resize at all (128) and the modern Chicken
+	// composition's own scale is 80, so neither source gets us to a bird the size of the live one.
+	private static final int CHICKEN_SCALE = 204;
+
+	/**
+	 * A 2005 chicken variant: the shared mesh, the 2005 chicken sequences, and the opcode 40 pairs
+	 * that are the only thing telling one bird from another.
+	 *
+	 * <p>Scale is a parameter rather than a constant because this family spans two sizes.
+	 * {@link #CHICKEN_SCALE} is the only one that was measured against the live bird; every other is
+	 * that number times the ratio the definitions themselves ask for, and so is a starting point for
+	 * the same eyeball matching rather than a measurement of its own.
+	 */
+	private static RetroNpcData chicken(short[] find, short[] replace, int scale)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.CHICKENS)
+			.retroModelIds(new int[]{CHICKEN_BODY})
+			.idleAnimationId(AnimationID.CHICKEN_READY)
+			.walkAnimationId(AnimationID.CHICKEN_WALK)
+			.attackAnimationId(AnimationID.CHICKEN_ATTACK)
+			.defendAnimationId(AnimationID.CHICKEN_BLOCK)
+			.deathAnimationId(AnimationID.CHICKEN_DEATH)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.recolors(find, replace)
+			.modernAttackAnims(CHICKEN_MODERN_ATTACKS)
+			.modernDefendAnims(CHICKEN_MODERN_DEFENDS)
+			.modernDeathAnims(CHICKEN_MODERN_DEATHS)
+			.build();
+	}
+
+	// 2005 def 1018 "Rooster" - mesh 2849 in a dark red-brown, which is the whole of what separates
+	// it from the plain bird. Written here rather than read from npc-mappings.json because the
+	// generator only categorizes names containing "chicken", so it emits no rooster row at all -
+	// and a row would not carry the resize anyway, since the CHICKENS branch of createMappingData
+	// overwrites it with the hen's. All four find indices are still in the live copy of 2849, so
+	// the pairs land on the cache-backed path.
+	private static final short[] ROOSTER_FIND = {127, 11200, 8394, 61};
+	private static final short[] ROOSTER_REPLACE = {3998, 6720, 1942, 1942};
+
+	// Def 1018 asked for 172 against the chicken's 128, so 204 * 172/128 is the rooster.
+	public static final RetroNpcData ROOSTER = chicken(ROOSTER_FIND, ROOSTER_REPLACE, 274);
+
+	// Cows are the guard case: both 2005 meshes are still at their own ids and 98% intact, but their
+	// vertex groups were renumbered onto a different rig, so the live copies animate off the wrong
+	// joints. Mesh, rig and clips all come from the bundle. The 2005 cow is one body mesh plus an
+	// 11-face companion, shared by all three variants - the 2005 client told them apart with
+	// opcode 40 alone, exactly as it did the dragons.
+	private static final int COW_BODY = 3341;
+	private static final int COW_UDDER = 3342;
+
+	/**
+	 * A 2005 cow variant: the shared mesh, the legacy cow sequences, and the opcode 40 pairs that
+	 * are the only thing telling one cow from another.
+	 *
+	 * <p>The pairs are the 2005 definition's verbatim, with nothing corrected for palette drift.
+	 * The live cache did repaint both meshes - 3341's hide went 10363 -> 10365 across 135 faces,
+	 * its beige patch 4446 -> 7566, and 3342 went 113 -> 231 - but the bundle carries the 2005
+	 * copies, so the indices the 2005 client recolored are the indices that are there.
+	 */
+	private static RetroNpcData cow(short[] find, short[] replace, int scale)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.COWS)
+			.retroModelIds(new int[]{COW_BODY, COW_UDDER})
+			.idleAnimationId(AnimationID.COW_READY)
+			.walkAnimationId(AnimationID.COW_WALK)
+			.attackAnimationId(AnimationID.COW_ATTACK)
+			.defendAnimationId(AnimationID.COW_BLOCK)
+			.deathAnimationId(AnimationID.COW_DEATH)
+			.miscAnimationId(AnimationID.COW_READY)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.recolors(find, replace)
+			.modernAttackAnims(COW_MODERN_ATTACKS)
+			.modernDefendAnims(COW_MODERN_DEFENDS)
+			.modernDeathAnims(COW_MODERN_DEATHS)
+			.modernMiscAnims(COW_MODERN_MISC)
+			.build();
+	}
+
+	// The three 2005 cow definitions, by their def ids in the February 2005 cache. Modern OSRS
+	// baked its cow variants into separate meshes instead, so which live cow wears which 2005
+	// palette is a choice rather than a lookup; they are paired in id order.
+	//
+	// Def 81 - white hide with dark brown patches, the Lumbridge field cow.
+	public static final RetroNpcData COW_DEFAULT = cow(
+		new short[]{26, 10363, 30}, new short[]{10365, 5784, 10365}, 128);
+
+	// Def 397 - brown all over, and 2005 asked for it slightly smaller than the others.
+	public static final RetroNpcData COW_BROWN = cow(
+		new short[]{10363, 26, 30}, new short[]{5784, 5784, 5784}, 115);
+
+	// Def 955 - brown hide keeping its dark markings, with the beige patch turned grey-brown.
+	public static final RetroNpcData COW_GREY = cow(
+		new short[]{10363, 26, 4446}, new short[]{5784, 5784, 5289}, 128);
+
+	// February 2005 has no calf: the modern one is a separate mesh Jagex added later. The honest
+	// stand-in is the 2005 cow scaled down by what the modern calf's own composition asks for -
+	// 68 against the cow's 128. The calf's own walk sequence (5856) needs no handling of its own;
+	// the walk slot replaces the pose animation outright rather than intercepting it.
+	public static final RetroNpcData COW_CALF = cow(
+		new short[]{26, 10363, 30}, new short[]{10365, 5784, 10365}, 68);
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -783,7 +923,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.ICE_GIANTS
 			|| category == RetroNpcCategory.MOSS_GIANTS
 			|| category == RetroNpcCategory.CYCLOPS
-			|| category == RetroNpcCategory.GUARDS;
+			|| category == RetroNpcCategory.GUARDS
+			|| category == RetroNpcCategory.COWS;
 	}
 
 	/**
@@ -807,9 +948,10 @@ public class RetroNpcMapping
 	/**
 	 * Whether a category's retro mesh needs the 2005 recolor pairs to look right.
 	 *
-	 * <p>These meshes carry no usable color of their own - the dragons are a greyscale ramp, and
-	 * black and greater demons are the same mesh - so recoloring is structural rather than
-	 * cosmetic. Every other category is left alone on purpose.
+	 * <p>What these have in common is that one mesh has to serve several NPCs, so the palette is
+	 * the only thing telling them apart - the dragons are a greyscale ramp, black and greater
+	 * demons are the same mesh, and the chicken and the undead chicken are both 2849. Recoloring is
+	 * structural for them rather than cosmetic. Every other category is left alone on purpose.
 	 */
 	private static boolean categoryUsesRecolors(RetroNpcCategory category)
 	{
@@ -826,7 +968,9 @@ public class RetroNpcMapping
 			// A guard's parts are generic 2005 human kit shared with everything else that wears it,
 			// so the opcode 40 pairs are what make the kit a guard's colors rather than a
 			// townsperson's. The pairs come from the definition the parts come from.
-			|| category == RetroNpcCategory.GUARDS;
+			|| category == RetroNpcCategory.GUARDS
+			// The undead chicken is just a recolored regular chicken
+			|| category == RetroNpcCategory.CHICKENS;
 	}
 
 	private static void registerMapping(RetroNpcData data, int... npcIds)
@@ -1022,6 +1166,35 @@ public class RetroNpcMapping
 			NpcID.WARGUILD_CYCLOPS4_HIGH, NpcID.WARGUILD_CYCLOPS5_HIGH, NpcID.WARGUILD_CYCLOPS6_HIGH,
 			NpcID.KOUREND_CYCLOPS1, NpcID.KOUREND_CYCLOPS2
 		);
+
+		// Cows resolve by id rather than by name alone, because the three 2005 variants are the
+		// same mesh in different colors while the modern ones are separate meshes - one name row
+		// cannot carry three palettes. The name row stays as the fallback for any cow not listed
+		// here. "Cow (hard)" and the calves do not match the row by name at all.
+		NAME_MAPPINGS.put("cow", COW_DEFAULT);
+		registerMapping(COW_DEFAULT,
+			NpcID.COW, NpcID.COW_BEEF, NpcID.FAIRY_COW,
+			NpcID.NZONE_COW_NORMAL, NpcID.NZONE_COW_HARD
+		);
+		registerMapping(COW_BROWN, NpcID.COW2);
+		registerMapping(COW_GREY, NpcID.COW3);
+		registerMapping(COW_CALF, NpcID.COW2_CALF, NpcID.COW3_CALF, NpcID.CALF);
+
+		// Roosters. The 2005 cache names this bird, but nothing reached it before: the generator
+		// only categorizes names containing "chicken", so there is no rooster row for the name
+		// lookup to find.
+		NAME_MAPPINGS.put("rooster", ROOSTER);
+		registerMapping(ROOSTER,
+			NpcID.ROOSTER,       // Fred's farm
+			NpcID.FARM_ROOSTER,  // Ernest the Chicken - the live mesh the evil chicken shares
+			NpcID.MISC_ROOSTER   // Miscellania
+		);
+
+		// No evil chicken is registered, deliberately. Live mesh 7728 is already the model the evil
+		// chicken wore in August 2005, so there is nothing retro to restore - and February 2005, the
+		// cache this plugin is built from, has no evil chicken at all to copy. Ernest's rooster above
+		// shares that same mesh but is registered, because the rooster does have a February 2005
+		// definition and it is a different bird: mesh 2849 in the palette above.
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
@@ -1030,6 +1203,7 @@ public class RetroNpcMapping
 		int attackAnim = -1;
 		int defendAnim = -1;
 		int deathAnim = -1;
+		int miscAnim = -1;
 		int[] models = entry.getModelIds();
 		int stanceAnim = entry.getIdleAnim();
 		int walkAnim = entry.getWalkAnim();
@@ -1048,6 +1222,7 @@ public class RetroNpcMapping
 		Set<Integer> modernAttacks = Collections.emptySet();
 		Set<Integer> modernDefends = Collections.emptySet();
 		Set<Integer> modernDeaths = Collections.emptySet();
+		Set<Integer> modernMisc = Collections.emptySet();
 
 		if (category == RetroNpcCategory.LESSER_DEMONS
 			|| category == RetroNpcCategory.GREATER_DEMONS
@@ -1113,20 +1288,38 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.CHICKENS)
 		{
-			// These are really tiny compared to modern chickens. The 2005 definition asked for no
-			// resize at all (128), and the modern composition's own scale is 80, so neither
-			// source gets us there - this is a hand-matched value.
-			scaleXZ = 204;
-			scaleY = 204;
-			models = new int[]{2849};
-			stanceAnim = 54;
-			walkAnim = 53;
-			attackAnim = 55;
-			defendAnim = 56;
-			deathAnim = 57;
+			// The plain chicken and the undead chicken reach here; the rooster is an id-registered
+			// archetype instead, because it needs a resize of its own and this branch would overwrite
+			// it with the hen's. The two paths have to agree on every other slot, so both read the
+			// same constants - see chicken(...).
+			scaleXZ = CHICKEN_SCALE;
+			scaleY = CHICKEN_SCALE;
+			models = new int[]{CHICKEN_BODY};
+			stanceAnim = AnimationID.CHICKEN_READY;
+			walkAnim = AnimationID.CHICKEN_WALK;
+			attackAnim = AnimationID.CHICKEN_ATTACK;
+			defendAnim = AnimationID.CHICKEN_BLOCK;
+			deathAnim = AnimationID.CHICKEN_DEATH;
 			modernAttacks = CHICKEN_MODERN_ATTACKS;
 			modernDefends = CHICKEN_MODERN_DEFENDS;
 			modernDeaths = CHICKEN_MODERN_DEATHS;
+		}
+		else if (category == RetroNpcCategory.COWS)
+		{
+			// Only the undead cow reaches here. Every other cow is an id-registered archetype that
+			// declares all six slots itself, because the three 2005 variants need three different
+			// palettes and the generator keeps only the lowest-id row per name. The two paths have
+			// to agree slot for slot, so this branch mirrors cow(...) - but it must not hardcode
+			// the models the way the chicken branch does: the undead cow is its own mesh, 5237,
+			// which the live cache still holds with its palette untouched.
+			attackAnim = AnimationID.COW_ATTACK;
+			defendAnim = AnimationID.COW_BLOCK;
+			deathAnim = AnimationID.COW_DEATH;
+			miscAnim = AnimationID.COW_READY;
+			modernAttacks = COW_MODERN_ATTACKS;
+			modernDefends = COW_MODERN_DEFENDS;
+			modernDeaths = COW_MODERN_DEATHS;
+			modernMisc = COW_MODERN_MISC;
 		}
 		else if (category == RetroNpcCategory.HILL_GIANTS
 			|| category == RetroNpcCategory.FIRE_GIANTS
@@ -1210,12 +1403,14 @@ public class RetroNpcMapping
 			.attackAnimationId(attackAnim)
 			.defendAnimationId(defendAnim)
 			.deathAnimationId(deathAnim)
+			.miscAnimationId(miscAnim)
 			.scaleXZ(scaleXZ)
 			.scaleY(scaleY)
 			.recolors(recolorFind, recolorReplace)
 			.modernAttackAnims(modernAttacks)
 			.modernDefendAnims(modernDefends)
 			.modernDeathAnims(modernDeaths)
+			.modernMiscAnims(modernMisc)
 			.build();
 	}
 

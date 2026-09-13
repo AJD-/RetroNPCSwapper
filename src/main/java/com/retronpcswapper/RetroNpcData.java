@@ -95,6 +95,20 @@ public class RetroNpcData
 	private final int deathAnimationId;
 
 	/**
+	 * Stand-in for modern animations that have no 2005 counterpart at all.
+	 * Set to -1 if there are none, which is every category but cows.
+	 *
+	 * <p>The other four slots each replace a 2005 animation with its modern successor. This one
+	 * exists because some NPCs gained behaviour they never had: a modern cow grazes, chews and
+	 * gives milk, and February 2005 holds 1670 sequences, so 1735 - the first graze - is past the
+	 * end of the cache. There is nothing to swap those for, and leaving them alone is not an
+	 * option either, because they play on the modern framemap and the retro mesh is not rigged to
+	 * it. Redirecting them to the retro idle is both the fix and what 2005 actually looked like.
+	 */
+	@Getter
+	private final int miscAnimationId;
+
+	/**
 	 * Horizontal resize of the retro model, in 1/128ths.
 	 *
 	 * <p>Seeded from the 2005 definition, then corrected per category where the 2005 and modern
@@ -143,6 +157,12 @@ public class RetroNpcData
 	@Getter
 	private final Set<Integer> modernDeathAnims;
 
+	/**
+	 * Modern animation IDs with no 2005 counterpart, redirected to {@link #miscAnimationId}.
+	 */
+	@Getter
+	private final Set<Integer> modernMiscAnims;
+
 	public RetroNpcData(
 		RetroNpcCategory category,
 		int[] retroModelIds,
@@ -151,18 +171,20 @@ public class RetroNpcData
 		int attackAnimationId,
 		int defendAnimationId,
 		int deathAnimationId,
+		int miscAnimationId,
 		int scaleXZ,
 		int scaleY,
 		short[] originalColors,
 		short[] replacementColors,
 		Set<Integer> modernAttackAnims,
 		Set<Integer> modernDefendAnims,
-		Set<Integer> modernDeathAnims
+		Set<Integer> modernDeathAnims,
+		Set<Integer> modernMiscAnims
 	)
 	{
 		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
-			defendAnimationId, deathAnimationId, scaleXZ, scaleY, originalColors, replacementColors,
-			modernAttackAnims, modernDefendAnims, modernDeathAnims);
+			defendAnimationId, deathAnimationId, miscAnimationId, scaleXZ, scaleY, originalColors,
+			replacementColors, modernAttackAnims, modernDefendAnims, modernDeathAnims, modernMiscAnims);
 	}
 
 	public RetroNpcData(
@@ -174,13 +196,15 @@ public class RetroNpcData
 		int attackAnimationId,
 		int defendAnimationId,
 		int deathAnimationId,
+		int miscAnimationId,
 		int scaleXZ,
 		int scaleY,
 		short[] originalColors,
 		short[] replacementColors,
 		Set<Integer> modernAttackAnims,
 		Set<Integer> modernDefendAnims,
-		Set<Integer> modernDeathAnims
+		Set<Integer> modernDeathAnims,
+		Set<Integer> modernMiscAnims
 	)
 	{
 		this.category = category;
@@ -191,6 +215,7 @@ public class RetroNpcData
 		this.attackAnimationId = attackAnimationId;
 		this.defendAnimationId = defendAnimationId;
 		this.deathAnimationId = deathAnimationId;
+		this.miscAnimationId = miscAnimationId;
 		this.scaleXZ = scaleXZ;
 		this.scaleY = scaleY;
 		// Only keep the pairs when both sides are present and agree - a half-populated recolor
@@ -207,6 +232,9 @@ public class RetroNpcData
 			: Collections.emptySet();
 		this.modernDeathAnims = modernDeathAnims != null
 			? Collections.unmodifiableSet(new HashSet<>(modernDeathAnims))
+			: Collections.emptySet();
+		this.modernMiscAnims = modernMiscAnims != null
+			? Collections.unmodifiableSet(new HashSet<>(modernMiscAnims))
 			: Collections.emptySet();
 	}
 
@@ -228,6 +256,11 @@ public class RetroNpcData
 	public boolean isDeathAnimation(int animId)
 	{
 		return deathAnimationId != -1 && modernDeathAnims.contains(animId);
+	}
+
+	public boolean isMiscAnimation(int animId)
+	{
+		return miscAnimationId != -1 && modernMiscAnims.contains(animId);
 	}
 
 	public int[] getRetroModelIds()
@@ -278,13 +311,15 @@ public class RetroNpcData
 			attackAnimationId,
 			defendAnimationId,
 			deathAnimationId,
+			miscAnimationId,
 			scaleXZ,
 			scaleY,
 			originalColors,
 			replacementColors,
 			modernAttackAnims,
 			modernDefendAnims,
-			modernDeathAnims);
+			modernDeathAnims,
+			modernMiscAnims);
 	}
 
 	/**
@@ -305,13 +340,15 @@ public class RetroNpcData
 			attackAnimationId,
 			defendAnimationId,
 			deathAnimationId,
+			miscAnimationId,
 			scaleXZ,
 			scaleY,
 			originalColors,
 			replacementColors,
 			modernAttackAnims,
 			modernDefendAnims,
-			modernDeathAnims);
+			modernDeathAnims,
+			modernMiscAnims);
 	}
 
 	/**
@@ -339,13 +376,15 @@ public class RetroNpcData
 			attackAnimationId,
 			defendAnimationId,
 			deathAnimationId,
+			miscAnimationId,
 			scaleXZ,
 			scaleY,
 			originalColors,
 			replacementColors,
 			modernAttackAnims,
 			modernDefendAnims,
-			modernDeathAnims);
+			modernDeathAnims,
+			modernMiscAnims);
 	}
 
 	@Override
@@ -359,6 +398,7 @@ public class RetroNpcData
 			attackAnimationId == that.attackAnimationId &&
 			defendAnimationId == that.defendAnimationId &&
 			deathAnimationId == that.deathAnimationId &&
+			miscAnimationId == that.miscAnimationId &&
 			scaleXZ == that.scaleXZ &&
 			scaleY == that.scaleY &&
 			category == that.category &&
@@ -368,7 +408,8 @@ public class RetroNpcData
 			Arrays.equals(replacementColors, that.replacementColors) &&
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
 			Objects.equals(modernDefendAnims, that.modernDefendAnims) &&
-			Objects.equals(modernDeathAnims, that.modernDeathAnims);
+			Objects.equals(modernDeathAnims, that.modernDeathAnims) &&
+			Objects.equals(modernMiscAnims, that.modernMiscAnims);
 	}
 
 	@Override
@@ -382,6 +423,7 @@ public class RetroNpcData
 		result = 31 * result + attackAnimationId;
 		result = 31 * result + defendAnimationId;
 		result = 31 * result + deathAnimationId;
+		result = 31 * result + miscAnimationId;
 		result = 31 * result + scaleXZ;
 		result = 31 * result + scaleY;
 		result = 31 * result + Arrays.hashCode(originalColors);
@@ -389,6 +431,7 @@ public class RetroNpcData
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
 		result = 31 * result + (modernDefendAnims != null ? modernDefendAnims.hashCode() : 0);
 		result = 31 * result + (modernDeathAnims != null ? modernDeathAnims.hashCode() : 0);
+		result = 31 * result + (modernMiscAnims != null ? modernMiscAnims.hashCode() : 0);
 		return result;
 	}
 
@@ -402,6 +445,7 @@ public class RetroNpcData
 		private int attackAnimationId = -1;
 		private int defendAnimationId = -1;
 		private int deathAnimationId = -1;
+		private int miscAnimationId = -1;
 		private int scaleXZ = 128;
 		private int scaleY = 128;
 		private short[] originalColors;
@@ -409,6 +453,7 @@ public class RetroNpcData
 		private final Set<Integer> modernAttackAnims = new HashSet<>();
 		private final Set<Integer> modernDefendAnims = new HashSet<>();
 		private final Set<Integer> modernDeathAnims = new HashSet<>();
+		private final Set<Integer> modernMiscAnims = new HashSet<>();
 
 		public Builder category(RetroNpcCategory category)
 		{
@@ -548,6 +593,33 @@ public class RetroNpcData
 			return this;
 		}
 
+		public Builder miscAnimationId(int miscAnimationId)
+		{
+			this.miscAnimationId = miscAnimationId;
+			return this;
+		}
+
+		public Builder modernMiscAnims(Collection<Integer> anims)
+		{
+			if (anims != null)
+			{
+				this.modernMiscAnims.addAll(anims);
+			}
+			return this;
+		}
+
+		public Builder modernMiscAnims(int... anims)
+		{
+			if (anims != null)
+			{
+				for (int a : anims)
+				{
+					this.modernMiscAnims.add(a);
+				}
+			}
+			return this;
+		}
+
 		/**
 		 * Overrides the model IDs the injected path assembles, for an NPC whose 2005 parts no
 		 * longer all resolve in the live cache.
@@ -569,13 +641,15 @@ public class RetroNpcData
 				attackAnimationId,
 				defendAnimationId,
 				deathAnimationId,
+				miscAnimationId,
 				scaleXZ,
 				scaleY,
 				originalColors,
 				replacementColors,
 				modernAttackAnims,
 				modernDefendAnims,
-				modernDeathAnims
+				modernDeathAnims,
+				modernMiscAnims
 			);
 		}
 	}

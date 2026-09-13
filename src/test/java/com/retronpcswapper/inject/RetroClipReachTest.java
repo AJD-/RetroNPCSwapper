@@ -110,6 +110,11 @@ public class RetroClipReachTest
 		// The giant family: one shared body, a variant head, and props on the fire and moss giants
 		{127, 2870, 2862}, {128, 2870, 2862}, {129, 2870, 2862},
 		{130, 2870, 2862}, {131, 2870, 2862},
+		// The cow body and its 11-face companion, and the undead cow, which is one mesh on the same
+		// 2005 cow rig and shares all five clips.
+		{58, 3341, 3342}, {59, 3341, 3342}, {60, 3341, 3342},
+		{61, 3341, 3342}, {62, 3341, 3342},
+		{58, 5237}, {59, 5237}, {60, 5237}, {61, 5237}, {62, 5237},
 		// A full 2005 guard kit against the 2005 human rig. Measured against the LIVE rig these
 		// score 60-63%, which looks like a mismatch but is not: framemap 0 addresses 218 groups for
 		// every equipment slot, and a nine-part kit only ever uses the ~35 named in the javadoc.

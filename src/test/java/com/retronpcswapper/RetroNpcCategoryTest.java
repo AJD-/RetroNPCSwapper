@@ -1031,7 +1031,6 @@ public class RetroNpcCategoryTest
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Goblin")).hasRecolors());
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Skeleton mage")).hasRecolors());
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Restless ghost")).hasRecolors());
-		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Chicken")).hasRecolors());
 	}
 
 	/**
@@ -1151,6 +1150,268 @@ public class RetroNpcCategoryTest
 		// 5385 is the chicken walk and 5390 an unrelated sequence - neither is combat
 		assertFalse(chicken.isAttackAnimation(5385));
 		assertFalse(chicken.isDeathAnimation(5390));
+	}
+
+	/**
+	 * Both chickens are mesh 2849; the 2005 client told the undead one apart with opcode 40 alone.
+	 * Chickens are the only recoloring category that builds from the live cache, so this is also
+	 * the check that the pairs survive the graft for a cache-backed category - and that turning
+	 * them on for the category did not repaint the ordinary bird, which carries no pairs at all.
+	 */
+	@Test
+	public void testUndeadChickenKeepsIts2005Palette()
+	{
+		RetroNpcData undead = RetroNpcMapping.get(NpcID.AHOY_UNDEAD_CHICKEN, "Undead chicken");
+		assertNotNull("Undead chicken mapping must exist", undead);
+		assertEquals(RetroNpcCategory.CHICKENS, undead.getCategory());
+		assertArrayEquals(new int[]{2849}, undead.getRetroModelIds());
+		assertTrue("the undead chicken is only undead by its palette", undead.hasRecolors());
+		assertArrayEquals(new short[]{127, 11200, 8394, 926, 6080}, undead.getOriginalColors());
+		assertArrayEquals(new short[]{12480, 10566, 12475, 4771, 8101}, undead.getReplacementColors());
+
+		assertFalse("the living chicken must stay the mesh's own colors",
+			Objects.requireNonNull(RetroNpcMapping.get(0, "Chicken")).hasRecolors());
+	}
+
+	/**
+	 * No evil chicken is swapped, and that is the point of this test. Live mesh 7728 is already the
+	 * model it wore in August 2005, so there is nothing retro to restore; February 2005 - the cache
+	 * this plugin is built from - has no evil chicken at all, so there is nothing to copy either.
+	 * Every variant has to stay unmapped, including the two the name row would otherwise catch.
+	 */
+	@Test
+	public void testEvilChickensAreLeftAlone()
+	{
+		for (int id : new int[]{
+			NpcID.CHICKENQUEST_EVIL_CHICKEN,
+			NpcID.NZONE_CHICKENQUEST_EVIL_CHICKEN_NORMAL,
+			NpcID.EVIL_CHICKEN})
+		{
+			assertNull("evil chicken " + id + " must keep its own model",
+				RetroNpcMapping.get(id, "Evil Chicken"));
+		}
+
+		assertNull(RetroNpcMapping.get(
+			NpcID.NZONE_CHICKENQUEST_EVIL_CHICKEN_HARD, "Evil Chicken (hard)"));
+		assertNull(RetroNpcMapping.get(NpcID.DEADMAN_BREACH_EVIL_CHICKEN, "Big Evil Chicken"));
+
+		// and no name row may creep back in and catch a variant added later
+		assertNull(RetroNpcMapping.get(0, "Evil Chicken"));
+	}
+
+	/**
+	 * The rooster is the bird the 2005 palette belongs to, and nothing reached it before: the
+	 * generator only categorizes names containing "chicken", so no rooster row exists for the name
+	 * lookup to find. All three live variants have to resolve through the archetype - including
+	 * Ernest's, which wears the same live mesh as the evil chicken but, unlike it, has a February
+	 * 2005 definition of its own to go back to.
+	 */
+	@Test
+	public void testRoosterResolvesForEveryLiveVariant()
+	{
+		for (int id : new int[]{NpcID.ROOSTER, NpcID.FARM_ROOSTER, NpcID.MISC_ROOSTER})
+		{
+			assertRooster("rooster " + id, RetroNpcMapping.get(id, "Rooster"));
+		}
+		assertRooster("the name row", RetroNpcMapping.get(0, "Rooster"));
+	}
+
+	/**
+	 * Ernest's rooster fights on the rooster sequences, not the chicken ones. Uncaught they would
+	 * play a modern clip on 2005 geometry, so each has to land in its own slot and in no other -
+	 * the mistake {@code testZombieDeathVsFlinchAnimations} exists to catch.
+	 */
+	@Test
+	public void testRoosterInterceptsItsOwnSequences()
+	{
+		RetroNpcData rooster = RetroNpcMapping.get(NpcID.FARM_ROOSTER, "Rooster");
+		assertNotNull(rooster);
+
+		assertTrue("ROOSTERATTACK must become the retro peck", rooster.isAttackAnimation(2299));
+		assertTrue("ROOSTERPARRY must become the retro block", rooster.isDefendAnimation(2300));
+		assertTrue("ROOSTERDEATH must become the retro death", rooster.isDeathAnimation(2301));
+
+		// No sequence may register as more than one state
+		assertFalse(rooster.isDeathAnimation(2299));
+		assertFalse(rooster.isDefendAnimation(2299));
+		assertFalse(rooster.isAttackAnimation(2301));
+		assertFalse(rooster.isDefendAnimation(2301));
+		assertFalse(rooster.isAttackAnimation(2300));
+		assertFalse(rooster.isDeathAnimation(2300));
+
+		// ROOSTERWALK and ROOSTERREADY are poses, replaced outright rather than intercepted; 5385 is
+		// the modern chicken walk; ROOSTERMAGIC belongs to no mapped bird - none of the four is combat
+		assertFalse(rooster.isAttackAnimation(2297));
+		assertFalse(rooster.isAttackAnimation(2298));
+		assertFalse(rooster.isAttackAnimation(5385));
+		assertFalse(rooster.isAttackAnimation(2302));
+	}
+
+	/**
+	 * A 2005 rooster: the chicken mesh on the chicken sequences, wearing def 1018's palette, which
+	 * is the whole of what separates it from the hen, at the size that definition asked for.
+	 */
+	private static void assertRooster(String name, RetroNpcData data)
+	{
+		assertNotNull(name + " must resolve", data);
+		assertEquals(name, RetroNpcCategory.CHICKENS, data.getCategory());
+		assertArrayEquals(name, new int[]{2849}, data.getRetroModelIds());
+		assertEquals(name, 54, data.getIdleAnimationId());
+		assertEquals(name, 53, data.getWalkAnimationId());
+		assertEquals(name, 55, data.getAttackAnimationId());
+		assertEquals(name, 56, data.getDefendAnimationId());
+		assertEquals(name, 57, data.getDeathAnimationId());
+
+		assertTrue(name + " is only a rooster by its palette", data.hasRecolors());
+		assertArrayEquals(name, new short[]{127, 11200, 8394, 61}, data.getOriginalColors());
+		assertArrayEquals(name, new short[]{3998, 6720, 1942, 1942}, data.getReplacementColors());
+
+		// 204 * 172/128 - the ratio def 1018 asked for against the hen
+		assertEquals(name, 274, data.getScaleXZ());
+		assertEquals(name, 274, data.getScaleY());
+	}
+
+	/**
+	 * Cows resolve two different ways and both have to end up with the same six slots. Every cow
+	 * but the undead one is an id-registered archetype built by {@code cow(...)}; the undead cow is
+	 * the only one that reaches {@code createMappingData}. Asserting one path would pass while the
+	 * other silently carried -1 for attack, defend, death and misc.
+	 */
+	@Test
+	public void testCowsCategory()
+	{
+		RetroNpcData cow = RetroNpcMapping.get(NpcID.COW, "Cow");
+		assertNotNull("Cow mapping must exist", cow);
+		assertEquals(RetroNpcCategory.COWS, cow.getCategory());
+		assertArrayEquals(new int[]{3341, 3342}, cow.getRetroModelIds());
+		assertCowAnimations(cow);
+
+		// The undead cow is its own 2005 mesh, and the only cow built from the generated row
+		RetroNpcData undead = RetroNpcMapping.get(NpcID.AHOY_UNDEAD_COW, "Undead cow");
+		assertNotNull("Undead cow mapping must exist", undead);
+		assertEquals(RetroNpcCategory.COWS, undead.getCategory());
+		assertArrayEquals(new int[]{5237}, undead.getRetroModelIds());
+		assertCowAnimations(undead);
+	}
+
+	private static void assertCowAnimations(RetroNpcData cow)
+	{
+		assertEquals(61, cow.getIdleAnimationId());
+		assertEquals(58, cow.getWalkAnimationId());
+		assertEquals(59, cow.getAttackAnimationId());
+		assertEquals(60, cow.getDefendAnimationId());
+		assertEquals(62, cow.getDeathAnimationId());
+		assertEquals(61, cow.getMiscAnimationId());
+
+		assertTrue(cow.isAttackAnimation(59));
+		assertTrue(cow.isAttackAnimation(5849));
+		assertTrue(cow.isDefendAnimation(60));
+		assertTrue(cow.isDefendAnimation(5850));
+		assertTrue(cow.isDeathAnimation(62));
+		assertTrue(cow.isDeathAnimation(5851));
+
+		// The modern-only animations: no 2005 counterpart, and keyed to a framemap the retro mesh
+		// is not rigged to, so they are redirected to the retro idle rather than left to bend it
+		assertTrue(cow.isMiscAnimation(1735));
+		assertTrue(cow.isMiscAnimation(5853));
+		assertTrue(cow.isMiscAnimation(5854));
+		assertTrue(cow.isMiscAnimation(5855));
+
+		// 2162, 2303 and 2312 are legacy cow animations on framemap 282 - they fit the retro mesh
+		// and must keep playing
+		assertFalse(cow.isMiscAnimation(2162));
+		assertFalse(cow.isMiscAnimation(2303));
+		assertFalse(cow.isMiscAnimation(2312));
+		assertFalse(cow.isAttackAnimation(5848));
+	}
+
+	/**
+	 * The three 2005 cows are one mesh in three palettes, so each live variant has to come back
+	 * with its own pairs - and every one of them has to start with the drift correction, without
+	 * which the 2005 pairs miss the repainted hide and the cow renders white.
+	 */
+	@Test
+	public void testCowVariantsCarryTheirOwnPalettes()
+	{
+		RetroNpcData white = RetroNpcMapping.get(NpcID.COW, "Cow");
+		RetroNpcData brown = RetroNpcMapping.get(NpcID.COW2, "Cow");
+		RetroNpcData grey = RetroNpcMapping.get(NpcID.COW3, "Cow");
+
+		assertNotNull(white);
+		assertNotNull(brown);
+		assertNotNull(grey);
+		assertTrue(white.hasRecolors());
+		assertTrue(brown.hasRecolors());
+		assertTrue(grey.hasRecolors());
+
+		assertNotEquals("the 2005 cow variants differ only by palette", white, brown);
+		assertNotEquals("the 2005 cow variants differ only by palette", brown, grey);
+
+		// The 2005 definition's pairs verbatim. No palette-drift correction: the bundle carries the
+		// 2005 meshes, so the indices the 2005 client recolored are the ones that are there - unlike
+		// the live copies, whose hide was repainted 10363 -> 10365 across 135 faces
+		assertArrayEquals(new short[]{26, 10363, 30}, white.getOriginalColors());
+		assertArrayEquals(new short[]{10365, 5784, 10365}, white.getReplacementColors());
+
+		// 2005 asked for this one slightly smaller; the hand-set size must survive the graft
+		assertEquals(115, brown.getScaleXZ());
+		assertEquals(115, brown.getScaleY());
+	}
+
+	/**
+	 * February 2005 has no calf, so it is the cow mesh scaled down - which means it must still be
+	 * the cow mesh, and must still be smaller than the cow.
+	 */
+	@Test
+	public void testCowCalvesAreTheCowMeshScaledDown()
+	{
+		for (int calfId : new int[]{NpcID.COW2_CALF, NpcID.COW3_CALF, NpcID.CALF})
+		{
+			RetroNpcData calf = RetroNpcMapping.get(calfId, "Cow calf");
+			assertNotNull("calf " + calfId + " must resolve", calf);
+			assertEquals(RetroNpcCategory.COWS, calf.getCategory());
+			assertArrayEquals(new int[]{3341, 3342}, calf.getRetroModelIds());
+			assertEquals(68, calf.getScaleXZ());
+			assertEquals(68, calf.getScaleY());
+			assertCowAnimations(calf);
+		}
+	}
+
+	/**
+	 * Cows render from the bundle, not the live cache: both 2005 meshes are still at their own ids
+	 * but their vertex groups were renumbered onto another rig, so the cache-backed path would
+	 * animate the right geometry off the wrong joints. requiresInjectedGeometry is what stops it
+	 * falling back to that path when the bundle is missing.
+	 */
+	@Test
+	public void testCowsAreBundleOnly()
+	{
+		assertTrue("cows must not fall back to live geometry",
+			RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.COWS));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.COWS));
+	}
+
+	/**
+	 * "Cow" is a name the plugin matches on, so anything else wearing it has to be kept out by id.
+	 * 10598 is a mount on animations 180/229, not a cow.
+	 */
+	@Test
+	public void testNonCowsNamedCowDoNotSwap()
+	{
+		assertNull(RetroNpcMapping.get(NpcID.OSB8_COW, "Cow"));
+	}
+
+	/**
+	 * The Zanaris and Nightmare Zone cows share the ordinary cow's look, and "Cow (hard)" does not
+	 * match the name row at all - it reaches the mapping only through its registered id.
+	 */
+	@Test
+	public void testCowVariantsOutsideLumbridgeResolve()
+	{
+		assertNotNull(RetroNpcMapping.get(NpcID.FAIRY_COW, "Cow"));
+		assertNotNull(RetroNpcMapping.get(NpcID.NZONE_COW_NORMAL, "Cow"));
+		assertNotNull(RetroNpcMapping.get(NpcID.NZONE_COW_HARD, "Cow (hard)"));
+		assertNotNull(RetroNpcMapping.get(NpcID.ANMA_COW_CUTSCENE, "Undead cow"));
 	}
 
 	@Test

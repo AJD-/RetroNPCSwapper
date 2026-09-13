@@ -441,7 +441,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		// Guard against re-triggering if current animation is already the retro target animation
-		if (anim == data.getAttackAnimationId() || anim == data.getDefendAnimationId() || anim == data.getDeathAnimationId())
+		if (anim == data.getAttackAnimationId() || anim == data.getDefendAnimationId()
+			|| anim == data.getDeathAnimationId() || anim == data.getMiscAnimationId())
 		{
 			return;
 		}
@@ -461,6 +462,14 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			log.debug("SWAPPING ATTACK ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getAttackAnimationId());
 			npc.setAnimation(data.getAttackAnimationId());
+		}
+		else if (data.isMiscAnimation(anim))
+		{
+			// An animation the NPC did not have in 2005 at all, so there is nothing to swap it for
+			// and it cannot be left alone either - it is keyed to the modern framemap, which does
+			// not fit the retro mesh. Standing still is what 2005 looked like.
+			log.debug("SWAPPING MODERN-ONLY ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getMiscAnimationId());
+			npc.setAnimation(data.getMiscAnimationId());
 		}
 	}
 
@@ -621,6 +630,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			case CHICKENS:
 				return config.swapChickens();
+			case COWS:
+				return config.swapCows() && injectionEnabled();
 			case GOBLINS:
 				return config.swapGoblins();
 			case SKELETONS:
