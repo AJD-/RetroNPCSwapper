@@ -172,7 +172,7 @@ public class NpcMappingGenerator
 		{
 			return RetroNpcCategory.BLACK_DEMONS;
 		}
-		if (nameLower.contains("dragon") && !nameLower.contains("baby") && !nameLower.contains("king"))
+		if (nameLower.contains("dragon") && !nameLower.contains("baby"))
 		{
 			return RetroNpcCategory.ADULT_DRAGONS;
 		}
@@ -231,6 +231,13 @@ public class NpcMappingGenerator
 		if (nameLower.contains("chicken"))
 		{
 			return RetroNpcCategory.CHICKENS;
+		}
+		// Substring is safe: "Cow" and "Undead Cow" are the only 2005 names containing it. The
+		// three Cow definitions collapse to one row - buildEntries keeps the lowest id - which is
+		// why RetroNpcMapping declares the variants as archetypes rather than reading them here.
+		if (nameLower.contains("cow"))
+		{
+			return RetroNpcCategory.COWS;
 		}
 		return null;
 	}

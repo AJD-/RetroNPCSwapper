@@ -99,7 +99,33 @@ public class RetroAssetGenerator
 		// animate it, which makes it the only mesh the skinner can be checked against in game.
 		// Its clips stay live for the same reason.
 		new Spec("Skeleton", Source.LIVE, Source.LIVE, new int[]{2944}, new int[]{262, 259}),
-		new Spec("Adult dragons", Source.RETRO, Source.RETRO, new int[]{2853, 2854}, new int[]{79, 80, 89, 90, 91, 92}),
+		// The four firebreath clips 81-84 are bundled alongside the melee set. They are full-body
+		// animations on the same rig - coverage 55% of the merged mesh, the same band as the melee
+		// attack and the death - so replacing the movement pose with them outright, which is all
+		// poseInjected can do until interleaving exists, is correct. DRAGON_FIREBREATH_ATTACK 86 is
+		// deliberately absent: it decodes, but onto its own rig 100050 as 97 ops over 3 groups, which
+		// is an upper-body overlay meant to be layered onto a movement pose. Playing it outright
+		// would lock the whole dragon rigid and animate three groups, which is worse than the
+		// rest-pose fallback a missing clip already gives.
+		new Spec("Adult dragons", Source.RETRO, Source.RETRO,
+			new int[]{2853, 2854}, new int[]{79, 80, 81, 82, 83, 84, 89, 90, 91, 92}),
+		// The metal dragons are a second 2005 dragon mesh set - a body, a head and a small static
+		// part - on the same rig 100049 and the same sequences, reaching 100% on the melee set just
+		// as the chromatic pair does. Bronze, iron and steel are one mesh told apart by three
+		// opcode 40 pairs each, so they need categoryUsesRecolors the same way the chromatics do.
+		// The 2005 art left 26 body vertices (back ridge, hips) and 4 jaw vertices on the no-bone
+		// group 255, so the head attack and fire breath tore them away from the animated faces
+		// around them - bindStrayVertices gives them their neighbours' groups. The 20-vertex 4987
+		// is the ground shadow, all on 255 by design, and stays static.
+		new Spec("Metal dragons", Source.RETRO, Source.RETRO,
+			new int[]{4986, 5022, 4987}, new int[]{79, 80, 81, 82, 83, 84, 89, 90, 91, 92}),
+		// The King Black Dragon is the chromatic dragon body 2853 wearing a three-headed head 2855
+		// in place of the single head 2854, so only the head is new geometry - 2853 is decoded once
+		// and shared with the Adult dragons spec above. Its 2005 definition asks for 160/160 rather
+		// than the 128 every other dragon asks for, and carries five opcode 40 pairs rather than
+		// one, both of which ride in on the generated row with no code here.
+		new Spec("King Black Dragon", Source.RETRO, Source.RETRO,
+			new int[]{2853, 2855}, new int[]{79, 80, 81, 82, 83, 84, 89, 90, 91, 92}),
 		new Spec("Lesser demons", Source.RETRO, Source.RETRO, new int[]{2943}, new int[]{63, 64, 65, 66, 67, 69}),
 		new Spec("Greater and black demons", Source.RETRO, Source.RETRO, new int[]{2942}, new int[]{63, 64, 65, 66, 67, 68, 69}),
 		// The imp mesh survived the 2006 update untouched - only its frames were re-authored. The
@@ -120,19 +146,51 @@ public class RetroAssetGenerator
 		new Spec("Ice giants", Source.RETRO, Source.LIVE, new int[]{2870, 2868}, new int[]{127, 128, 129, 130, 131}),
 		new Spec("Moss giants", Source.RETRO, Source.LIVE, new int[]{2870, 2865, 4990}, new int[]{127, 128, 129, 130, 131}),
 		new Spec("Cyclopes", Source.RETRO, Source.LIVE, new int[]{2870, 2867}, new int[]{127, 128, 129, 130, 131}),
+		new Spec("Cows", Source.RETRO, Source.RETRO, new int[]{3341, 3342}, new int[]{58, 59, 60, 61, 62}),
+		// The undead cow carries the metal dragons' flaw too. Of its 17 vertices on 255, the 7 inside
+		// animated faces are bound to their neighbours; the other 10 are a detached 8-face cluster on
+		// top of the head, joined to nothing that moves, so they stay static and cannot tear.
+		new Spec("Undead cows", Source.RETRO, Source.RETRO, new int[]{5237}, new int[]{58, 59, 60, 61, 62}),
 		// Guards are the first subject needing 2005 clips for a reason other than re-authored frames:
 		// the human meshes are byte-identical in both caches but their vertex groups were RENUMBERED.
 		// 2005 bindings all sit in [0..34]; live framemap 0 is a 218-group rig. Live clips would drive
 		// the right geometry off the wrong bones.
 		new Spec("Guards", Source.RETRO, Source.RETRO,
-			// 550 is the battleaxe the Falador axe guard carries in place of sword 519
-			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541, 550},
-			// 386 sword stab and 1156 shield block are what a guard actually plays in a fight;
-			// 422/423/424 are the unarmed set. All are classic ids the live game still uses, so they
-			// need the 2005 frames rather than any interception. 1156 was once left out as
-			// undecodable, which was a truncated seq.dat rather than anything about the sequence - it
-			// ships like the rest now, and its 17 frames resolve to rig 100083 with the others.
-			new int[]{808, 819, 422, 423, 424, 836, 386, 389, 390, 1156})
+			// 550 is the battleaxe the Falador axe guard carries in place of sword 519.
+			//
+			// 225, 301, 162, 179, 274 and 502 are the Ardougne guard - a second costume rather than
+			// a recolor of the first, sharing only the boots (185). It rides on this spec's clips
+			// because both costumes are 2005 human kit bound into the same range: 2005 definition
+			// 32 names the same 808/819 stance and walk, and its parts bind into [0..36] the way
+			// the town guard's bind into [0..34].
+			new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541, 550,
+				225, 301, 162, 179, 274, 502},
+			// A guard's combat sequences follow what it is holding, not what kind of guard it is,
+			// so every weapon any registered guard carries brings its whole family. Surveyed across
+			// all 40 of them, the live weapon meshes reduce to three melee classes plus a bow:
+			//
+			//   sword     519, 518, 23178, 46758   25 verts, 38 faces, colors 61/11200
+			//   battleaxe 550                      38 verts, 56 faces, colors 61/7073
+			//   mace      502, 46755               35 verts, 62 faces, colors 61/8722
+			//   shield    541, 23179               36 verts, 62 faces
+			//   bow       563, 23177               only on FAI_FALADOR_GUARD4_F, which takes the
+			//                                      cache path and is animated by the client
+			//
+			// so the families below are the complete set a guard can play, and each is whole:
+			//
+			//   386-392  sword. 386 stab, 390 slash and 1156 shield block are what the town guard
+			//            was seen playing; 387/388/391/392 complete the family for the guards that
+			//            carry a sword and no shield. 1156 was once left out as undecodable, which
+			//            was a truncated seq.dat rather than anything about the sequence.
+			//   393-399  axe, for Falador's battleaxe guard. Seen in game: 395 and 397.
+			//   400-404  blunt, for Ardougne's mace. Seen in game: 401.
+			//   422-424  unarmed, for the Carnillean guards and FAI_FALADOR_GUARD3_F, who carries
+			//            a shield and no weapon at all.
+			new int[]{808, 819, 836, 1156,
+				386, 387, 388, 389, 390, 391, 392,
+				393, 394, 395, 396, 397, 398, 399,
+				400, 401, 402, 403, 404,
+				422, 423, 424})
 	);
 
 	private enum Source
@@ -340,6 +398,8 @@ public class RetroAssetGenerator
 			int[] members = partGroups[group];
 			vertexGroups[group] = members == null ? new int[0] : members.clone();
 		}
+		vertexGroups = bindStrayVertices(meshId, vertexGroups,
+			part.faceIndices1, part.faceIndices2, part.faceIndices3);
 
 		checkTextureMapping(meshId, part);
 
@@ -401,6 +461,140 @@ public class RetroAssetGenerator
 					+ "; only simple projection (0) can be injected");
 			}
 		}
+	}
+
+	/**
+	 * The old model format's "no bone" group. No 2005 rig names it, so a vertex bound here holds its
+	 * rest position whatever clip plays.
+	 */
+	private static final int NO_BONE = 255;
+
+	/**
+	 * Binds each vertex a 2005 mesh left on {@link #NO_BONE} to the group most of its face-neighbours
+	 * use, wherever it shares a face with a vertex that animates.
+	 *
+	 * <p>A vertex on 255 never moves, so a face joining it to animated vertices tears as soon as they
+	 * swing. The metal dragon's back ridge, hips and jaw did exactly that on the head attack and fire
+	 * breath, and the undead cow carries the same flaw. The 2005 client drew them the same way - no
+	 * rig of that era names 255 - so this corrects the art rather than restoring what shipped.
+	 *
+	 * <p>A part made only of 255 vertices, such as the metal dragon's ground shadow 4987, shares no
+	 * face with an animated vertex and is returned untouched. Stray vertices chained to each other
+	 * resolve over repeated passes; each pass decides every vertex before applying any, and a tie goes
+	 * to the lower group, so the result does not depend on vertex order.
+	 */
+	static int[][] bindStrayVertices(int meshId, int[][] groups, int[] faces1, int[] faces2, int[] faces3)
+	{
+		if (groups == null || groups.length <= NO_BONE
+			|| groups[NO_BONE] == null || groups[NO_BONE].length == 0)
+		{
+			return groups;
+		}
+
+		int vertexCount = 0;
+		for (int[] members : groups)
+		{
+			for (int vertex : members == null ? new int[0] : members)
+			{
+				vertexCount = Math.max(vertexCount, vertex + 1);
+			}
+		}
+		for (int face = 0; face < faces1.length; face++)
+		{
+			vertexCount = Math.max(vertexCount,
+				Math.max(faces1[face], Math.max(faces2[face], faces3[face])) + 1);
+		}
+
+		int[] owner = new int[vertexCount];
+		Arrays.fill(owner, -1);
+		for (int group = 0; group < groups.length; group++)
+		{
+			for (int vertex : groups[group] == null ? new int[0] : groups[group])
+			{
+				owner[vertex] = group;
+			}
+		}
+
+		List<Integer> reboundVertices = new ArrayList<>();
+		boolean changed = true;
+		while (changed)
+		{
+			int[][] tally = new int[vertexCount][];
+			for (int face = 0; face < faces1.length; face++)
+			{
+				int[] corners = {faces1[face], faces2[face], faces3[face]};
+				for (int corner : corners)
+				{
+					if (owner[corner] != NO_BONE)
+					{
+						continue;
+					}
+					for (int neighbour : corners)
+					{
+						int group = owner[neighbour];
+						if (group >= 0 && group != NO_BONE)
+						{
+							if (tally[corner] == null)
+							{
+								tally[corner] = new int[groups.length];
+							}
+							tally[corner][group]++;
+						}
+					}
+				}
+			}
+
+			changed = false;
+			for (int vertex = 0; vertex < vertexCount; vertex++)
+			{
+				if (tally[vertex] == null)
+				{
+					continue;
+				}
+				int best = 0;
+				for (int group = 1; group < tally[vertex].length; group++)
+				{
+					if (tally[vertex][group] > tally[vertex][best])
+					{
+						best = group;
+					}
+				}
+				owner[vertex] = best;
+				reboundVertices.add(vertex);
+				changed = true;
+			}
+		}
+
+		if (reboundVertices.isEmpty())
+		{
+			return groups;
+		}
+
+		// Keep every untouched group's member order, so meshes without strays encode identically
+		int[][] rebound = new int[groups.length][];
+		for (int group = 0; group < groups.length; group++)
+		{
+			List<Integer> members = new ArrayList<>();
+			for (int vertex : groups[group] == null ? new int[0] : groups[group])
+			{
+				if (owner[vertex] == group)
+				{
+					members.add(vertex);
+				}
+			}
+			for (int vertex : reboundVertices)
+			{
+				if (owner[vertex] == group)
+				{
+					members.add(vertex);
+				}
+			}
+			rebound[group] = members.stream().mapToInt(Integer::intValue).toArray();
+		}
+
+		System.out.println("  mesh " + meshId + ": bound " + reboundVertices.size()
+			+ " vertices off the no-bone group 255, " + rebound[NO_BONE].length + " stay static");
+		return rebound;
 	}
 
 	/**
@@ -489,7 +683,8 @@ public class RetroAssetGenerator
 				}
 			}
 
-			int[][] partGroups = part.getVertexGroups();
+			int[][] partGroups = bindStrayVertices(part.getId(), part.getVertexGroups(),
+				part.faceIndices1, part.faceIndices2, part.faceIndices3);
 			if (partGroups != null)
 			{
 				for (int group = 0; group < partGroups.length; group++)

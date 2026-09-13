@@ -29,8 +29,11 @@ import com.google.gson.reflect.TypeToken;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.NpcID;
@@ -226,17 +229,125 @@ public class RetroNpcCategoryTest
 		assertFalse(blueDragon.isAttackAnimation(82));
 		assertFalse(blueDragon.isAttackAnimation(83));
 
-		// Block and death need no swap at all, so both slots are -1 and short-circuit
-		assertEquals(-1, blueDragon.getDefendAnimationId());
+		// Death needs no swap at all, so that slot is -1 and short-circuits
 		assertEquals(-1, blueDragon.getDeathAnimationId());
-		assertFalse(blueDragon.isDefendAnimation(89));
-		assertFalse(blueDragon.isDefendAnimation(4638));
 		assertFalse(blueDragon.isDeathAnimation(92));
+
+		// The defend slot is filled for KBD's sake - it is the one adult dragon
+		// with a post-2005 block, DRAGON_BLOCK_KBD 4638. A chromatic dragon carries the slot but
+		// never reaches the override, because it only fires on an id in DRAGON_MODERN_DEFENDS and
+		// an ordinary dragon already blocks on the 2005 sequence.
+		assertEquals(AnimationID.DRAGON_BLOCK, blueDragon.getDefendAnimationId());
+		assertFalse("block 89 is already the retro sequence", blueDragon.isDefendAnimation(89));
+		assertTrue(blueDragon.isDefendAnimation(AnimationID.DRAGON_BLOCK_KBD));
 
 		// Walk (79) and ready (90) are pose sequences, never combat anims
 		assertFalse(blueDragon.isAttackAnimation(79));
 		assertFalse(blueDragon.isDefendAnimation(90));
 		assertFalse(blueDragon.isAttackAnimation(99999));
+	}
+
+	/**
+	 * The metal dragons are the same category on a different 2005 mesh set: three parts rather
+	 * than two, and three opcode 40 pairs rather than one, because bronze, iron and steel are one
+	 * greyscale mesh told apart entirely by colour. They resolve by name like the chromatics -
+	 * ADULT_DRAGONS is not an id-only category and no static archetype shadows these rows.
+	 */
+	@Test
+	public void testMetalDragonsCategory()
+	{
+		int[] ids = {NpcID.BRONZE_DRAGON, NpcID.IRON_DRAGON, NpcID.STEEL_DRAGON};
+		String[] names = {"Bronze dragon", "Iron dragon", "Steel dragon"};
+
+		Set<List<Short>> palettes = new HashSet<>();
+		for (int i = 0; i < ids.length; i++)
+		{
+			RetroNpcData dragon = RetroNpcMapping.get(ids[i], names[i]);
+			assertNotNull(names[i] + " mapping must exist", dragon);
+			assertEquals(RetroNpcCategory.ADULT_DRAGONS, dragon.getCategory());
+
+			assertArrayEquals(names[i] + " is a three part 2005 mesh",
+				new int[]{4986, 5022, 4987}, dragon.getInjectedModelIds());
+
+			// Without the pairs all three render as the same grey lump, so this is structural
+			assertTrue(names[i] + " must carry its 2005 recolors", dragon.hasRecolors());
+			assertArrayEquals(new short[]{61, 33, 41}, dragon.getOriginalColors());
+			assertEquals(3, dragon.getReplacementColors().length);
+
+			List<Short> palette = new ArrayList<>();
+			for (short color : dragon.getReplacementColors())
+			{
+				palette.add(color);
+			}
+			assertTrue(names[i] + " must not share a palette with another metal",
+				palettes.add(palette));
+
+			// Same policy as the chromatics: only the post-2005 ranged attack is intercepted, and
+			// the retro-native sequences - firebreath included - pass straight through
+			assertEquals(AnimationID.DRAGON_READY, dragon.getIdleAnimationId());
+			assertEquals(AnimationID.DRAGON_WALK, dragon.getWalkAnimationId());
+			assertEquals(AnimationID.DRAGON_ATTACK, dragon.getAttackAnimationId());
+			assertTrue(dragon.isAttackAnimation(AnimationID.DRAGON_RANGED_ATTACKS));
+			for (int retroNative : new int[]{80, 81, 82, 83, 84, 91})
+			{
+				assertFalse("sequence " + retroNative + " is already the retro one",
+					dragon.isAttackAnimation(retroNative));
+			}
+			// The defend slot is category-wide, filled for the King Black Dragon's post-2005
+			// block; a metal dragon carries it but never sends 4638, so it never fires
+			assertEquals(AnimationID.DRAGON_BLOCK, dragon.getDefendAnimationId());
+			assertFalse(names[i] + " blocks on the retro sequence already",
+				dragon.isDefendAnimation(AnimationID.DRAGON_BLOCK));
+			assertEquals(-1, dragon.getDeathAnimationId());
+		}
+	}
+
+	/**
+	 * The King Black Dragon reaches the category the same way every other adult dragon does -
+	 * by name, off the generated row, with no id registration anywhere.
+	 */
+	@Test
+	public void testKingBlackDragonCategory()
+	{
+		for (int id : new int[]{
+			NpcID.KING_DRAGON, NpcID.CLANCUP_KING_DRAGON,
+			NpcID.TWOCATS_KBD_CUTSCENE, NpcID.DEADMAN_BREACH_KING_BLACK_DRAGON})
+		{
+			RetroNpcData kbd = RetroNpcMapping.get(id, "King Black Dragon");
+			assertNotNull("King Black Dragon mapping must exist for id " + id, kbd);
+			assertEquals(RetroNpcCategory.ADULT_DRAGONS, kbd.getCategory());
+
+			// The chromatic body wearing the three-headed head, in place of the single head 2854
+			assertArrayEquals(new int[]{2853, 2855}, kbd.getInjectedModelIds());
+
+			// The one dragon whose 2005 definition asks to be resized, and the one carrying five
+			// opcode 40 pairs rather than a single body tint
+			assertEquals(160, kbd.getScaleXZ());
+			assertEquals(160, kbd.getScaleY());
+			assertTrue(kbd.hasRecolors());
+			assertArrayEquals(new short[]{61, 41, 0, 115, 127}, kbd.getOriginalColors());
+			assertEquals(5, kbd.getReplacementColors().length);
+
+			assertEquals(AnimationID.DRAGON_READY, kbd.getIdleAnimationId());
+			assertEquals(AnimationID.DRAGON_WALK, kbd.getWalkAnimationId());
+
+			// Its block is the one post-2005 sequence in the whole category
+			assertTrue(kbd.isDefendAnimation(AnimationID.DRAGON_BLOCK_KBD));
+			assertEquals(AnimationID.DRAGON_BLOCK, kbd.getDefendAnimationId());
+
+			// Everything else it plays is retro-native and passes straight through
+			for (int retroNative : new int[]{80, 81, 82, 83, 84, 91})
+			{
+				assertFalse("sequence " + retroNative + " is already the retro one",
+					kbd.isAttackAnimation(retroNative));
+			}
+			assertTrue(kbd.isAttackAnimation(AnimationID.DRAGON_RANGED_ATTACKS));
+		}
+
+		// The wall trophies and the pet share the theme but not the name, so nothing extra is
+		// needed to keep them out - "Left head" and "Prince Black Dragon" simply never match
+		assertNull(RetroNpcMapping.get(NpcID.POH_MOUNTED_KBD_LEFT, "Left head"));
+		assertNull(RetroNpcMapping.get(NpcID.KBD_PET, "Prince Black Dragon"));
 	}
 
 	@Test
@@ -303,14 +414,15 @@ public class RetroNpcCategoryTest
 		assertEquals(424, guard.getDefendAnimationId());
 		assertEquals(836, guard.getDeathAnimationId());
 
-		// Verify Varrock/Falador/Ardougne Guard explicit ID mappings
+		// Verify Varrock/Falador Guard explicit ID mappings. Ardougne is a different costume and
+		// has its own test - see testArdougneGuards.
 		int[] guardIds = {
 			NpcID.BIM_FAI_VARROCK_GUARD02, NpcID.BIM_FAI_VARROCK_GUARD02_F, NpcID.FAI_VARROCK_GUARD02,
-			NpcID.GUARD1_VARIANT01, NpcID.ARDOUGNE_GUARD_VARIANT01,
+			NpcID.GUARD1_VARIANT01,
 			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD3_F,
 			// The base row of each family. The list above enumerates the _F and _VARIANT
 			// derivatives of exactly these NPCs and used to skip the NPCs themselves.
-			NpcID.GUARD1, NpcID.ARDOUGNE_GUARD,
+			NpcID.GUARD1,
 			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD3};
 		for (int id : guardIds)
 		{
@@ -412,6 +524,73 @@ public class RetroNpcCategoryTest
 		assertFalse(guard.isAttackAnimation(7041));
 		assertFalse(guard.isDefendAnimation(7043));
 		assertFalse(guard.isDeathAnimation(7044));
+	}
+
+	@Test
+	public void testArdougneGuards()
+	{
+		// Ardougne's guards were registered against GUARD_DEFAULT, which put every one of them in
+		// a Varrock uniform. They are a different 2005 costume, not a recolor: definition 32's
+		// seven parts against definition 9's nine, sharing only the boots.
+		RetroNpcData ardougne = RetroNpcMapping.get(NpcID.ARDOUGNE_GUARD, "Guard");
+		assertNotNull("the Ardougne guard must resolve by id", ardougne);
+		assertEquals(RetroNpcCategory.GUARDS, ardougne.getCategory());
+		assertArrayEquals(new int[]{225, 301, 162, 179, 274, 185, 502}, ardougne.getRetroModelIds());
+		assertArrayEquals(ardougne.getRetroModelIds(), ardougne.getInjectedModelIds());
+
+		// Live ARDOUGNE_GUARD carries these same pairs, byte for byte, 20 years on - they are what
+		// separates the two towns' kit. Held inline on the archetype rather than grafted: the one
+		// "guard" name key belongs to the town guard, and applyCacheDefinitions only reaches
+		// archetypes that hold one.
+		assertTrue("the Ardougne colors must survive load()", ardougne.hasRecolors());
+		assertArrayEquals(new short[]{25238, 8741}, ardougne.getOriginalColors());
+		assertArrayEquals(new short[]{811, -21597}, ardougne.getReplacementColors());
+
+		// Same 2005 human rig and the same clips - definition 32 names the same stance and walk
+		assertEquals(808, ardougne.getIdleAnimationId());
+		assertEquals(819, ardougne.getWalkAnimationId());
+		assertEquals(422, ardougne.getAttackAnimationId());
+		assertEquals(424, ardougne.getDefendAnimationId());
+		assertEquals(836, ardougne.getDeathAnimationId());
+
+		// The variant and both females. Female guards are recent content with no 2005 counterpart,
+		// so they take the male kit, as Varrock's and Falador's do.
+		for (int id : new int[]{NpcID.ARDOUGNE_GUARD_VARIANT01, NpcID.ARDOUGNE_GUARD_F,
+			NpcID.ARDOUGNE_GUARD_F_VARIANT01})
+		{
+			RetroNpcData variant = RetroNpcMapping.get(id, "Guard");
+			assertNotNull("Ardougne guard " + id + " must map to data", variant);
+			assertArrayEquals("Ardougne guard " + id + " must wear the Ardougne kit",
+				new int[]{225, 301, 162, 179, 274, 185, 502}, variant.getRetroModelIds());
+		}
+
+		// The Carnillean mansion guards are the town's guards posted indoors: the same kit with the
+		// weapon slot dropped, matching 2005 definition 887 exactly.
+		for (int id : new int[]{NpcID.SOTN_GUARD_CARNILLEAN_UPSTAIRS, NpcID.GUARD_CARNILLEAN_VIS,
+			NpcID.GUARD_CARNILLEAN_CUTSCENE})
+		{
+			RetroNpcData carnillean = RetroNpcMapping.get(id, "Guard");
+			assertNotNull("Carnillean guard " + id + " must map to data", carnillean);
+			assertArrayEquals(new int[]{225, 301, 162, 179, 274, 185}, carnillean.getRetroModelIds());
+			assertTrue(carnillean.hasRecolors());
+		}
+
+		// The regression this whole change exists to prevent, in both directions: Varrock and
+		// Falador keep definition 9's kit and its colors, and Ardougne never acquires them.
+		RetroNpcData townGuard = RetroNpcMapping.get(NpcID.GUARD1, "Guard");
+		assertNotNull(townGuard);
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			townGuard.getRetroModelIds());
+		assertArrayEquals("the town guard keeps its own 2005 colors",
+			new short[]{25238, 8741, 61}, townGuard.getOriginalColors());
+		assertArrayEquals(new short[]{10508, 6930, 5652}, townGuard.getReplacementColors());
+		assertArrayEquals(new int[]{233, 246, 294, 151, 176, 254, 185, 519, 541},
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.FAI_VARROCK_GUARD02, "Guard")).getRetroModelIds());
+
+		// Deadman guards wear this kit too and are registered for no town at all - level 1337 with
+		// no stance animation. Unreachable rather than excluded, the category resolving by id.
+		assertNull(RetroNpcMapping.get(NpcID.DEADMAN_GUARD_ARDOUGNE_VIS, "Guard"));
+		assertNull(RetroNpcMapping.get(NpcID.DEADMAN_GUARD_ARDOUGNE_RANGE_VIS, "Guard"));
 	}
 
 	@Test
@@ -852,7 +1031,6 @@ public class RetroNpcCategoryTest
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Goblin")).hasRecolors());
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Skeleton mage")).hasRecolors());
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Restless ghost")).hasRecolors());
-		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Chicken")).hasRecolors());
 	}
 
 	/**
@@ -972,6 +1150,466 @@ public class RetroNpcCategoryTest
 		// 5385 is the chicken walk and 5390 an unrelated sequence - neither is combat
 		assertFalse(chicken.isAttackAnimation(5385));
 		assertFalse(chicken.isDeathAnimation(5390));
+	}
+
+	/**
+	 * Both chickens are mesh 2849; the 2005 client told the undead one apart with opcode 40 alone.
+	 * Chickens are the only recoloring category that builds from the live cache, so this is also
+	 * the check that the pairs survive the graft for a cache-backed category - and that turning
+	 * them on for the category did not repaint the ordinary bird, which carries no pairs at all.
+	 */
+	@Test
+	public void testUndeadChickenKeepsIts2005Palette()
+	{
+		RetroNpcData undead = RetroNpcMapping.get(NpcID.AHOY_UNDEAD_CHICKEN, "Undead chicken");
+		assertNotNull("Undead chicken mapping must exist", undead);
+		assertEquals(RetroNpcCategory.CHICKENS, undead.getCategory());
+		assertArrayEquals(new int[]{2849}, undead.getRetroModelIds());
+		assertTrue("the undead chicken is only undead by its palette", undead.hasRecolors());
+		assertArrayEquals(new short[]{127, 11200, 8394, 926, 6080}, undead.getOriginalColors());
+		assertArrayEquals(new short[]{12480, 10566, 12475, 4771, 8101}, undead.getReplacementColors());
+
+		assertFalse("the living chicken must stay the mesh's own colors",
+			Objects.requireNonNull(RetroNpcMapping.get(0, "Chicken")).hasRecolors());
+	}
+
+	/**
+	 * No evil chicken is swapped, and that is the point of this test. Live mesh 7728 is already the
+	 * model it wore in August 2005, so there is nothing retro to restore; February 2005 - the cache
+	 * this plugin is built from - has no evil chicken at all, so there is nothing to copy either.
+	 * Every variant has to stay unmapped, including the two the name row would otherwise catch.
+	 */
+	@Test
+	public void testEvilChickensAreLeftAlone()
+	{
+		for (int id : new int[]{
+			NpcID.CHICKENQUEST_EVIL_CHICKEN,
+			NpcID.NZONE_CHICKENQUEST_EVIL_CHICKEN_NORMAL,
+			NpcID.EVIL_CHICKEN})
+		{
+			assertNull("evil chicken " + id + " must keep its own model",
+				RetroNpcMapping.get(id, "Evil Chicken"));
+		}
+
+		assertNull(RetroNpcMapping.get(
+			NpcID.NZONE_CHICKENQUEST_EVIL_CHICKEN_HARD, "Evil Chicken (hard)"));
+		assertNull(RetroNpcMapping.get(NpcID.DEADMAN_BREACH_EVIL_CHICKEN, "Big Evil Chicken"));
+
+		// and no name row may creep back in and catch a variant added later
+		assertNull(RetroNpcMapping.get(0, "Evil Chicken"));
+	}
+
+	/**
+	 * The rooster is the bird the 2005 palette belongs to, and nothing reached it before: the
+	 * generator only categorizes names containing "chicken", so no rooster row exists for the name
+	 * lookup to find. All three live variants have to resolve through the archetype - including
+	 * Ernest's, which wears the same live mesh as the evil chicken but, unlike it, has a February
+	 * 2005 definition of its own to go back to.
+	 */
+	@Test
+	public void testRoosterResolvesForEveryLiveVariant()
+	{
+		for (int id : new int[]{NpcID.ROOSTER, NpcID.FARM_ROOSTER, NpcID.MISC_ROOSTER})
+		{
+			assertRooster("rooster " + id, RetroNpcMapping.get(id, "Rooster"));
+		}
+		assertRooster("the name row", RetroNpcMapping.get(0, "Rooster"));
+	}
+
+	/**
+	 * Ernest's rooster fights on the rooster sequences, not the chicken ones. Uncaught they would
+	 * play a modern clip on 2005 geometry, so each has to land in its own slot and in no other -
+	 * the mistake {@code testZombieDeathVsFlinchAnimations} exists to catch.
+	 */
+	@Test
+	public void testRoosterInterceptsItsOwnSequences()
+	{
+		RetroNpcData rooster = RetroNpcMapping.get(NpcID.FARM_ROOSTER, "Rooster");
+		assertNotNull(rooster);
+
+		assertTrue("ROOSTERATTACK must become the retro peck", rooster.isAttackAnimation(2299));
+		assertTrue("ROOSTERPARRY must become the retro block", rooster.isDefendAnimation(2300));
+		assertTrue("ROOSTERDEATH must become the retro death", rooster.isDeathAnimation(2301));
+
+		// No sequence may register as more than one state
+		assertFalse(rooster.isDeathAnimation(2299));
+		assertFalse(rooster.isDefendAnimation(2299));
+		assertFalse(rooster.isAttackAnimation(2301));
+		assertFalse(rooster.isDefendAnimation(2301));
+		assertFalse(rooster.isAttackAnimation(2300));
+		assertFalse(rooster.isDeathAnimation(2300));
+
+		// ROOSTERWALK and ROOSTERREADY are poses, replaced outright rather than intercepted; 5385 is
+		// the modern chicken walk; ROOSTERMAGIC belongs to no mapped bird - none of the four is combat
+		assertFalse(rooster.isAttackAnimation(2297));
+		assertFalse(rooster.isAttackAnimation(2298));
+		assertFalse(rooster.isAttackAnimation(5385));
+		assertFalse(rooster.isAttackAnimation(2302));
+	}
+
+	/**
+	 * A 2005 rooster: the chicken mesh on the chicken sequences, wearing def 1018's palette, which
+	 * is the whole of what separates it from the hen, at the size that definition asked for.
+	 */
+	private static void assertRooster(String name, RetroNpcData data)
+	{
+		assertNotNull(name + " must resolve", data);
+		assertEquals(name, RetroNpcCategory.CHICKENS, data.getCategory());
+		assertArrayEquals(name, new int[]{2849}, data.getRetroModelIds());
+		assertEquals(name, 54, data.getIdleAnimationId());
+		assertEquals(name, 53, data.getWalkAnimationId());
+		assertEquals(name, 55, data.getAttackAnimationId());
+		assertEquals(name, 56, data.getDefendAnimationId());
+		assertEquals(name, 57, data.getDeathAnimationId());
+
+		assertTrue(name + " is only a rooster by its palette", data.hasRecolors());
+		assertArrayEquals(name, new short[]{127, 11200, 8394, 61}, data.getOriginalColors());
+		assertArrayEquals(name, new short[]{3998, 6720, 1942, 1942}, data.getReplacementColors());
+
+		// 204 * 172/128 - the ratio def 1018 asked for against the hen
+		assertEquals(name, 274, data.getScaleXZ());
+		assertEquals(name, 274, data.getScaleY());
+	}
+
+	/**
+	 * Cows resolve two different ways and both have to end up with the same six slots. Every cow
+	 * but the undead one is an id-registered archetype built by {@code cow(...)}; the undead cow is
+	 * the only one that reaches {@code createMappingData}. Asserting one path would pass while the
+	 * other silently carried -1 for attack, defend, death and misc.
+	 */
+	@Test
+	public void testCowsCategory()
+	{
+		RetroNpcData cow = RetroNpcMapping.get(NpcID.COW, "Cow");
+		assertNotNull("Cow mapping must exist", cow);
+		assertEquals(RetroNpcCategory.COWS, cow.getCategory());
+		assertArrayEquals(new int[]{3341, 3342}, cow.getRetroModelIds());
+		assertCowAnimations(cow);
+
+		// The undead cow is its own 2005 mesh, and the only cow built from the generated row
+		RetroNpcData undead = RetroNpcMapping.get(NpcID.AHOY_UNDEAD_COW, "Undead cow");
+		assertNotNull("Undead cow mapping must exist", undead);
+		assertEquals(RetroNpcCategory.COWS, undead.getCategory());
+		assertArrayEquals(new int[]{5237}, undead.getRetroModelIds());
+		assertCowAnimations(undead);
+	}
+
+	private static void assertCowAnimations(RetroNpcData cow)
+	{
+		assertEquals(61, cow.getIdleAnimationId());
+		assertEquals(58, cow.getWalkAnimationId());
+		assertEquals(59, cow.getAttackAnimationId());
+		assertEquals(60, cow.getDefendAnimationId());
+		assertEquals(62, cow.getDeathAnimationId());
+		assertEquals(61, cow.getMiscAnimationId());
+
+		assertTrue(cow.isAttackAnimation(59));
+		assertTrue(cow.isAttackAnimation(5849));
+		assertTrue(cow.isDefendAnimation(60));
+		assertTrue(cow.isDefendAnimation(5850));
+		assertTrue(cow.isDeathAnimation(62));
+		assertTrue(cow.isDeathAnimation(5851));
+
+		// The modern-only animations: no 2005 counterpart, and keyed to a framemap the retro mesh
+		// is not rigged to, so they are redirected to the retro idle rather than left to bend it
+		assertTrue(cow.isMiscAnimation(1735));
+		assertTrue(cow.isMiscAnimation(5853));
+		assertTrue(cow.isMiscAnimation(5854));
+		assertTrue(cow.isMiscAnimation(5855));
+
+		// 2162, 2303 and 2312 are legacy cow animations on framemap 282 - they fit the retro mesh
+		// and must keep playing
+		assertFalse(cow.isMiscAnimation(2162));
+		assertFalse(cow.isMiscAnimation(2303));
+		assertFalse(cow.isMiscAnimation(2312));
+		assertFalse(cow.isAttackAnimation(5848));
+	}
+
+	/**
+	 * The three 2005 cows are one mesh in three palettes, so each live variant has to come back
+	 * with its own pairs - and every one of them has to start with the drift correction, without
+	 * which the 2005 pairs miss the repainted hide and the cow renders white.
+	 */
+	@Test
+	public void testCowVariantsCarryTheirOwnPalettes()
+	{
+		RetroNpcData white = RetroNpcMapping.get(NpcID.COW, "Cow");
+		RetroNpcData brown = RetroNpcMapping.get(NpcID.COW2, "Cow");
+		RetroNpcData grey = RetroNpcMapping.get(NpcID.COW3, "Cow");
+
+		assertNotNull(white);
+		assertNotNull(brown);
+		assertNotNull(grey);
+		assertTrue(white.hasRecolors());
+		assertTrue(brown.hasRecolors());
+		assertTrue(grey.hasRecolors());
+
+		assertNotEquals("the 2005 cow variants differ only by palette", white, brown);
+		assertNotEquals("the 2005 cow variants differ only by palette", brown, grey);
+
+		// The 2005 definition's pairs verbatim. No palette-drift correction: the bundle carries the
+		// 2005 meshes, so the indices the 2005 client recolored are the ones that are there - unlike
+		// the live copies, whose hide was repainted 10363 -> 10365 across 135 faces
+		assertArrayEquals(new short[]{26, 10363, 30}, white.getOriginalColors());
+		assertArrayEquals(new short[]{10365, 5784, 10365}, white.getReplacementColors());
+
+		// 2005 asked for this one slightly smaller; the hand-set size must survive the graft
+		assertEquals(115, brown.getScaleXZ());
+		assertEquals(115, brown.getScaleY());
+	}
+
+	/**
+	 * February 2005 has no calf, so it is the cow mesh scaled down - which means it must still be
+	 * the cow mesh, and must still be smaller than the cow.
+	 */
+	@Test
+	public void testCowCalvesAreTheCowMeshScaledDown()
+	{
+		for (int calfId : new int[]{NpcID.COW2_CALF, NpcID.COW3_CALF, NpcID.CALF})
+		{
+			RetroNpcData calf = RetroNpcMapping.get(calfId, "Cow calf");
+			assertNotNull("calf " + calfId + " must resolve", calf);
+			assertEquals(RetroNpcCategory.COWS, calf.getCategory());
+			assertArrayEquals(new int[]{3341, 3342}, calf.getRetroModelIds());
+			assertEquals(68, calf.getScaleXZ());
+			assertEquals(68, calf.getScaleY());
+			assertCowAnimations(calf);
+		}
+	}
+
+	/**
+	 * Cows render from the bundle, not the live cache: both 2005 meshes are still at their own ids
+	 * but their vertex groups were renumbered onto another rig, so the cache-backed path would
+	 * animate the right geometry off the wrong joints. requiresInjectedGeometry is what stops it
+	 * falling back to that path when the bundle is missing.
+	 */
+	@Test
+	public void testCowsAreBundleOnly()
+	{
+		assertTrue("cows must not fall back to live geometry",
+			RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.COWS));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.COWS));
+	}
+
+	/**
+	 * "Cow" is a name the plugin matches on, so anything else wearing it has to be kept out by id.
+	 * 10598 is a mount on animations 180/229, not a cow.
+	 */
+	@Test
+	public void testNonCowsNamedCowDoNotSwap()
+	{
+		assertNull(RetroNpcMapping.get(NpcID.OSB8_COW, "Cow"));
+	}
+
+	/**
+	 * The Zanaris and Nightmare Zone cows share the ordinary cow's look, and "Cow (hard)" does not
+	 * match the name row at all - it reaches the mapping only through its registered id.
+	 */
+	@Test
+	public void testCowVariantsOutsideLumbridgeResolve()
+	{
+		assertNotNull(RetroNpcMapping.get(NpcID.FAIRY_COW, "Cow"));
+		assertNotNull(RetroNpcMapping.get(NpcID.NZONE_COW_NORMAL, "Cow"));
+		assertNotNull(RetroNpcMapping.get(NpcID.NZONE_COW_HARD, "Cow (hard)"));
+		assertNotNull(RetroNpcMapping.get(NpcID.ANMA_COW_CUTSCENE, "Undead cow"));
+	}
+
+	/**
+	 * The 2005 goblin family is six definitions under one name, so every variety has to come back
+	 * with its own part list and palette while still agreeing with {@code createMappingData} on all
+	 * five animation slots - the archetypes supersede the generated row for "goblin", and a slot
+	 * the factory forgot would read as -1 rather than fail loudly.
+	 */
+	@Test
+	public void testGoblinVarietiesResolveByIdAndShareTheAnimations()
+	{
+		RetroNpcData green = RetroNpcMapping.get(NpcID.GOBLIN_GREENARMOUR, "Goblin");
+		RetroNpcData red = RetroNpcMapping.get(NpcID.GOBLIN_REDARMOUR, "Goblin");
+		RetroNpcData armed = RetroNpcMapping.get(NpcID.GOBLIN_ARMED, "Goblin");
+		RetroNpcData strong = RetroNpcMapping.get(NpcID.GOBLIN_HELMET, "Goblin");
+		RetroNpcData plain = RetroNpcMapping.get(NpcID.GOBLIN, "Goblin");
+
+		for (RetroNpcData variety : new RetroNpcData[]{green, red, armed, strong, plain})
+		{
+			assertNotNull("every goblin variety must resolve", variety);
+			// One category for the whole family, or get() would stop preferring the id over the
+			// name row and every variety would collapse back into the default
+			assertEquals(RetroNpcCategory.GOBLINS, variety.getCategory());
+			assertGoblinAnimations(variety);
+		}
+
+		// Def 100 - the plain goblin is the four-part kit with no weapon
+		assertArrayEquals(new int[]{2951, 2953, 2955, 2956}, plain.getRetroModelIds());
+		// Def 101 - level 5, the same kit carrying 2957
+		assertArrayEquals(new int[]{2951, 2953, 2955, 2956, 2957}, armed.getRetroModelIds());
+		// Def 102 - "grown strong": the only variety that swaps the body mesh rather than a color
+		assertArrayEquals(new int[]{2952, 2953, 2955, 2956}, strong.getRetroModelIds());
+	}
+
+	/**
+	 * Green and red are the whole of the 2005 goblin's opcode 40 data, and the live cache is what
+	 * pins each one down: GOBLIN_GREENARMOUR and GOBLIN_REDARMOUR still carry defs 298 and 299's
+	 * pairs verbatim over the 2005 meshes themselves.
+	 */
+	@Test
+	public void testGoblinVariantsCarryTheirOwnPalettes()
+	{
+		RetroNpcData green = RetroNpcMapping.get(NpcID.GOBLIN_GREENARMOUR, "Goblin");
+		RetroNpcData red = RetroNpcMapping.get(NpcID.GOBLIN_REDARMOUR, "Goblin");
+		RetroNpcData plain = RetroNpcMapping.get(NpcID.GOBLIN, "Goblin");
+
+		assertTrue(green.hasRecolors());
+		assertTrue(red.hasRecolors());
+		assertNotEquals("the two colored goblins differ only by palette", green, red);
+
+		// Def 298 and def 299's pairs, each followed by the live-to-2005 correction that gives the
+		// weapon mesh 2957 its 2005 colors back
+		assertArrayEquals(new short[]{916, 70, 8084}, green.getOriginalColors());
+		assertArrayEquals(new short[]{22443, -22417, 528}, green.getReplacementColors());
+		assertArrayEquals(new short[]{916, 70, 8084}, red.getOriginalColors());
+		assertArrayEquals(new short[]{933, -22417, 528}, red.getReplacementColors());
+
+		// The plain goblin carries no weapon, so it gets no correction and no pairs at all - its
+		// armour is the mesh's own 916
+		assertFalse(plain.hasRecolors());
+	}
+
+	/**
+	 * 147 live NPCs are called exactly "Goblin" and only a handful are listed by id, so the name
+	 * row carrying the rest is not a fallback of last resort - it is the main path. This is why
+	 * GOBLINS stays out of ID_ONLY_CATEGORIES.
+	 */
+	@Test
+	public void testUnlistedGoblinsFallBackToTheNameRow()
+	{
+		for (int npcId : new int[]{
+			NpcID.CHAMPIONS_GOBLIN, NpcID.GOBLIN_UNARMED_MELEE_1,
+			NpcID.GOBLIN_ARMED_MELEE_2, NpcID.GOBLIN_UNARMED_MELEE_IN_1})
+		{
+			RetroNpcData data = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull("goblin " + npcId + " must still swap by name", data);
+			assertEquals(RetroNpcCategory.GOBLINS, data.getCategory());
+			assertArrayEquals(new int[]{2951, 2953, 2955, 2956}, data.getRetroModelIds());
+		}
+	}
+
+	/**
+	 * The shield-and-spear goblins are a pose family of their own: GOBLIN_RED_SOLDIER_5 and
+	 * GOBLIN_GREEN_SOLDIER_4 stand on 6200 and walk on 6201, where every other live goblin uses
+	 * 6181 or 6186. Their attack, 6199, was the one goblin combat animation not intercepted, so
+	 * both swung a modern animation on the retro mesh while everything else about them swapped.
+	 */
+	@Test
+	public void testShieldSpearGoblinsAttackIsIntercepted()
+	{
+		for (int npcId : new int[]{NpcID.GOBLIN_RED_SOLDIER_5, NpcID.GOBLIN_GREEN_SOLDIER_4})
+		{
+			RetroNpcData goblin = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull(goblin);
+			assertTrue("the shield-and-spear attack must be rewritten to the 2005 attack",
+				goblin.isAttackAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_SPEAR_ATTACK_SHIELD));
+			// Its ready and walk poses are replaced outright rather than intercepted, so they must
+			// not also register as combat
+			assertFalse(goblin.isAttackAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_SHIELD_SPEAR_READY));
+			assertFalse(goblin.isDefendAnimation(AnimationID.SLICE_SURFACE_GOBLIN_SQUAT_WALK_SHIELD_ARMED));
+		}
+	}
+
+	/**
+	 * Armed is read off the live kit, not off the name: 12 of the goblin family's part meshes only
+	 * ever appear in slot 6 or later and 66 only ever appear before it, with nothing in both. The
+	 * names disagree with that in both directions, and the kit is what the player sees.
+	 */
+	@Test
+	public void testArmedGoblinsAreChosenByKitNotByName()
+	{
+		// Named unarmed, holds a weapon
+		for (int npcId : new int[]{NpcID.GOBLIN_UNARMED_MELEE_6, NpcID.GOBLIN_UNARMED_MELEE_IN_7})
+		{
+			RetroNpcData goblin = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull(goblin);
+			assertArrayEquals("a goblin holding a weapon must carry 2957",
+				new int[]{2951, 2953, 2955, 2956, 2957}, goblin.getRetroModelIds());
+		}
+
+		// Named armed, holds nothing
+		for (int npcId : new int[]{NpcID.GOBLIN_ARMED_MELEE_2, NpcID.GOBLIN_ARMED_MELEE_4})
+		{
+			RetroNpcData goblin = RetroNpcMapping.get(npcId, "Goblin");
+			assertNotNull(goblin);
+			assertArrayEquals("a goblin holding nothing must not be handed a weapon",
+				new int[]{2951, 2953, 2955, 2956}, goblin.getRetroModelIds());
+		}
+	}
+
+	/**
+	 * The two cutscene goblins are registered by id and are named after how each one dies, so their
+	 * scripted deaths have to be intercepted like any other.
+	 */
+	@Test
+	public void testCutsceneGoblinDeathsAreIntercepted()
+	{
+		RetroNpcData arrow = RetroNpcMapping.get(NpcID.SLICE_CUTSCENE_ARROW_GOBLIN, "Goblin");
+		RetroNpcData firebolt = RetroNpcMapping.get(NpcID.SLICE_CUTSCENE_FIREBOLT_GOBLIN, "Goblin");
+		assertNotNull(arrow);
+		assertNotNull(firebolt);
+		assertTrue(arrow.isDeathAnimation(AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_ARROW));
+		assertTrue(firebolt.isDeathAnimation(AnimationID.SLICE_SURFACE_GOBLIN_DEATH_BY_FIREBOLT));
+		// Wormbrain is not called "Goblin" and reaches no mapping, so its death stays out
+		assertFalse(arrow.isDeathAnimation(AnimationID.SURFACE_GOBLIN_WORMBRAIN_DEATH));
+	}
+
+	/**
+	 * "Goblin" is a name the plugin matches on, so anything else wearing it has to be kept out by
+	 * id. The Recruitment Drive desk goblins are one merged mesh, size 2, and never walk.
+	 */
+	@Test
+	public void testNonGoblinsNamedGoblinDoNotSwap()
+	{
+		assertNull(RetroNpcMapping.get(NpcID.PATTERN_GOBLIN1_DESK, "Goblin"));
+		assertNull(RetroNpcMapping.get(NpcID.PATTERN_GOBLIN2_DESK, "Goblin"));
+	}
+
+	/**
+	 * The goblin guard and the hobgoblin share the goblin's category but not its archetype: the
+	 * guard is the armed kit, and the hobgoblin is its own mesh on its own poses, still coming from
+	 * the generated row. Proves the goblin archetypes did not swallow the sibling names.
+	 */
+	@Test
+	public void testGoblinGuardAndHobgoblinKeepTheirOwnKit()
+	{
+		RetroNpcData guard = RetroNpcMapping.get(NpcID.GOBLIN_GUARD, "Goblin guard");
+		assertNotNull(guard);
+		assertEquals(RetroNpcCategory.GOBLINS, guard.getCategory());
+		assertArrayEquals(new int[]{2951, 2953, 2955, 2956, 2957}, guard.getRetroModelIds());
+		assertGoblinAnimations(guard);
+
+		RetroNpcData hobgoblin = RetroNpcMapping.get(0, "Hobgoblin");
+		assertNotNull(hobgoblin);
+		assertEquals(RetroNpcCategory.GOBLINS, hobgoblin.getCategory());
+		assertArrayEquals(new int[]{2994}, hobgoblin.getRetroModelIds());
+		// Its own 2005 poses, not the goblin's
+		assertEquals(AnimationID.HOBGOBLIN_READY, hobgoblin.getIdleAnimationId());
+		assertEquals(AnimationID.HOBGOBLIN_WALK, hobgoblin.getWalkAnimationId());
+	}
+
+	/**
+	 * Every goblin, however it resolved, plays the same 2005 sequences - the archetypes and
+	 * createMappingData have to agree slot for slot.
+	 */
+	private static void assertGoblinAnimations(RetroNpcData goblin)
+	{
+		assertEquals(AnimationID.GOBLIN_READY, goblin.getIdleAnimationId());
+		assertEquals(AnimationID.GOBLIN_WALK, goblin.getWalkAnimationId());
+		assertEquals(AnimationID.GOBLIN_ATTACK_UNARMED, goblin.getAttackAnimationId());
+		assertEquals(AnimationID.GOBLIN_BLOCK, goblin.getDefendAnimationId());
+		assertEquals(AnimationID.GOBLIN_DEATH, goblin.getDeathAnimationId());
+
+		assertTrue(goblin.isAttackAnimation(6184));
+		assertTrue(goblin.isAttackAnimation(6154));
+		assertTrue(goblin.isDefendAnimation(6183));
+		assertTrue(goblin.isDeathAnimation(6182));
+		assertFalse(goblin.isAttackAnimation(6186));
 	}
 
 	@Test
@@ -1223,14 +1861,15 @@ public class RetroNpcCategoryTest
 		// whether they can render at all - see isCategoryEnabled
 		assertTrue("useInjectionPipeline must default to true", config.useInjectionPipeline());
 
-		// The bundle-only categories are opt-in, because they are what the plugin distributes
-		assertFalse("swapDragons must default to false", config.swapDragons());
-		assertFalse("swapDemons must default to false", config.swapDemons());
-		assertFalse("swapImps must default to false", config.swapImps());
-		assertFalse("swapCyclops must default to false", config.swapCyclops());
-		assertFalse("swapGuards must default to false", config.swapGuards());
+		// The bundle-only categories ship on as well. They are not individually opt-in: what the
+		// plugin distributes is gated once, by useInjectionPipeline above, and turning that off
+		// leaves every one of these unable to render whatever its own toggle says.
+		assertTrue("swapDragons must default to true", config.swapDragons());
+		assertTrue("swapDemons must default to true", config.swapDemons());
+		assertTrue("swapImps must default to true", config.swapImps());
+		assertTrue("swapCyclops must default to true", config.swapCyclops());
+		assertTrue("swapGuards must default to true", config.swapGuards());
 
-		// Off by default: it turns another plugin's settings off while it is on
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
 	}

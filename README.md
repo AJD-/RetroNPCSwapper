@@ -18,23 +18,26 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets* (on by default):
 
 - **Giants** — Fire, Ice and Moss, under the same Giants toggle as Hill
-- **Dragons** — adult and baby
+- **Dragons** — chromatic/metallic (up to steel) adults, the King Black Dragon, and baby dragons
 - **Demons** — lesser, greater and black
 - **Imps**
 - **Cyclopes**
 - **Guards**
+- **Cows**
 
 These need converted 2005 assets because swapping IDs is not enough for them, and they fail in two
 different ways. Some lost the mesh outright: the adult dragon and demon meshes were removed from the
 OSRS cache and their IDs reused for unrelated geometry such as statues and skulls, and the fire, ice
 and moss giant heads and the cyclops head went the same way, so there is nothing to swap to. Others
 kept the mesh but lost the rig: the imp and baby dragon meshes survived, but the animation *frames*
-behind their surviving sequence IDs were re-authored for the modern skeletons, and the guard's parts
-are byte-identical in both caches with their vertex groups renumbered onto a different rig. Either
-way the geometry, the animation, or both have to come from the 2005 data instead of the live cache.
+behind their surviving sequence IDs were re-authored for the modern skeletons. Either way the 
+geometry, the animation, or both have to come from the 2005 data instead of the live cache.
 
 `./gradlew compareRetroModels -Pmodels=<ids> -Pfindmoved` is the tool that settles whether an ID
 still holds its 2005 mesh; `./gradlew verifyRetroRigs` settles whether its animation still fits.
+
+Scenery Objects are not currently swapped by this plugin, so the Dairy Cow and Varrock retextures
+are not supported (yet!)
 
 ## Requirements
 
@@ -69,9 +72,9 @@ The plugin detects this and simply stands down until the GPU plugin holds the re
   numeric model and animation IDs, and every asset it displays already comes from your own game
   cache. Resolving an ID is not the same as it still being the 2005 asset, which is what separates
   those categories from the injected ones.
-- **The injected categories ship their assets.** Dragons, demons, imps, guards, the cyclops and the
+- **The injected categories ship their assets.** Dragons, demons, imps, guards, cows, the cyclops and the
   fire, ice and moss giant heads have no usable 2005 asset left in the live cache, so
-  `retro-assets.dat` (~52 KB) is bundled in the jar and carries their meshes, rigs and animation
+  `retro-assets.dat` (~76 KB) is bundled in the jar and carries their meshes, rigs and animation
   clips, extracted from the February 2005 cache. This is the one thing the plugin distributes rather
   than reads from your own installation, which is why it is all gated behind a single toggle you can
   switch off. Parts are stored individually and joined at spawn, so the body the whole giant family
@@ -93,6 +96,17 @@ utilizes the GPU plugin's draw callbacks.
   `-Pfindmoved` rescans the whole live model index to separate "the mesh moved to a new ID" from "the
   mesh is gone". The match is exact, so read a `REPLACED` verdict by its magnitude — the chicken
   drifted by one face and reports `REPLACED` while rendering perfectly.
+  `-Pfacediff` adds the two measurements that settle what the palette alone cannot: what share
+  of the 2005 vertex positions the live mesh still has — 97% for the preserved chicken and 100%
+  for the skeleton, against 479 vertices becoming 68 for a genuinely reused ID — and, face by
+  face, which 2005 color became which live one. That second number is what a correction recolor
+  has to be built from: the cow body 3341 is 98% the same geometry with its whole hide
+  repainted, and a distinct-palette diff cannot say which color became which. Faces are matched
+  by position in space, because re-encoding reorders both the faces and the vertices.
+- `./gradlew dumpRetroNpcDefinitions -Pnpc=goblin -Pmax=200` prints 2005 NPC definitions (IDs or a
+  name substring) with their opcode 40 recolor pairs. `npc-mappings.json` keeps only the lowest-id
+  row per name, so it cannot answer a question about one particular NPC among several sharing a
+  name — which is every family whose 2005 varieties were one mesh in several palettes.
 - `./gradlew dumpNpcDefinitions -Pnpc=1173` prints live-cache NPC definitions (IDs or a name
   substring) — models, scales and pose animations, for comparing against the retro definition.
 - `./gradlew generateRetroAssets` rebuilds `retro-assets.dat` from the same local 2005 cache. It
