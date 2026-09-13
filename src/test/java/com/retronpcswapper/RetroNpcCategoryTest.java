@@ -678,6 +678,50 @@ public class RetroNpcCategoryTest
 			Objects.requireNonNull(RetroNpcMapping.get(-1, "Baby black dragon")).getReplacementColors()[0]);
 	}
 
+	/**
+	 * The 2005 giant skeleton is def 93 - "Skeleton", level 45, the armed kit at scale 170. Live
+	 * GIANTSKELETON shares that name, so without its id it resolved to the normal-size unarmed row.
+	 */
+	@Test
+	public void testGiantSkeletons()
+	{
+		int[] giantIds = {
+			NpcID.GIANTSKELETON, NpcID.GIANTSKELETON2,
+			NpcID.SWORD_SKELETON_3, NpcID.SWORD_SKELETON_3B, NpcID.LOTR_GIANT_SKELETON
+		};
+		for (int id : giantIds)
+		{
+			for (String name : new String[]{"Skeleton", "Giant skeleton"})
+			{
+				RetroNpcData giant = RetroNpcMapping.get(id, name);
+				assertNotNull("Giant skeleton ID " + id + " as '" + name + "' must be mapped", giant);
+				assertEquals(RetroNpcCategory.SKELETONS, giant.getCategory());
+				assertArrayEquals(new int[]{2944, 2946}, giant.getRetroModelIds());
+				assertEquals(170, giant.getScaleXZ());
+				assertEquals(170, giant.getScaleY());
+				assertEquals(262, giant.getIdleAnimationId());
+				assertEquals(259, giant.getWalkAnimationId());
+				assertEquals(260, giant.getAttackAnimationId());
+				assertEquals(261, giant.getDefendAnimationId());
+				assertEquals(263, giant.getDeathAnimationId());
+			}
+		}
+
+		// An unregistered "Giant skeleton" still reaches the giant by name
+		RetroNpcData byName = RetroNpcMapping.get(99996, "Giant skeleton");
+		assertNotNull(byName);
+		assertEquals(170, byName.getScaleXZ());
+
+		// The giant's own combat sequences are intercepted
+		assertTrue(byName.isAttackAnimation(AnimationID.SKELETON_UPDATE_GIANT_ATTACK));
+		assertTrue(byName.isDefendAnimation(AnimationID.SKELETON_UPDATE_GIANT_DEFEND));
+		assertTrue(byName.isDeathAnimation(AnimationID.SKELETON_UPDATE_GIANT_DEATH));
+
+		// Regular skeletons keep their size
+		assertEquals(128, RetroNpcMapping.get(NpcID.SKELETON_UNARMED, "Skeleton").getScaleXZ());
+		assertEquals(128, RetroNpcMapping.get(NpcID.SKELETON_ARMED, "Skeleton").getScaleXZ());
+	}
+
 	@Test
 	public void testSkeletonsCategory()
 	{
@@ -710,8 +754,9 @@ public class RetroNpcCategoryTest
 		}
 
 		int[] armedIds = {
-				NpcID.SKELETON_ARMED, NpcID.SKELETON_ARMED2, NpcID.SKELETON_UNAGRESSIVE2,
-				NpcID.SKELETON_UNAGRESSIVE3
+				NpcID.SKELETON_ARMED, NpcID.SKELETON_ARMED2, NpcID.SKELETON_ARMED3,
+				NpcID.SKELETON_ARMED4, NpcID.SKELETON_ARMED5,
+				NpcID.SKELETON_UNAGRESSIVE2, NpcID.SKELETON_UNAGRESSIVE3
 		};
 		for (int id : armedIds)
 		{
