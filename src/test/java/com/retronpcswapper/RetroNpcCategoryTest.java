@@ -1901,6 +1901,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapZombies must default to true", config.swapZombies());
 		assertTrue("swapGiants must default to true", config.swapGiants());
 		assertTrue("swapGhosts must default to true", config.swapGhosts());
+		assertTrue("swapHellhounds must default to true", config.swapHellhounds());
 
 		// The pipeline toggle carries the six bundle-only categories, so its default decides
 		// whether they can render at all - see isCategoryEnabled
@@ -1917,6 +1918,113 @@ public class RetroNpcCategoryTest
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
+	}
+
+	/**
+	 * The 2005 hellhound is def 49, mesh 2997 on sequences 157-161, all of which survive in the live
+	 * cache - so it is a cache-path category, and none of the retro sequences may be intercepted.
+	 */
+	@Test
+	public void testHellhounds()
+	{
+		int[] ids = {
+			NpcID.HELLHOUND, NpcID.HELLHOUND_STRONGHOLDCAVE, NpcID.POH_HELLHOUND,
+			NpcID.KOUREND_HELLHOUND, NpcID.WILD_CAVE_HELL_HOUND, NpcID.GODWARS_ANCIENT_HELLHOUND
+		};
+		for (int id : ids)
+		{
+			RetroNpcData hound = RetroNpcMapping.get(id, "Hellhound");
+			assertNotNull("Hellhound ID " + id + " must be mapped", hound);
+			assertEquals(RetroNpcCategory.HELLHOUNDS, hound.getCategory());
+			assertArrayEquals(new int[]{2997}, hound.getRetroModelIds());
+			assertEquals(160, hound.getIdleAnimationId());
+			assertEquals(157, hound.getWalkAnimationId());
+			assertEquals(158, hound.getAttackAnimationId());
+			assertEquals(159, hound.getDefendAnimationId());
+			assertEquals(161, hound.getDeathAnimationId());
+			assertEquals(160, hound.getMiscAnimationId());
+
+			int scale = id == NpcID.GODWARS_ANCIENT_HELLHOUND ? 90 : 128;
+			assertEquals(scale, hound.getScaleXZ());
+			assertEquals(scale, hound.getScaleY());
+		}
+
+		// An unregistered hellhound still reaches the archetype by name
+		RetroNpcData byName = RetroNpcMapping.get(99995, "Hellhound");
+		assertNotNull(byName);
+		assertEquals(RetroNpcCategory.HELLHOUNDS, byName.getCategory());
+
+		// The modern dog-rig sequences are intercepted
+		assertTrue(byName.isAttackAnimation(AnimationID.DOG_UPDATE_MEDIUM_DOG_ATTACK));
+		assertTrue(byName.isAttackAnimation(AnimationID.DOG_UPDATE_HELLHOUND_GODWARS_ATTACK));
+		assertTrue(byName.isDefendAnimation(AnimationID.DOG_UPDATE_MEDIUM_DOG_DEFEND));
+		assertTrue(byName.isDeathAnimation(AnimationID.DOG_UPDATE_MEDIUM_DOG_DEATH));
+		assertTrue(byName.isMiscAnimation(AnimationID.DOG_UPDATE_HELLHOUND_GODWARS_DEATH_REVERSE));
+
+		// The surviving 2005 sequences are the targets, never things to intercept, and the torch is
+		// not on the dog rig
+		for (int retro : new int[]{157, 158, 159, 160, 161})
+		{
+			assertFalse(byName.isAttackAnimation(retro));
+			assertFalse(byName.isDefendAnimation(retro));
+			assertFalse(byName.isDeathAnimation(retro));
+			assertFalse(byName.isMiscAnimation(retro));
+		}
+		assertFalse(byName.isMiscAnimation(AnimationID.HELLHOUND_TORCH));
+
+		// Cache path: the mesh and rig both survive
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.HELLHOUNDS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.HELLHOUNDS));
+
+		// Other hounds are left where they were
+		assertNull(RetroNpcMapping.get(NpcID.WILD_CAVE_HELLHOUND, "Revenant hellhound"));
+		assertNull(RetroNpcMapping.get(NpcID.ARCEUUS_REANIMATED_HELLHOUND, "Reanimated hellhound"));
+	}
+
+	/**
+	 * The skeleton hellhound is 2005 def 1575 - mesh 4974 on sequences 1493-1497, both preserved -
+	 * and belongs to the Hellhounds toggle, not the generated SKELETONS row it used to fall into.
+	 */
+	@Test
+	public void testSkeletonHellhounds()
+	{
+		Object[][] cases = {
+			{NpcID.SKELETON_HELLHOUND, "Skeleton Hellhound"},
+			{NpcID.NZONE_SKELETON_HELLHOUND_NORMAL, "Skeleton Hellhound"},
+			{NpcID.NZONE_SKELETON_HELLHOUND_HARD, "Skeleton Hellhound (hard)"},
+			{99994, "Skeleton Hellhound"}
+		};
+		for (Object[] c : cases)
+		{
+			RetroNpcData hound = RetroNpcMapping.get((Integer) c[0], (String) c[1]);
+			assertNotNull("Skeleton hellhound " + c[0] + " must be mapped", hound);
+			assertEquals(RetroNpcCategory.HELLHOUNDS, hound.getCategory());
+			assertArrayEquals(new int[]{4974}, hound.getRetroModelIds());
+			assertEquals(1494, hound.getIdleAnimationId());
+			assertEquals(1493, hound.getWalkAnimationId());
+			assertEquals(1495, hound.getAttackAnimationId());
+			assertEquals(1496, hound.getDefendAnimationId());
+			assertEquals(1497, hound.getDeathAnimationId());
+			assertEquals(256, hound.getScaleXZ());
+			assertEquals(256, hound.getScaleY());
+			assertArrayEquals(new short[]{10318}, hound.getOriginalColors());
+			assertArrayEquals(new short[]{11714}, hound.getReplacementColors());
+
+			assertTrue(hound.isAttackAnimation(AnimationID.DOG_UPDATE_SKELETON_HELLHOUND_ATTACK));
+			assertTrue(hound.isDefendAnimation(AnimationID.DOG_UPDATE_SKELETON_HELLHOUND_DEFEND));
+			assertTrue(hound.isDeathAnimation(AnimationID.DOG_UPDATE_MEDIUM_DOG_DEATH));
+			for (int retro : new int[]{1493, 1494, 1495, 1496, 1497})
+			{
+				assertFalse(hound.isAttackAnimation(retro));
+				assertFalse(hound.isDefendAnimation(retro));
+				assertFalse(hound.isDeathAnimation(retro));
+			}
+		}
+
+		// Vet'ion's summons share the name and are deliberately left alone
+		assertNull(RetroNpcMapping.get(NpcID.VETION_HELLHOUND_JNR, "Skeleton Hellhound"));
+		assertNull(RetroNpcMapping.get(NpcID.VETION_HELLHOUND_JNR_SINGLES, "Skeleton Hellhound"));
+		assertNull(RetroNpcMapping.get(NpcID.VETION_HELLHOUND_SNR, "Greater Skeleton Hellhound"));
 	}
 
 	@Test

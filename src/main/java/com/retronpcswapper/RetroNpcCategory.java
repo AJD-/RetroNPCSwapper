@@ -46,5 +46,6 @@ public enum RetroNpcCategory
 	MOSS_GIANTS,
 	CYCLOPS,
 	CHICKENS,
-	COWS
+	COWS,
+	HELLHOUNDS
 }

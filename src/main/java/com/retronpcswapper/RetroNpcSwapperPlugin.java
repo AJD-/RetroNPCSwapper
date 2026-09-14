@@ -644,6 +644,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return config.swapChickens();
 			case COWS:
 				return config.swapCows() && injectionEnabled();
+			case HELLHOUNDS:
+				// Mesh 2997 and sequences 157-161 both survive intact, so the cache path draws it
+				return config.swapHellhounds();
 			case GOBLINS:
 				return config.swapGoblins();
 			case SKELETONS:
