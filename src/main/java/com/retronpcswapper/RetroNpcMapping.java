@@ -84,7 +84,10 @@ public class RetroNpcMapping
 		// Named "Goblin", but these two are the goblins sitting at the Recruitment Drive desks:
 		// one merged mesh each, size 2 rather than 1, and no walk animation at all. The 2005
 		// goblin is a four-part standing kit and would replace a seated NPC with it
-		NpcID.PATTERN_GOBLIN1_DESK, NpcID.PATTERN_GOBLIN2_DESK
+		NpcID.PATTERN_GOBLIN1_DESK, NpcID.PATTERN_GOBLIN2_DESK,
+		// Named "Skeleton Hellhound", but these are Vet'ion's summons on their own mesh 47207, and
+		// they are left as they are
+		NpcID.VETION_HELLHOUND_JNR, NpcID.VETION_HELLHOUND_JNR_SINGLES
 	);
 
 	/**
@@ -288,6 +291,54 @@ public class RetroNpcMapping
 	public static final Set<Integer> COW_MODERN_MISC = Set.of(
 		AnimationID.COW_GRAZE, AnimationID.COW_UPDATE_READY,
 		AnimationID.COW_UPDATE_GRAZE, AnimationID.COW_UPDATE_DAIRY
+	);
+
+	// HELL_ATTACK/HELL_BLOCK/HELL_DEATH (158/159/161) are deliberately absent: they are the surviving
+	// 2005 sequences themselves - the retro targets, not modern anims to intercept.
+	//
+	// Combat sequences are not part of a definition, so which of these a live hellhound plays cannot
+	// be read from the cache. What was measured is that every live hellhound pose and every candidate
+	// here resolves to framemap 1491, the modern dog rig, and any 1491 sequence bends mesh 2997. So
+	// the whole DOG_UPDATE combat family is listed rather than a guessed subset; the sets are scoped
+	// to this category, so the extra ids only ever apply to hellhounds.
+	public static final Set<Integer> HELLHOUND_MODERN_ATTACKS = Set.of(
+		AnimationID.DOG_UPDATE_SMALL_DOG_ATTACK, AnimationID.DOG_UPDATE_MEDIUM_DOG_ATTACK,
+		AnimationID.DOG_UPDATE_WOLF_ATTACK, AnimationID.DOG_UPDATE_JACKAL_ATTACK,
+		AnimationID.DOG_UPDATE_FIGHT_ARENA_ATTACK, AnimationID.DOG_UPDATE_HELLHOUND_GODWARS_ATTACK
+	);
+	public static final Set<Integer> HELLHOUND_MODERN_DEFENDS = Set.of(
+		AnimationID.DOG_UPDATE_MEDIUM_DOG_DEFEND, AnimationID.DOG_UPDATE_WOLF_DEFEND,
+		AnimationID.DOG_UPDATE_JACKAL_DEFEND, AnimationID.DOG_UPDATE_FOX_DEFEND,
+		AnimationID.DOG_UPDATE_FIGHT_ARENA_DEFEND, AnimationID.DOG_UPDATE_GODWARS_DEFEND
+	);
+	public static final Set<Integer> HELLHOUND_MODERN_DEATHS = Set.of(
+		AnimationID.DOG_UPDATE_MEDIUM_DOG_DEATH, AnimationID.DOG_UPDATE_WOLF_DEATH,
+		AnimationID.DOG_UPDATE_JACKAL_DEATH, AnimationID.DOG_UPDATE_FOX_DEATH,
+		AnimationID.DOG_UPDATE_HELLHOUND_GODWARS_DEATH
+	);
+
+	/**
+	 * The God Wars hellhound's respawn, redirected to the retro idle. It is the death played in
+	 * reverse, on framemap 1491 like the rest, and reaches only 65% of mesh 2997.
+	 */
+	public static final Set<Integer> HELLHOUND_MODERN_MISC = Set.of(
+		AnimationID.DOG_UPDATE_HELLHOUND_GODWARS_DEATH_REVERSE
+	);
+
+	// The skeleton hellhound is on the same modern dog rig (framemap 1491, 36-45% reach on 4974),
+	// with an attack and defend of its own on top of the family. SKELETON_HOUND_ATTACK/BLOCK/DEATH
+	// (1495/1496/1497) are its surviving 2005 sequences and deliberately absent.
+	public static final Set<Integer> SKELETON_HELLHOUND_MODERN_ATTACKS = Set.of(
+		AnimationID.DOG_UPDATE_SKELETON_HELLHOUND_ATTACK,
+		AnimationID.DOG_UPDATE_SMALL_DOG_ATTACK, AnimationID.DOG_UPDATE_MEDIUM_DOG_ATTACK,
+		AnimationID.DOG_UPDATE_WOLF_ATTACK, AnimationID.DOG_UPDATE_JACKAL_ATTACK,
+		AnimationID.DOG_UPDATE_FIGHT_ARENA_ATTACK, AnimationID.DOG_UPDATE_HELLHOUND_GODWARS_ATTACK
+	);
+	public static final Set<Integer> SKELETON_HELLHOUND_MODERN_DEFENDS = Set.of(
+		AnimationID.DOG_UPDATE_SKELETON_HELLHOUND_DEFEND,
+		AnimationID.DOG_UPDATE_MEDIUM_DOG_DEFEND, AnimationID.DOG_UPDATE_WOLF_DEFEND,
+		AnimationID.DOG_UPDATE_JACKAL_DEFEND, AnimationID.DOG_UPDATE_FOX_DEFEND,
+		AnimationID.DOG_UPDATE_FIGHT_ARENA_DEFEND, AnimationID.DOG_UPDATE_GODWARS_DEFEND
 	);
 
 	// Pre-instantiated immutable archetypes.
@@ -880,6 +931,65 @@ public class RetroNpcMapping
 	public static final RetroNpcData GOBLIN_GUARD_DEFAULT = goblin(
 		GOBLIN_ARMED_PARTS, GOBLIN_WEAPON_DRIFT_FIND, GOBLIN_WEAPON_DRIFT_REPLACE);
 
+	// The 2005 hellhound is def 49: mesh 2997, no opcode 40 data, no resize. Unlike the dragons and
+	// cows it needs nothing from the bundle - 2997 survives in the live cache vertex for vertex, with
+	// every vertex in its 2005 group and every face in its 2005 color, and sequences 157-161 still
+	// resolve to framemap 311 and reach all of it. The live hellhounds were moved onto new meshes
+	// (26252-26258) and the modern dog rig instead, which is what the swap undoes.
+	private static final int HELLHOUND_BODY = 2997;
+
+	// Both the 2005 definition and the live composition ask for 128, which says nothing about
+	// whether the two meshes are the same size on screen - the chicken needed 204. Hand-tune here.
+	private static final int HELLHOUND_SCALE = 128;
+
+	private static RetroNpcData hellhound(int scale)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.HELLHOUNDS)
+			.retroModelIds(new int[]{HELLHOUND_BODY})
+			.idleAnimationId(AnimationID.HELL_READY)
+			.walkAnimationId(AnimationID.HELL_WALK)
+			.attackAnimationId(AnimationID.HELL_ATTACK)
+			.defendAnimationId(AnimationID.HELL_BLOCK)
+			.deathAnimationId(AnimationID.HELL_DEATH)
+			.miscAnimationId(AnimationID.HELL_READY)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.modernAttackAnims(HELLHOUND_MODERN_ATTACKS)
+			.modernDefendAnims(HELLHOUND_MODERN_DEFENDS)
+			.modernDeathAnims(HELLHOUND_MODERN_DEATHS)
+			.modernMiscAnims(HELLHOUND_MODERN_MISC)
+			.build();
+	}
+
+	public static final RetroNpcData HELLHOUND_DEFAULT = hellhound(HELLHOUND_SCALE);
+
+	// February 2005 has no God Wars. The live ancient hellhound's composition asks for 90 against the
+	// ordinary hound's 128, so it is the 2005 hound scaled by the same ratio - the calf's reasoning.
+	public static final RetroNpcData HELLHOUND_GODWARS = hellhound(HELLHOUND_SCALE * 90 / 128);
+
+	// The 2005 skeleton hellhound is def 1575: mesh 4974 on sequences 1493-1497, both preserved in
+	// the live cache - every vertex, group and face color, and 97-100% reach on framemap 637. The
+	// live NPC moved to mesh 26262 on the dog rig.
+	private static final int SKELETON_HELLHOUND_SCALE = 256;
+
+	public static final RetroNpcData SKELETON_HELLHOUND = RetroNpcData.builder()
+		.category(RetroNpcCategory.HELLHOUNDS)
+		.retroModelIds(new int[]{4974})
+		.idleAnimationId(AnimationID.SKELETON_HOUND_READY)
+		.walkAnimationId(AnimationID.SKELETON_HOUND_WALK)
+		.attackAnimationId(AnimationID.SKELETON_HOUND_ATTACK)
+		.defendAnimationId(AnimationID.SKELETON_HOUND_BLOCK)
+		.deathAnimationId(AnimationID.SKELETON_HOUND_DEATH)
+		.scaleXZ(SKELETON_HELLHOUND_SCALE)
+		.scaleY(SKELETON_HELLHOUND_SCALE)
+		// Def 1575's opcode 40 pair. 10318 is still on the live copy of 4974, so it lands
+		.recolors(new short[]{10318}, new short[]{11714})
+		.modernAttackAnims(SKELETON_HELLHOUND_MODERN_ATTACKS)
+		.modernDefendAnims(SKELETON_HELLHOUND_MODERN_DEFENDS)
+		.modernDeathAnims(HELLHOUND_MODERN_DEATHS)
+		.build();
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -1378,6 +1488,29 @@ public class RetroNpcMapping
 		// to hand it the same weapon correction every other armed goblin gets.
 		NAME_MAPPINGS.put("goblin guard", GOBLIN_GUARD_DEFAULT);
 		registerMapping(GOBLIN_GUARD_DEFAULT, NpcID.GOBLIN_GUARD);
+
+		// Hellhounds. Exactly six live NPCs are named "Hellhound", and all six are listed: the name
+		// row alone would reach them, but the God Wars hound needs its id for the smaller scale.
+		//
+		// Deliberately not registered, and unreachable by name since none is called plain
+		// "Hellhound": the revenant hellhounds (size 3, their own mesh), the reanimated hellhound
+		// (an Arceuus thrall), the scarred hellhounds (DT2, their own mesh), and Cerberus and its pets.
+		NAME_MAPPINGS.put("hellhound", HELLHOUND_DEFAULT);
+		registerMapping(HELLHOUND_DEFAULT,
+			NpcID.HELLHOUND, NpcID.HELLHOUND_STRONGHOLDCAVE, NpcID.POH_HELLHOUND,
+			NpcID.KOUREND_HELLHOUND, NpcID.WILD_CAVE_HELL_HOUND
+		);
+		registerMapping(HELLHOUND_GODWARS, NpcID.GODWARS_ANCIENT_HELLHOUND);
+
+		// Skeleton hellhounds, under the Hellhounds toggle. The name key replaces the generated
+		// SKELETONS row. Vet'ion's summons share the name but are kept out by EXCLUDED_IDS, and
+		// "Greater Skeleton Hellhound" does not match it.
+		NAME_MAPPINGS.put("skeleton hellhound", SKELETON_HELLHOUND);
+		registerMapping(SKELETON_HELLHOUND,
+			NpcID.SKELETON_HELLHOUND,
+			// Nightmare Zone. The hard one is named "Skeleton Hellhound (hard)", so only its id reaches it
+			NpcID.NZONE_SKELETON_HELLHOUND_NORMAL, NpcID.NZONE_SKELETON_HELLHOUND_HARD
+		);
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)

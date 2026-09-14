@@ -14,6 +14,7 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Zombies**
 - **Giants**
 - **Ghosts**
+- **Hellhounds**
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets* (on by default):
 
