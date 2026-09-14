@@ -40,7 +40,9 @@ import net.runelite.api.Node;
  * {@code Model} is an interface, and the GPU plugin consumes it purely through
  * {@code invokeinterface} - {@code GpuPlugin.drawTemp} to {@code ModelUploader.uploadTempModel} /
  * {@code uploadSortedModel} contains no {@code checkcast} anywhere. Verified against
- * client 1.12.38.
+ * client 1.12.38. 117 HD's zone renderer is the same: {@code ModelStreamingManager.drawTemp}
+ * through {@code SceneUploader.uploadTempModel} reads only the interface, and its async path copies
+ * the arrays synchronously inside {@code drawTemp}, sized by the vertex and face counts.
  *
  * <h2>The three places this must never go</h2>
  *
@@ -58,12 +60,13 @@ import net.runelite.api.Node;
  *
  * <h2>Which methods carry data</h2>
  *
- * Only the ones the GPU plugin and the outline renderer actually read. The accessors gated behind
- * a render flag return null, and that is safe rather than lazy: {@code GpuPlugin.setupGpuFlags}
- * sets only
- * {@code GPU | ZBUF | RENDER_THREADS}, never {@code HILLSKEW}, {@code NORMALS} or
- * {@code UNLIT_FACE_COLORS}, so the gated accessors are never called. {@code drawFrustum} and
- * {@code drawOrtho} belong to the software rasterizer, which is not in use under the GPU plugin.
+ * Only the ones the renderers and the outline renderer actually read. The accessors gated behind
+ * a render flag return null, and that is safe rather than lazy. {@code GpuPlugin.setupGpuFlags}
+ * sets only {@code GPU | ZBUF | RENDER_THREADS}, never {@code HILLSKEW}, {@code NORMALS} or
+ * {@code UNLIT_FACE_COLORS}, so there the gated accessors are never called. 117 HD's zone renderer
+ * does set {@code NORMALS}, and {@code UNLIT_FACE_COLORS} under some shading modes, but null-checks
+ * both: missing normals fall back to flat face normals, and missing unlit colors to the lit ones.
+ * {@code drawFrustum} and {@code drawOrtho} belong to the software rasterizer, which neither uses.
  *
  * <p><b>Maintenance cost, deliberately accepted:</b> {@code Model} has no default methods, so a
  * RuneLite release that adds one breaks compilation here. Nothing pins the client version to stop
@@ -626,7 +629,8 @@ public class RetroModel implements Model
 	}
 
 	// --- Renderer-owned scratch state -----------------------------------------------------------
-	// The GPU plugin never reads or writes these on this path, but they are part of the contract.
+	// The GPU plugin never reads or writes these on this path, and 117 HD's zone renderer only copies
+	// them, but they are part of the contract.
 
 	@Override
 	public int getSceneId()
@@ -664,10 +668,11 @@ public class RetroModel implements Model
 		this.uvBufferOffset = uvBufferOffset;
 	}
 
-	// --- Never reached under the GPU plugin ----------------------------------------------------
-	// Gated off by setupGpuFlags, which never sets HILLSKEW, NORMALS or UNLIT_FACE_COLORS.
-	// Returning null rather than throwing keeps a future renderer change from taking the scene
-	// down with it.
+	// --- Gated behind render flags ---------------------------------------------------------------
+	// Never reached under the GPU plugin, whose setupGpuFlags never sets NORMALS or
+	// UNLIT_FACE_COLORS. 117 HD's zone renderer does reach them and null-checks each one, falling
+	// back to flat face normals and the lit colours. Returning null rather than throwing keeps a
+	// future renderer change from taking the scene down with it.
 
 	@Override
 	public short[] getUnlitFaceColors()

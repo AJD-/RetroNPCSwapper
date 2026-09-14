@@ -41,8 +41,8 @@ import net.runelite.api.WorldView;
 import net.runelite.api.hooks.DrawCallbacks;
 
 /**
- * Decorates the renderer currently holding {@code Client.setDrawCallbacks} (in practice the
- * bundled GPU plugin) so retro geometry can be substituted for an NPC at draw time.
+ * Decorates the renderer currently holding {@code Client.setDrawCallbacks} (the bundled GPU plugin,
+ * or 117 HD's zone renderer) so retro geometry can be substituted for an NPC at draw time.
  *
  * <p>Only {@link #drawTemp} does anything other than forward: temporary entities (NPCs, players,
  * projectiles, spotanims) are drawn through it, and the {@code Model} arrives as a parameter, so
