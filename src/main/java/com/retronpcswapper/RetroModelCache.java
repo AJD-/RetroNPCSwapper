@@ -485,12 +485,8 @@ public class RetroModelCache
 	/**
 	 * Says once, per NPC id and animation, what the injected path did with an action animation.
 	 *
-	 * <p>An action that finds no clip leaves the NPC holding its movement pose, which on screen is
-	 * indistinguishable from the animation simply not playing - so without this the only way to
-	 * learn which sequence id an NPC really uses is to guess, and guessing at combat sequences is
-	 * what once rewrote every dragon attack into a head butt. The frame index is reported with it
-	 * because an action that starts part-way through its clip looks like the NPC snapping straight
-	 * to the end.
+	 * <p>An action that finds no clip just leaves the NPC holding its movement pose rather than
+	 * breaking the model - this logs the swaps.
 	 *
 	 * <p>Bounded by construction: one line per id and animation, not per frame.
 	 */
@@ -580,7 +576,7 @@ public class RetroModelCache
 
 		try
 		{
-			// Only spend the one shot on a comparison that actually ran. A multi-part NPC memoises
+			// Only spend the one shot on a comparison that actually ran. A multi-part NPC memoizes
 			// its first part, so the client's merged model has more vertices than the bundle mesh
 			// and the comparison bails - if that burned the flag, a hill giant walking past would
 			// deny the skeleton, the one subject that can settle this, its turn.

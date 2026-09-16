@@ -24,6 +24,8 @@
  */
 package com.retronpcswapper.inject;
 
+import lombok.Getter;
+
 /**
  * Rest-pose geometry plus the rigging that lets it be animated, owned entirely by this plugin.
  *
@@ -32,7 +34,11 @@ package com.retronpcswapper.inject;
  *
  * <p>Immutable, and shared across every NPC using it: posing reads from here and writes elsewhere,
  * never back.
+ *
+ * <p>The generated accessors hand back the live arrays rather than copies. Callers read them into
+ * their own buffers; nothing mutates a mesh once it is built.
  */
+@Getter
 public final class RetroMesh
 {
 	private final int id;
@@ -90,6 +96,9 @@ public final class RetroMesh
 	/**
 	 * Vertex indices per transform group, the unpacked form of the model's per-vertex labels. An
 	 * empty slot is a group nothing is bound to.
+	 *
+	 * <p>The accessor hands back the whole table, for callers building a derived mesh. Shared by
+	 * reference - a derived mesh rigs identically to the one it came from.
 	 */
 	private final int[][] vertexGroups;
 
@@ -124,26 +133,6 @@ public final class RetroMesh
 		this.vertexGroups = vertexGroups;
 	}
 
-	public int getId()
-	{
-		return id;
-	}
-
-	public int getPriority()
-	{
-		return priority;
-	}
-
-	public int getVerticesCount()
-	{
-		return verticesCount;
-	}
-
-	public int getFaceCount()
-	{
-		return faceCount;
-	}
-
 	/** True when this mesh carries rigging and can be posed at all. */
 	public boolean isRigged()
 	{
@@ -169,96 +158,9 @@ public final class RetroMesh
 
 	private static final int[] EMPTY_GROUP = new int[0];
 
-	// Accessors below hand back the live arrays. Callers read them into their own buffers; nothing
-	// mutates a mesh once it is built.
-
-	public float[] getVerticesX()
-	{
-		return verticesX;
-	}
-
-	public float[] getVerticesY()
-	{
-		return verticesY;
-	}
-
-	public float[] getVerticesZ()
-	{
-		return verticesZ;
-	}
-
-	public int[] getFaceIndices1()
-	{
-		return faceIndices1;
-	}
-
-	public int[] getFaceIndices2()
-	{
-		return faceIndices2;
-	}
-
-	public int[] getFaceIndices3()
-	{
-		return faceIndices3;
-	}
-
-	public short[] getFaceColors()
-	{
-		return faceColors;
-	}
-
-	public byte[] getFaceRenderTypes()
-	{
-		return faceRenderTypes;
-	}
-
-	public byte[] getFaceTransparencies()
-	{
-		return faceTransparencies;
-	}
-
-	public byte[] getFaceRenderPriorities()
-	{
-		return faceRenderPriorities;
-	}
-
 	/** How many texture triangles this mesh carries; zero when it has none. */
 	public int getTextureTriangleCount()
 	{
 		return texIndices1 == null ? 0 : texIndices1.length;
-	}
-
-	public byte[] getTextureCoords()
-	{
-		return textureCoords;
-	}
-
-	public int[] getTexIndices1()
-	{
-		return texIndices1;
-	}
-
-	public int[] getTexIndices2()
-	{
-		return texIndices2;
-	}
-
-	public int[] getTexIndices3()
-	{
-		return texIndices3;
-	}
-
-	public short[] getFaceTextures()
-	{
-		return faceTextures;
-	}
-
-	/**
-	 * The whole group table, for callers building a derived mesh. Shared by reference - a derived
-	 * mesh rigs identically to the one it came from.
-	 */
-	public int[][] getVertexGroups()
-	{
-		return vertexGroups;
 	}
 }

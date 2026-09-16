@@ -24,6 +24,8 @@
  */
 package com.retronpcswapper.inject;
 
+import lombok.Getter;
+
 /**
  * One animation sequence, as a list of frames of transform operations.
  *
@@ -37,7 +39,11 @@ package com.retronpcswapper.inject;
  */
 public final class RetroClip
 {
+	@Getter
 	private final int sequenceId;
+
+	/** The rig every frame of this clip is expressed against. */
+	@Getter
 	private final int rigId;
 
 	/** Per frame: the rig transform index each op applies to. */
@@ -54,17 +60,6 @@ public final class RetroClip
 		this.dx = dx;
 		this.dy = dy;
 		this.dz = dz;
-	}
-
-	public int getSequenceId()
-	{
-		return sequenceId;
-	}
-
-	/** The rig every frame of this clip is expressed against. */
-	public int getRigId()
-	{
-		return rigId;
 	}
 
 	public int getFrameCount()
