@@ -49,60 +49,27 @@ public class RetroNpcMapping
 	 * <p>Matching is mostly by name, which is what lets a 2005 name keep working across every
 	 * modern variant of an NPC - but a name is not always a costume. Several NPCs called "Guard"
 	 * carry a bow, and handing them the 2005 sword-and-shield kit takes the bow away.
-	 *
-	 * <p><b>The tell is the weapon model, not the stance.</b> Falador's bow guards 3272, 3273 and
-	 * 3274 hold their bow in the ordinary 808 idle, so a stance test passes them straight through;
-	 * only 3270 and 11945 use 4591/4226, the bow-at-rest pair. What they all share is a weapon slot
-	 * holding a bow rather than sword 519 and shield 541:
-	 *
-	 * <ul>
-	 * <li>563 on 3272, 3273 and 3274 - the bow every Archer and Ranger in the game carries</li>
-	 * <li>16846 on 3270, the same bow the Ardougne archery trainers hold</li>
-	 * <li>16846 again on 1112 and 1113, which are not registered</li>
-	 * <li>42622 on 11945, the crossbow</li>
-	 * </ul>
-	 *
-	 * <p>{@code FAI_VARROCK_GUARD} is here for a different reason: it stands on 6487 and is three
-	 * models with none of the guard torso, sword or shield among them.
-	 *
-	 * <p>All of these sit in the middle of families that are otherwise registered, which is why
-	 * they are named here rather than only left out of {@code registerMapping} - the omission on
-	 * its own reads like an oversight and invites being tidied up. Their melee siblings still
-	 * swap: 11943 and 11946 carry 23179, which no archer or ranger does.
-	 *
-	 * <p>The female bow guard 11947 is deliberately <b>not</b> here. Female guards are recent
-	 * content with no 2005 counterpart, so she is replaced by the male archer rather than left
-	 * alone - see {@link #BOW_GUARD_LIVE_PARTS}.
 	 */
 	private static final Set<Integer> EXCLUDED_IDS = Set.of(
+		// Exclude specific Falador guards/Varrock guards
 		NpcID.FAI_FALADOR_GUARD2, NpcID.FAI_FALADOR_GUARD2_F,
 		NpcID.FAI_FALADOR_GUARD4, NpcID.FAI_FALADOR_GUARD5, NpcID.FAI_FALADOR_GUARD6,
 		NpcID.FAI_VARROCK_GUARD,
 		// Named "Cow" so the name row reaches it, but it is model 14102 on anims 180/229 - a mount,
 		// not a cow, and it would be handed the retro cow mesh
 		NpcID.OSB8_COW,
-		// Named "Goblin", but these two are the goblins sitting at the Recruitment Drive desks:
-		// one merged mesh each, size 2 rather than 1, and no walk animation at all. The 2005
-		// goblin is a four-part standing kit and would replace a seated NPC with it
-		NpcID.PATTERN_GOBLIN1_DESK, NpcID.PATTERN_GOBLIN2_DESK,
-		// Named "Skeleton Hellhound", but these are Vet'ion's summons on their own mesh 47207, and
-		// they are left as they are
+		// Exclude goblins/zombies from the Surprise Exam random event
+		NpcID.PATTERN_GOBLIN1_DESK, NpcID.PATTERN_GOBLIN2_DESK, NpcID.PATTERN_ZOMBIE_DESK,
+		// Exclude Vetion summons
 		NpcID.VETION_HELLHOUND_JNR, NpcID.VETION_HELLHOUND_JNR_SINGLES
 	);
 
 	/**
 	 * Categories that resolve from the registered id list only, never from a name.
 	 *
-	 * <p>Matching by name is what lets one 2005 row cover every modern variant of an NPC, and
-	 * for a monster it holds up: everything called "Lesser demon" is one. "Guard" is a job,
-	 * not a costume. 184 NPCs carry that exact name and only about thirty are the town guard
-	 * this kit belongs to - the rest are troll, dwarf, elf, goblin and cave goblin guards,
-	 * archers, and the Deadman ranged variants, all of which were being handed a 2005 human
-	 * swordsman.
-	 *
 	 * <p>Suppressed at lookup rather than by dropping the name row, because
 	 * {@link #applyCacheDefinitions} walks {@code NAME_MAPPINGS} to graft the opcode 40 pairs
-	 * onto the archetypes. Removing the row would quietly cost the guard its 2005 colors.
+	 * onto the archetypes.
 	 */
 	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
 		Set.of(RetroNpcCategory.GUARDS);
@@ -130,10 +97,6 @@ public class RetroNpcMapping
 	// 79/80/89/90/91/92, the very IDs the 2005 cache uses, and there is no DRAGON_UPDATE_* rework
 	// family of the kind skeletons, zombies and giants got. Confirmed against the live cache: every
 	// adult dragon definition still has standingAnim 90 and walkingAnim 79.
-	//
-	// So almost nothing here needs intercepting - those sequences are the retro look already, and
-	// an earlier revision rewrote every melee and firebreath attack into a head attack by listing
-	// them. Only the post-2005 ranged attack has no retro counterpart.
 	public static final Set<Integer> DRAGON_MODERN_ATTACKS = Set.of(
 		AnimationID.DRAGON_RANGED_ATTACKS
 	);
@@ -531,88 +494,39 @@ public class RetroNpcMapping
 	/**
 	 * The nine 2005 parts of a guard's kit, in the order the definition lists them: torso, a strap,
 	 * the head, arms, legs, hands, boots, and the two held items.
-	 *
-	 * <p>Six of the nine survive in the live cache byte for byte. Head 294, arms 151 and hands 254
-	 * do not - their ids were reused - which is what "I couldn't find the correct head/arms" meant,
-	 * and why the cache-backed path could never assemble a whole guard.
 	 */
 	private static final int[] GUARD_PARTS = {233, 246, 294, 151, 176, 254, 185, 519, 541};
 
 	/**
 	 * The same kit with the battleaxe in place of the sword, for Falador's axe guard.
-	 *
-	 * <p>2005 model 550 is byte-for-byte the mesh the live cache still holds at that id, so
-	 * the axe is authentic rather than approximated. The shield (541) stays: the live NPC
-	 * carries both, unlike the archers, who carry a bow and no shield at all.
-	 *
-	 * <p>Carrying an axe also means fighting with one. This guard plays the axe family (393-399,
-	 * seen in game as 395 {@code HUMAN_AXE_HACK} and 397 {@code HUMAN_AXE_BLOCK}), not the sword
-	 * set the rest of its town uses, so the bundle carries that family too.
 	 */
 	private static final int[] GUARD_AXE_PARTS = {233, 246, 294, 151, 176, 254, 185, 550, 541};
 
 	/**
 	 * The seven 2005 parts of an Ardougne guard, in the order the definition lists them. Six of
 	 * body and kit plus one held weapon - no shield, and the live NPC carries none either.
-	 *
-	 * <p>This is 2005 definition <b>32</b>, a different costume from the Varrock and Falador town
-	 * guard rather than a recolor of it: seven meshes against nine, sharing only 185. Live
-	 * {@code ARDOUGNE_GUARD} names the same seven slots in the same order, at the same combat
-	 * level, and carries the same opcode 40 pairs byte for byte, with only 162 and 274 swapped for
-	 * modern replacements (26630 and 28346) - the same two positions the Varrock guard's rework
-	 * touched.
-	 *
-	 * <p>Four of the seven survive in the live cache byte for byte. 301, 162 and 274 do not - their
-	 * ids were reused, 301 going from 30 vertices to 424 - which is the same reason the town guard
-	 * is injection-only, and it holds here too.
 	 */
 	private static final int[] ARDOUGNE_GUARD_PARTS = {225, 301, 162, 179, 274, 185, 502};
 
 	/**
 	 * The same kit with no weapon, for the guards posted inside the Carnillean mansion.
-	 *
-	 * <p>2005 definition <b>887</b> - "On special duty to protect the Carnilleans" - is exactly
-	 * {@link #ARDOUGNE_GUARD_PARTS} minus its last entry, and the live Carnillean guards drop the
-	 * same slot from the same list. The mansion is in East Ardougne and the guards are the town's,
-	 * so they wear the town's colors.
 	 */
 	private static final int[] ARDOUGNE_CARNILLEAN_PARTS = {225, 301, 162, 179, 274, 185};
 
 	/**
 	 * The 2005 Ardougne guard's opcode 40 pairs, from definition 32.
-	 *
-	 * <p>Carried inline rather than grafted. {@link #applyCacheDefinitions} only reaches archetypes
-	 * that hold a {@code NAME_MAPPINGS} key, and the single "guard" key belongs to the town guard -
-	 * an Ardougne row cannot be added there without costing Varrock its colors. Holding the pairs
-	 * here also makes {@code hasRecolors()} true, so the graft could never repaint these meshes in
-	 * Varrock's palette even if the wiring changed.
 	 */
 	private static final short[] ARDOUGNE_RECOLOR_FIND = {25238, 8741};
 	private static final short[] ARDOUGNE_RECOLOR_REPLACE = {811, -21597};
 
 	/**
-	 * The male bow guard, taken from the live cache rather than the bundle.
-	 *
-	 * <p>This is NPC 3272's own model list. The archer guard is 2006 content and has not changed
-	 * since, so the live meshes are the period-correct ones - there is no 2005 archer to restore,
-	 * because head 9458 and arms 9450 are not in that cache at all.
-	 *
-	 * <p>Live parts have to be drawn by the cache-backed path, not the bundle. They are bound to
-	 * live framemap 0, a 218-group rig, while every bundled guard part is bound into [0..34] and
-	 * animated by 2005 clips on rig 100083. Skinning these against those clips would drive the
-	 * right geometry off the wrong joints, which is the whole reason guards are injection-only in
-	 * the first place. Letting the client animate her instead sidesteps it entirely.
+	 * The male bow guard from the live cache
 	 */
 	private static final int[] BOW_GUARD_LIVE_PARTS =
 		{233, 250, 9458, 9450, 176, 28285, 185, 563, 215};
 
 	/**
-	 * NPCs in an injection-only category that are nonetheless built from the live cache.
-	 *
-	 * <p>{@link #requiresInjectedGeometry} is a category-wide rule, and it holds for guards because
-	 * their 2005 head, arms and hands were reused for other things - a cache-backed guard would
-	 * assemble unrelated geometry. It does not hold for the one guard whose parts are all genuine
-	 * live meshes of exactly the NPC being drawn.
+	 * NPCs in an injection-only category that are built from the live cache
 	 */
 	private static final Set<Integer> LIVE_GEOMETRY_IDS = Set.of(NpcID.FAI_FALADOR_GUARD4_F);
 
@@ -639,20 +553,7 @@ public class RetroNpcMapping
 
 	/**
 	 * Builds an Ardougne guard. The town's own 2005 costume, not the Varrock kit in other colors:
-	 * seven different meshes, of which only the boots (185) are shared with the town guard.
-	 *
-	 * <p>The animation slots are the town guard's because the 2005 definition names the same
-	 * stance and walk (808/819) and the combat sequences are not part of a definition at all. What
-	 * an Ardougne guard actually fights with is blunt rather than sword - weapon 502 is a mace, and
-	 * it was seen playing 401 {@code HUMAN_BLUNT_POUND} in game - so the bundle carries the blunt
-	 * family alongside the town guard's sword set. Those are classic ids the live game still uses,
-	 * so they pass straight through with no interception, the way 386 and 1156 do.
-	 *
-	 * <p>This kit binds one group further out than the town guard's, to 36 rather than 34, and the
-	 * guards' clips no longer share one framemap - between the three weapon families they resolve
-	 * to 100083, 100082 and 100075. Harmless, since a clip carries its own rig id, but
-	 * {@code RetroClipReachTest} asserts every one of them addresses every group the mesh it
-	 * animates binds.
+	 * seven different meshes, of which only the boots (185) are shared with the town guard
 	 */
 	private static RetroNpcData ardougneGuard(int[] models)
 	{
@@ -742,9 +643,8 @@ public class RetroNpcMapping
 	 * that are the only thing telling one bird from another.
 	 *
 	 * <p>Scale is a parameter rather than a constant because this family spans two sizes.
-	 * {@link #CHICKEN_SCALE} is the only one that was measured against the live bird; every other is
-	 * that number times the ratio the definitions themselves ask for, and so is a starting point for
-	 * the same eyeball matching rather than a measurement of its own.
+	 * {@link #CHICKEN_SCALE} is the only one that was measured against the live game; every other is
+	 * that number times the ratio the definitions themselves ask for (and seem to be correct)
 	 */
 	private static RetroNpcData chicken(short[] find, short[] replace, int scale)
 	{
@@ -765,12 +665,7 @@ public class RetroNpcMapping
 			.build();
 	}
 
-	// 2005 def 1018 "Rooster" - mesh 2849 in a dark red-brown, which is the whole of what separates
-	// it from the plain bird. Written here rather than read from npc-mappings.json because the
-	// generator only categorizes names containing "chicken", so it emits no rooster row at all -
-	// and a row would not carry the resize anyway, since the CHICKENS branch of createMappingData
-	// overwrites it with the hen's. All four find indices are still in the live copy of 2849, so
-	// the pairs land on the cache-backed path.
+	// 2005 def 1018 "Rooster" - mesh 2849 in a dark red-brown
 	private static final short[] ROOSTER_FIND = {127, 11200, 8394, 61};
 	private static final short[] ROOSTER_REPLACE = {3998, 6720, 1942, 1942};
 
@@ -779,20 +674,13 @@ public class RetroNpcMapping
 
 	// Cows are the guard case: both 2005 meshes are still at their own ids and 98% intact, but their
 	// vertex groups were renumbered onto a different rig, so the live copies animate off the wrong
-	// joints. Mesh, rig and clips all come from the bundle. The 2005 cow is one body mesh plus an
-	// 11-face companion, shared by all three variants - the 2005 client told them apart with
-	// opcode 40 alone, exactly as it did the dragons.
+	// joints. Mesh, rig and clips all come from the bundle
 	private static final int COW_BODY = 3341;
 	private static final int COW_UDDER = 3342;
 
 	/**
 	 * A 2005 cow variant: the shared mesh, the legacy cow sequences, and the opcode 40 pairs that
 	 * are the only thing telling one cow from another.
-	 *
-	 * <p>The pairs are the 2005 definition's verbatim, with nothing corrected for palette drift.
-	 * The live cache did repaint both meshes - 3341's hide went 10363 -> 10365 across 135 faces,
-	 * its beige patch 4446 -> 7566, and 3342 went 113 -> 231 - but the bundle carries the 2005
-	 * copies, so the indices the 2005 client recolored are the indices that are there.
 	 */
 	private static RetroNpcData cow(short[] find, short[] replace, int scale)
 	{
@@ -819,11 +707,11 @@ public class RetroNpcMapping
 	// baked its cow variants into separate meshes instead, so which live cow wears which 2005
 	// palette is a choice rather than a lookup; they are paired in id order.
 	//
-	// Def 81 - white hide with dark brown patches, the Lumbridge field cow.
+	// Def 81 - white hide with dark brown patches
 	public static final RetroNpcData COW_DEFAULT = cow(
 		new short[]{26, 10363, 30}, new short[]{10365, 5784, 10365}, 128);
 
-	// Def 397 - brown all over, and 2005 asked for it slightly smaller than the others.
+	// Def 397 - brown all over
 	public static final RetroNpcData COW_BROWN = cow(
 		new short[]{10363, 26, 30}, new short[]{5784, 5784, 5784}, 115);
 
@@ -833,16 +721,14 @@ public class RetroNpcMapping
 
 	// February 2005 has no calf: the modern one is a separate mesh Jagex added later. The honest
 	// stand-in is the 2005 cow scaled down by what the modern calf's own composition asks for -
-	// 68 against the cow's 128. The calf's own walk sequence (5856) needs no handling of its own;
-	// the walk slot replaces the pose animation outright rather than intercepting it.
+	// 68 against the cow's 128.
 	public static final RetroNpcData COW_CALF = cow(
 		new short[]{26, 10363, 30}, new short[]{10365, 5784, 10365}, 68);
 
 	// The 2005 goblin is a four-part kit - 2951 body, 2953 torso, 2955 legs, 2956 arms - with two
 	// substitutions on top, and that is the whole of the family. 2957 is the weapon an armed goblin
 	// holds, and 2952 replaces the body on the one definition that describes its goblins as having
-	// "grown strong". Everything else the 2005 client varied with opcode 40 alone, exactly as it did
-	// the dragons and cows.
+	// "grown strong".
 	private static final int GOBLIN_BODY = 2951;
 	private static final int GOBLIN_STRONG_BODY = 2952;
 	private static final int[] GOBLIN_PARTS = {GOBLIN_BODY, 2953, 2955, 2956};
@@ -851,18 +737,6 @@ public class RetroNpcMapping
 
 	/**
 	 * Restores the 2005 colors of the weapon mesh 2957, which the live cache repainted whole.
-	 *
-	 * <p>Every other goblin part still holds its 2005 palette - 2951, 2952, 2955 and 2956 kept every
-	 * face color they had, and 2953 drifted by a single shade across twelve faces. 2957 kept none:
-	 * both its colors were replaced, 9 faces of blade and 26 of haft, over geometry that is still
-	 * the 2005 mesh vertex for vertex. The pairs below therefore run backwards, live to 2005,
-	 * because the mesh being painted here is the live one.
-	 *
-	 * <p>Safe to apply to the merged model because neither 70 nor 8084 appears on any other goblin
-	 * part. The two colored varieties spell the same two pairs out after their own, rather than
-	 * reaching for these constants, so that what they carry reads in one line. The twelve drifted faces of 2953 get no such correction deliberately: they became
-	 * 14238, the goblin's own skin color, which every other part legitimately carries - correcting
-	 * them would repaint the whole goblin.
 	 */
 	private static final short[] GOBLIN_WEAPON_DRIFT_FIND = {70, 8084};
 	private static final short[] GOBLIN_WEAPON_DRIFT_REPLACE = {-22417, 528};
@@ -870,17 +744,6 @@ public class RetroNpcMapping
 	/**
 	 * A 2005 goblin variant: a part list, and the opcode 40 pairs that are the only thing telling
 	 * one colored goblin from another.
-	 *
-	 * <p>The pairs are carried inline rather than grafted from the generated row. "Goblin" is one
-	 * 2005 name over six definitions, and the generator keeps only the lowest id per name, so the
-	 * row has no pairs at all to give - and {@link #categoryUsesRecolors} excludes goblins for
-	 * exactly that reason. Setting them here also makes {@code hasRecolors()} true, so
-	 * {@link #applyCacheDefinitions} could never repaint one variety in another's colors even if
-	 * that scoping changed.
-	 *
-	 * <p>Goblins stay on the cache-backed path: their meshes survive at their own ids, and the
-	 * animation comes from the live sequences the client already drives, so the renumbered 2005
-	 * vertex groups never enter into it.
 	 */
 	private static RetroNpcData goblin(int[] models, short[] find, short[] replace)
 	{
@@ -899,10 +762,7 @@ public class RetroNpcMapping
 			.build();
 	}
 
-	// The six 2005 goblin definitions, by their def ids in the February 2005 cache.
-	//
-	// Def 100 - the plain level 2 goblin, no opcode 40 data at all. Its armour is the mesh's own
-	// 916, a dark red, which is also what the modern red-tinted goblins are recolored to.
+	// The six 2005 goblin definitions
 	public static final RetroNpcData GOBLIN_DEFAULT = goblin(GOBLIN_PARTS, null, null);
 
 	// Def 101 - the same goblin at level 5, carrying 2957, so it needs the weapon correction and
@@ -920,22 +780,14 @@ public class RetroNpcMapping
 		new short[]{916, 70, 8084}, new short[]{22443, -22417, 528});
 
 	// Def 299 - red armour, 916 -> 933, and live GOBLIN_REDARMOUR carries that pair verbatim too.
-	// A lighter red than the 916 the plain goblin wears; the two 2005 definitions are a pair, so
-	// the modern red and green soldiers are mapped onto them as a pair.
 	public static final RetroNpcData GOBLIN_RED = goblin(GOBLIN_ARMED_PARTS,
 		new short[]{916, 70, 8084}, new short[]{933, -22417, 528});
 
-	// Def 489 - the Goblin guard. The same armed kit as def 101 in the plain colors; it is a
-	// separate archetype only so that it stops resolving through the generated row and picks up
-	// the weapon drift correction with every other armed goblin.
+	// Def 489 - the Goblin guard. The same armed kit as def 101 in the plain colors
 	public static final RetroNpcData GOBLIN_GUARD_DEFAULT = goblin(
 		GOBLIN_ARMED_PARTS, GOBLIN_WEAPON_DRIFT_FIND, GOBLIN_WEAPON_DRIFT_REPLACE);
 
-	// The 2005 hellhound is def 49: mesh 2997, no opcode 40 data, no resize. Unlike the dragons and
-	// cows it needs nothing from the bundle - 2997 survives in the live cache vertex for vertex, with
-	// every vertex in its 2005 group and every face in its 2005 color, and sequences 157-161 still
-	// resolve to framemap 311 and reach all of it. The live hellhounds were moved onto new meshes
-	// (26252-26258) and the modern dog rig instead, which is what the swap undoes.
+	// The 2005 hellhound is def 49: mesh 2997, no opcode 40 data, no resize. Found in the live cache.
 	private static final int HELLHOUND_BODY = 2997;
 
 	// Both the 2005 definition and the live composition ask for 128, which says nothing about
@@ -969,8 +821,7 @@ public class RetroNpcMapping
 	public static final RetroNpcData HELLHOUND_GODWARS = hellhound(HELLHOUND_SCALE * 90 / 128);
 
 	// The 2005 skeleton hellhound is def 1575: mesh 4974 on sequences 1493-1497, both preserved in
-	// the live cache - every vertex, group and face color, and 97-100% reach on framemap 637. The
-	// live NPC moved to mesh 26262 on the dog rig.
+	// the live cache
 	private static final int SKELETON_HELLHOUND_SCALE = 256;
 
 	public static final RetroNpcData SKELETON_HELLHOUND = RetroNpcData.builder()
@@ -1041,9 +892,6 @@ public class RetroNpcMapping
 	 */
 	private static void applyWeaponVariants()
 	{
-		// GUARD3_F is the female of the axe guard. Female guards are recent content with no 2005
-		// counterpart of their own, so they take the male kit - which for this one means the axe,
-		// the same as the NPC it is a variant of.
 		for (int axeGuard : new int[]{NpcID.FAI_FALADOR_GUARD3, NpcID.FAI_FALADOR_GUARD3_F})
 		{
 			RetroNpcData guard = ID_MAPPINGS.get(axeGuard);
@@ -1052,10 +900,6 @@ public class RetroNpcMapping
 				ID_MAPPINGS.put(axeGuard, guard.withModelIds(GUARD_AXE_PARTS));
 			}
 		}
-
-		// The female bow guard becomes the male one. Derived from the archetype rather than
-		// from the registered copy, deliberately: the 2005 opcode 40 pairs belong to the 2005
-		// meshes, and these are live ones that already carry the colors they should.
 		ID_MAPPINGS.put(NpcID.FAI_FALADOR_GUARD4_F,
 			GUARD_DEFAULT.withModelIds(BOW_GUARD_LIVE_PARTS));
 	}
@@ -1072,7 +916,7 @@ public class RetroNpcMapping
 	 * full size where 2005 asked for 110/128ths of it.
 	 *
 	 * <p>The recolors are scoped by {@link #categoryUsesRecolors}, for the same reason
-	 * {@code createMappingData} scopes them: guards, goblins and the restless ghost all carry opcode
+	 * {@code createMappingData} scopes them: guards, goblins all carry opcode
 	 * 40 data too, and the generator keeps only the lowest-id row per name, so forwarding wholesale
 	 * would repaint a whole category in one arbitrary variant's colors. The resize needs no such
 	 * scoping - it is one number per row rather than a palette - but it is only taken where the
@@ -1184,7 +1028,7 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.GREATER_DEMONS
 			|| category == RetroNpcCategory.BLACK_DEMONS
 			// Fire, ice and moss giants are the same body mesh as the hill giant, told apart only by
-			// their 2005 opcode 40 pairs. Hill giants and the cyclops carry none and are left alone.
+			// their 2005 opcode 40 pairs.
 			|| category == RetroNpcCategory.FIRE_GIANTS
 			|| category == RetroNpcCategory.ICE_GIANTS
 			|| category == RetroNpcCategory.MOSS_GIANTS
@@ -1312,8 +1156,7 @@ public class RetroNpcMapping
 			// derivatives below, which the name lookup used to cover.
 			NpcID.GUARD1,
 			// Only the melee half of the Falador family. GUARD2, GUARD4, GUARD5 and GUARD6 carry
-			// a bow or crossbow - see EXCLUDED_IDS. GUARD4_F is listed below: she is the female
-			// of GUARD4, replaced by the male archer rather than excluded.
+			// a bow or crossbow - see EXCLUDED_IDS.
 			NpcID.FAI_FALADOR_GUARD1, NpcID.FAI_FALADOR_GUARD3,
 			NpcID.BIM_FAI_VARROCK_GUARD02, NpcID.BIM_FAI_VARROCK_GUARD02_F, NpcID.BIM_FAI_VARROCK_GUARD02_VARIANT02,
 			NpcID.FAI_VARROCK_GUARD02, NpcID.FAI_VARROCK_GUARD02_VARIANT01, NpcID.FAI_VARROCK_GUARD02_VARIANT02,
@@ -1322,9 +1165,7 @@ public class RetroNpcMapping
 			NpcID.GUARD1_VARIANT01, NpcID.GUARD1_F, NpcID.GUARD1_F_VARIANT01,
 			NpcID.FAI_FALADOR_GUARD1_VARIANT01, NpcID.FAI_FALADOR_GUARD1_F, NpcID.FAI_FALADOR_GUARD1_VARIANT02,
 			NpcID.FAI_FALADOR_GUARD3_F, NpcID.FAI_FALADOR_GUARD4_F,
-			// The Ratcatchers mansion guards wear the town guard kit exactly - 233, 246, 294,
-			// 176, 185, 519, 541 with the live arms and hands - and stand on 808. They were only
-			// ever reached by name, so they need listing now that the name no longer resolves.
+			// Ratcatcher guards
 			NpcID.RATCATCHER_STATICGUARD, NpcID.RATCATCHER_CHIEFGUARD,
 			NpcID.RATCATCHER_GUARD_LEFT_FRONT, NpcID.RATCATCHER_GUARD_LEFT_MID,
 			NpcID.RATCATCHER_GUARD_LEFT_BACK, NpcID.RATCATCHER_GUARD_LEFT_FULLBACK,
@@ -1333,17 +1174,9 @@ public class RetroNpcMapping
 			NpcID.RATCATCHER_GUARD_LEFT_INSIDE, NpcID.RATCATCHER_GUARD_RIGHT_INSIDE
 		);
 
-		// Ardougne dresses its guards differently, and always has: the live NPCs carry 2005
-		// definition 32's seven parts and its opcode 40 pairs, where Varrock and Falador carry
-		// definition 9's nine. Registering them against GUARD_DEFAULT put every Ardougne guard in
-		// a Varrock uniform.
-		//
-		// No name row: GUARDS resolves by id, and the one "guard" key has to stay pointed at the
-		// town guard for applyCacheDefinitions to graft its colors.
+		// Register ardougne guards separately
 		registerMapping(ARDOUGNE_GUARD_DEFAULT,
 			NpcID.ARDOUGNE_GUARD, NpcID.ARDOUGNE_GUARD_VARIANT01,
-			// Female guards are recent content with no 2005 counterpart, so they take the male
-			// kit, as the Varrock and Falador females do
 			NpcID.ARDOUGNE_GUARD_F, NpcID.ARDOUGNE_GUARD_F_VARIANT01
 		);
 
@@ -1355,9 +1188,7 @@ public class RetroNpcMapping
 		);
 
 		// Deliberately left out: DEADMAN_GUARD_ARDOUGNE_VIS, DEADMAN_GUARD_YANILLE_VIS and their
-		// _RANGE_VIS siblings wear this kit too, but no Deadman guard is registered for any town -
-		// they are level 1337 with no stance animation - and Ardougne is not the place to change
-		// that. They are unreachable rather than excluded, the category resolving by id only.
+		// _RANGE_VIS siblings
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.
@@ -1414,21 +1245,13 @@ public class RetroNpcMapping
 		registerMapping(COW_GREY, NpcID.COW3);
 		registerMapping(COW_CALF, NpcID.COW2_CALF, NpcID.COW3_CALF, NpcID.CALF);
 
-		// Roosters. The 2005 cache names this bird, but nothing reached it before: the generator
-		// only categorizes names containing "chicken", so there is no rooster row for the name
-		// lookup to find.
+		// Roosters
 		NAME_MAPPINGS.put("rooster", ROOSTER);
 		registerMapping(ROOSTER,
 			NpcID.ROOSTER,       // Fred's farm
 			NpcID.FARM_ROOSTER,  // Ernest the Chicken - the live mesh the evil chicken shares
 			NpcID.MISC_ROOSTER   // Miscellania
 		);
-
-		// No evil chicken is registered, deliberately. Live mesh 7728 is already the model the evil
-		// chicken wore in August 2005, so there is nothing retro to restore - and February 2005, the
-		// cache this plugin is built from, has no evil chicken at all to copy. Ernest's rooster above
-		// shares that same mesh but is registered, because the rooster does have a February 2005
-		// definition and it is a different bird: mesh 2849 in the palette above.
 
 		// Goblins resolve by id where the color matters and by name everywhere else. The 2005
 		// family is six definitions over one name, so the generated row can only ever carry one of
@@ -1447,10 +1270,7 @@ public class RetroNpcMapping
 			NpcID.MCANNON_GOBLIN_GUARD,
 			NpcID.GOBLIN_ARMED_MCANNON_1, NpcID.GOBLIN_ARMED_MCANNON_2, NpcID.GOBLIN_ARMED_MCANNON_3,
 			NpcID.GOBLIN_ARMED_MCANNON_4, NpcID.GOBLIN_ARMED_MCANNON_5,
-			// The Eye of Glouphrie soldiers, and the Shield of Arrav war goblins. The two named
-			// HELMET are level 13 and 25, but 2005 has no armed counterpart to its level 13
-			// definition - def 102 is unarmed - so they take the armed kit rather than a
-			// strong-bodied one that never existed
+			// The Eye of Glouphrie soldiers, and the Shield of Arrav war goblins
 			NpcID.EYEGLO_GOBLIN_SOLDIER_1, NpcID.EYEGLO_GOBLIN_SOLDIER_2, NpcID.EYEGLO_GOBLIN_SOLDIER_3,
 			NpcID.EYEGLO_GOBLIN_SOLDIER_4, NpcID.EYEGLO_GOBLIN_SOLDIER_5,
 			NpcID.SOS_WAR_GOBLIN_ARMED, NpcID.SOS_WAR_GOBLIN_ARMED2,
@@ -1465,10 +1285,7 @@ public class RetroNpcMapping
 		// in that cache. Both are unarmed; only the body mesh changes.
 		registerMapping(GOBLIN_STRONG, NpcID.GOBLIN_HELMET);
 
-		// The Goblin Village army. Which live goblin is which color is not a guess: each one's own
-		// opcode 40 data recolors the modern kit to 22414/22410 for green or 916/912 for red, and
-		// GOBLIN_GREENARMOUR and GOBLIN_REDARMOUR still carry the 2005 pairs 916 -> 22443 and
-		// 916 -> 933 over the 2005 meshes themselves.
+		// Goblin Village goblins
 		registerMapping(GOBLIN_GREEN,
 			NpcID.GOBLIN_GREEN_SOLDIER_1, NpcID.GOBLIN_GREEN_SOLDIER_2, NpcID.GOBLIN_GREEN_SOLDIER_3,
 			NpcID.GOBLIN_GREEN_SOLDIER_4, NpcID.GOBLIN_GREEN_SOLDIER_5, NpcID.GOBLIN_GREEN_SOLDIER_6,
@@ -1489,12 +1306,10 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("goblin guard", GOBLIN_GUARD_DEFAULT);
 		registerMapping(GOBLIN_GUARD_DEFAULT, NpcID.GOBLIN_GUARD);
 
-		// Hellhounds. Exactly six live NPCs are named "Hellhound", and all six are listed: the name
-		// row alone would reach them, but the God Wars hound needs its id for the smaller scale.
-		//
-		// Deliberately not registered, and unreachable by name since none is called plain
-		// "Hellhound": the revenant hellhounds (size 3, their own mesh), the reanimated hellhound
-		// (an Arceuus thrall), the scarred hellhounds (DT2, their own mesh), and Cerberus and its pets.
+		// Hellhounds.
+		// Deliberately not registered:
+		// revenant hellhounds, the reanimated hellhound, the scarred hellhounds (DT2, their own mesh),
+		// and Cerberus/cerb pet.
 		NAME_MAPPINGS.put("hellhound", HELLHOUND_DEFAULT);
 		registerMapping(HELLHOUND_DEFAULT,
 			NpcID.HELLHOUND, NpcID.HELLHOUND_STRONGHOLDCAVE, NpcID.POH_HELLHOUND,
@@ -1502,9 +1317,7 @@ public class RetroNpcMapping
 		);
 		registerMapping(HELLHOUND_GODWARS, NpcID.GODWARS_ANCIENT_HELLHOUND);
 
-		// Skeleton hellhounds, under the Hellhounds toggle. The name key replaces the generated
-		// SKELETONS row. Vet'ion's summons share the name but are kept out by EXCLUDED_IDS, and
-		// "Greater Skeleton Hellhound" does not match it.
+		// Skeleton hellhounds
 		NAME_MAPPINGS.put("skeleton hellhound", SKELETON_HELLHOUND);
 		registerMapping(SKELETON_HELLHOUND,
 			NpcID.SKELETON_HELLHOUND,
@@ -1567,22 +1380,11 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.BABY_DRAGONS)
 		{
-			// Modern baby dragons already stand and walk on the 2005 sequences - every live
-			// definition has standingAnim 27 and walkingAnim 21 - so these only backstop a -1
-			// in the JSON.
 			stanceAnim = stanceAnim != -1 ? stanceAnim : AnimationID.BDRAG_READY;
 			walkAnim = walkAnim != -1 ? walkAnim : AnimationID.BDRAG_WALK;
-
-			// BDRAG_ATTACK/BLOCK/DEATH (25/26/28) survive too, and the bundle carries them, but
-			// combat sequences are not part of an NPC definition, so the cache cannot say what a
-			// modern baby dragon plays in a fight. Leaving the slots at -1 short-circuits
-			// isAttack/Defend/DeathAnimation. The failure mode of guessing is on record in the
-			// ADULT_DRAGONS branch, where listing retro-native sequences as things to intercept
-			// rewrote every attack into a headbutt.
 		}
 		else if (category == RetroNpcCategory.GOBLINS)
 		{
-			// Only the hobgoblin reaches here now
 			stanceAnim = stanceAnim != -1 ? stanceAnim : AnimationID.GOBLIN_READY;
 			walkAnim = walkAnim != -1 ? walkAnim : AnimationID.GOBLIN_WALK;
 			attackAnim = AnimationID.GOBLIN_ATTACK_UNARMED;
@@ -1625,10 +1427,7 @@ public class RetroNpcMapping
 		{
 			// Only the undead cow reaches here. Every other cow is an id-registered archetype that
 			// declares all six slots itself, because the three 2005 variants need three different
-			// palettes and the generator keeps only the lowest-id row per name. The two paths have
-			// to agree slot for slot, so this branch mirrors cow(...) - but it must not hardcode
-			// the models the way the chicken branch does: the undead cow is its own mesh, 5237,
-			// which the live cache still holds with its palette untouched.
+			// palettes and the generator keeps only the lowest-id row per name.
 			attackAnim = AnimationID.COW_ATTACK;
 			defendAnim = AnimationID.COW_BLOCK;
 			deathAnim = AnimationID.COW_DEATH;
@@ -1645,8 +1444,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.CYCLOPS)
 		{
 			// The generated row already carries this family's parts. Hill giants are the exception:
-			// their 2005 head 2862 is gone from the live cache, so the row's parts would leave the
-			// cache-backed path loading unrelated geometry - it takes the Jogre head instead.
+			// their 2005 head 2862 is gone from the live cache, so I set the head to a Jogre head
+			// (it fits the 2005 body)
 			if (category == RetroNpcCategory.HILL_GIANTS)
 			{
 				models = new int[]{GIANT_BODY, JOGRE_HEAD};
@@ -1674,8 +1473,8 @@ public class RetroNpcMapping
 		}
 		else if (category == RetroNpcCategory.IMPS)
 		{
-			// The 2005 sequences survive at these ids; it is the frames behind them that were
-			// re-authored for the modern rig, which is why imps need the injected skinner
+			// The 2005 sequences survive at these ids; it is the animation frames behind them that were
+			// re-authored for the modern rig, which is why imps need the injected data
 			stanceAnim = stanceAnim != -1 ? stanceAnim : 171;
 			walkAnim = walkAnim != -1 ? walkAnim : 168;
 			attackAnim = 169;

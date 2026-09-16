@@ -1605,14 +1605,27 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
-	 * "Goblin" is a name the plugin matches on, so anything else wearing it has to be kept out by
-	 * id. The Recruitment Drive desk goblins are one merged mesh, size 2, and never walk.
+	 * Every NPC in Mr. Mordaut's Surprise Exam classroom is seated at a desk, and a 2005 standing
+	 * kit would replace it.
+	 *
+	 * <p>"Goblin" and "Zombie" are names the plugin matches on, so those three are kept out by id
+	 * - the desk goblins are one merged mesh, size 2, and never walk. The other four carry the
+	 * names the live cache gives them (Giant, Mummy, Mr. Mordaut, Dunce), none of which is a name
+	 * row, and this test keeps it that way if a row such as a bare "giant" is ever added.
 	 */
 	@Test
-	public void testNonGoblinsNamedGoblinDoNotSwap()
+	public void testSurpriseExamClassroomDoesNotSwap()
 	{
+		assertNull(RetroNpcMapping.get(NpcID.PATTERN_ZOMBIE_DESK, "Zombie"));
 		assertNull(RetroNpcMapping.get(NpcID.PATTERN_GOBLIN1_DESK, "Goblin"));
 		assertNull(RetroNpcMapping.get(NpcID.PATTERN_GOBLIN2_DESK, "Goblin"));
+		assertNull(RetroNpcMapping.get(NpcID.PATTERN_GIANT_DESK, "Giant"));
+		assertNull(RetroNpcMapping.get(NpcID.PATTERN_MUMMY_DESK, "Mummy"));
+		assertNull(RetroNpcMapping.get(NpcID.PATTERN_TEACHER, "Mr. Mordaut"));
+		assertNull(RetroNpcMapping.get(NpcID.PATTERN_IMP_DUNCE, "Dunce"));
+
+		// Scoped to the desk ids: an ordinary zombie still swaps by name
+		assertNotNull(RetroNpcMapping.get(0, "Zombie"));
 	}
 
 	/**

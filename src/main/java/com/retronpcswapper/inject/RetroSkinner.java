@@ -49,7 +49,7 @@ public final class RetroSkinner
 	/**
 	 * Rotations are stored in 8 bits and scaled into the 2048-entry trig table, so the smallest
 	 * step an animation can express is 1/256 of a turn. Anything authored against this rig has to
-	 * be quantised to that.
+	 * be quantized to that.
 	 */
 	private static final int ROTATION_SHIFT = 8;
 

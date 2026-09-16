@@ -24,6 +24,8 @@
  */
 package com.retronpcswapper.inject;
 
+import lombok.Getter;
+
 /**
  * A skeleton, in the engine's own terms: an ordered list of transforms, each naming the vertex
  * groups it moves.
@@ -37,6 +39,7 @@ package com.retronpcswapper.inject;
  */
 public final class RetroRig
 {
+	@Getter
 	private final int id;
 	private final int[] types;
 	private final int[][] groups;
@@ -46,11 +49,6 @@ public final class RetroRig
 		this.id = id;
 		this.types = types;
 		this.groups = groups;
-	}
-
-	public int getId()
-	{
-		return id;
 	}
 
 	/**

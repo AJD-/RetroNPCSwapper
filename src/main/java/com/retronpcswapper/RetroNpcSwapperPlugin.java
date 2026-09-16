@@ -881,14 +881,14 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 		wrapper = null;
 
-		// Nothing is being swapped any more, so Interact Highlight's own outlines are correct again
+		// Nothing is being swapped anymore, so Interact Highlight's own outlines are correct again
 		syncInteractHighlight();
 	}
 
 	/**
 	 * Whether {@code current} is a renderer {@link RetroDrawCallbacks} can substitute models through.
 	 *
-	 * <p>117 HD is a Plugin Hub plugin loaded in its own classloader, so it is recognised by class
+	 * <p>117 HD is a Plugin Hub plugin loaded in its own classloader, so it is recognized by class
 	 * name alone - there is no compile or runtime dependency on it, and with it absent nothing here
 	 * matches. The zone renderer package is allowlisted rather than the legacy one denylisted, so a
 	 * renderer 117 HD adds or renames later is declined instead of wrapped blind.
