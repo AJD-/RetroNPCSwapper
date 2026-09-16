@@ -1,8 +1,10 @@
 # Retro NPC Swapper
 
 Swaps modern NPC models and animations back to their 2004/2005 look — using the retro assets that
-still live in your own Old School RuneScape cache where they survived, and a small bundled 2005 set
+still live in the live Old School RuneScape cache where they survived, and a bundled 2005 set
 where they did not.
+
+![splash](img/retronpcswapper.png)
 
 ## What gets swapped
 
@@ -16,29 +18,17 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Ghosts**
 - **Hellhounds**
 
-Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets* (on by default):
+Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 
-- **Giants** — Fire, Ice and Moss, under the same Giants toggle as Hill
+- **Giants** — Fire, Ice and Moss Giants, under the same Giants toggle as the Hill Giants
 - **Dragons** — chromatic/metallic (up to steel) adults, the King Black Dragon, and baby dragons
-- **Demons** — lesser, greater and black
+- **Demons** — lesser, greater and black demons
 - **Imps**
 - **Cyclopes**
 - **Guards**
 - **Cows**
 
-These need converted 2005 assets because swapping IDs is not enough for them, and they fail in two
-different ways. Some lost the mesh outright: the adult dragon and demon meshes were removed from the
-OSRS cache and their IDs reused for unrelated geometry such as statues and skulls, and the fire, ice
-and moss giant heads and the cyclops head went the same way, so there is nothing to swap to. Others
-kept the mesh but lost the rig: the imp and baby dragon meshes survived, but the animation *frames*
-behind their surviving sequence IDs were re-authored for the modern skeletons. Either way the 
-geometry, the animation, or both have to come from the 2005 data instead of the live cache.
-
-`./gradlew compareRetroModels -Pmodels=<ids> -Pfindmoved` is the tool that settles whether an ID
-still holds its 2005 mesh; `./gradlew verifyRetroRigs` settles whether its animation still fits.
-
-Scenery Objects are not currently swapped by this plugin, so the Dairy Cow and Varrock retextures
-are not supported (yet!)
+![config](img/retronpcswapperconfig.png)
 
 ## Requirements
 
@@ -47,7 +37,23 @@ drawn, so nothing changes while neither is rendering. 117 HD's optional **Legacy
 supported. The plugin detects all of this and simply stands down until a supported renderer holds
 the renderer slot again. 117 HD is not a dependency; the plugin runs the same without it installed.
 
-## How it works
+<details>
+<summary>Why these NPCs require the 2005 asset pack</summary>
+
+These need converted 2005 assets because swapping IDs is not enough for them, and they fail in two
+different ways. Some lost the mesh outright: the adult dragon and demon meshes were removed from the
+OSRS cache and their IDs reused for unrelated geometry such as statues and skulls, and the fire, ice
+and moss giant heads and the cyclops head went the same way, so there is nothing to swap to. Others
+kept the mesh but lost the rig: the imp and baby dragon meshes survived, but the animations
+behind their surviving sequence IDs were re-authored for the modern skeletons. Either way the
+geometry, the animation, or both have to come from the 2005 data instead of the live cache.
+</details>
+
+Scenery Objects are not currently swapped by this plugin, so the Dairy Cow and Varrock retextures
+are not supported
+
+<details>
+<summary>How it works</summary>
 
 - The plugin wraps the renderer's draw callbacks and hands it a prebuilt retro model
   whenever an eligible NPC is drawn. Retro pose and combat animations are applied through the
@@ -71,10 +77,9 @@ the renderer slot again. 117 HD is not a dependency; the plugin runs the same wi
   outlines straight back to the `Interact Highlight` plugin and unticks the compatibility checkbox in
   this plugin.
 - **Nothing is downloaded.** For the categories in the first list, the plugin ships only a table of
-  numeric model and animation IDs, and every asset it displays already comes from your own game
-  cache. Resolving an ID is not the same as it still being the 2005 asset, which is what separates
-  those categories from the injected ones.
-- **The injected categories ship their assets.** Dragons, demons, imps, guards, cows, the cyclops and the
+  numeric model and animation IDs, and every asset it displays already comes from the live game
+  cache.
+- **The injected categories ship their assets.** Dragons, demons, imps, guards, cows, cyclops and the
   fire, ice and moss giant heads have no usable 2005 asset left in the live cache, so
   `retro-assets.dat` (~76 KB) is bundled in the jar and carries their meshes, rigs and animation
   clips, extracted from the February 2005 cache. This is the one thing the plugin distributes rather
@@ -86,13 +91,17 @@ the renderer slot again. 117 HD is not a dependency; the plugin runs the same wi
 There is currently no sanctioned RuneLite API for overriding NPC models, which is why the plugin
 utilizes the GPU or 117 HD renderer's draw callbacks.
 
-## Development
+</details>
+
+<details>
+<summary><b>Development tools & flags</b></summary>
 
 - `./gradlew run` starts a development client with the plugin loaded.
-- `./gradlew generateNpcMappings` regenerates `npc-mappings.json` from a local 2005 cache
-  (original source: https://archive.openrs2.org/caches/runescape/2572) placed in
-  `retrocache/2005cache` (the cache itself is never committed).
-- `./gradlew compareRetroModels -Pmodels=2942,2943 -Pfindmoved` decodes a model from both caches
+- `./gradlew generateNpcMappings` regenerates `npc-mappings.json` from a local 2005 cache (original
+  source: https://archive.openrs2.org/caches/runescape/2572) placed in
+  `retrocache/2005cache` (the cache itself is not committed - if you want to generate your own you will
+  need to download it yourself).
+- `./gradlew compareRetroModels -Pmodels=<ids> -Pfindmoved` decodes a model from both caches
   and compares vertex count, face count and palette, which settles whether an ID still holds its
   2005 asset. Byte comparison cannot: Jagex re-encoded every model for the v2/v3 format markers.
   `-Pfindmoved` rescans the whole live model index to separate "the mesh moved to a new ID" from "the
@@ -105,11 +114,12 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
   has to be built from: the cow body 3341 is 98% the same geometry with its whole hide
   repainted, and a distinct-palette diff cannot say which color became which. Faces are matched
   by position in space, because re-encoding reorders both the faces and the vertices.
-- `./gradlew dumpRetroNpcDefinitions -Pnpc=goblin -Pmax=200` prints 2005 NPC definitions (IDs or a
-  name substring) with their opcode 40 recolor pairs. `npc-mappings.json` keeps only the lowest-id
-  row per name, so it cannot answer a question about one particular NPC among several sharing a
-  name — which is every family whose 2005 varieties were one mesh in several palettes.
-- `./gradlew dumpNpcDefinitions -Pnpc=1173` prints live-cache NPC definitions (IDs or a name
+- `./gradlew dumpRetroNpcDefinitions -Pnpc=<ids/name> -Pmax=200` prints 2005 NPC definitions (IDs or a
+  name substring, e.g. goblin (-Pnpc=goblin)) with their opcode 40 recolor pairs. 
+  `npc-mappings.json` keeps only the lowest-id row per name, so it cannot answer a question about
+  one particular NPC among several sharing a name, which is every family whose 2005 varieties 
+  were one mesh in several palettes.
+- `./gradlew dumpNpcDefinitions -Pnpc=<id>` prints live-cache NPC definitions (IDs or a name
   substring) — models, scales and pose animations, for comparing against the retro definition.
 - `./gradlew generateRetroAssets` rebuilds `retro-assets.dat` from the same local 2005 cache. It
   bundles the meshes the live cache no longer has, the rigs those meshes are skinned to, and the
@@ -122,3 +132,7 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
   pairing of a *partial* kit with a full player animation scores lower by construction — the 2005
   guard clips reach 65-80% and are right — so reach rules out a gross mismatch rather than proving
   a fit. `RetroClipReachTest` enforces a per-clip floor against the shipped bundle.
+
+</details>
+
+### If you'd like to report a bug or request a feature, please create an issue [here](https://github.com/AJD-/RetroNPCSwapper/issues)
