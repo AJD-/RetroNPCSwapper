@@ -76,7 +76,7 @@ public interface RetroNpcConfig extends Config
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
 			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
 			+ "game cache. Turn it off and only Chickens, Goblins, Skeletons, Zombies, Hill Giants, "
-			+ "Ghosts and Hellhounds will swap to their retro assets. Hill Giants will wear a Jogre head."
+			+ "Ghosts, Hellhounds and Giant Rats will swap to their retro assets. Hill Giants will wear a Jogre head."
 			+ "</body></html>",
 		position = 1
 	)
@@ -259,6 +259,18 @@ public interface RetroNpcConfig extends Config
 		position = 13
 	)
 	default boolean swapHellhounds()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapGiantRats",
+		name = "Giant Rats",
+		description = "Swap modern Giant Rat models and animations to their 2004/2005 retro variants.",
+		section = npcTogglesSection,
+		position = 14
+	)
+	default boolean swapGiantRats()
 	{
 		return true;
 	}

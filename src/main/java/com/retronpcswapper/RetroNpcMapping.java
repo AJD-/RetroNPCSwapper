@@ -248,16 +248,15 @@ public class RetroNpcMapping
 	 *
 	 * <p>Every one of these is keyed to framemap 1338, the modern cow rig, and reaches only 54-60%
 	 * of the retro mesh's vertex groups - they visibly bend it. The legacy cow animations 2162,
-	 * 2303 and 2312 are deliberately absent: they sit on framemap 282 like the 2005 sequences do
-	 * and reach 85-100%, so they animate the retro mesh correctly and are left to play.
+	 * 2303 and 2312 animate the retro mesh correctly and are left to play.
 	 */
 	public static final Set<Integer> COW_MODERN_MISC = Set.of(
 		AnimationID.COW_GRAZE, AnimationID.COW_UPDATE_READY,
 		AnimationID.COW_UPDATE_GRAZE, AnimationID.COW_UPDATE_DAIRY
 	);
 
-	// HELL_ATTACK/HELL_BLOCK/HELL_DEATH (158/159/161) are deliberately absent: they are the surviving
-	// 2005 sequences themselves - the retro targets, not modern anims to intercept.
+	// HELL_ATTACK/HELL_BLOCK/HELL_DEATH (158/159/161) are the surviving
+	// 2005 sequences - the retro targets, not modern anims to intercept.
 	//
 	// Combat sequences are not part of a definition, so which of these a live hellhound plays cannot
 	// be read from the cache. What was measured is that every live hellhound pose and every candidate
@@ -304,33 +303,20 @@ public class RetroNpcMapping
 		AnimationID.DOG_UPDATE_FIGHT_ARENA_DEFEND, AnimationID.DOG_UPDATE_GODWARS_DEFEND
 	);
 
-	// Pre-instantiated immutable archetypes.
-	//
-	// The blockers are not all the same, and they no longer all stand:
-	//   - adult dragons, demons: the 2005 meshes were replaced at their ids and exist nowhere in
-	//     the live cache. This used to say nothing short of an asset-injection API could unblock
-	//     them - that turned out to be the thing to build. They now render from injected geometry
-	//     driven by the surviving 2005 sequences, gated behind the injection pipeline toggle.
-	//   - imps: mesh 2887 is preserved exactly, but the animation frames behind the surviving
-	//     sequence ids were re-authored for the modern rig. This used to say injection did not
-	//     help, on the reasoning that a mesh needing no replacement gains nothing from it - which
-	//     was wrong. Injection is what makes it possible to skin the model against the 2005 frames
-	//     rather than the client's, so imps now ship the same way, behind their own toggle.
-	//   - baby dragons: the same re-authored-frames problem, and the same fix applied. Bundled and
-	//     shipping under the dragon toggle.
-	//   - the giant family: never an animation problem at all - sequences 127-131 still resolve to
-	//     framemap 302 and still fit the 2005 body, which survives. It is a geometry problem, and
-	//     only for the heads: all five variants are body 2870 wearing a different head, and only
-	//     the fire giant's survived. Hill giants render either way, wearing a Jogre head on the
-	//     cache path and their real one when injected; the rest have no head in the live cache at
-	//     all, so requiresInjectedGeometry keeps the cache path from drawing them wrong.
-	//   - guards: this used to say an animation-only swap with no retro model at all. That was
-	//     wrong twice over. The 2005 definition names nine parts and every one of them decodes;
-	//     three of the nine (head 294, arms 151, hands 254) had their ids reused, which is what
-	//     made the cache-backed path unable to assemble a whole guard. And they need the 2005
-	//     clips for a reason no other category has: the surviving parts are byte-identical in both
-	//     caches but their vertex groups were RENUMBERED, from a ~35 group 2005 human rig to
-	//     framemap 0's 218. Same geometry, different bones.
+	// GIANTRAT_ATTACK/BLOCK/DEATH (138/139/141) are the surviving 2005 sequences themselves.
+	// The live giant rats moved to the GIANT_RAT_UPDATE family on framemap 1152, which is
+	// what these intercept.
+	public static final Set<Integer> GIANT_RAT_MODERN_ATTACKS = Set.of(
+		AnimationID.GIANT_RAT_UPDATE_ATTACK
+	);
+	public static final Set<Integer> GIANT_RAT_MODERN_DEFENDS = Set.of(
+		AnimationID.GIANT_RAT_UPDATE_DEFEND
+	);
+	public static final Set<Integer> GIANT_RAT_MODERN_DEATHS = Set.of(
+		AnimationID.GIANT_RAT_UPDATE_DEATH, AnimationID.GIANT_RAT_UPDATE_DEATH_FAST
+	);
+
+	// Pre-instantiated archetypes for 2005 cache-backed assets
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
 		.retroModelIds(new int[]{2943})
@@ -841,6 +827,38 @@ public class RetroNpcMapping
 		.modernDeathAnims(HELLHOUND_MODERN_DEATHS)
 		.build();
 
+	// The 2005 giant rat is mesh 2959 on sequences 137-141, and every Feb-2005 "Giant rat" def (86,
+	// 87, 748, 950, and "Blessed Giant rat" 978) is that pair. Both survive in the live cache
+	private static final int GIANT_RAT_BODY = 2959;
+
+	// Set default mesh scale
+	private static final int GIANT_RAT_SCALE = 128;
+
+	private static RetroNpcData.Builder giantRat()
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.GIANT_RATS)
+			.retroModelIds(new int[]{GIANT_RAT_BODY})
+			.idleAnimationId(AnimationID.GIANTRAT_READY)
+			.walkAnimationId(AnimationID.GIANTRAT_WALK)
+			.attackAnimationId(AnimationID.GIANTRAT_ATTACK)
+			.defendAnimationId(AnimationID.GIANTRAT_BLOCK)
+			.deathAnimationId(AnimationID.GIANTRAT_DEATH)
+			.scaleXZ(GIANT_RAT_SCALE)
+			.scaleY(GIANT_RAT_SCALE)
+			.modernAttackAnims(GIANT_RAT_MODERN_ATTACKS)
+			.modernDefendAnims(GIANT_RAT_MODERN_DEFENDS)
+			.modernDeathAnims(GIANT_RAT_MODERN_DEATHS);
+	}
+
+	// 2959's own palette: the dark blue rat
+	public static final RetroNpcData GIANT_RAT_DEFAULT = giantRat().build();
+
+	// Light gray Lumbridge rat - just a recolor of the base rat
+	public static final RetroNpcData GIANT_RAT_GRAY = giantRat()
+		.recolors(new short[]{-22237}, new short[]{70})
+		.build();
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -1306,10 +1324,10 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("goblin guard", GOBLIN_GUARD_DEFAULT);
 		registerMapping(GOBLIN_GUARD_DEFAULT, NpcID.GOBLIN_GUARD);
 
-		// Hellhounds.
+		// Hellhounds
 		// Deliberately not registered:
 		// revenant hellhounds, the reanimated hellhound, the scarred hellhounds (DT2, their own mesh),
-		// and Cerberus/cerb pet.
+		// and Cerberus/cerb pet
 		NAME_MAPPINGS.put("hellhound", HELLHOUND_DEFAULT);
 		registerMapping(HELLHOUND_DEFAULT,
 			NpcID.HELLHOUND, NpcID.HELLHOUND_STRONGHOLDCAVE, NpcID.POH_HELLHOUND,
@@ -1324,6 +1342,25 @@ public class RetroNpcMapping
 			// Nightmare Zone. The hard one is named "Skeleton Hellhound (hard)", so only its id reaches it
 			NpcID.NZONE_SKELETON_HELLHOUND_NORMAL, NpcID.NZONE_SKELETON_HELLHOUND_HARD
 		);
+
+		// Giant rats. The name row alone reaches every plain "Giant rat", but the three Lumbridge
+		// gray variants need the ids registered for the recolor.
+		// Deliberately not registered: the angry giant rats (Soul's Bane), which were introduced after
+		// the cutoff for the cache the plugin is based off of
+		// TODO: Update the 2005 cache to December of 2005 to address this?
+		NAME_MAPPINGS.put("giant rat", GIANT_RAT_DEFAULT);
+		registerMapping(GIANT_RAT_DEFAULT,
+			NpcID.GIANTRAT, NpcID.GIANTRAT2, NpcID.GIANTRAT3,
+			NpcID.GIANTRAT1, NpcID.GIANTRAT1_2, NpcID.GIANTRAT1_3,
+			NpcID.NEWBIEGIANTRAT, NpcID.NEWBIEGIANTRAT2, NpcID.NEWBIEGIANTRAT3,
+			NpcID.SOS_FAM_GIANTRAT, NpcID.SOS_FAM_GIANTRAT2, NpcID.SOS_FAM_GIANTRAT3,
+			NpcID.TUT2_GIANTRAT, NpcID.RAT_BOSS_GIANT_RAT
+		);
+		registerMapping(GIANT_RAT_GRAY, NpcID.GIANTRAT_GREY, NpcID.GIANTRAT_GREY2, NpcID.GIANTRAT_GREY3);
+
+		// Underground Pass "Blessed Giant rat" NPCs
+		NAME_MAPPINGS.put("blessed giant rat", GIANT_RAT_DEFAULT);
+		registerMapping(GIANT_RAT_DEFAULT, NpcID.BLESSED_GIANTRAT, NpcID.BLESSED_GIANTRAT2);
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
