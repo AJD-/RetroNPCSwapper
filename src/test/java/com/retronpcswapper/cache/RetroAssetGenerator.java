@@ -43,6 +43,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.cache.ConfigType;
 import net.runelite.cache.IndexType;
 import net.runelite.cache.definitions.FrameDefinition;
@@ -190,7 +191,25 @@ public class RetroAssetGenerator
 				386, 387, 388, 389, 390, 391, 392,
 				393, 394, 395, 396, 397, 398, 399,
 				400, 401, 402, 403, 404,
-				422, 423, 424})
+				422, 423, 424}),
+		// The large scorpion's 2005 mesh 2967 is gone from the live cache (0% vertex overlap). Its
+		// 2005 sequences 244-248 (frame file 44) are gone too: they now belong to the Wilderness
+		// chainmace on the player rig. The client times a clip from the live sequence at the id it
+		// plays, and the chainmace's run cycle would pull a dead scorpion out of its death hold. So
+		// the 2005 poses are keyed under the modern scorpion sequences, which pace and hold like a
+		// scorpion.
+		//
+		// Nothing offline says which of 246 and 247 is the attack and which the block. 2005 NPC
+		// definitions only name stand and walk, and this family breaks its neighbours' WALK, ATTACK,
+		// BLOCK, READY, DEATH order by putting READY at 245, so there is no precedent to follow.
+		// 246 is taken as the attack. If the in-game look says otherwise, swap them.
+		new Spec("Scorpions", Source.RETRO, Source.RETRO, new int[]{2967},
+			// ready, walk, attack, defend, death - the keys the plugin sets and the client plays
+			new int[]{AnimationID.SCORPION_UPDATE_READY, AnimationID.SCORPION_UPDATE_WALK,
+				AnimationID.SCORPION_UPDATE_ATTACK_TAIL, AnimationID.SCORPION_UPDATE_DEFEND,
+				AnimationID.SCORPION_UPDATE_DEATH},
+			// the 2005 sequences whose frames fill them
+			new int[]{245, 244, 246, 247, 248})
 	);
 
 	private enum Source
@@ -316,8 +335,10 @@ public class RetroAssetGenerator
 				System.out.println("  texture triangles: " + triangles);
 			}
 
-			for (int sequenceId : spec.sequenceIds)
+			for (int seq = 0; seq < spec.sequenceIds.length; seq++)
 			{
+				int sequenceId = spec.sequenceIds[seq];
+				int retroSequenceId = spec.retroSequenceIds[seq];
 				Spec owner = clipOwners.get(sequenceId);
 				if (owner != null)
 				{
@@ -332,7 +353,7 @@ public class RetroAssetGenerator
 				}
 
 				RetroClip clip = spec.clipSource == Source.RETRO
-					? buildRetroClip(store, sequenceId, retroFrames, retroSequences, rigs)
+					? buildRetroClip(store, sequenceId, retroSequenceId, retroFrames, retroSequences, rigs)
 					: buildClip(store, sequenceId, rigs);
 
 				if (clip == null)
@@ -347,7 +368,8 @@ public class RetroAssetGenerator
 				System.out.println("  clip " + sequenceId + "  frames=" + clip.getFrameCount()
 					+ " rig=" + clip.getRigId()
 					+ (spec.clipSource == Source.RETRO
-						? "  (2005, from " + retroSequences.get(sequenceId).getFrameIds().length
+						? "  (2005" + (retroSequenceId != sequenceId ? " sequence " + retroSequenceId : "")
+							+ ", from " + retroSequences.get(retroSequenceId).getFrameIds().length
 							+ " source frames)"
 						: ""));
 			}
@@ -798,7 +820,19 @@ public class RetroAssetGenerator
 	static RetroClip buildRetroClip(Store store, int sequenceId, RetroFrameIndex frames,
 		Map<Integer, RetroSeqDefinition> sequences, Map<Integer, RetroRig> rigs) throws IOException
 	{
-		RetroSeqDefinition retroSeq = sequences.get(sequenceId);
+		return buildRetroClip(store, sequenceId, sequenceId, frames, sequences, rigs);
+	}
+
+	/**
+	 * Builds a clip from 2005 sequence {@code retroSequenceId}, resampled onto live sequence
+	 * {@code sequenceId} and keyed by it. The two ids are the same everywhere except where the live
+	 * id was reused for something else - see the Scorpions spec.
+	 */
+	static RetroClip buildRetroClip(Store store, int sequenceId, int retroSequenceId,
+		RetroFrameIndex frames, Map<Integer, RetroSeqDefinition> sequences, Map<Integer, RetroRig> rigs)
+		throws IOException
+	{
+		RetroSeqDefinition retroSeq = sequences.get(retroSequenceId);
 		if (retroSeq == null || retroSeq.getFrameIds() == null || retroSeq.getFrameIds().length == 0)
 		{
 			return null;
@@ -834,7 +868,7 @@ public class RetroAssetGenerator
 			{
 				// Every clip this bundle carries uses one rig throughout. Two files can hold the
 				// same skeleton, which is harmless; genuinely different ones are not.
-				throw new IOException("2005 sequence " + sequenceId + " mixes framemaps "
+				throw new IOException("2005 sequence " + retroSequenceId + " mixes framemaps "
 					+ rigId + " and " + framemap.getId() + "; the clip format assumes one per clip");
 			}
 		}
@@ -1178,15 +1212,32 @@ public class RetroAssetGenerator
 		private final Source source;
 		private final Source clipSource;
 		private final int[] modelIds;
+		/** The live sequences the clips are keyed by: what the plugin sets and the client plays. */
 		private final int[] sequenceIds;
+
+		/** Where each clip's 2005 frames come from, parallel to {@link #sequenceIds}. */
+		private final int[] retroSequenceIds;
 
 		private Spec(String label, Source source, Source clipSource, int[] modelIds, int[] sequenceIds)
 		{
+			this(label, source, clipSource, modelIds, sequenceIds, sequenceIds);
+		}
+
+		private Spec(String label, Source source, Source clipSource, int[] modelIds, int[] sequenceIds,
+			int[] retroSequenceIds)
+		{
+			if (sequenceIds.length != retroSequenceIds.length)
+			{
+				throw new IllegalArgumentException(label + ": " + sequenceIds.length + " live keys for "
+					+ retroSequenceIds.length + " 2005 sequences");
+			}
+
 			this.label = label;
 			this.source = source;
 			this.clipSource = clipSource;
 			this.modelIds = modelIds;
 			this.sequenceIds = sequenceIds;
+			this.retroSequenceIds = retroSequenceIds;
 		}
 	}
 }
