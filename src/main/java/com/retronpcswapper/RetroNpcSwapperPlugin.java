@@ -653,6 +653,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case GIANT_RATS:
 				// Mesh 2959 and sequences 137-141 both survive intact, so the cache path draws it
 				return config.swapGiantRats();
+			case SCORPIONS:
+				// Injectionis required for large scorpions
+				return config.swapScorpions() && injectionEnabled();
+			case SMALL_SCORPIONS:
+				// Mesh 2968 and sequences 269-273 survive intact, so the cache path draws it
+				return config.swapScorpions();
 			case GOBLINS:
 				return config.swapGoblins();
 			case SKELETONS:

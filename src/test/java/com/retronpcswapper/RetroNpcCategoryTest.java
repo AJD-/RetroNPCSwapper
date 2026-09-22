@@ -2022,6 +2022,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapGhosts must default to true", config.swapGhosts());
 		assertTrue("swapHellhounds must default to true", config.swapHellhounds());
 		assertTrue("swapGiantRats must default to true", config.swapGiantRats());
+		assertTrue("swapScorpions must default to true", config.swapScorpions());
 
 		// The pipeline toggle carries the six bundle-only categories, so its default decides
 		// whether they can render at all - see isCategoryEnabled
@@ -2145,6 +2146,119 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(NpcID.VETION_HELLHOUND_JNR, "Skeleton Hellhound"));
 		assertNull(RetroNpcMapping.get(NpcID.VETION_HELLHOUND_JNR_SINGLES, "Skeleton Hellhound"));
 		assertNull(RetroNpcMapping.get(NpcID.VETION_HELLHOUND_SNR, "Greater Skeleton Hellhound"));
+	}
+
+	/**
+	 * The large 2005 scorpion is mesh 2967, gone from the live cache, so it is injection-only. Its
+	 * 2005 frames are bundled under the modern SCORPION_UPDATE sequences, because live 244-248 now
+	 * belong to the chainmace - so the archetype plays the modern ids.
+	 */
+	@Test
+	public void testScorpions()
+	{
+		Object[][] cases = {
+			{NpcID.SCORPION, "Scorpion", 128},
+			{NpcID.SOS_PEST_SCORPION, "Scorpion", 128},
+			{NpcID.SOS_PEST_SCORPION2, "Scorpion", 128},
+			{NpcID.VARLAMORE_SCORPION_SAVANNAH, "Scorpion", 128},
+			{99993, "Scorpion", 128},
+			{NpcID.POISON_SCORPION, "Poison Scorpion", 128},
+			{NpcID.KINGSCORPION, "King Scorpion", 180},
+			{NpcID.ARENA_SCORPION, "Khazard Scorpion", 128},
+			{NpcID.ARENA_SCORPION_VIS, "Khazard Scorpion", 128},
+			{NpcID.ARENA_SCORPION_CUTSCENE, "Khazard Scorpion", 128},
+			{NpcID.MM_JUNGLE_SCORPION, "Scorpion", 32}
+		};
+		for (Object[] c : cases)
+		{
+			RetroNpcData scorpion = RetroNpcMapping.get((Integer) c[0], (String) c[1]);
+			assertNotNull("Scorpion " + c[0] + " must be mapped", scorpion);
+			assertEquals(RetroNpcCategory.SCORPIONS, scorpion.getCategory());
+			assertArrayEquals(new int[]{2967}, scorpion.getRetroModelIds());
+			assertEquals(AnimationID.SCORPION_UPDATE_READY, scorpion.getIdleAnimationId());
+			assertEquals(AnimationID.SCORPION_UPDATE_WALK, scorpion.getWalkAnimationId());
+			assertEquals(AnimationID.SCORPION_UPDATE_ATTACK_TAIL, scorpion.getAttackAnimationId());
+			assertEquals(AnimationID.SCORPION_UPDATE_DEFEND, scorpion.getDefendAnimationId());
+			assertEquals(AnimationID.SCORPION_UPDATE_DEATH, scorpion.getDeathAnimationId());
+			assertEquals(c[2], scorpion.getScaleXZ());
+			assertEquals(c[2], scorpion.getScaleY());
+
+			// The small family's combat sequences are intercepted too, for the jungle scorpion
+			assertTrue(scorpion.isAttackAnimation(AnimationID.SMALL_SCORPION_UPDATE_ATTACK));
+			assertTrue(scorpion.isDefendAnimation(AnimationID.SMALL_SCORPION_UPDATE_DEFEND));
+			assertTrue(scorpion.isDeathAnimation(AnimationID.SMALL_SCORPION_UPDATE_DEATH));
+
+			// Unlike every other category, the targets are in the intercept sets themselves: the
+			// bundle keys the 2005 frames under the modern ids. onAnimationChanged returns early when
+			// the animation already equals the target, so this maps each id to itself. Don't drop
+			// them to match the other categories, or a jungle scorpion would lose its large-family ids.
+			assertTrue(scorpion.isAttackAnimation(AnimationID.SCORPION_UPDATE_ATTACK_TAIL));
+			assertTrue(scorpion.isDefendAnimation(AnimationID.SCORPION_UPDATE_DEFEND));
+			assertTrue(scorpion.isDeathAnimation(AnimationID.SCORPION_UPDATE_DEATH));
+		}
+
+		assertFalse(RetroNpcMapping.get(NpcID.SCORPION, "Scorpion").hasRecolors());
+		assertArrayEquals(new short[]{3627, 3738},
+			RetroNpcMapping.get(NpcID.ARENA_SCORPION, "Khazard Scorpion").getOriginalColors());
+		assertArrayEquals(new short[]{41, 24},
+			RetroNpcMapping.get(NpcID.ARENA_SCORPION, "Khazard Scorpion").getReplacementColors());
+		assertArrayEquals(new short[]{268, 272},
+			RetroNpcMapping.get(NpcID.MM_JUNGLE_SCORPION, "Scorpion").getReplacementColors());
+
+		// Only the bundle holds the 2005 mesh
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SCORPIONS));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SCORPIONS));
+
+		// Named "Scorpion", but not the 2005 scorpion
+		assertNull(RetroNpcMapping.get(NpcID.WANDERING_DOOMSCORPION, "Scorpion"));
+		assertNull(RetroNpcMapping.get(NpcID.TINYSCORPION, "Scorpion"));
+		assertNull(RetroNpcMapping.get(NpcID.COLOSSEUM_DOOM_SCORPION, "Doom Scorpion"));
+		assertNull(RetroNpcMapping.get(NpcID.ARCEUUS_REANIMATED_SCORPION, "Reanimated scorpion"));
+		assertNull(RetroNpcMapping.get(NpcID.ENT_TOTEMS_ANIMAL_E, "Scorpion spirit"));
+	}
+
+	/**
+	 * The small 2005 scorpion - mesh 2968 on sequences 269-273 - survives whole in the live cache,
+	 * so it is a cache-path category and none of its retro sequences may be intercepted.
+	 */
+	@Test
+	public void testSmallScorpions()
+	{
+		Object[][] cases = {
+			{NpcID.SMALLSCORPION, "Pit Scorpion"},
+			{NpcID.QUESTSCORPIONA, "Kharid Scorpion"},
+			{NpcID.QUESTSCORPIONB, "Kharid Scorpion"},
+			{NpcID.QUESTSCORPIONC, "Kharid Scorpion"},
+			{NpcID.GRAVE_SCORPION, "Grave scorpion"},
+			{99992, "Grave scorpion"}
+		};
+		for (Object[] c : cases)
+		{
+			RetroNpcData scorpion = RetroNpcMapping.get((Integer) c[0], (String) c[1]);
+			assertNotNull("Small scorpion " + c[0] + " must be mapped", scorpion);
+			assertEquals(RetroNpcCategory.SMALL_SCORPIONS, scorpion.getCategory());
+			assertArrayEquals(new int[]{2968}, scorpion.getRetroModelIds());
+			assertEquals(272, scorpion.getIdleAnimationId());
+			assertEquals(269, scorpion.getWalkAnimationId());
+			assertEquals(270, scorpion.getAttackAnimationId());
+			assertEquals(271, scorpion.getDefendAnimationId());
+			assertEquals(273, scorpion.getDeathAnimationId());
+			assertEquals(128, scorpion.getScaleXZ());
+			assertFalse(scorpion.hasRecolors());
+
+			assertTrue(scorpion.isAttackAnimation(AnimationID.SMALL_SCORPION_UPDATE_ATTACK));
+			assertTrue(scorpion.isDefendAnimation(AnimationID.SMALL_SCORPION_UPDATE_DEFEND));
+			assertTrue(scorpion.isDeathAnimation(AnimationID.SMALL_SCORPION_UPDATE_DEATH));
+			for (int retro : new int[]{269, 270, 271, 272, 273})
+			{
+				assertFalse(scorpion.isAttackAnimation(retro));
+				assertFalse(scorpion.isDefendAnimation(retro));
+				assertFalse(scorpion.isDeathAnimation(retro));
+			}
+		}
+
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SMALL_SCORPIONS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SMALL_SCORPIONS));
 	}
 
 	/**

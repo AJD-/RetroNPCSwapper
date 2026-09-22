@@ -121,6 +121,9 @@ public class RetroClipReachTest
 		{58, 3341, 3342}, {59, 3341, 3342}, {60, 3341, 3342},
 		{61, 3341, 3342}, {62, 3341, 3342},
 		{58, 5237}, {59, 5237}, {60, 5237}, {61, 5237}, {62, 5237},
+		// The large scorpion, keyed by the modern SCORPION_UPDATE sequences its 2005 frames
+		// (244-248) were bundled under
+		{6252, 2967}, {6253, 2967}, {6254, 2967}, {6255, 2967}, {6256, 2967},
 		// A full 2005 guard kit against the 2005 human rig. Measured against the LIVE rig these
 		// score 60-63%, which looks like a mismatch but is not: framemap 0 addresses 218 groups for
 		// every equipment slot, and a nine-part kit only ever uses the ~35 named in the javadoc.

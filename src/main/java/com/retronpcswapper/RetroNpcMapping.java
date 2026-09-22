@@ -61,7 +61,11 @@ public class RetroNpcMapping
 		// Exclude goblins/zombies from the Surprise Exam random event
 		NpcID.PATTERN_GOBLIN1_DESK, NpcID.PATTERN_GOBLIN2_DESK, NpcID.PATTERN_ZOMBIE_DESK,
 		// Exclude Vetion summons
-		NpcID.VETION_HELLHOUND_JNR, NpcID.VETION_HELLHOUND_JNR_SINGLES
+		NpcID.VETION_HELLHOUND_JNR, NpcID.VETION_HELLHOUND_JNR_SINGLES,
+		// Exclude Colosseum scorpion
+		NpcID.WANDERING_DOOMSCORPION,
+		// Exclude small scorpion from name pickup
+		NpcID.TINYSCORPION
 	);
 
 	/**
@@ -311,6 +315,20 @@ public class RetroNpcMapping
 		AnimationID.DOG_UPDATE_MEDIUM_DOG_DEFEND, AnimationID.DOG_UPDATE_WOLF_DEFEND,
 		AnimationID.DOG_UPDATE_JACKAL_DEFEND, AnimationID.DOG_UPDATE_FOX_DEFEND,
 		AnimationID.DOG_UPDATE_FIGHT_ARENA_DEFEND, AnimationID.DOG_UPDATE_GODWARS_DEFEND
+	);
+
+	// The large and small scorpions were reworked together (SCORPION_UPDATE_* and
+	// SMALL_SCORPION_UPDATE_*), and the jungle scorpion already mixes the large idle with the small
+	// walk, so each set lists both families. Scoped to the scorpion categories, so the extra ids only
+	// ever apply to scorpions.
+	public static final Set<Integer> SCORPION_MODERN_ATTACKS = Set.of(
+			AnimationID.SCORPION_UPDATE_ATTACK_TAIL, AnimationID.SMALL_SCORPION_UPDATE_ATTACK
+	);
+	public static final Set<Integer> SCORPION_MODERN_DEFENDS = Set.of(
+			AnimationID.SCORPION_UPDATE_DEFEND, AnimationID.SMALL_SCORPION_UPDATE_DEFEND
+	);
+	public static final Set<Integer> SCORPION_MODERN_DEATHS = Set.of(
+			AnimationID.SCORPION_UPDATE_DEATH, AnimationID.SMALL_SCORPION_UPDATE_DEATH
 	);
 
 	// GIANTRAT_ATTACK/BLOCK/DEATH (138/139/141) are the surviving 2005 sequences themselves.
@@ -865,6 +883,65 @@ public class RetroNpcMapping
 		.modernDeathAnims(HELLHOUND_MODERN_DEATHS)
 		.build();
 
+	// The large 2005 scorpion is mesh 2967 in the 2005 cache (re-assigned in modern OSRS)
+	// Its animation ids are the modern scorpion sequences, not the 2005 ones.
+	private static final int SCORPION_BODY = 2967;
+
+	private static RetroNpcData scorpion(short[] find, short[] replace, int scale)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.SCORPIONS)
+			.retroModelIds(new int[]{SCORPION_BODY})
+			.idleAnimationId(AnimationID.SCORPION_UPDATE_READY)
+			.walkAnimationId(AnimationID.SCORPION_UPDATE_WALK)
+			.attackAnimationId(AnimationID.SCORPION_UPDATE_ATTACK_TAIL)
+			.defendAnimationId(AnimationID.SCORPION_UPDATE_DEFEND)
+			.deathAnimationId(AnimationID.SCORPION_UPDATE_DEATH)
+			.miscAnimationId(AnimationID.SCORPION_UPDATE_READY)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.recolors(find, replace)
+			.modernAttackAnims(SCORPION_MODERN_ATTACKS)
+			.modernDefendAnims(SCORPION_MODERN_DEFENDS)
+			.modernDeathAnims(SCORPION_MODERN_DEATHS)
+			.build();
+	}
+
+	// Defs 107 "Scorpion" and 108 "Poison Scorpion": the same mesh, with no opcode 40 data and no resize
+	public static final RetroNpcData SCORPION_DEFAULT = scorpion(null, null, 128);
+
+	// Def 144 asks for 180
+	public static final RetroNpcData KING_SCORPION = scorpion(null, null, 180);
+
+	// The opcode 40 pairs below live only here. npc-mappings.json has no scorpion row, so
+	// applyCacheDefinitions has nothing to graft, and SCORPIONS stays out of categoryUsesRecolors.
+	//
+	// Def 271, the Fight Arena scorpion
+	public static final RetroNpcData KHAZARD_SCORPION = scorpion(
+		new short[]{3627, 3738}, new short[]{41, 24}, 128);
+
+	// Def 1477, the Monkey Madness jungle scorpion. Its scale of 32 matches the 32 the live
+	// composition still asks for
+	public static final RetroNpcData JUNGLE_SCORPION = scorpion(
+		new short[]{3627, 3738}, new short[]{268, 272}, 32);
+
+	// The small 2005 scorpions (defs 109 Pit, 385-387 Kharid, 493 Grave) survive in the modern cache
+	public static final RetroNpcData SMALL_SCORPION = RetroNpcData.builder()
+		.category(RetroNpcCategory.SMALL_SCORPIONS)
+		.retroModelIds(new int[]{2968})
+		.idleAnimationId(AnimationID.SMALLSCORPION_READY)
+		.walkAnimationId(AnimationID.SMALLSCORPION_WALK)
+		.attackAnimationId(AnimationID.SMALLSCORPION_ATTACK)
+		.defendAnimationId(AnimationID.SMALLSCORPION_BLOCK)
+		.deathAnimationId(AnimationID.SMALLSCORPION_DEATH)
+		.miscAnimationId(AnimationID.SMALLSCORPION_READY)
+		.scaleXZ(128)
+		.scaleY(128)
+		.modernAttackAnims(SCORPION_MODERN_ATTACKS)
+		.modernDefendAnims(SCORPION_MODERN_DEFENDS)
+		.modernDeathAnims(SCORPION_MODERN_DEATHS)
+		.build();
+
 	// The 2005 giant rat is mesh 2959 on sequences 137-141, and every Feb-2005 "Giant rat" def (86,
 	// 87, 748, 950, and "Blessed Giant rat" 978) is that pair. Both survive in the live cache
 	private static final int GIANT_RAT_BODY = 2959;
@@ -1048,7 +1125,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.CYCLOPS
 			|| category == RetroNpcCategory.GUARDS
 			|| category == RetroNpcCategory.SKELETON_MAGES
-			|| category == RetroNpcCategory.COWS;
+			|| category == RetroNpcCategory.COWS
+			|| category == RetroNpcCategory.SCORPIONS;
 	}
 
 	/**
@@ -1396,8 +1474,32 @@ public class RetroNpcMapping
 			NpcID.NZONE_SKELETON_HELLHOUND_NORMAL, NpcID.NZONE_SKELETON_HELLHOUND_HARD
 		);
 
-		// Giant rats. The name row alone reaches every plain "Giant rat", but the three Lumbridge
-		// gray variants need the ids registered for the recolor.
+		// Large scorpions
+		NAME_MAPPINGS.put("scorpion", SCORPION_DEFAULT);
+		registerMapping(SCORPION_DEFAULT,
+			NpcID.SCORPION, NpcID.SOS_PEST_SCORPION, NpcID.SOS_PEST_SCORPION2
+		);
+		NAME_MAPPINGS.put("poison scorpion", SCORPION_DEFAULT);
+		registerMapping(SCORPION_DEFAULT, NpcID.POISON_SCORPION);
+		NAME_MAPPINGS.put("king scorpion", KING_SCORPION);
+		registerMapping(KING_SCORPION, NpcID.KINGSCORPION);
+		NAME_MAPPINGS.put("khazard scorpion", KHAZARD_SCORPION);
+		registerMapping(KHAZARD_SCORPION,
+			NpcID.ARENA_SCORPION, NpcID.ARENA_SCORPION_VIS, NpcID.ARENA_SCORPION_CUTSCENE
+		);
+		// Named plain "Scorpion", so only its id reaches the jungle variant
+		registerMapping(JUNGLE_SCORPION, NpcID.MM_JUNGLE_SCORPION);
+
+		// Small scorpions
+		NAME_MAPPINGS.put("pit scorpion", SMALL_SCORPION);
+		NAME_MAPPINGS.put("kharid scorpion", SMALL_SCORPION);
+		NAME_MAPPINGS.put("grave scorpion", SMALL_SCORPION);
+		registerMapping(SMALL_SCORPION,
+			NpcID.SMALLSCORPION, NpcID.GRAVE_SCORPION,
+			NpcID.QUESTSCORPIONA, NpcID.QUESTSCORPIONB, NpcID.QUESTSCORPIONC
+		);
+
+		// Giant rats. The three Lumbridge gray variants need the ids registered for the recolor.
 		// Deliberately not registered: the angry giant rats (Soul's Bane), which were introduced after
 		// the cutoff for the cache the plugin is based off of
 		// TODO: Update the 2005 cache to December of 2005 to address this?
