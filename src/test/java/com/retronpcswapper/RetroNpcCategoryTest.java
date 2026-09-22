@@ -1074,8 +1074,113 @@ public class RetroNpcCategoryTest
 	public void testNoCategoryForwardsRecolorsByDefault()
 	{
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Goblin")).hasRecolors());
-		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Skeleton mage")).hasRecolors());
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Restless ghost")).hasRecolors());
+	}
+
+	/**
+	 * The 2005 Skeleton Mage is human kit tinted bone, not the skeleton mesh. Half its parts are
+	 * gone from the live cache, so it has to be its own injected category rather than a SKELETONS
+	 * row - and it needs the recolors, which are the only thing that make the kit a skeleton.
+	 */
+	@Test
+	public void testSkeletonMageIsTheInjected2005Kit()
+	{
+		int[] mageIds = {
+			NpcID.SKELETONMAGE, NpcID.UNATTACKABLE_SKELETON_MAGE,
+			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING,
+			NpcID.LOTR_MAGE_SKELETON
+		};
+
+		List<RetroNpcData> lookups = new ArrayList<>();
+		lookups.add(RetroNpcMapping.get(0, "Skeleton Mage"));
+		for (int id : mageIds)
+		{
+			lookups.add(RetroNpcMapping.get(id, "Skeleton Mage"));
+			lookups.add(RetroNpcMapping.get(id, null));
+		}
+
+		for (RetroNpcData mage : lookups)
+		{
+			assertNotNull(mage);
+			assertEquals(RetroNpcCategory.SKELETON_MAGES, mage.getCategory());
+			assertArrayEquals(new int[]{209, 251, 292, 170, 256, 325}, mage.getRetroModelIds());
+			assertEquals(AnimationID.HUMAN_READY, mage.getIdleAnimationId());
+			assertEquals(AnimationID.HUMAN_WALK_F, mage.getWalkAnimationId());
+			assertEquals(AnimationID.HUMAN_UNARMEDPUNCH, mage.getAttackAnimationId());
+
+			// Two attack styles, each with its own 2005 sequence: melee swings punch, spells cast
+			for (int melee : new int[]{AnimationID.SKELETON_UPDATE_ATTACK_WEAPON,
+				AnimationID.SKELETON_UPDATE_ATTACK_SWORD, AnimationID.SKELETON_ATTACK})
+			{
+				assertEquals(AnimationID.HUMAN_UNARMEDPUNCH, mage.getAttackAnimationFor(melee));
+			}
+			for (int cast : new int[]{AnimationID.SKELETON_UPDATE_MAGE_CASTING,
+				AnimationID.SKELETON_STRIKE_CASTING, AnimationID.SKELETON_UPDATE_MAGE_CASTING_SWANSONG})
+			{
+				assertTrue(mage.isAttackAnimation(cast));
+				assertEquals(AnimationID.HUMAN_CASTSTRIKE, mage.getAttackAnimationFor(cast));
+			}
+
+			// Both 2005 attacks are recognised as the swap landing, so neither is re-intercepted
+			assertTrue(mage.isRetroAttackAnimation(AnimationID.HUMAN_UNARMEDPUNCH));
+			assertTrue(mage.isRetroAttackAnimation(AnimationID.HUMAN_CASTSTRIKE));
+			assertEquals(-1, mage.getAttackAnimationFor(AnimationID.HUMAN_READY));
+			assertEquals(AnimationID.HUMAN_UNARMEDBLOCK, mage.getDefendAnimationId());
+			assertEquals(AnimationID.HUMAN_DEATH, mage.getDeathAnimationId());
+			assertArrayEquals(new short[]{25238, 8741, 6798}, mage.getOriginalColors());
+			assertArrayEquals(new short[]{10508, 10508, 10508}, mage.getReplacementColors());
+		}
+
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SKELETON_MAGES));
+
+		// The overrides must survive the recolor graft, which rebuilds the archetype
+		RetroNpcData byId = RetroNpcMapping.get(NpcID.SKELETONMAGE, "Skeleton Mage");
+		assertNotNull(byId);
+		assertTrue(byId.hasRecolors());
+		assertEquals(AnimationID.HUMAN_CASTSTRIKE,
+			byId.getAttackAnimationFor(AnimationID.SKELETON_UPDATE_MAGE_CASTING));
+
+		// The plain skeleton must stay on the cache path, with its own clips
+		RetroNpcData skeleton = RetroNpcMapping.get(NpcID.SKELETON_UNARMED, "Skeleton");
+		assertNotNull(skeleton);
+		assertEquals(RetroNpcCategory.SKELETONS, skeleton.getCategory());
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SKELETONS));
+	}
+
+	/**
+	 * The Tarn's Lair mage is named plain "Skeleton", so the name row used to hand it the normal
+	 * skeleton kit. Only its id says it is a mage, and a cross-category id loses to the name row
+	 * everywhere else - NAME_OVERRIDDEN_IDS is what lets this one win.
+	 */
+	@Test
+	public void testTarnsLairMageResolvesByIdDespiteItsName()
+	{
+		// The lookup the plugin actually makes for it, and the only one NAME_OVERRIDDEN_IDS affects
+		RetroNpcData tarnMage = RetroNpcMapping.get(NpcID.LOTR_MAGE_SKELETON, "Skeleton");
+		assertNotNull(tarnMage);
+		assertEquals(RetroNpcCategory.SKELETON_MAGES, tarnMage.getCategory());
+		assertArrayEquals(new int[]{209, 251, 292, 170, 256, 325}, tarnMage.getRetroModelIds());
+		assertEquals(AnimationID.HUMAN_CASTSTRIKE,
+			tarnMage.getAttackAnimationFor(AnimationID.SKELETON_UPDATE_MAGE_CASTING));
+
+		// The opcode 40 pairs are the only thing making generic human kit read as bone, and the graft
+		// repoints ID_MAPPINGS after registerMapping runs - so they have to survive on this path too
+		assertTrue(tarnMage.hasRecolors());
+
+		// Its melee neighbours in the same dungeon must not follow it
+		for (int melee : new int[]{NpcID.LOTR_SKELETON_LVL_77, NpcID.LOTR_SKELETON_LVL_45,
+			NpcID.LOTR_SKELETON_LVL_25, NpcID.LOTR_SKELETON_LVL_13})
+		{
+			RetroNpcData plain = RetroNpcMapping.get(melee, "Skeleton");
+			assertNotNull(plain);
+			assertEquals(RetroNpcCategory.SKELETONS, plain.getCategory());
+		}
+
+		// And the giant sharing the name still wins its own id row
+		RetroNpcData giant = RetroNpcMapping.get(NpcID.LOTR_GIANT_SKELETON, "Skeleton");
+		assertNotNull(giant);
+		assertEquals(RetroNpcCategory.SKELETONS, giant.getCategory());
+		assertEquals(170, giant.getScaleXZ());
 	}
 
 	/**
@@ -1751,8 +1856,9 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testCategoryMatchingExclusions()
 	{
-		// A bare "giant" substring would sweep all of these into the giant family
-		assertNull(RetroNpcMapping.get(0, "Giant rat"));
+		// A bare "giant" substring would sweep all of these into the giant family. The giant rat is
+		// mapped, but to its own category
+		assertEquals(RetroNpcCategory.GIANT_RATS, RetroNpcMapping.get(0, "Giant rat").getCategory());
 		assertNull(RetroNpcMapping.get(0, "Giant spider"));
 		assertNull(RetroNpcMapping.get(0, "Giant frog"));
 		assertNull(RetroNpcMapping.get(0, "Giant bat"));
@@ -1915,6 +2021,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapGiants must default to true", config.swapGiants());
 		assertTrue("swapGhosts must default to true", config.swapGhosts());
 		assertTrue("swapHellhounds must default to true", config.swapHellhounds());
+		assertTrue("swapGiantRats must default to true", config.swapGiantRats());
 		assertTrue("swapScorpions must default to true", config.swapScorpions());
 
 		// The pipeline toggle carries the six bundle-only categories, so its default decides
@@ -2152,6 +2259,76 @@ public class RetroNpcCategoryTest
 
 		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SMALL_SCORPIONS));
 		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SMALL_SCORPIONS));
+	}
+
+	/**
+	 * The 2005 giant rat is mesh 2959 on sequences 137-141, both preserved - a cache-path category.
+	 * The Lumbridge greys are the same mesh with its base blue recolored to grey.
+	 */
+	@Test
+	public void testGiantRats()
+	{
+		Object[][] cases = {
+			{NpcID.GIANTRAT, "Giant rat"}, {NpcID.GIANTRAT2, "Giant rat"}, {NpcID.GIANTRAT3, "Giant rat"},
+			{NpcID.GIANTRAT1, "Giant rat"}, {NpcID.GIANTRAT1_2, "Giant rat"}, {NpcID.GIANTRAT1_3, "Giant rat"},
+			{NpcID.NEWBIEGIANTRAT, "Giant rat"}, {NpcID.NEWBIEGIANTRAT2, "Giant rat"},
+			{NpcID.NEWBIEGIANTRAT3, "Giant rat"},
+			{NpcID.SOS_FAM_GIANTRAT, "Giant rat"}, {NpcID.SOS_FAM_GIANTRAT2, "Giant rat"},
+			{NpcID.SOS_FAM_GIANTRAT3, "Giant rat"},
+			{NpcID.TUT2_GIANTRAT, "Giant rat"}, {NpcID.RAT_BOSS_GIANT_RAT, "Giant rat"},
+			{NpcID.BLESSED_GIANTRAT, "Blessed giant rat"}, {NpcID.BLESSED_GIANTRAT2, "Blessed giant rat"},
+			{99993, "Giant rat"},
+			{NpcID.GIANTRAT_GREY, "Giant rat"}, {NpcID.GIANTRAT_GREY2, "Giant rat"},
+			{NpcID.GIANTRAT_GREY3, "Giant rat"}
+		};
+		Set<Integer> greys = Set.of(NpcID.GIANTRAT_GREY, NpcID.GIANTRAT_GREY2, NpcID.GIANTRAT_GREY3);
+		for (Object[] c : cases)
+		{
+			int id = (Integer) c[0];
+			RetroNpcData rat = RetroNpcMapping.get(id, (String) c[1]);
+			assertNotNull("Giant rat " + id + " must be mapped", rat);
+			assertEquals(RetroNpcCategory.GIANT_RATS, rat.getCategory());
+			assertArrayEquals(new int[]{2959}, rat.getRetroModelIds());
+			assertEquals(140, rat.getIdleAnimationId());
+			assertEquals(137, rat.getWalkAnimationId());
+			assertEquals(138, rat.getAttackAnimationId());
+			assertEquals(139, rat.getDefendAnimationId());
+			assertEquals(141, rat.getDeathAnimationId());
+			assertEquals(128, rat.getScaleXZ());
+			assertEquals(128, rat.getScaleY());
+
+			if (greys.contains(id))
+			{
+				assertTrue("Lumbridge rat " + id + " must be recolored grey", rat.hasRecolors());
+				assertArrayEquals(new short[]{-22237}, rat.getOriginalColors());
+				assertArrayEquals(new short[]{70}, rat.getReplacementColors());
+			}
+			else
+			{
+				assertFalse("Giant rat " + id + " must keep 2959's own blue", rat.hasRecolors());
+			}
+
+			// The modern rig is intercepted, the surviving 2005 sequences never are
+			assertTrue(rat.isAttackAnimation(AnimationID.GIANT_RAT_UPDATE_ATTACK));
+			assertTrue(rat.isDefendAnimation(AnimationID.GIANT_RAT_UPDATE_DEFEND));
+			assertTrue(rat.isDeathAnimation(AnimationID.GIANT_RAT_UPDATE_DEATH));
+			assertTrue(rat.isDeathAnimation(AnimationID.GIANT_RAT_UPDATE_DEATH_FAST));
+			for (int retro : new int[]{137, 138, 139, 140, 141})
+			{
+				assertFalse(rat.isAttackAnimation(retro));
+				assertFalse(rat.isDefendAnimation(retro));
+				assertFalse(rat.isDeathAnimation(retro));
+			}
+		}
+
+		// Cache path: the mesh and rig both survive
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.GIANT_RATS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.GIANT_RATS));
+
+		// The angry giant rats have no 2005 counterpart and are left alone
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_ANGER_RAT, "Angry giant rat"));
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_RAT, "Angry giant rat"));
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_RAT2, "Angry giant rat"));
 	}
 
 	@Test

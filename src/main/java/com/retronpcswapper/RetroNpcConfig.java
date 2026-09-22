@@ -76,8 +76,8 @@ public interface RetroNpcConfig extends Config
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
 			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
 			+ "game cache. Turn it off and only Chickens, Goblins, Skeletons, Zombies, Hill Giants, "
-			+ "Ghosts, Hellhounds and small Scorpions will swap to their retro assets. Hill Giants will wear a Jogre head."
-			+ "</body></html>",
+			+ "Ghosts, Hellhounds, Giant Rats, and small Scorpions will swap to their retro assets. "
+            + "Hill Giants will wear a Jogre head.</body></html>",
 		position = 1
 	)
 	default boolean useInjectionPipeline()
@@ -120,7 +120,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "swapSkeletons",
 		name = "Skeletons",
-		description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants.",
+		description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants. Skeleton mages also require the injection pipeline.",
 		section = npcTogglesSection,
 		position = 3
 	)
@@ -264,13 +264,25 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "swapGiantRats",
+		name = "Giant Rats",
+		description = "Swap modern Giant Rat models and animations to their 2004/2005 retro variants.",
+		section = npcTogglesSection,
+		position = 14
+	)
+	default boolean swapGiantRats()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "swapScorpions",
 		name = "Scorpions",
 		description = "<html><body style='width:170px'>Swap modern Scorpion models and animations to "
 			+ "their 2004/2005 retro variants.<br><br>The large scorpions need <b>Use Converted 2005 " +
 				"Assets</b>, which is on by default. Pit Scorpions swap either way.</body></html>",
 		section = npcTogglesSection,
-		position = 14
+		position = 15
 	)
 	default boolean swapScorpions()
 	{
