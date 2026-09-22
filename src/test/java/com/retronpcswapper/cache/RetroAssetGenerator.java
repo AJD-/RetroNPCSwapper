@@ -189,25 +189,12 @@ public class RetroAssetGenerator
 				393, 394, 395, 396, 397, 398, 399,
 				400, 401, 402, 403, 404,
 				422, 423, 424}),
-		// The 2005 Skeleton Mage (definition 94) is human kit tinted bone, not the skeleton mesh, and it
-		// fails the guards' way: 292, 170 and 256 had their ids reused - the torso the cache path could
-		// not find - and 209, 251 and 325 survive with every vertex group renumbered. It rides the same
-		// 2005 human clips the guards bring, plus 711, the unarmed cast.
 		new Spec("Skeleton mages", Source.RETRO, Source.RETRO,
 			new int[]{209, 251, 292, 170, 256, 325},
 			new int[]{808, 819, 836, 711, 422, 423, 424,
 				422, 423, 424}),
 		// The large scorpion's 2005 mesh 2967 is gone from the live cache (0% vertex overlap). Its
-		// 2005 sequences 244-248 (frame file 44) are gone too: they now belong to the Wilderness
-		// chainmace on the player rig. The client times a clip from the live sequence at the id it
-		// plays, and the chainmace's run cycle would pull a dead scorpion out of its death hold. So
-		// the 2005 poses are keyed under the modern scorpion sequences, which pace and hold like a
-		// scorpion.
-		//
-		// Nothing offline says which of 246 and 247 is the attack and which the block. 2005 NPC
-		// definitions only name stand and walk, and this family breaks its neighbours' WALK, ATTACK,
-		// BLOCK, READY, DEATH order by putting READY at 245, so there is no precedent to follow.
-		// 246 is taken as the attack. If the in-game look says otherwise, swap them.
+		// 2005 sequences 244-248 (frame file 44) have been overwritten as well
 		new Spec("Scorpions", Source.RETRO, Source.RETRO, new int[]{2967},
 			// ready, walk, attack, defend, death - the keys the plugin sets and the client plays
 			new int[]{AnimationID.SCORPION_UPDATE_READY, AnimationID.SCORPION_UPDATE_WALK,
