@@ -61,7 +61,11 @@ public class RetroNpcMapping
 		// Exclude goblins/zombies from the Surprise Exam random event
 		NpcID.PATTERN_GOBLIN1_DESK, NpcID.PATTERN_GOBLIN2_DESK, NpcID.PATTERN_ZOMBIE_DESK,
 		// Exclude Vetion summons
-		NpcID.VETION_HELLHOUND_JNR, NpcID.VETION_HELLHOUND_JNR_SINGLES
+		NpcID.VETION_HELLHOUND_JNR, NpcID.VETION_HELLHOUND_JNR_SINGLES,
+		// Exclude Colosseum scorpion
+		NpcID.WANDERING_DOOMSCORPION,
+		// Exclude the gorilla skeleton
+		NpcID.MM_SKELETON
 	);
 
 	/**
@@ -73,6 +77,20 @@ public class RetroNpcMapping
 	 */
 	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
 		Set.of(RetroNpcCategory.GUARDS);
+
+	/**
+	 * Ids whose registered row beats the name row even when the two disagree about the category.
+	 *
+	 * <p>For NPCs whose display name lies about what they are. {@link #get} otherwise lets the name
+	 * win a cross-category tie, because an id registered under a different category is almost always
+	 * a mistake - but the Tarn's Lair and Dragon Slayer II mages are named plain "Skeleton" and the
+	 * tiny scorpion plain "Scorpion", so without this their registrations would be dead code.
+	 *
+	 * <p>The tell in both families is the mesh: 21193 is the mage kit rather than skeleton kit, and
+	 * 24612 is the small scorpion rather than the large one.
+	 */
+	private static final Set<Integer> NAME_OVERRIDDEN_IDS = Set.of(
+		NpcID.LOTR_MAGE_SKELETON, NpcID.DS2_SKELETON_MAGIC, NpcID.TINYSCORPION);
 
 	// Category-Scoped Modern Animation Sets. Values are gameval AnimationID constants where the
 	// modern cache has them; retro 2005 sequence IDs used elsewhere in this class stay numeric
@@ -248,16 +266,15 @@ public class RetroNpcMapping
 	 *
 	 * <p>Every one of these is keyed to framemap 1338, the modern cow rig, and reaches only 54-60%
 	 * of the retro mesh's vertex groups - they visibly bend it. The legacy cow animations 2162,
-	 * 2303 and 2312 are deliberately absent: they sit on framemap 282 like the 2005 sequences do
-	 * and reach 85-100%, so they animate the retro mesh correctly and are left to play.
+	 * 2303 and 2312 animate the retro mesh correctly and are left to play.
 	 */
 	public static final Set<Integer> COW_MODERN_MISC = Set.of(
 		AnimationID.COW_GRAZE, AnimationID.COW_UPDATE_READY,
 		AnimationID.COW_UPDATE_GRAZE, AnimationID.COW_UPDATE_DAIRY
 	);
 
-	// HELL_ATTACK/HELL_BLOCK/HELL_DEATH (158/159/161) are deliberately absent: they are the surviving
-	// 2005 sequences themselves - the retro targets, not modern anims to intercept.
+	// HELL_ATTACK/HELL_BLOCK/HELL_DEATH (158/159/161) are the surviving
+	// 2005 sequences - the retro targets, not modern anims to intercept.
 	//
 	// Combat sequences are not part of a definition, so which of these a live hellhound plays cannot
 	// be read from the cache. What was measured is that every live hellhound pose and every candidate
@@ -304,33 +321,34 @@ public class RetroNpcMapping
 		AnimationID.DOG_UPDATE_FIGHT_ARENA_DEFEND, AnimationID.DOG_UPDATE_GODWARS_DEFEND
 	);
 
-	// Pre-instantiated immutable archetypes.
-	//
-	// The blockers are not all the same, and they no longer all stand:
-	//   - adult dragons, demons: the 2005 meshes were replaced at their ids and exist nowhere in
-	//     the live cache. This used to say nothing short of an asset-injection API could unblock
-	//     them - that turned out to be the thing to build. They now render from injected geometry
-	//     driven by the surviving 2005 sequences, gated behind the injection pipeline toggle.
-	//   - imps: mesh 2887 is preserved exactly, but the animation frames behind the surviving
-	//     sequence ids were re-authored for the modern rig. This used to say injection did not
-	//     help, on the reasoning that a mesh needing no replacement gains nothing from it - which
-	//     was wrong. Injection is what makes it possible to skin the model against the 2005 frames
-	//     rather than the client's, so imps now ship the same way, behind their own toggle.
-	//   - baby dragons: the same re-authored-frames problem, and the same fix applied. Bundled and
-	//     shipping under the dragon toggle.
-	//   - the giant family: never an animation problem at all - sequences 127-131 still resolve to
-	//     framemap 302 and still fit the 2005 body, which survives. It is a geometry problem, and
-	//     only for the heads: all five variants are body 2870 wearing a different head, and only
-	//     the fire giant's survived. Hill giants render either way, wearing a Jogre head on the
-	//     cache path and their real one when injected; the rest have no head in the live cache at
-	//     all, so requiresInjectedGeometry keeps the cache path from drawing them wrong.
-	//   - guards: this used to say an animation-only swap with no retro model at all. That was
-	//     wrong twice over. The 2005 definition names nine parts and every one of them decodes;
-	//     three of the nine (head 294, arms 151, hands 254) had their ids reused, which is what
-	//     made the cache-backed path unable to assemble a whole guard. And they need the 2005
-	//     clips for a reason no other category has: the surviving parts are byte-identical in both
-	//     caches but their vertex groups were RENUMBERED, from a ~35 group 2005 human rig to
-	//     framemap 0's 218. Same geometry, different bones.
+	// The large and small scorpions were reworked together (SCORPION_UPDATE_* and
+	// SMALL_SCORPION_UPDATE_*), and the jungle scorpion already mixes the large idle with the small
+	// walk, so each set lists both families. Scoped to the scorpion categories, so the extra ids only
+	// ever apply to scorpions.
+	public static final Set<Integer> SCORPION_MODERN_ATTACKS = Set.of(
+			AnimationID.SCORPION_UPDATE_ATTACK_TAIL, AnimationID.SMALL_SCORPION_UPDATE_ATTACK
+	);
+	public static final Set<Integer> SCORPION_MODERN_DEFENDS = Set.of(
+			AnimationID.SCORPION_UPDATE_DEFEND, AnimationID.SMALL_SCORPION_UPDATE_DEFEND
+	);
+	public static final Set<Integer> SCORPION_MODERN_DEATHS = Set.of(
+			AnimationID.SCORPION_UPDATE_DEATH, AnimationID.SMALL_SCORPION_UPDATE_DEATH
+	);
+
+	// GIANTRAT_ATTACK/BLOCK/DEATH (138/139/141) are the surviving 2005 sequences themselves.
+	// The live giant rats moved to the GIANT_RAT_UPDATE family on framemap 1152, which is
+	// what these intercept.
+	public static final Set<Integer> GIANT_RAT_MODERN_ATTACKS = Set.of(
+		AnimationID.GIANT_RAT_UPDATE_ATTACK
+	);
+	public static final Set<Integer> GIANT_RAT_MODERN_DEFENDS = Set.of(
+		AnimationID.GIANT_RAT_UPDATE_DEFEND
+	);
+	public static final Set<Integer> GIANT_RAT_MODERN_DEATHS = Set.of(
+		AnimationID.GIANT_RAT_UPDATE_DEATH, AnimationID.GIANT_RAT_UPDATE_DEATH_FAST
+	);
+
+	// Pre-instantiated archetypes for 2005 cache-backed assets
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
 		.retroModelIds(new int[]{2943})
@@ -460,6 +478,34 @@ public class RetroNpcMapping
 		.deathAnimationId(263)
 		.scaleXZ(GIANT_SKELETON_SCALE)
 		.scaleY(GIANT_SKELETON_SCALE)
+		.modernAttackAnims(SKELETON_MODERN_ATTACKS)
+		.modernDefendAnims(SKELETON_MODERN_DEFENDS)
+		.modernDeathAnims(SKELETON_MODERN_DEATHS)
+		.build();
+
+	/**
+	 * The six parts of 2005 definition 94, the only Skeleton Mage in that cache. It is not the
+	 * skeleton mesh at all but generic human kit, tinted bone by its opcode 40 pairs - the same failure
+	 * the guards had. 292, 170 and 256 had their ids reused (the missing torso), and 209, 251 and 325
+	 * survive but were re-bound to the live human rig, so both geometry and clips come from the bundle.
+	 */
+	private static final int[] SKELETON_MAGE_PARTS = {209, 251, 292, 170, 256, 325};
+
+	// The live mage plays the skeleton rig's SKELETON_UPDATE_* family, so the skeleton modern sets are
+	// what detect its combat actions; the 2005 human sequences below are what gets played. It fights
+	// in two styles: its melee swings are the skeleton's and take the 2005 unarmed punch, while its
+	// spells have casts of their own and take the 2005 cast.
+	public static final RetroNpcData SKELETON_MAGE = RetroNpcData.builder()
+		.category(RetroNpcCategory.SKELETON_MAGES)
+		.retroModelIds(SKELETON_MAGE_PARTS)
+		.idleAnimationId(AnimationID.HUMAN_READY)
+		.walkAnimationId(AnimationID.HUMAN_WALK_F)
+		.attackAnimationId(AnimationID.HUMAN_UNARMEDPUNCH)
+		.attackAnimationOverride(AnimationID.HUMAN_CASTSTRIKE,
+			AnimationID.SKELETON_UPDATE_MAGE_CASTING, AnimationID.SKELETON_STRIKE_CASTING,
+			AnimationID.SKELETON_UPDATE_MAGE_CASTING_SWANSONG)
+		.defendAnimationId(AnimationID.HUMAN_UNARMEDBLOCK)
+		.deathAnimationId(AnimationID.HUMAN_DEATH)
 		.modernAttackAnims(SKELETON_MODERN_ATTACKS)
 		.modernDefendAnims(SKELETON_MODERN_DEFENDS)
 		.modernDeathAnims(SKELETON_MODERN_DEATHS)
@@ -841,6 +887,97 @@ public class RetroNpcMapping
 		.modernDeathAnims(HELLHOUND_MODERN_DEATHS)
 		.build();
 
+	// The large 2005 scorpion is mesh 2967 in the 2005 cache (re-assigned in modern OSRS)
+	// Its animation ids are the modern scorpion sequences, not the 2005 ones.
+	private static final int SCORPION_BODY = 2967;
+
+	private static RetroNpcData scorpion(short[] find, short[] replace, int scale)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.SCORPIONS)
+			.retroModelIds(new int[]{SCORPION_BODY})
+			.idleAnimationId(AnimationID.SCORPION_UPDATE_READY)
+			.walkAnimationId(AnimationID.SCORPION_UPDATE_WALK)
+			.attackAnimationId(AnimationID.SCORPION_UPDATE_ATTACK_TAIL)
+			.defendAnimationId(AnimationID.SCORPION_UPDATE_DEFEND)
+			.deathAnimationId(AnimationID.SCORPION_UPDATE_DEATH)
+			.miscAnimationId(AnimationID.SCORPION_UPDATE_READY)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.recolors(find, replace)
+			.modernAttackAnims(SCORPION_MODERN_ATTACKS)
+			.modernDefendAnims(SCORPION_MODERN_DEFENDS)
+			.modernDeathAnims(SCORPION_MODERN_DEATHS)
+			.build();
+	}
+
+	// Defs 107 "Scorpion" and 108 "Poison Scorpion": the same mesh, with no opcode 40 data and no resize
+	public static final RetroNpcData SCORPION_DEFAULT = scorpion(null, null, 128);
+
+	// Def 144 asks for 180
+	public static final RetroNpcData KING_SCORPION = scorpion(null, null, 180);
+
+	// The opcode 40 pairs below live only here. npc-mappings.json has no scorpion row, so
+	// applyCacheDefinitions has nothing to graft, and SCORPIONS stays out of categoryUsesRecolors.
+	//
+	// Def 271, the Fight Arena scorpion
+	public static final RetroNpcData KHAZARD_SCORPION = scorpion(
+		new short[]{3627, 3738}, new short[]{41, 24}, 128);
+
+	// Def 1477, the Monkey Madness jungle scorpion. Its scale of 32 matches the 32 the live
+	// composition still asks for
+	public static final RetroNpcData JUNGLE_SCORPION = scorpion(
+		new short[]{3627, 3738}, new short[]{268, 272}, 32);
+
+	// The small 2005 scorpions (defs 109 Pit, 385-387 Kharid, 493 Grave) survive in the modern cache
+	public static final RetroNpcData SMALL_SCORPION = RetroNpcData.builder()
+		.category(RetroNpcCategory.SMALL_SCORPIONS)
+		.retroModelIds(new int[]{2968})
+		.idleAnimationId(AnimationID.SMALLSCORPION_READY)
+		.walkAnimationId(AnimationID.SMALLSCORPION_WALK)
+		.attackAnimationId(AnimationID.SMALLSCORPION_ATTACK)
+		.defendAnimationId(AnimationID.SMALLSCORPION_BLOCK)
+		.deathAnimationId(AnimationID.SMALLSCORPION_DEATH)
+		.miscAnimationId(AnimationID.SMALLSCORPION_READY)
+		.scaleXZ(128)
+		.scaleY(128)
+		.modernAttackAnims(SCORPION_MODERN_ATTACKS)
+		.modernDefendAnims(SCORPION_MODERN_DEFENDS)
+		.modernDeathAnims(SCORPION_MODERN_DEATHS)
+		.build();
+
+	// The 2005 giant rat is mesh 2959 on sequences 137-141, and every Feb-2005 "Giant rat" def (86,
+	// 87, 748, 950, and "Blessed Giant rat" 978) is that pair. Both survive in the live cache
+	private static final int GIANT_RAT_BODY = 2959;
+
+	// Set default mesh scale
+	private static final int GIANT_RAT_SCALE = 128;
+
+	private static RetroNpcData.Builder giantRat()
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.GIANT_RATS)
+			.retroModelIds(new int[]{GIANT_RAT_BODY})
+			.idleAnimationId(AnimationID.GIANTRAT_READY)
+			.walkAnimationId(AnimationID.GIANTRAT_WALK)
+			.attackAnimationId(AnimationID.GIANTRAT_ATTACK)
+			.defendAnimationId(AnimationID.GIANTRAT_BLOCK)
+			.deathAnimationId(AnimationID.GIANTRAT_DEATH)
+			.scaleXZ(GIANT_RAT_SCALE)
+			.scaleY(GIANT_RAT_SCALE)
+			.modernAttackAnims(GIANT_RAT_MODERN_ATTACKS)
+			.modernDefendAnims(GIANT_RAT_MODERN_DEFENDS)
+			.modernDeathAnims(GIANT_RAT_MODERN_DEATHS);
+	}
+
+	// 2959's own palette: the dark blue rat
+	public static final RetroNpcData GIANT_RAT_DEFAULT = giantRat().build();
+
+	// Light gray Lumbridge rat - just a recolor of the base rat
+	public static final RetroNpcData GIANT_RAT_GRAY = giantRat()
+		.recolors(new short[]{-22237}, new short[]{70})
+		.build();
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -991,7 +1128,9 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.MOSS_GIANTS
 			|| category == RetroNpcCategory.CYCLOPS
 			|| category == RetroNpcCategory.GUARDS
-			|| category == RetroNpcCategory.COWS;
+			|| category == RetroNpcCategory.SKELETON_MAGES
+			|| category == RetroNpcCategory.COWS
+			|| category == RetroNpcCategory.SCORPIONS;
 	}
 
 	/**
@@ -1036,6 +1175,9 @@ public class RetroNpcMapping
 			// so the opcode 40 pairs are what make the kit a guard's colors rather than a
 			// townsperson's. The pairs come from the definition the parts come from.
 			|| category == RetroNpcCategory.GUARDS
+			// The skeleton mage is the same generic human kit, and its pairs are what paint it bone.
+			// There is only one 2005 definition, so no variant's colors can win by accident.
+			|| category == RetroNpcCategory.SKELETON_MAGES
 			// The undead chicken is just a recolored regular chicken
 			|| category == RetroNpcCategory.CHICKENS;
 	}
@@ -1131,6 +1273,18 @@ public class RetroNpcMapping
 			NpcID.GIANTSKELETON, NpcID.GIANTSKELETON2,
 			NpcID.SWORD_SKELETON_3, NpcID.SWORD_SKELETON_3B,
 			NpcID.LOTR_GIANT_SKELETON
+		);
+
+		// Skeleton mages. LOTR_MAGE_SKELETON (Tarn's Lair) and DS2_SKELETON_MAGIC are both named plain
+		// "Skeleton" while carrying mesh 21193, the mage kit, so their ids only reach this row through
+		// NAME_OVERRIDDEN_IDS - see get(). The DS2 melee and ranged skeletons beside 8072 wear ordinary
+		// skeleton kit and stay on the name row. Left out: WGS_UNDEAD_MAGE ("Undead Mage") has no 2005
+		// counterpart.
+		NAME_MAPPINGS.put("skeleton mage", SKELETON_MAGE);
+		registerMapping(SKELETON_MAGE,
+			NpcID.SKELETONMAGE, NpcID.UNATTACKABLE_SKELETON_MAGE,
+			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING,
+			NpcID.LOTR_MAGE_SKELETON, NpcID.DS2_SKELETON_MAGIC
 		);
 
 		// Zombies
@@ -1306,10 +1460,10 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("goblin guard", GOBLIN_GUARD_DEFAULT);
 		registerMapping(GOBLIN_GUARD_DEFAULT, NpcID.GOBLIN_GUARD);
 
-		// Hellhounds.
+		// Hellhounds
 		// Deliberately not registered:
 		// revenant hellhounds, the reanimated hellhound, the scarred hellhounds (DT2, their own mesh),
-		// and Cerberus/cerb pet.
+		// and Cerberus/cerb pet
 		NAME_MAPPINGS.put("hellhound", HELLHOUND_DEFAULT);
 		registerMapping(HELLHOUND_DEFAULT,
 			NpcID.HELLHOUND, NpcID.HELLHOUND_STRONGHOLDCAVE, NpcID.POH_HELLHOUND,
@@ -1324,6 +1478,50 @@ public class RetroNpcMapping
 			// Nightmare Zone. The hard one is named "Skeleton Hellhound (hard)", so only its id reaches it
 			NpcID.NZONE_SKELETON_HELLHOUND_NORMAL, NpcID.NZONE_SKELETON_HELLHOUND_HARD
 		);
+
+		// Large scorpions
+		NAME_MAPPINGS.put("scorpion", SCORPION_DEFAULT);
+		registerMapping(SCORPION_DEFAULT,
+			NpcID.SCORPION, NpcID.SOS_PEST_SCORPION, NpcID.SOS_PEST_SCORPION2
+		);
+		NAME_MAPPINGS.put("poison scorpion", SCORPION_DEFAULT);
+		registerMapping(SCORPION_DEFAULT, NpcID.POISON_SCORPION);
+		NAME_MAPPINGS.put("king scorpion", KING_SCORPION);
+		registerMapping(KING_SCORPION, NpcID.KINGSCORPION);
+		NAME_MAPPINGS.put("khazard scorpion", KHAZARD_SCORPION);
+		registerMapping(KHAZARD_SCORPION,
+			NpcID.ARENA_SCORPION, NpcID.ARENA_SCORPION_VIS, NpcID.ARENA_SCORPION_CUTSCENE
+		);
+		// Named plain "Scorpion", so only its id reaches the jungle variant
+		registerMapping(JUNGLE_SCORPION, NpcID.MM_JUNGLE_SCORPION);
+
+		// Small scorpions
+		NAME_MAPPINGS.put("pit scorpion", SMALL_SCORPION);
+		NAME_MAPPINGS.put("kharid scorpion", SMALL_SCORPION);
+		NAME_MAPPINGS.put("grave scorpion", SMALL_SCORPION);
+		registerMapping(SMALL_SCORPION,
+			NpcID.SMALLSCORPION, NpcID.GRAVE_SCORPION,
+			NpcID.QUESTSCORPIONA, NpcID.QUESTSCORPIONB, NpcID.QUESTSCORPIONC,
+			NpcID.TINYSCORPION
+		);
+
+		// Giant rats. The three Lumbridge gray variants need the ids registered for the recolor.
+		// Deliberately not registered: the angry giant rats (Soul's Bane), which were introduced after
+		// the cutoff for the cache the plugin is based off of
+		// TODO: Update the 2005 cache to December of 2005 to address this?
+		NAME_MAPPINGS.put("giant rat", GIANT_RAT_DEFAULT);
+		registerMapping(GIANT_RAT_DEFAULT,
+			NpcID.GIANTRAT, NpcID.GIANTRAT2, NpcID.GIANTRAT3,
+			NpcID.GIANTRAT1, NpcID.GIANTRAT1_2, NpcID.GIANTRAT1_3,
+			NpcID.NEWBIEGIANTRAT, NpcID.NEWBIEGIANTRAT2, NpcID.NEWBIEGIANTRAT3,
+			NpcID.SOS_FAM_GIANTRAT, NpcID.SOS_FAM_GIANTRAT2, NpcID.SOS_FAM_GIANTRAT3,
+			NpcID.TUT2_GIANTRAT, NpcID.RAT_BOSS_GIANT_RAT
+		);
+		registerMapping(GIANT_RAT_GRAY, NpcID.GIANTRAT_GREY, NpcID.GIANTRAT_GREY2, NpcID.GIANTRAT_GREY3);
+
+		// Underground Pass "Blessed Giant rat" NPCs
+		NAME_MAPPINGS.put("blessed giant rat", GIANT_RAT_DEFAULT);
+		registerMapping(GIANT_RAT_DEFAULT, NpcID.BLESSED_GIANTRAT, NpcID.BLESSED_GIANTRAT2);
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
@@ -1551,6 +1749,13 @@ public class RetroNpcMapping
 		{
 			// Sharing a name with the town guard is not enough to be one
 			byName = null;
+		}
+
+		if (byId != null && NAME_OVERRIDDEN_IDS.contains(npcId))
+		{
+			// The name alone doesn't correctly map the NPC, so the id it was registered under wins
+			// outright - including over a name row in another category
+			return byId;
 		}
 
 		if (byName == null)

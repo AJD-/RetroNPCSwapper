@@ -29,7 +29,9 @@ import lombok.Getter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -163,6 +165,17 @@ public class RetroNpcData
 	@Getter
 	private final Set<Integer> modernMiscAnims;
 
+	/**
+	 * Modern attack animations that each swap to a 2005 attack of their own, rather than to
+	 * {@link #attackAnimationId}.
+	 *
+	 * <p>For NPCs that fight in more than one style. The live skeleton mage alternates a melee
+	 * swing with a spell cast, and 2005 had a separate sequence for each, so collapsing both onto
+	 * one slot would have it cast every punch. Checked ahead of {@link #modernAttackAnims}, and an
+	 * animation named here counts as an attack whether or not that set names it too.
+	 */
+	private final Map<Integer, Integer> modernAttackOverrides;
+
 	public RetroNpcData(
 		RetroNpcCategory category,
 		int[] retroModelIds,
@@ -184,7 +197,8 @@ public class RetroNpcData
 	{
 		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
 			defendAnimationId, deathAnimationId, miscAnimationId, scaleXZ, scaleY, originalColors,
-			replacementColors, modernAttackAnims, modernDefendAnims, modernDeathAnims, modernMiscAnims);
+			replacementColors, modernAttackAnims, modernDefendAnims, modernDeathAnims, modernMiscAnims,
+			null);
 	}
 
 	public RetroNpcData(
@@ -204,7 +218,8 @@ public class RetroNpcData
 		Set<Integer> modernAttackAnims,
 		Set<Integer> modernDefendAnims,
 		Set<Integer> modernDeathAnims,
-		Set<Integer> modernMiscAnims
+		Set<Integer> modernMiscAnims,
+		Map<Integer, Integer> modernAttackOverrides
 	)
 	{
 		this.category = category;
@@ -236,6 +251,9 @@ public class RetroNpcData
 		this.modernMiscAnims = modernMiscAnims != null
 			? Collections.unmodifiableSet(new HashSet<>(modernMiscAnims))
 			: Collections.emptySet();
+		this.modernAttackOverrides = modernAttackOverrides != null
+			? Collections.unmodifiableMap(new HashMap<>(modernAttackOverrides))
+			: Collections.emptyMap();
 	}
 
 	public static Builder builder()
@@ -245,7 +263,32 @@ public class RetroNpcData
 
 	public boolean isAttackAnimation(int animId)
 	{
-		return attackAnimationId != -1 && modernAttackAnims.contains(animId);
+		return modernAttackOverrides.containsKey(animId)
+			|| (attackAnimationId != -1 && modernAttackAnims.contains(animId));
+	}
+
+	/**
+	 * The 2005 attack to play in place of this modern one, or -1 if it is not an attack this
+	 * mapping swaps.
+	 */
+	public int getAttackAnimationFor(int animId)
+	{
+		Integer override = modernAttackOverrides.get(animId);
+		if (override != null)
+		{
+			return override;
+		}
+		return isAttackAnimation(animId) ? attackAnimationId : -1;
+	}
+
+	/**
+	 * Whether this is one of the 2005 attacks this mapping plays, so seeing it again is the swap
+	 * landing rather than a new action to intercept.
+	 */
+	public boolean isRetroAttackAnimation(int animId)
+	{
+		return animId != -1
+			&& (animId == attackAnimationId || modernAttackOverrides.containsValue(animId));
 	}
 
 	public boolean isDefendAnimation(int animId)
@@ -319,7 +362,8 @@ public class RetroNpcData
 			modernAttackAnims,
 			modernDefendAnims,
 			modernDeathAnims,
-			modernMiscAnims);
+			modernMiscAnims,
+			modernAttackOverrides);
 	}
 
 	/**
@@ -348,7 +392,8 @@ public class RetroNpcData
 			modernAttackAnims,
 			modernDefendAnims,
 			modernDeathAnims,
-			modernMiscAnims);
+			modernMiscAnims,
+			modernAttackOverrides);
 	}
 
 	/**
@@ -384,7 +429,8 @@ public class RetroNpcData
 			modernAttackAnims,
 			modernDefendAnims,
 			modernDeathAnims,
-			modernMiscAnims);
+			modernMiscAnims,
+			modernAttackOverrides);
 	}
 
 	@Override
@@ -409,7 +455,8 @@ public class RetroNpcData
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
 			Objects.equals(modernDefendAnims, that.modernDefendAnims) &&
 			Objects.equals(modernDeathAnims, that.modernDeathAnims) &&
-			Objects.equals(modernMiscAnims, that.modernMiscAnims);
+			Objects.equals(modernMiscAnims, that.modernMiscAnims) &&
+			Objects.equals(modernAttackOverrides, that.modernAttackOverrides);
 	}
 
 	@Override
@@ -432,6 +479,7 @@ public class RetroNpcData
 		result = 31 * result + (modernDefendAnims != null ? modernDefendAnims.hashCode() : 0);
 		result = 31 * result + (modernDeathAnims != null ? modernDeathAnims.hashCode() : 0);
 		result = 31 * result + (modernMiscAnims != null ? modernMiscAnims.hashCode() : 0);
+		result = 31 * result + modernAttackOverrides.hashCode();
 		return result;
 	}
 
@@ -454,6 +502,7 @@ public class RetroNpcData
 		private final Set<Integer> modernDefendAnims = new HashSet<>();
 		private final Set<Integer> modernDeathAnims = new HashSet<>();
 		private final Set<Integer> modernMiscAnims = new HashSet<>();
+		private final Map<Integer, Integer> modernAttackOverrides = new HashMap<>();
 
 		public Builder category(RetroNpcCategory category)
 		{
@@ -547,6 +596,19 @@ public class RetroNpcData
 				{
 					this.modernAttackAnims.add(a);
 				}
+			}
+			return this;
+		}
+
+		/**
+		 * Swaps each of these modern attacks for this one 2005 attack instead of
+		 * {@link #attackAnimationId}. See {@link RetroNpcData#modernAttackOverrides}.
+		 */
+		public Builder attackAnimationOverride(int retroAnim, int... modernAnims)
+		{
+			for (int modern : modernAnims)
+			{
+				this.modernAttackOverrides.put(modern, retroAnim);
 			}
 			return this;
 		}
@@ -649,7 +711,8 @@ public class RetroNpcData
 				modernAttackAnims,
 				modernDefendAnims,
 				modernDeathAnims,
-				modernMiscAnims
+				modernMiscAnims,
+				modernAttackOverrides
 			);
 		}
 	}

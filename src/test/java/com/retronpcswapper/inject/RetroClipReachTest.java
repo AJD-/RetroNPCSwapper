@@ -61,19 +61,22 @@ public class RetroClipReachTest
 	 * is the result wanted, and 819 is still the thinnest margin of the lot. The Ardougne kit scores
 	 * identically to the town guard on every clip they share, despite sharing only one mesh with it
 	 * - both are 2005 human kit covering the same joints, which is why one floor serves all of them.
+	 *
+	 * <p>The skeleton mage is the same kit again and lands in the same band: 808 74%, 819 71%,
+	 * 836 71%, 422 74%, 423 73%, 424 76%, and its own cast 711 70% on framemap 100072.
 	 */
 	private static final Map<Integer, Integer> CLIP_FLOORS = new HashMap<>();
 
 	static
 	{
 		CLIP_FLOORS.put(130, 80);
-		for (int guardClip : new int[]{808, 819, 836, 1156,
+		for (int humanClip : new int[]{808, 819, 836, 1156,
 			386, 387, 388, 389, 390, 391, 392,
 			393, 394, 395, 396, 397, 398, 399,
 			400, 401, 402, 403, 404,
-			422, 423, 424})
+			422, 423, 424, 711})
 		{
-			CLIP_FLOORS.put(guardClip, 60);
+			CLIP_FLOORS.put(humanClip, 60);
 		}
 	}
 
@@ -118,6 +121,9 @@ public class RetroClipReachTest
 		{58, 3341, 3342}, {59, 3341, 3342}, {60, 3341, 3342},
 		{61, 3341, 3342}, {62, 3341, 3342},
 		{58, 5237}, {59, 5237}, {60, 5237}, {61, 5237}, {62, 5237},
+		// The large scorpion, keyed by the modern SCORPION_UPDATE sequences its 2005 frames
+		// (244-248) were bundled under
+		{6252, 2967}, {6253, 2967}, {6254, 2967}, {6255, 2967}, {6256, 2967},
 		// A full 2005 guard kit against the 2005 human rig. Measured against the LIVE rig these
 		// score 60-63%, which looks like a mismatch but is not: framemap 0 addresses 218 groups for
 		// every equipment slot, and a nine-part kit only ever uses the ~35 named in the javadoc.
@@ -171,7 +177,17 @@ public class RetroClipReachTest
 		{396, 233, 246, 294, 151, 176, 254, 185, 550, 541},
 		{397, 233, 246, 294, 151, 176, 254, 185, 550, 541},
 		{398, 233, 246, 294, 151, 176, 254, 185, 550, 541},
-		{399, 233, 246, 294, 151, 176, 254, 185, 550, 541}
+		{399, 233, 246, 294, 151, 176, 254, 185, 550, 541},
+		// The skeleton mage: six parts of the same 2005 human kit, tinted bone. It borrows the guards'
+		// human clips and brings one of its own, the unarmed cast 711, which resolves to framemap
+		// 100072 rather than the 100083 the rest share.
+		{808, 209, 251, 292, 170, 256, 325},
+		{819, 209, 251, 292, 170, 256, 325},
+		{836, 209, 251, 292, 170, 256, 325},
+		{422, 209, 251, 292, 170, 256, 325},
+		{423, 209, 251, 292, 170, 256, 325},
+		{424, 209, 251, 292, 170, 256, 325},
+		{711, 209, 251, 292, 170, 256, 325}
 	};
 
 	@Test

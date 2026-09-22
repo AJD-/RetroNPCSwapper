@@ -17,6 +17,8 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Giants**
 - **Ghosts**
 - **Hellhounds**
+- **Giant Rats**
+- **Scorpions** — the large scorpions need *Use Converted 2005 Assets*; Pit Scorpions don't
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 
@@ -27,6 +29,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Cyclopes**
 - **Guards**
 - **Cows**
+- **Scorpions** — large/king scorpions
 
 ![config](img/retronpcswapperconfig.png)
 
