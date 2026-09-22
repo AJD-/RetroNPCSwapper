@@ -1088,7 +1088,7 @@ public class RetroNpcCategoryTest
 		int[] mageIds = {
 			NpcID.SKELETONMAGE, NpcID.UNATTACKABLE_SKELETON_MAGE,
 			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING,
-			NpcID.LOTR_MAGE_SKELETON
+			NpcID.LOTR_MAGE_SKELETON, NpcID.DS2_SKELETON_MAGIC
 		};
 
 		List<RetroNpcData> lookups = new ArrayList<>();
@@ -1181,6 +1181,35 @@ public class RetroNpcCategoryTest
 		assertNotNull(giant);
 		assertEquals(RetroNpcCategory.SKELETONS, giant.getCategory());
 		assertEquals(170, giant.getScaleXZ());
+	}
+
+	/**
+	 * The Dragon Slayer II mage skeleton is the same shape as the Tarn's Lair one: named plain
+	 * "Skeleton" while carrying mesh 21193, the mage kit. Its melee and ranged siblings carry
+	 * ordinary skeleton kit, so only 8072 leaves the name row.
+	 */
+	@Test
+	public void testDs2MageSkeletonResolvesByIdDespiteItsName()
+	{
+		RetroNpcData ds2Mage = RetroNpcMapping.get(NpcID.DS2_SKELETON_MAGIC, "Skeleton");
+		assertNotNull(ds2Mage);
+		assertEquals(RetroNpcCategory.SKELETON_MAGES, ds2Mage.getCategory());
+		assertArrayEquals(new int[]{209, 251, 292, 170, 256, 325}, ds2Mage.getRetroModelIds());
+		assertTrue(ds2Mage.hasRecolors());
+		assertEquals(AnimationID.HUMAN_CASTSTRIKE,
+			ds2Mage.getAttackAnimationFor(AnimationID.SKELETON_UPDATE_MAGE_CASTING));
+
+		// The melee and ranged skeletons it fights beside must not follow it
+		for (int plainId : new int[]{NpcID.DS2_SKELETON_MELEE, NpcID.DS2_SKELETON_RANGED})
+		{
+			RetroNpcData plain = RetroNpcMapping.get(plainId, "Skeleton");
+			assertNotNull(plain);
+			assertEquals(RetroNpcCategory.SKELETONS, plain.getCategory());
+		}
+
+		// The Ape Atoll monkey skeleton is named "Skeleton" too, but it is mesh 21190 on the gorilla
+		// rig and has no 2005 counterpart at all
+		assertNull(RetroNpcMapping.get(NpcID.MM_SKELETON, "Skeleton"));
 	}
 
 	/**
@@ -2211,7 +2240,12 @@ public class RetroNpcCategoryTest
 
 		// Named "Scorpion", but not the 2005 scorpion
 		assertNull(RetroNpcMapping.get(NpcID.WANDERING_DOOMSCORPION, "Scorpion"));
-		assertNull(RetroNpcMapping.get(NpcID.TINYSCORPION, "Scorpion"));
+
+		// Named "Scorpion" too, but it carries mesh 24612 - the small scorpion, not the large one it
+		// would get from the name row. It used to be excluded outright; NAME_OVERRIDDEN_IDS maps it
+		RetroNpcData tiny = RetroNpcMapping.get(NpcID.TINYSCORPION, "Scorpion");
+		assertNotNull(tiny);
+		assertEquals(RetroNpcCategory.SMALL_SCORPIONS, tiny.getCategory());
 		assertNull(RetroNpcMapping.get(NpcID.COLOSSEUM_DOOM_SCORPION, "Doom Scorpion"));
 		assertNull(RetroNpcMapping.get(NpcID.ARCEUUS_REANIMATED_SCORPION, "Reanimated scorpion"));
 		assertNull(RetroNpcMapping.get(NpcID.ENT_TOTEMS_ANIMAL_E, "Scorpion spirit"));

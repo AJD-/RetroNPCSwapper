@@ -64,8 +64,8 @@ public class RetroNpcMapping
 		NpcID.VETION_HELLHOUND_JNR, NpcID.VETION_HELLHOUND_JNR_SINGLES,
 		// Exclude Colosseum scorpion
 		NpcID.WANDERING_DOOMSCORPION,
-		// Exclude small scorpion from name pickup
-		NpcID.TINYSCORPION
+		// Exclude the gorilla skeleton
+		NpcID.MM_SKELETON
 	);
 
 	/**
@@ -83,10 +83,14 @@ public class RetroNpcMapping
 	 *
 	 * <p>For NPCs whose display name lies about what they are. {@link #get} otherwise lets the name
 	 * win a cross-category tie, because an id registered under a different category is almost always
-	 * a mistake - but the Tarn's Lair mage is named plain "Skeleton", so
-	 * without this its registration would be dead code.
+	 * a mistake - but the Tarn's Lair and Dragon Slayer II mages are named plain "Skeleton" and the
+	 * tiny scorpion plain "Scorpion", so without this their registrations would be dead code.
+	 *
+	 * <p>The tell in both families is the mesh: 21193 is the mage kit rather than skeleton kit, and
+	 * 24612 is the small scorpion rather than the large one.
 	 */
-	private static final Set<Integer> NAME_OVERRIDDEN_IDS = Set.of(NpcID.LOTR_MAGE_SKELETON);
+	private static final Set<Integer> NAME_OVERRIDDEN_IDS = Set.of(
+		NpcID.LOTR_MAGE_SKELETON, NpcID.DS2_SKELETON_MAGIC, NpcID.TINYSCORPION);
 
 	// Category-Scoped Modern Animation Sets. Values are gameval AnimationID constants where the
 	// modern cache has them; retro 2005 sequence IDs used elsewhere in this class stay numeric
@@ -1271,15 +1275,16 @@ public class RetroNpcMapping
 			NpcID.LOTR_GIANT_SKELETON
 		);
 
-		// Skeleton mages. LOTR_MAGE_SKELETON is the Tarn's Lair one, named plain "Skeleton" like the
-		// melee skeletons it shares the dungeon with, so its id only reaches this row through
-		// NAME_OVERRIDDEN_IDS - see get(). Left out: WGS_UNDEAD_MAGE ("Undead Mage") has no 2005
+		// Skeleton mages. LOTR_MAGE_SKELETON (Tarn's Lair) and DS2_SKELETON_MAGIC are both named plain
+		// "Skeleton" while carrying mesh 21193, the mage kit, so their ids only reach this row through
+		// NAME_OVERRIDDEN_IDS - see get(). The DS2 melee and ranged skeletons beside 8072 wear ordinary
+		// skeleton kit and stay on the name row. Left out: WGS_UNDEAD_MAGE ("Undead Mage") has no 2005
 		// counterpart.
 		NAME_MAPPINGS.put("skeleton mage", SKELETON_MAGE);
 		registerMapping(SKELETON_MAGE,
 			NpcID.SKELETONMAGE, NpcID.UNATTACKABLE_SKELETON_MAGE,
 			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING,
-			NpcID.LOTR_MAGE_SKELETON
+			NpcID.LOTR_MAGE_SKELETON, NpcID.DS2_SKELETON_MAGIC
 		);
 
 		// Zombies
@@ -1496,7 +1501,8 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("grave scorpion", SMALL_SCORPION);
 		registerMapping(SMALL_SCORPION,
 			NpcID.SMALLSCORPION, NpcID.GRAVE_SCORPION,
-			NpcID.QUESTSCORPIONA, NpcID.QUESTSCORPIONB, NpcID.QUESTSCORPIONC
+			NpcID.QUESTSCORPIONA, NpcID.QUESTSCORPIONB, NpcID.QUESTSCORPIONC,
+			NpcID.TINYSCORPION
 		);
 
 		// Giant rats. The three Lumbridge gray variants need the ids registered for the recolor.
