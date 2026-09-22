@@ -1074,8 +1074,76 @@ public class RetroNpcCategoryTest
 	public void testNoCategoryForwardsRecolorsByDefault()
 	{
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Goblin")).hasRecolors());
-		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Skeleton mage")).hasRecolors());
 		assertFalse(Objects.requireNonNull(RetroNpcMapping.get(0, "Restless ghost")).hasRecolors());
+	}
+
+	/**
+	 * The 2005 Skeleton Mage is human kit tinted bone, not the skeleton mesh. Half its parts are
+	 * gone from the live cache, so it has to be its own injected category rather than a SKELETONS
+	 * row - and it needs the recolors, which are the only thing that make the kit a skeleton.
+	 */
+	@Test
+	public void testSkeletonMageIsTheInjected2005Kit()
+	{
+		int[] mageIds = {
+			NpcID.SKELETONMAGE, NpcID.UNATTACKABLE_SKELETON_MAGE,
+			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING
+		};
+
+		List<RetroNpcData> lookups = new ArrayList<>();
+		lookups.add(RetroNpcMapping.get(0, "Skeleton Mage"));
+		for (int id : mageIds)
+		{
+			lookups.add(RetroNpcMapping.get(id, "Skeleton Mage"));
+			lookups.add(RetroNpcMapping.get(id, null));
+		}
+
+		for (RetroNpcData mage : lookups)
+		{
+			assertNotNull(mage);
+			assertEquals(RetroNpcCategory.SKELETON_MAGES, mage.getCategory());
+			assertArrayEquals(new int[]{209, 251, 292, 170, 256, 325}, mage.getRetroModelIds());
+			assertEquals(AnimationID.HUMAN_READY, mage.getIdleAnimationId());
+			assertEquals(AnimationID.HUMAN_WALK_F, mage.getWalkAnimationId());
+			assertEquals(AnimationID.HUMAN_UNARMEDPUNCH, mage.getAttackAnimationId());
+
+			// Two attack styles, each with its own 2005 sequence: melee swings punch, spells cast
+			for (int melee : new int[]{AnimationID.SKELETON_UPDATE_ATTACK_WEAPON,
+				AnimationID.SKELETON_UPDATE_ATTACK_SWORD, AnimationID.SKELETON_ATTACK})
+			{
+				assertEquals(AnimationID.HUMAN_UNARMEDPUNCH, mage.getAttackAnimationFor(melee));
+			}
+			for (int cast : new int[]{AnimationID.SKELETON_UPDATE_MAGE_CASTING,
+				AnimationID.SKELETON_STRIKE_CASTING, AnimationID.SKELETON_UPDATE_MAGE_CASTING_SWANSONG})
+			{
+				assertTrue(mage.isAttackAnimation(cast));
+				assertEquals(AnimationID.HUMAN_CASTSTRIKE, mage.getAttackAnimationFor(cast));
+			}
+
+			// Both 2005 attacks are recognised as the swap landing, so neither is re-intercepted
+			assertTrue(mage.isRetroAttackAnimation(AnimationID.HUMAN_UNARMEDPUNCH));
+			assertTrue(mage.isRetroAttackAnimation(AnimationID.HUMAN_CASTSTRIKE));
+			assertEquals(-1, mage.getAttackAnimationFor(AnimationID.HUMAN_READY));
+			assertEquals(AnimationID.HUMAN_UNARMEDBLOCK, mage.getDefendAnimationId());
+			assertEquals(AnimationID.HUMAN_DEATH, mage.getDeathAnimationId());
+			assertArrayEquals(new short[]{25238, 8741, 6798}, mage.getOriginalColors());
+			assertArrayEquals(new short[]{10508, 10508, 10508}, mage.getReplacementColors());
+		}
+
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SKELETON_MAGES));
+
+		// The overrides must survive the recolor graft, which rebuilds the archetype
+		RetroNpcData byId = RetroNpcMapping.get(NpcID.SKELETONMAGE, "Skeleton Mage");
+		assertNotNull(byId);
+		assertTrue(byId.hasRecolors());
+		assertEquals(AnimationID.HUMAN_CASTSTRIKE,
+			byId.getAttackAnimationFor(AnimationID.SKELETON_UPDATE_MAGE_CASTING));
+
+		// The plain skeleton must stay on the cache path, with its own clips
+		RetroNpcData skeleton = RetroNpcMapping.get(NpcID.SKELETON_UNARMED, "Skeleton");
+		assertNotNull(skeleton);
+		assertEquals(RetroNpcCategory.SKELETONS, skeleton.getCategory());
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SKELETONS));
 	}
 
 	/**

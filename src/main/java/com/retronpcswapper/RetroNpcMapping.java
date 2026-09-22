@@ -465,6 +465,34 @@ public class RetroNpcMapping
 		.modernDeathAnims(SKELETON_MODERN_DEATHS)
 		.build();
 
+	/**
+	 * The six parts of 2005 definition 94, the only Skeleton Mage in that cache. It is not the
+	 * skeleton mesh at all but generic human kit, tinted bone by its opcode 40 pairs - the same failure
+	 * the guards had. 292, 170 and 256 had their ids reused (the missing torso), and 209, 251 and 325
+	 * survive but were re-bound to the live human rig, so both geometry and clips come from the bundle.
+	 */
+	private static final int[] SKELETON_MAGE_PARTS = {209, 251, 292, 170, 256, 325};
+
+	// The live mage plays the skeleton rig's SKELETON_UPDATE_* family, so the skeleton modern sets are
+	// what detect its combat actions; the 2005 human sequences below are what gets played. It fights
+	// in two styles: its melee swings are the skeleton's and take the 2005 unarmed punch, while its
+	// spells have casts of their own and take the 2005 cast.
+	public static final RetroNpcData SKELETON_MAGE = RetroNpcData.builder()
+		.category(RetroNpcCategory.SKELETON_MAGES)
+		.retroModelIds(SKELETON_MAGE_PARTS)
+		.idleAnimationId(AnimationID.HUMAN_READY)
+		.walkAnimationId(AnimationID.HUMAN_WALK_F)
+		.attackAnimationId(AnimationID.HUMAN_UNARMEDPUNCH)
+		.attackAnimationOverride(AnimationID.HUMAN_CASTSTRIKE,
+			AnimationID.SKELETON_UPDATE_MAGE_CASTING, AnimationID.SKELETON_STRIKE_CASTING,
+			AnimationID.SKELETON_UPDATE_MAGE_CASTING_SWANSONG)
+		.defendAnimationId(AnimationID.HUMAN_UNARMEDBLOCK)
+		.deathAnimationId(AnimationID.HUMAN_DEATH)
+		.modernAttackAnims(SKELETON_MODERN_ATTACKS)
+		.modernDefendAnims(SKELETON_MODERN_DEFENDS)
+		.modernDeathAnims(SKELETON_MODERN_DEATHS)
+		.build();
+
 	public static final RetroNpcData ZOMBIE_UNARMED = RetroNpcData.builder()
 		.category(RetroNpcCategory.ZOMBIES)
 		.retroModelIds(new int[]{2931})
@@ -991,6 +1019,7 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.MOSS_GIANTS
 			|| category == RetroNpcCategory.CYCLOPS
 			|| category == RetroNpcCategory.GUARDS
+			|| category == RetroNpcCategory.SKELETON_MAGES
 			|| category == RetroNpcCategory.COWS;
 	}
 
@@ -1036,6 +1065,9 @@ public class RetroNpcMapping
 			// so the opcode 40 pairs are what make the kit a guard's colors rather than a
 			// townsperson's. The pairs come from the definition the parts come from.
 			|| category == RetroNpcCategory.GUARDS
+			// The skeleton mage is the same generic human kit, and its pairs are what paint it bone.
+			// There is only one 2005 definition, so no variant's colors can win by accident.
+			|| category == RetroNpcCategory.SKELETON_MAGES
 			// The undead chicken is just a recolored regular chicken
 			|| category == RetroNpcCategory.CHICKENS;
 	}
@@ -1131,6 +1163,14 @@ public class RetroNpcMapping
 			NpcID.GIANTSKELETON, NpcID.GIANTSKELETON2,
 			NpcID.SWORD_SKELETON_3, NpcID.SWORD_SKELETON_3B,
 			NpcID.LOTR_GIANT_SKELETON
+		);
+
+		// Skeleton mages. Left out: LOTR_MAGE_SKELETON is named plain "Skeleton", so the name row
+		// would win over its id, and WGS_UNDEAD_MAGE ("Undead Mage") has no 2005 counterpart.
+		NAME_MAPPINGS.put("skeleton mage", SKELETON_MAGE);
+		registerMapping(SKELETON_MAGE,
+			NpcID.SKELETONMAGE, NpcID.UNATTACKABLE_SKELETON_MAGE,
+			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING
 		);
 
 		// Zombies

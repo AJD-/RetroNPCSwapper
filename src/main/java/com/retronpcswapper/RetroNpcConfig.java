@@ -120,7 +120,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "swapSkeletons",
 		name = "Skeletons",
-		description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants.",
+		description = "Swap modern Skeleton models and animations to their 2004/2005 retro variants. Skeleton mages also require the injection pipeline.",
 		section = npcTogglesSection,
 		position = 3
 	)

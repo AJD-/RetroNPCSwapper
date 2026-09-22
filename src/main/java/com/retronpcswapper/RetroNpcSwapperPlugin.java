@@ -453,7 +453,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		// Guard against re-triggering if current animation is already the retro target animation
-		if (anim == data.getAttackAnimationId() || anim == data.getDefendAnimationId()
+		if (data.isRetroAttackAnimation(anim) || anim == data.getDefendAnimationId()
 			|| anim == data.getDeathAnimationId() || anim == data.getMiscAnimationId())
 		{
 			return;
@@ -472,8 +472,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 		else if (data.isAttackAnimation(anim))
 		{
-			log.debug("SWAPPING ATTACK ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getAttackAnimationId());
-			npc.setAnimation(data.getAttackAnimationId());
+			// Per animation rather than per NPC: one that fights in several styles has a 2005 attack
+			// for each
+			int retroAttack = data.getAttackAnimationFor(anim);
+			log.debug("SWAPPING ATTACK ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, retroAttack);
+			npc.setAnimation(retroAttack);
 		}
 		else if (data.isMiscAnimation(anim))
 		{
@@ -651,6 +654,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return config.swapGoblins();
 			case SKELETONS:
 				return config.swapSkeletons();
+			case SKELETON_MAGES:
+				// Shares the Skeletons toggle. The mage is human kit, half of whose parts are gone from
+				// the live cache, so like the guards it can only be drawn from the bundle
+				return config.swapSkeletons() && injectionEnabled();
 			case ZOMBIES:
 				return config.swapZombies();
 			case HILL_GIANTS:

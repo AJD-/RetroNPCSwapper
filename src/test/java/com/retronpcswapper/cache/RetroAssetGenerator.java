@@ -190,7 +190,14 @@ public class RetroAssetGenerator
 				386, 387, 388, 389, 390, 391, 392,
 				393, 394, 395, 396, 397, 398, 399,
 				400, 401, 402, 403, 404,
-				422, 423, 424})
+				422, 423, 424}),
+		// The 2005 Skeleton Mage (definition 94) is human kit tinted bone, not the skeleton mesh, and it
+		// fails the guards' way: 292, 170 and 256 had their ids reused - the torso the cache path could
+		// not find - and 209, 251 and 325 survive with every vertex group renumbered. It rides the same
+		// 2005 human clips the guards bring, plus 711, the unarmed cast.
+		new Spec("Skeleton mages", Source.RETRO, Source.RETRO,
+			new int[]{209, 251, 292, 170, 256, 325},
+			new int[]{808, 819, 836, 711, 422, 423, 424})
 	);
 
 	private enum Source

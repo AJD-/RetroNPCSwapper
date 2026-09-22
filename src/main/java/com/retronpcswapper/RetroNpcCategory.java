@@ -38,6 +38,7 @@ public enum RetroNpcCategory
 	GUARDS,
 	IMPS,
 	SKELETONS,
+	SKELETON_MAGES,
 	ZOMBIES,
 	GHOSTS,
 	HILL_GIANTS,
