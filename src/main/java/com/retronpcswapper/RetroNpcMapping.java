@@ -74,6 +74,16 @@ public class RetroNpcMapping
 	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
 		Set.of(RetroNpcCategory.GUARDS);
 
+	/**
+	 * Ids whose registered row beats the name row even when the two disagree about the category.
+	 *
+	 * <p>For NPCs whose display name lies about what they are. {@link #get} otherwise lets the name
+	 * win a cross-category tie, because an id registered under a different category is almost always
+	 * a mistake - but the Tarn's Lair mage is named plain "Skeleton", so
+	 * without this its registration would be dead code.
+	 */
+	private static final Set<Integer> NAME_OVERRIDDEN_IDS = Set.of(NpcID.LOTR_MAGE_SKELETON);
+
 	// Category-Scoped Modern Animation Sets. Values are gameval AnimationID constants where the
 	// modern cache has them; retro 2005 sequence IDs used elsewhere in this class stay numeric
 	// where no gameval name exists
@@ -1165,12 +1175,15 @@ public class RetroNpcMapping
 			NpcID.LOTR_GIANT_SKELETON
 		);
 
-		// Skeleton mages. Left out: LOTR_MAGE_SKELETON is named plain "Skeleton", so the name row
-		// would win over its id, and WGS_UNDEAD_MAGE ("Undead Mage") has no 2005 counterpart.
+		// Skeleton mages. LOTR_MAGE_SKELETON is the Tarn's Lair one, named plain "Skeleton" like the
+		// melee skeletons it shares the dungeon with, so its id only reaches this row through
+		// NAME_OVERRIDDEN_IDS - see get(). Left out: WGS_UNDEAD_MAGE ("Undead Mage") has no 2005
+		// counterpart.
 		NAME_MAPPINGS.put("skeleton mage", SKELETON_MAGE);
 		registerMapping(SKELETON_MAGE,
 			NpcID.SKELETONMAGE, NpcID.UNATTACKABLE_SKELETON_MAGE,
-			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING
+			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING,
+			NpcID.LOTR_MAGE_SKELETON
 		);
 
 		// Zombies
@@ -1591,6 +1604,13 @@ public class RetroNpcMapping
 		{
 			// Sharing a name with the town guard is not enough to be one
 			byName = null;
+		}
+
+		if (byId != null && NAME_OVERRIDDEN_IDS.contains(npcId))
+		{
+			// The name alone doesn't correctly map the NPC, so the id it was registered under wins
+			// outright - including over a name row in another category
+			return byId;
 		}
 
 		if (byName == null)

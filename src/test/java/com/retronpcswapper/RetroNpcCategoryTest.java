@@ -1087,7 +1087,8 @@ public class RetroNpcCategoryTest
 	{
 		int[] mageIds = {
 			NpcID.SKELETONMAGE, NpcID.UNATTACKABLE_SKELETON_MAGE,
-			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING
+			NpcID.SWAN_SKELETON_BATTLE, NpcID.SWAN_SKELETON_UNATTACKABLE, NpcID.SWAN_SKELETON_TRAINING,
+			NpcID.LOTR_MAGE_SKELETON
 		};
 
 		List<RetroNpcData> lookups = new ArrayList<>();
@@ -1144,6 +1145,42 @@ public class RetroNpcCategoryTest
 		assertNotNull(skeleton);
 		assertEquals(RetroNpcCategory.SKELETONS, skeleton.getCategory());
 		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SKELETONS));
+	}
+
+	/**
+	 * The Tarn's Lair mage is named plain "Skeleton", so the name row used to hand it the normal
+	 * skeleton kit. Only its id says it is a mage, and a cross-category id loses to the name row
+	 * everywhere else - NAME_OVERRIDDEN_IDS is what lets this one win.
+	 */
+	@Test
+	public void testTarnsLairMageResolvesByIdDespiteItsName()
+	{
+		// The lookup the plugin actually makes for it, and the only one NAME_OVERRIDDEN_IDS affects
+		RetroNpcData tarnMage = RetroNpcMapping.get(NpcID.LOTR_MAGE_SKELETON, "Skeleton");
+		assertNotNull(tarnMage);
+		assertEquals(RetroNpcCategory.SKELETON_MAGES, tarnMage.getCategory());
+		assertArrayEquals(new int[]{209, 251, 292, 170, 256, 325}, tarnMage.getRetroModelIds());
+		assertEquals(AnimationID.HUMAN_CASTSTRIKE,
+			tarnMage.getAttackAnimationFor(AnimationID.SKELETON_UPDATE_MAGE_CASTING));
+
+		// The opcode 40 pairs are the only thing making generic human kit read as bone, and the graft
+		// repoints ID_MAPPINGS after registerMapping runs - so they have to survive on this path too
+		assertTrue(tarnMage.hasRecolors());
+
+		// Its melee neighbours in the same dungeon must not follow it
+		for (int melee : new int[]{NpcID.LOTR_SKELETON_LVL_77, NpcID.LOTR_SKELETON_LVL_45,
+			NpcID.LOTR_SKELETON_LVL_25, NpcID.LOTR_SKELETON_LVL_13})
+		{
+			RetroNpcData plain = RetroNpcMapping.get(melee, "Skeleton");
+			assertNotNull(plain);
+			assertEquals(RetroNpcCategory.SKELETONS, plain.getCategory());
+		}
+
+		// And the giant sharing the name still wins its own id row
+		RetroNpcData giant = RetroNpcMapping.get(NpcID.LOTR_GIANT_SKELETON, "Skeleton");
+		assertNotNull(giant);
+		assertEquals(RetroNpcCategory.SKELETONS, giant.getCategory());
+		assertEquals(170, giant.getScaleXZ());
 	}
 
 	/**
