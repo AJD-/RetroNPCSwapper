@@ -17,6 +17,7 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Giants**
 - **Ghosts**
 - **Hellhounds**
+- **Giant Rats**
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 

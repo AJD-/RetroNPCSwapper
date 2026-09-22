@@ -1856,8 +1856,9 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testCategoryMatchingExclusions()
 	{
-		// A bare "giant" substring would sweep all of these into the giant family
-		assertNull(RetroNpcMapping.get(0, "Giant rat"));
+		// A bare "giant" substring would sweep all of these into the giant family. The giant rat is
+		// mapped, but to its own category
+		assertEquals(RetroNpcCategory.GIANT_RATS, RetroNpcMapping.get(0, "Giant rat").getCategory());
 		assertNull(RetroNpcMapping.get(0, "Giant spider"));
 		assertNull(RetroNpcMapping.get(0, "Giant frog"));
 		assertNull(RetroNpcMapping.get(0, "Giant bat"));
@@ -2020,6 +2021,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapGiants must default to true", config.swapGiants());
 		assertTrue("swapGhosts must default to true", config.swapGhosts());
 		assertTrue("swapHellhounds must default to true", config.swapHellhounds());
+		assertTrue("swapGiantRats must default to true", config.swapGiantRats());
 
 		// The pipeline toggle carries the six bundle-only categories, so its default decides
 		// whether they can render at all - see isCategoryEnabled
@@ -2143,6 +2145,76 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(NpcID.VETION_HELLHOUND_JNR, "Skeleton Hellhound"));
 		assertNull(RetroNpcMapping.get(NpcID.VETION_HELLHOUND_JNR_SINGLES, "Skeleton Hellhound"));
 		assertNull(RetroNpcMapping.get(NpcID.VETION_HELLHOUND_SNR, "Greater Skeleton Hellhound"));
+	}
+
+	/**
+	 * The 2005 giant rat is mesh 2959 on sequences 137-141, both preserved - a cache-path category.
+	 * The Lumbridge greys are the same mesh with its base blue recolored to grey.
+	 */
+	@Test
+	public void testGiantRats()
+	{
+		Object[][] cases = {
+			{NpcID.GIANTRAT, "Giant rat"}, {NpcID.GIANTRAT2, "Giant rat"}, {NpcID.GIANTRAT3, "Giant rat"},
+			{NpcID.GIANTRAT1, "Giant rat"}, {NpcID.GIANTRAT1_2, "Giant rat"}, {NpcID.GIANTRAT1_3, "Giant rat"},
+			{NpcID.NEWBIEGIANTRAT, "Giant rat"}, {NpcID.NEWBIEGIANTRAT2, "Giant rat"},
+			{NpcID.NEWBIEGIANTRAT3, "Giant rat"},
+			{NpcID.SOS_FAM_GIANTRAT, "Giant rat"}, {NpcID.SOS_FAM_GIANTRAT2, "Giant rat"},
+			{NpcID.SOS_FAM_GIANTRAT3, "Giant rat"},
+			{NpcID.TUT2_GIANTRAT, "Giant rat"}, {NpcID.RAT_BOSS_GIANT_RAT, "Giant rat"},
+			{NpcID.BLESSED_GIANTRAT, "Blessed giant rat"}, {NpcID.BLESSED_GIANTRAT2, "Blessed giant rat"},
+			{99993, "Giant rat"},
+			{NpcID.GIANTRAT_GREY, "Giant rat"}, {NpcID.GIANTRAT_GREY2, "Giant rat"},
+			{NpcID.GIANTRAT_GREY3, "Giant rat"}
+		};
+		Set<Integer> greys = Set.of(NpcID.GIANTRAT_GREY, NpcID.GIANTRAT_GREY2, NpcID.GIANTRAT_GREY3);
+		for (Object[] c : cases)
+		{
+			int id = (Integer) c[0];
+			RetroNpcData rat = RetroNpcMapping.get(id, (String) c[1]);
+			assertNotNull("Giant rat " + id + " must be mapped", rat);
+			assertEquals(RetroNpcCategory.GIANT_RATS, rat.getCategory());
+			assertArrayEquals(new int[]{2959}, rat.getRetroModelIds());
+			assertEquals(140, rat.getIdleAnimationId());
+			assertEquals(137, rat.getWalkAnimationId());
+			assertEquals(138, rat.getAttackAnimationId());
+			assertEquals(139, rat.getDefendAnimationId());
+			assertEquals(141, rat.getDeathAnimationId());
+			assertEquals(128, rat.getScaleXZ());
+			assertEquals(128, rat.getScaleY());
+
+			if (greys.contains(id))
+			{
+				assertTrue("Lumbridge rat " + id + " must be recolored grey", rat.hasRecolors());
+				assertArrayEquals(new short[]{-22237}, rat.getOriginalColors());
+				assertArrayEquals(new short[]{70}, rat.getReplacementColors());
+			}
+			else
+			{
+				assertFalse("Giant rat " + id + " must keep 2959's own blue", rat.hasRecolors());
+			}
+
+			// The modern rig is intercepted, the surviving 2005 sequences never are
+			assertTrue(rat.isAttackAnimation(AnimationID.GIANT_RAT_UPDATE_ATTACK));
+			assertTrue(rat.isDefendAnimation(AnimationID.GIANT_RAT_UPDATE_DEFEND));
+			assertTrue(rat.isDeathAnimation(AnimationID.GIANT_RAT_UPDATE_DEATH));
+			assertTrue(rat.isDeathAnimation(AnimationID.GIANT_RAT_UPDATE_DEATH_FAST));
+			for (int retro : new int[]{137, 138, 139, 140, 141})
+			{
+				assertFalse(rat.isAttackAnimation(retro));
+				assertFalse(rat.isDefendAnimation(retro));
+				assertFalse(rat.isDeathAnimation(retro));
+			}
+		}
+
+		// Cache path: the mesh and rig both survive
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.GIANT_RATS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.GIANT_RATS));
+
+		// The angry giant rats have no 2005 counterpart and are left alone
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_ANGER_RAT, "Angry giant rat"));
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_RAT, "Angry giant rat"));
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_RAT2, "Angry giant rat"));
 	}
 
 	@Test

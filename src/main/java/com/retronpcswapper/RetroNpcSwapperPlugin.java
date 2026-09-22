@@ -650,6 +650,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case HELLHOUNDS:
 				// Mesh 2997 and sequences 157-161 both survive intact, so the cache path draws it
 				return config.swapHellhounds();
+			case GIANT_RATS:
+				// Mesh 2959 and sequences 137-141 both survive intact, so the cache path draws it
+				return config.swapGiantRats();
 			case GOBLINS:
 				return config.swapGoblins();
 			case SKELETONS:

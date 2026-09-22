@@ -48,5 +48,6 @@ public enum RetroNpcCategory
 	CYCLOPS,
 	CHICKENS,
 	COWS,
-	HELLHOUNDS
+	HELLHOUNDS,
+	GIANT_RATS
 }
