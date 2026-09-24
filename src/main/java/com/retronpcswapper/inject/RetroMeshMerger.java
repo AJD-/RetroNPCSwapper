@@ -25,12 +25,15 @@
 package com.retronpcswapper.inject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Merges the parts of a multi-model NPC into one mesh, offsetting face indices and vertex-group
- * members so the parts share a coordinate and rig space.
+ * Merges the parts of a multi-model NPC into one mesh the way the client merges them, so the parts
+ * share one vertex list and one rig space.
  *
  * <p>This used to happen in the generator, with the merged result stored under the first part's
  * model id. That could not express the giant family, where five NPCs are one shared body mesh plus
@@ -39,8 +42,24 @@ import lombok.extern.slf4j.Slf4j;
  * "keyed by the ids the source caches use" invariant, and storing a shared body once - and the
  * merge happens here instead, once per NPC id at spawn.
  *
- * <p>Parts are concatenated in the same coordinate space; there is no per-part translation, because
- * 2005 parts are authored to sit together already.
+ * <p>Parts share one coordinate space; there is no per-part translation, because 2005 parts are
+ * authored to sit together already.
+ *
+ * <h2>Vertices are welded, not concatenated</h2>
+ *
+ * The client's {@code ModelData} merge runs every face corner and texture triangle corner through a
+ * lookup that returns any vertex already merged at exactly the same position, and only appends a new
+ * one when there is none. So where a head or limb part meets the body, both parts' faces end up on
+ * one shared vertex, and that vertex keeps the bone of whichever part reached it first - the body,
+ * since it is listed first. When the limb swings, its faces stretch back to the body's seam rather
+ * than parting from it. Concatenating instead leaves each part its own copy of the seam, and the
+ * pieces visibly separate as soon as they move; it also counts every seam vertex twice in the pivot
+ * centroids the animation turns about.
+ *
+ * <p>Three more consequences of the same rule, all matching the client: vertices are numbered in the
+ * order faces first reach them, duplicates within one part weld too, and a vertex no face or texture
+ * triangle names is dropped. Positions are compared exactly - the client compares integer-cast
+ * coordinates, which is the same thing for the integer geometry a cache model carries.
  */
 @Slf4j
 public final class RetroMeshMerger
@@ -61,9 +80,9 @@ public final class RetroMeshMerger
 	 * Merges parts into a single mesh under {@code id}, conventionally the first part's model id so
 	 * that logging still names something recognizable.
 	 *
-	 * <p>A single part is returned as-is rather than copied. {@link RetroMesh} is immutable and every
-	 * consumer that needs to change one builds a derived copy first, so sharing the instance is safe
-	 * and makes this a provable no-op for the categories that were never multi-part.
+	 * <p>A single part is returned as-is rather than copied, exactly as the client uses a lone model
+	 * without merging it. {@link RetroMesh} is immutable and every consumer that needs to change one
+	 * builds a derived copy first, so sharing the instance is safe.
 	 */
 	public static RetroMesh merge(int id, List<RetroMesh> parts)
 	{
@@ -72,7 +91,7 @@ public final class RetroMeshMerger
 			return parts.get(0);
 		}
 
-		int totalVertices = 0;
+		int totalCorners = 0;
 		int totalFaces = 0;
 		int groupCount = 0;
 		boolean anyRenderTypes = false;
@@ -83,7 +102,7 @@ public final class RetroMeshMerger
 
 		for (RetroMesh part : parts)
 		{
-			totalVertices += part.getVerticesCount();
+			totalCorners += part.getVerticesCount();
 			totalFaces += part.getFaceCount();
 			int[][] groups = part.getVertexGroups();
 			if (groups != null)
@@ -97,9 +116,7 @@ public final class RetroMeshMerger
 			totalTriangles += part.getTextureTriangleCount();
 		}
 
-		float[] vx = new float[totalVertices];
-		float[] vy = new float[totalVertices];
-		float[] vz = new float[totalVertices];
+		Welder welder = new Welder(totalCorners);
 		int[] i1 = new int[totalFaces];
 		int[] i2 = new int[totalFaces];
 		int[] i3 = new int[totalFaces];
@@ -120,26 +137,16 @@ public final class RetroMeshMerger
 		int[] texIndices2 = totalTriangles > 0 ? new int[totalTriangles] : null;
 		int[] texIndices3 = totalTriangles > 0 ? new int[totalTriangles] : null;
 
-		List<List<Integer>> groups = new ArrayList<>();
-		for (int i = 0; i < groupCount; i++)
-		{
-			groups.add(new ArrayList<>());
-		}
-
 		// Counted rather than reported as they are found: this is a per-face condition, and one bad
 		// merge would otherwise be hundreds of identical lines in a user's log
 		int overflowedFaces = 0;
 		int highestTriangle = -1;
 
-		int vertexBase = 0;
 		int faceBase = 0;
 		int triangleBase = 0;
 		for (RetroMesh part : parts)
 		{
-			int partVertices = part.getVerticesCount();
-			System.arraycopy(part.getVerticesX(), 0, vx, vertexBase, partVertices);
-			System.arraycopy(part.getVerticesY(), 0, vy, vertexBase, partVertices);
-			System.arraycopy(part.getVerticesZ(), 0, vz, vertexBase, partVertices);
+			int[] groupOf = groupOfVertex(part);
 
 			int[] partI1 = part.getFaceIndices1();
 			int[] partI2 = part.getFaceIndices2();
@@ -154,9 +161,9 @@ public final class RetroMeshMerger
 			for (int f = 0; f < part.getFaceCount(); f++)
 			{
 				int face = faceBase + f;
-				i1[face] = partI1[f] + vertexBase;
-				i2[face] = partI2[f] + vertexBase;
-				i3[face] = partI3[f] + vertexBase;
+				i1[face] = welder.weld(part, groupOf, partI1[f]);
+				i2[face] = welder.weld(part, groupOf, partI2[f]);
+				i3[face] = welder.weld(part, groupOf, partI3[f]);
 				colors[face] = partColors[f];
 
 				if (renderTypes != null)
@@ -193,33 +200,15 @@ public final class RetroMeshMerger
 				}
 			}
 
-			// A texture triangle names this part's own vertices, so it shifts exactly as a face
-			// index does. The triangle table itself concatenates, which is what the per-face
-			// index above is shifted by.
+			// A texture triangle names vertices, so its corners weld exactly as a face's do. The
+			// triangle table itself concatenates, which is what the per-face index above is shifted by.
 			for (int t = 0; t < part.getTextureTriangleCount(); t++)
 			{
-				texIndices1[triangleBase + t] = part.getTexIndices1()[t] + vertexBase;
-				texIndices2[triangleBase + t] = part.getTexIndices2()[t] + vertexBase;
-				texIndices3[triangleBase + t] = part.getTexIndices3()[t] + vertexBase;
+				texIndices1[triangleBase + t] = welder.weld(part, groupOf, part.getTexIndices1()[t]);
+				texIndices2[triangleBase + t] = welder.weld(part, groupOf, part.getTexIndices2()[t]);
+				texIndices3[triangleBase + t] = welder.weld(part, groupOf, part.getTexIndices3()[t]);
 			}
 
-			int[][] partGroups = part.getVertexGroups();
-			if (partGroups != null)
-			{
-				for (int group = 0; group < partGroups.length; group++)
-				{
-					if (partGroups[group] == null)
-					{
-						continue;
-					}
-					for (int vertex : partGroups[group])
-					{
-						groups.get(group).add(vertex + vertexBase);
-					}
-				}
-			}
-
-			vertexBase += partVertices;
 			faceBase += part.getFaceCount();
 			triangleBase += part.getTextureTriangleCount();
 		}
@@ -234,21 +223,97 @@ public final class RetroMeshMerger
 				MAX_TEXTURE_TRIANGLES, highestTriangle);
 		}
 
+		int vertices = welder.count;
+		List<List<Integer>> groups = new ArrayList<>();
+		for (int i = 0; i < groupCount; i++)
+		{
+			groups.add(new ArrayList<>());
+		}
+		for (int vertex = 0; vertex < vertices; vertex++)
+		{
+			int group = welder.groups[vertex];
+			if (group >= 0)
+			{
+				groups.get(group).add(vertex);
+			}
+		}
+
 		int[][] vertexGroups = new int[groupCount][];
 		for (int group = 0; group < groupCount; group++)
 		{
-			List<Integer> members = groups.get(group);
-			int[] packed = new int[members.size()];
-			for (int i = 0; i < packed.length; i++)
-			{
-				packed[i] = members.get(i);
-			}
-			vertexGroups[group] = packed;
+			vertexGroups[group] = groups.get(group).stream().mapToInt(Integer::intValue).toArray();
 		}
 
-		return new RetroMesh(id, parts.get(0).getPriority(), vx, vy, vz, i1, i2, i3,
-			colors, renderTypes, transparencies, priorities, textures,
+		return new RetroMesh(id, parts.get(0).getPriority(),
+			Arrays.copyOf(welder.x, vertices), Arrays.copyOf(welder.y, vertices), Arrays.copyOf(welder.z, vertices),
+			i1, i2, i3, colors, renderTypes, transparencies, priorities, textures,
 			textureCoords, texIndices1, texIndices2, texIndices3, vertexGroups);
+	}
+
+	/** Per vertex of a part, the group it is bound to, or -1 for none. */
+	private static int[] groupOfVertex(RetroMesh part)
+	{
+		int[] groupOf = new int[part.getVerticesCount()];
+		Arrays.fill(groupOf, -1);
+		int[][] groups = part.getVertexGroups();
+		if (groups != null)
+		{
+			for (int group = 0; group < groups.length; group++)
+			{
+				if (groups[group] == null)
+				{
+					continue;
+				}
+				for (int vertex : groups[group])
+				{
+					groupOf[vertex] = group;
+				}
+			}
+		}
+		return groupOf;
+	}
+
+	/**
+	 * The merged vertex list, built the client's way: a corner lands on the first vertex already at
+	 * its position, and only a new position is appended, carrying its own part's group.
+	 */
+	private static final class Welder
+	{
+		private final float[] x;
+		private final float[] y;
+		private final float[] z;
+		private final int[] groups;
+		private final Map<List<Float>, Integer> byPosition = new HashMap<>();
+		private int count;
+
+		private Welder(int capacity)
+		{
+			x = new float[capacity];
+			y = new float[capacity];
+			z = new float[capacity];
+			groups = new int[capacity];
+		}
+
+		private int weld(RetroMesh part, int[] groupOf, int vertex)
+		{
+			float vx = part.getVerticesX()[vertex];
+			float vy = part.getVerticesY()[vertex];
+			float vz = part.getVerticesZ()[vertex];
+			List<Float> key = Arrays.asList(vx, vy, vz);
+
+			Integer existing = byPosition.get(key);
+			if (existing != null)
+			{
+				return existing;
+			}
+
+			x[count] = vx;
+			y[count] = vy;
+			z[count] = vz;
+			groups[count] = groupOf[vertex];
+			byPosition.put(key, count);
+			return count++;
+		}
 	}
 
 	/**
