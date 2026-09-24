@@ -612,8 +612,9 @@ public class RetroAssetGenerator
 	}
 
 	/**
-	 * The merge as it stood before it moved to {@code RetroMeshMerger}, kept so
-	 * {@code RetroAssetGeneratorTest} can check the new one against it over real cache geometry.
+	 * The merge as it stood before it moved to {@code RetroMeshMerger}: a plain concatenation, each
+	 * part keeping its own vertices. Kept as the reference {@code RetroAssetGeneratorTest} checks
+	 * the runtime weld against over real cache geometry - same faces, same positions, fewer vertices.
 	 */
 	static RetroMesh legacyToMesh(int meshId, List<ModelDefinition> parts)
 	{

@@ -118,6 +118,12 @@ public class RetroClipReachTest
 		{130, 2870, 2862}, {131, 2870, 2862},
 		// The cow body and its 11-face companion, and the undead cow, which is one mesh on the same
 		// 2005 cow rig and shares all five clips.
+		//
+		// The two-part cow reached 100% on all five until the merge started welding, and now reaches
+		// 58 97%, 59 96%, 60 96%, 61 96%, 62 96%. The missing ops are all transform 0, the root
+		// pivot, whose only group 0 is three vertices at (6, 0, 4) that no face names. The client's
+		// merge drops unreferenced vertices, so the pivot falls back to the op's own offset - a
+		// shift of a few units against a 128-unit tile.
 		{58, 3341, 3342}, {59, 3341, 3342}, {60, 3341, 3342},
 		{61, 3341, 3342}, {62, 3341, 3342},
 		{58, 5237}, {59, 5237}, {60, 5237}, {61, 5237}, {62, 5237},

@@ -3,9 +3,11 @@ package com.retronpcswapper.cache;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.retronpcswapper.inject.*;
 import net.runelite.cache.definitions.ModelDefinition;
@@ -36,8 +38,13 @@ public class RetroAssetGeneratorTest
 	 *
 	 * <p>The merge used to run here, storing the result under the first part's model id. That could
 	 * not express an NPC family sharing a body mesh, so the bundle now stores parts individually and
-	 * {@link RetroMeshMerger} joins them at spawn. This is the equivalence that makes the move safe:
-	 * the same parts, through the old code and the new, have to produce the same mesh.
+	 * {@link RetroMeshMerger} joins them at spawn.
+	 *
+	 * <p>The two are no longer identical, deliberately: the old merge concatenated the parts, and the
+	 * runtime one welds coincident vertices the way the client does, so seams stretch rather than
+	 * part. The concatenation stays as the reference the weld is checked against: the same faces
+	 * with the same attributes, every corner at the same position, and exactly one vertex per
+	 * distinct position the faces reach.
 	 */
 	@Test
 	public void testTheRuntimeMergeMatchesTheGeneratorsOwn() throws Exception
@@ -80,17 +87,8 @@ public class RetroAssetGeneratorTest
 		RetroMesh actual = RetroMeshMerger.merge(modelIds[0], parts);
 
 		String where = "merge of " + Arrays.toString(modelIds);
-		assertEquals(where + " vertex count", expected.getVerticesCount(), actual.getVerticesCount());
 		assertEquals(where + " face count", expected.getFaceCount(), actual.getFaceCount());
 		assertEquals(where + " priority", expected.getPriority(), actual.getPriority());
-
-		assertArrayEquals(where + " x", expected.getVerticesX(), actual.getVerticesX(), 0f);
-		assertArrayEquals(where + " y", expected.getVerticesY(), actual.getVerticesY(), 0f);
-		assertArrayEquals(where + " z", expected.getVerticesZ(), actual.getVerticesZ(), 0f);
-
-		assertArrayEquals(where + " i1", expected.getFaceIndices1(), actual.getFaceIndices1());
-		assertArrayEquals(where + " i2", expected.getFaceIndices2(), actual.getFaceIndices2());
-		assertArrayEquals(where + " i3", expected.getFaceIndices3(), actual.getFaceIndices3());
 
 		assertArrayEquals(where + " colors", expected.getFaceColors(), actual.getFaceColors());
 		assertArrayEquals(where + " render types",
@@ -101,13 +99,37 @@ public class RetroAssetGeneratorTest
 			expected.getFaceRenderPriorities(), actual.getFaceRenderPriorities());
 		assertArrayEquals(where + " textures", expected.getFaceTextures(), actual.getFaceTextures());
 
-		int[][] expectedGroups = expected.getVertexGroups();
-		int[][] actualGroups = actual.getVertexGroups();
-		assertEquals(where + " group count", expectedGroups.length, actualGroups.length);
-		for (int group = 0; group < expectedGroups.length; group++)
+		// Every corner of every face has to land where the concatenation put it, whichever merged
+		// vertex now carries that position
+		Set<List<Float>> positions = new HashSet<>();
+		for (int face = 0; face < expected.getFaceCount(); face++)
 		{
-			assertArrayEquals(where + " group " + group, expectedGroups[group], actualGroups[group]);
+			int[][] corners = {
+				{expected.getFaceIndices1()[face], actual.getFaceIndices1()[face]},
+				{expected.getFaceIndices2()[face], actual.getFaceIndices2()[face]},
+				{expected.getFaceIndices3()[face], actual.getFaceIndices3()[face]},
+			};
+			for (int corner = 0; corner < corners.length; corner++)
+			{
+				List<Float> want = position(expected, corners[corner][0]);
+				assertEquals(where + " face " + face + " corner " + (corner + 1),
+					want, position(actual, corners[corner][1]));
+				positions.add(want);
+			}
 		}
+
+		// One vertex per distinct position: nothing left unwelded, and nothing kept that no face uses
+		assertEquals(where + " welded vertex count", positions.size(), actual.getVerticesCount());
+		assertTrue(where + " should weld at least one seam",
+			actual.getVerticesCount() < expected.getVerticesCount());
+		assertEquals(where + " group count",
+			expected.getVertexGroups().length, actual.getVertexGroups().length);
+	}
+
+	private static List<Float> position(RetroMesh mesh, int vertex)
+	{
+		return Arrays.asList(mesh.getVerticesX()[vertex], mesh.getVerticesY()[vertex],
+			mesh.getVerticesZ()[vertex]);
 	}
 
 	/**
