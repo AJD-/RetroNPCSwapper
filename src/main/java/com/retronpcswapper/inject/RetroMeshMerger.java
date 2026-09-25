@@ -35,15 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  * Merges the parts of a multi-model NPC into one mesh the way the client merges them, so the parts
  * share one vertex list and one rig space.
  *
- * <p>This used to happen in the generator, with the merged result stored under the first part's
- * model id. That could not express the giant family, where five NPCs are one shared body mesh plus
- * a variant head: every one of them keys on 2870, so the last spec written would win, and they would
- * all wear the same head. The bundle now stores each part under its own real model id - keeping the
- * "keyed by the ids the source caches use" invariant, and storing a shared body once - and the
- * merge happens here instead, once per NPC id at spawn.
- *
- * <p>Parts share one coordinate space; there is no per-part translation, because 2005 parts are
- * authored to sit together already.
+ * <p>Parts share one coordinate space; there is no per-part translation.
  *
  * <h2>Vertices are welded, not concatenated</h2>
  *
@@ -55,11 +47,9 @@ import lombok.extern.slf4j.Slf4j;
  * than parting from it. Concatenating instead leaves each part its own copy of the seam, and the
  * pieces visibly separate as soon as they move; it also counts every seam vertex twice in the pivot
  * centroids the animation turns about.
- *
- * <p>Three more consequences of the same rule, all matching the client: vertices are numbered in the
- * order faces first reach them, duplicates within one part weld too, and a vertex no face or texture
- * triangle names is dropped. Positions are compared exactly - the client compares integer-cast
- * coordinates, which is the same thing for the integer geometry a cache model carries.
+ * - Vertices are numbered in the order faces first reach them
+ * - Duplicates within one part weld
+ * - Positions are compared exactly (the client compares integer-cast coordinates)
  */
 @Slf4j
 public final class RetroMeshMerger
@@ -79,8 +69,8 @@ public final class RetroMeshMerger
 	/**
 	 * Merges parts into a single mesh under {@code id}, conventionally the first part's model id so
 	 * that logging still names something recognizable.
-	 *
-	 * <p>A single part is returned as-is rather than copied, exactly as the client uses a lone model
+	 * <p>
+	 * A single part is returned as-is rather than copied, exactly as the client uses a lone model
 	 * without merging it. {@link RetroMesh} is immutable and every consumer that needs to change one
 	 * builds a derived copy first, so sharing the instance is safe.
 	 */
@@ -274,7 +264,7 @@ public final class RetroMeshMerger
 	}
 
 	/**
-	 * The merged vertex list, built the client's way: a corner lands on the first vertex already at
+	 * The merged vertex list, like the vanilla renderer: a corner lands on the first vertex already at
 	 * its position, and only a new position is appended, carrying its own part's group.
 	 */
 	private static final class Welder

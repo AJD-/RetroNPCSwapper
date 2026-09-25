@@ -3,6 +3,7 @@ package com.retronpcswapper.cache;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -35,12 +36,12 @@ public class RetroAssetGeneratorTest
 
 	/**
 	 * Checks the runtime merge against the generator's own, over real cache geometry.
-	 *
-	 * <p>The merge used to run here, storing the result under the first part's model id. That could
+	 * <p>
+	 * The merge used to run here, storing the result under the first part's model id. That could
 	 * not express an NPC family sharing a body mesh, so the bundle now stores parts individually and
 	 * {@link RetroMeshMerger} joins them at spawn.
-	 *
-	 * <p>The two are no longer identical, deliberately: the old merge concatenated the parts, and the
+	 * <p>
+	 * The two are no longer identical: the old merge concatenated the parts, and the
 	 * runtime one welds coincident vertices the way the client does, so seams stretch rather than
 	 * part. The concatenation stays as the reference the weld is checked against: the same faces
 	 * with the same attributes, every corner at the same position, and exactly one vertex per
@@ -100,7 +101,12 @@ public class RetroAssetGeneratorTest
 		assertArrayEquals(where + " textures", expected.getFaceTextures(), actual.getFaceTextures());
 
 		// Every corner of every face has to land where the concatenation put it, whichever merged
-		// vertex now carries that position
+		// vertex now carries that position. And the vertex there has to carry the bone of the corner
+		// that reached the position first - the body's, at a seam - which is the whole reason for
+		// welding: a limb's faces stretch back to the body instead of parting from it.
+		int[] expectedGroupOf = groupOfVertex(expected);
+		int[] actualGroupOf = groupOfVertex(actual);
+		Map<List<Float>, Integer> firstGroupAt = new HashMap<>();
 		Set<List<Float>> positions = new HashSet<>();
 		for (int face = 0; face < expected.getFaceCount(); face++)
 		{
@@ -115,6 +121,10 @@ public class RetroAssetGeneratorTest
 				assertEquals(where + " face " + face + " corner " + (corner + 1),
 					want, position(actual, corners[corner][1]));
 				positions.add(want);
+
+				firstGroupAt.putIfAbsent(want, expectedGroupOf[corners[corner][0]]);
+				assertEquals(where + " face " + face + " corner " + (corner + 1) + " group",
+					(int) firstGroupAt.get(want), actualGroupOf[corners[corner][1]]);
 			}
 		}
 
@@ -124,6 +134,22 @@ public class RetroAssetGeneratorTest
 			actual.getVerticesCount() < expected.getVerticesCount());
 		assertEquals(where + " group count",
 			expected.getVertexGroups().length, actual.getVertexGroups().length);
+	}
+
+	/** Per vertex, the group it is bound to, or -1 for none. */
+	private static int[] groupOfVertex(RetroMesh mesh)
+	{
+		int[] groupOf = new int[mesh.getVerticesCount()];
+		Arrays.fill(groupOf, -1);
+		int[][] groups = mesh.getVertexGroups();
+		for (int group = 0; group < groups.length; group++)
+		{
+			for (int vertex : groups[group])
+			{
+				groupOf[vertex] = group;
+			}
+		}
+		return groupOf;
 	}
 
 	private static List<Float> position(RetroMesh mesh, int vertex)
