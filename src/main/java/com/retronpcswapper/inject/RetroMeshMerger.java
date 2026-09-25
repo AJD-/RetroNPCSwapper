@@ -42,8 +42,7 @@ import lombok.extern.slf4j.Slf4j;
  * "keyed by the ids the source caches use" invariant, and storing a shared body once - and the
  * merge happens here instead, once per NPC id at spawn.
  *
- * <p>Parts share one coordinate space; there is no per-part translation, because 2005 parts are
- * authored to sit together already.
+ * <p>Parts share one coordinate space; there is no per-part translation.
  *
  * <h2>Vertices are welded, not concatenated</h2>
  *
@@ -274,7 +273,7 @@ public final class RetroMeshMerger
 	}
 
 	/**
-	 * The merged vertex list, built the client's way: a corner lands on the first vertex already at
+	 * The merged vertex list, like the vanilla renderer: a corner lands on the first vertex already at
 	 * its position, and only a new position is appended, carrying its own part's group.
 	 */
 	private static final class Welder
