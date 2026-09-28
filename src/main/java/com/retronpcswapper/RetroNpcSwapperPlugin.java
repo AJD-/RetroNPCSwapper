@@ -31,9 +31,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
@@ -43,6 +45,8 @@ import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroAssetSource;
 import com.retronpcswapper.compatibility.InteractHighlightCompat;
 import com.retronpcswapper.compatibility.InteractTargetTracker;
+import com.retronpcswapper.compatibility.ModelSwapProtocol;
+import com.retronpcswapper.compatibility.RendererChain;
 import com.retronpcswapper.compatibility.RetroInteractHighlightOverlay;
 import com.retronpcswapper.compatibility.RetroNpcOutliner;
 import lombok.extern.slf4j.Slf4j;
@@ -68,9 +72,11 @@ import net.runelite.api.events.WorldChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.PluginChanged;
+import net.runelite.client.events.PluginMessage;
 import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -128,8 +134,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Inject
 	private RetroNpcOutliner outliner;
 
+	@Inject
+	private EventBus eventBus;
+
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
+
+	/**
+	 * NPC ids Custom NPC Models is drawing, which this plugin leaves alone entirely - its clips are
+	 * keyed to the live sequences, so retro animations would break them as surely as a retro model.
+	 *
+	 * <p>Volatile because Custom NPC Models posts from its shutDown as well as from the client thread.
+	 */
+	private volatile Set<Integer> claimedByCustom = Collections.emptySet();
 
 	/** The renderer 117 HD registers by default; its legacy renderer lives in a sibling package. */
 	private static final String HD_ZONE_RENDERER_PACKAGE = "rs117.hd.renderer.zone.";
@@ -181,6 +198,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			recheckLoadedNpcs();
 			attach();
 		});
+
+		// Custom NPC Models may have started first; ask which NPCs it is drawing
+		eventBus.post(ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
 	}
 
 	/**
@@ -241,6 +261,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			load.cancel(false);
 			bundleLoad = null;
 		}
+
+		// Asked for again by the hello on the next start
+		claimedByCustom = Collections.emptySet();
 
 		clientThread.invoke(() ->
 		{
@@ -322,6 +345,23 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onPluginMessage(PluginMessage event)
+	{
+		Set<Integer> claims = ModelSwapProtocol.readClaims(event);
+		if (claims == null || !active || claims.equals(claimedByCustom))
+		{
+			return;
+		}
+
+		log.debug("Custom NPC Models claims {} NPC id(s); excluding from retro swap", claims.size());
+		claimedByCustom = Collections.unmodifiableSet(claims);
+
+		// Hand back NPCs it no longer claims, and let go of the ones it now does. Deferred because
+		// Custom NPC Models can post this from its shutDown, off the client thread.
+		clientThread.invoke(this::recheckLoadedNpcs);
+	}
+
+	@Subscribe
 	public void onNpcSpawned(NpcSpawned event)
 	{
 		processNpc(event.getNpc());
@@ -343,8 +383,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Cheap guard: the GPU plugin and 117 HD set and clear the draw callbacks slot
 		// unconditionally, so re-take it whenever we have lost it. Covers orderings PluginChanged
 		// misses - including 117 HD restarting itself on a settings change, which installs a new
-		// renderer without posting any plugin event.
-		if (wrapper == null || client.getDrawCallbacks() != wrapper)
+		// renderer without posting any plugin event. Custom NPC Models stacking on top leaves us
+		// beneath it rather than out, which is why this looks through the chain.
+		if (wrapper == null || !RendererChain.contains(client.getDrawCallbacks(), wrapper))
 		{
 			attach();
 		}
@@ -432,7 +473,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// processNpc, which maintains the cache's memo. Gating on the same memo keeps animation
 		// overrides tied to the model actually being substituted - a vanilla model playing a
 		// 2005 sequence renders distorted, since those sequences are keyed to 2005 framemaps.
-		if (!modelCache.isSubstituted(npc.getId()))
+		if (!modelCache.isSubstituted(npc.getId()) || claimedByCustom.contains(npc.getId()))
 		{
 			return;
 		}
@@ -552,7 +593,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// keyed to 2005 framemaps - renders distorted rather than retro.
 		//
 		// Verify if category toggle is enabled in configuration
-		if (wrapper == null || isSafetyDisabled() || data == null || !isCategoryEnabled(data.getCategory()))
+		//
+		// An NPC Custom NPC Models is drawing is left to it wholesale, animations included - its
+		// model is keyed to the live sequences, which a retro one would replace.
+		if (wrapper == null || isSafetyDisabled() || data == null || !isCategoryEnabled(data.getCategory())
+			|| claimedByCustom.contains(npc.getId()))
 		{
 			modelCache.clearSubstituted(npc.getId());
 			resetNpc(npc);
@@ -832,27 +877,36 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	/**
 	 * Takes over the client's draw callbacks slot by wrapping whichever supported renderer holds it:
-	 * the GPU plugin, or 117 HD's zone renderer.
+	 * the GPU plugin, or 117 HD's zone renderer - directly, or beneath Custom NPC Models' decorator.
 	 *
-	 * <p>Declines for anything else - no renderer at all, an unknown one, or 117 HD's legacy
-	 * renderer. That last one is not an oversight: it implements no {@code drawTemp} and does not run
-	 * the ZBUF path, so wrapping it would substitute nothing while still letting processNpc apply
-	 * 2005 animations to modern rigs. Must be called on the client thread.
+	 * <p>Declines for anything else - no renderer at all, an unknown one, a decorator it cannot see
+	 * through, or 117 HD's legacy renderer. Which of the two plugins stacks on top does not matter:
+	 * this one leaves the NPCs Custom NPC Models claims alone, so each NPC is only ever swapped by
+	 * one of them. Must be called on the client thread.
 	 */
 	private void attach()
 	{
 		DrawCallbacks current = client.getDrawCallbacks();
-		if (wrapper != null && current == wrapper)
+		if (RendererChain.contains(current, wrapper))
 		{
 			return;
 		}
 
-		// We are not the registered callbacks anymore; drop the stale reference before
-		// deciding whether we can retake the slot
+		// We are not in the chain anymore; drop the stale reference before deciding whether we can
+		// retake the slot
 		boolean wasAttached = wrapper != null;
 		wrapper = null;
 
-		if (isSupportedHost(current, findGpuPlugin()))
+		// Left beneath Custom NPC Models by an earlier detach, which could not unlink it from under
+		// another plugin's decorator. Picking it back up keeps a second one from stacking on top.
+		RetroDrawCallbacks buried = RendererChain.find(current, RetroDrawCallbacks.class);
+		if (buried != null)
+		{
+			wrapper = buried;
+			declinedHost = null;
+			log.debug("Re-adopted retro draw callbacks beneath {}", current.getClass().getName());
+		}
+		else if (isSupportedHost(current, findGpuPlugin()))
 		{
 			RetroDrawCallbacks callbacks = new RetroDrawCallbacks(current, this::substitute);
 			client.setDrawCallbacks(callbacks);
@@ -890,9 +944,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 		else if (wrapper != null)
 		{
-			// Something else holds the slot. If it wrapped our wrapper, that stale decorator
-			// stays in its chain - harmless once the cache's memo is cleared (every
-			// substitution then falls through to the vanilla model), but worth saying.
+			// Something else holds the slot. If it wrapped our wrapper - Custom NPC Models does -
+			// that decorator stays in its chain, harmless once the cache's memo is cleared (every
+			// substitution then falls through to the vanilla model), and the next attach() picks
+			// it back up.
 			log.debug("Draw callbacks slot no longer ours at detach; leaving it untouched");
 		}
 		wrapper = null;
@@ -902,7 +957,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Whether {@code current} is a renderer {@link RetroDrawCallbacks} can substitute models through.
+	 * Whether {@code current} is a renderer {@link RetroDrawCallbacks} can substitute models through,
+	 * either itself or beneath Custom NPC Models' decorator.
 	 *
 	 * <p>117 HD is a Plugin Hub plugin loaded in its own classloader, so it is recognized by class
 	 * name alone - there is no compile or runtime dependency on it, and with it absent nothing here
@@ -911,7 +967,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	static boolean isSupportedHost(DrawCallbacks current, Plugin gpu)
 	{
-		return current != null && (current == gpu || isHdZoneRenderer(current.getClass().getName()));
+		DrawCallbacks renderer = RendererChain.base(current);
+		return renderer != null && (renderer == gpu || isHdZoneRenderer(renderer.getClass().getName()));
 	}
 
 	static boolean isHdZoneRenderer(String className)
@@ -985,6 +1042,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// The posed model is shared and only valid until the next applyTransformations call. It is
 		// handed straight to the delegate and uploaded before anything else can run, which is what
 		// makes that safe here. Returns null for an NPC that is not being substituted.
+		//
+		// A claimed NPC is let through untouched even before the recheck the claim triggered has
+		// cleared it from the memo, so Custom NPC Models wins whichever of the two is stacked on top.
+		if (claimedByCustom.contains(npc.getId()))
+		{
+			return null;
+		}
 		return modelCache.pose(npc);
 	}
 }
