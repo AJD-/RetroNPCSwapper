@@ -30,6 +30,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Guards**
 - **Cows**
 - **Scorpions** — large/king scorpions
+- **Elves** — (Attackable only)
 
 ![config](img/retronpcswapperconfig.png)
 
@@ -82,9 +83,9 @@ are not supported
 - **Nothing is downloaded.** For the categories in the first list, the plugin ships only a table of
   numeric model and animation IDs, and every asset it displays already comes from the live game
   cache.
-- **The injected categories ship their assets.** Dragons, demons, imps, guards, cows, cyclops and the
-  fire, ice and moss giant heads have no usable 2005 asset left in the live cache, so
-  `retro-assets.dat` (~76 KB) is bundled in the jar and carries their meshes, rigs and animation
+- **The injected categories ship their assets.** Dragons, demons, imps, guards, elves, cows,
+  scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
+  live cache, so `retro-assets.dat` (~98 KB) is bundled in the jar and carries their meshes, rigs and animation
   clips, extracted from the February 2005 cache. This is the one thing the plugin distributes rather
   than reads from your own installation, which is why it is all gated behind a single toggle you can
   switch off. Parts are stored individually and joined at spawn, so the body the whole giant family

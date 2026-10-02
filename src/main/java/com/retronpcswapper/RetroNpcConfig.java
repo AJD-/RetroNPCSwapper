@@ -289,6 +289,20 @@ public interface RetroNpcConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "swapElves",
+		name = "Elves",
+		description = "<html><body style='width:170px'>Swap modern Elf models and animations to their "
+			+ "2004/2005 retro variants.<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by "
+			+ "default.</body></html>",
+		section = npcTogglesSection,
+		position = 16
+	)
+	default boolean swapElves()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Safety",
 		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
