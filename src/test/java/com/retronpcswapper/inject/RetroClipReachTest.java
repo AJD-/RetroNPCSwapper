@@ -64,6 +64,13 @@ public class RetroClipReachTest
 	 *
 	 * <p>The skeleton mage is the same kit again and lands in the same band: 808 74%, 819 71%,
 	 * 836 71%, 422 74%, 423 73%, 424 76%, and its own cast 711 70% on framemap 100072.
+	 *
+	 * <p>The elves are six more kits of it, and land in the band too. Bow elf: 813 75%, 426 76%.
+	 * Pike elf: 813 78%, spear 428-431 68-73%, scythe 435-440 72-77%. Walk 819 is again the
+	 * thinnest, 61-77% across the kits, with Eluned's kit the lowest. Bow 426 is not an overlay despite
+	 * its interleave list: it rides the shared 100082 rig and covers 60-67% of each kit's groups, level
+	 * with the stance and the blocks. Arianwyn's cloak 4027 and Eluned's 4031 bind groups out to 88
+	 * and 90, well past the guards' [0..36], and the player rig still addresses every one of them.
 	 */
 	private static final Map<Integer, Integer> CLIP_FLOORS = new HashMap<>();
 
@@ -74,7 +81,8 @@ public class RetroClipReachTest
 			386, 387, 388, 389, 390, 391, 392,
 			393, 394, 395, 396, 397, 398, 399,
 			400, 401, 402, 403, 404,
-			422, 423, 424, 711})
+			422, 423, 424, 711,
+			813, 425, 426, 428, 429, 430, 431, 435, 436, 437, 438, 439, 440})
 		{
 			CLIP_FLOORS.put(humanClip, 60);
 		}
@@ -193,7 +201,50 @@ public class RetroClipReachTest
 		{422, 209, 251, 292, 170, 256, 325},
 		{423, 209, 251, 292, 170, 256, 325},
 		{424, 209, 251, 292, 170, 256, 325},
-		{711, 209, 251, 292, 170, 256, 325}
+		{711, 209, 251, 292, 170, 256, 325},
+		// The elves: the same 2005 human kit again, in five kits. Definition 1183's bow elf, which the
+		// Iorwerth and Mourning's End archers wear, with its bow 426.
+		{813, 4014, 4018, 4022, 4024, 4044},
+		{819, 4014, 4018, 4022, 4024, 4044},
+		{836, 4014, 4018, 4022, 4024, 4044},
+		{424, 4014, 4018, 4022, 4024, 4044},
+		{425, 4014, 4018, 4022, 4024, 4044},
+		{426, 4014, 4018, 4022, 4024, 4044},
+		// Definition 1184's pike elf and both polearm families it could be sent.
+		{813, 4014, 4018, 4022, 4024, 4033},
+		{819, 4014, 4018, 4022, 4024, 4033},
+		{836, 4014, 4018, 4022, 4024, 4033},
+		{424, 4014, 4018, 4022, 4024, 4033},
+		{425, 4014, 4018, 4022, 4024, 4033},
+		{428, 4014, 4018, 4022, 4024, 4033},
+		{429, 4014, 4018, 4022, 4024, 4033},
+		{430, 4014, 4018, 4022, 4024, 4033},
+		{431, 4014, 4018, 4022, 4024, 4033},
+		{435, 4014, 4018, 4022, 4024, 4033},
+		{436, 4014, 4018, 4022, 4024, 4033},
+		{437, 4014, 4018, 4022, 4024, 4033},
+		{438, 4014, 4018, 4022, 4024, 4033},
+		{439, 4014, 4018, 4022, 4024, 4033},
+		{440, 4014, 4018, 4022, 4024, 4033},
+		// Arianwyn and Islwyn in their Song of the Elves bow forms. Their plain forms are the same kits
+		// minus the bow.
+		{808, 4015, 4021, 4023, 4025, 4027, 4044},
+		{819, 4015, 4021, 4023, 4025, 4027, 4044},
+		{836, 4015, 4021, 4023, 4025, 4027, 4044},
+		{424, 4015, 4021, 4023, 4025, 4027, 4044},
+		{425, 4015, 4021, 4023, 4025, 4027, 4044},
+		{426, 4015, 4021, 4023, 4025, 4027, 4044},
+		{808, 4015, 4020, 4023, 4025, 4044},
+		{819, 4015, 4020, 4023, 4025, 4044},
+		{836, 4015, 4020, 4023, 4025, 4044},
+		{424, 4015, 4020, 4023, 4025, 4044},
+		{425, 4015, 4020, 4023, 4025, 4044},
+		{426, 4015, 4020, 4023, 4025, 4044},
+		// Eluned's kit.
+		{808, 4030, 4032, 4028, 4031, 4029},
+		{819, 4030, 4032, 4028, 4031, 4029},
+		{836, 4030, 4032, 4028, 4031, 4029},
+		{424, 4030, 4032, 4028, 4031, 4029}
 	};
 
 	@Test

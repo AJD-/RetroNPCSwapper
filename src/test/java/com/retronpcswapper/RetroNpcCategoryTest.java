@@ -526,6 +526,151 @@ public class RetroNpcCategoryTest
 		assertFalse(guard.isDeathAnimation(7044));
 	}
 
+	/**
+	 * Asserts every id in {@code ids} resolves to the same elf archetype, with its 2005 parts.
+	 */
+	private static void assertElves(String name, int[] parts, int... ids)
+	{
+		for (int id : ids)
+		{
+			RetroNpcData elf = RetroNpcMapping.get(id, name);
+			assertNotNull(name + " " + id + " must be swapped", elf);
+			assertEquals(RetroNpcCategory.ELVES, elf.getCategory());
+			assertArrayEquals(name + " " + id + " wears the wrong kit", parts, elf.getRetroModelIds());
+			assertArrayEquals(elf.getRetroModelIds(), elf.getInjectedModelIds());
+		}
+	}
+
+	@Test
+	public void testElvesCategory()
+	{
+		// Definition 1183 (bow) and 1184 (pike), the Regicide elves. The Mourning's End Elf
+		// Archer/Warrior postdate the Feb-2005 cache and take the same kits by level and weapon.
+		int[] archerParts = {4014, 4018, 4022, 4024, 4044};
+		int[] warriorParts = {4014, 4018, 4022, 4024, 4033};
+		assertElves("Iorwerth Archer", archerParts,
+			NpcID.REGICIDE_DARKELF, NpcID.REGICIDE_DARKELF4,
+			NpcID.SOTE_CAVE_WARRIOR_2, NpcID.SOTE_IORWERTH_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_2,
+			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_1, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_2,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_2, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_4,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_9, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_10);
+		assertElves("Elf Archer", archerParts, NpcID.MOURNING_GUARD_RANGE, NpcID.MOURNING_GUARD_RANGE2);
+		assertElves("Iorwerth Warrior", warriorParts,
+			NpcID.REGICIDE_DARKELF2, NpcID.REGICIDE_DARKELF3,
+			NpcID.SOTE_CAVE_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_3, NpcID.SOTE_IORWERTH_WARRIOR_4,
+			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_3, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_4,
+			NpcID.PRIF_DARKELF2, NpcID.PRIF_DARKELF3,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_1, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_3,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_5, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_6,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_7, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_8);
+		assertElves("Elf Warrior", warriorParts, NpcID.MOURNING_GUARD_MELEE, NpcID.MOURNING_GUARD_MELEE2);
+
+		// The named elves, each with a Song of the Elves bow form carrying 4044
+		assertElves("Arianwyn", new int[]{4015, 4021, 4023, 4025, 4027},
+			NpcID.REGICIDE_GOOD_ELF3, NpcID.SOTE_ARIANWYN_CUTSCENE, NpcID.SOTE_ARIANWYN_CUTSCENE_NOMOVE,
+			NpcID.MOURNING_ARIANWYN_VIS);
+		assertElves("Arianwyn", new int[]{4015, 4021, 4023, 4025, 4027, 4044},
+			NpcID.SOTE_ARIANWYN_COMBAT, NpcID.NZONE_SOTE_ARIANWYN_NORMAL, NpcID.SOTE_ARIANWYN_CUTSCENE_BOW);
+		assertElves("Islwyn", new int[]{4015, 4020, 4023, 4025},
+			NpcID.ROVING_ISLWYN_1OP, NpcID.ROVING_ISLWYN_2OPS, NpcID.SOTE_ISLWYN_VIS,
+			NpcID.SOTE_ISLWYN_CUTSCENE, NpcID.ISLWYN_PRIF);
+		assertElves("Islwyn", new int[]{4015, 4020, 4023, 4025, 4044},
+			NpcID.SOTE_ISLWYN_UPASS, NpcID.SOTE_ISLWYN_CUTSCENE_BOW, NpcID.SOTE_ISLWYN_BATTLE);
+		int[] elunedParts = {4030, 4032, 4028, 4031, 4029};
+		assertElves("Eluned", elunedParts,
+			NpcID.ROVING_FEMALE_WOODELF_TEMP_1, NpcID.ROVING_FEMALE_WOODELF_1OP,
+			NpcID.ROVING_FEMALE_WOODELF_2OP, NpcID.SOTE_ELUNED_UPASS, NpcID.SOTE_ELUNED_CUTSCENE,
+			NpcID.ELUNED_PRIF);
+
+		// The Lletya townsfolk postdate the Feb-2005 cache and stay modern
+		assertNull(RetroNpcMapping.get(NpcID.MOURNING_TOWN_ELF_1, "Goreu"));
+		for (int mawrth : new int[]{NpcID.MOURNING_TOWN_ELF_4, NpcID.SOTE_MAWRTH, NpcID.SOTE_MAWRTH_CUTSCENE})
+		{
+			assertNull("Mawrth " + mawrth + " must not be swapped", RetroNpcMapping.get(mawrth, "Mawrth"));
+		}
+		assertNull(RetroNpcMapping.get(NpcID.MOURNING_TOWN_ELF_3, "Arvel"));
+		for (int kelyn : new int[]{NpcID.MOURNING_TOWN_ELF_5_VIS, NpcID.SOTE_LADY_ITHELL_NORMAL})
+		{
+			assertNull("Kelyn " + kelyn + " must not be swapped", RetroNpcMapping.get(kelyn, "Kelyn"));
+		}
+
+		// Both 2005 warriors stand in 813, the bow elf included
+		RetroNpcData archer = Objects.requireNonNull(RetroNpcMapping.get(NpcID.REGICIDE_DARKELF, "Iorwerth Archer"));
+		assertEquals(AnimationID.HUMAN_STAFFREADY, archer.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_WALK_F, archer.getWalkAnimationId());
+		assertEquals(AnimationID.HUMAN_BOW, archer.getAttackAnimationId());
+		assertEquals(AnimationID.HUMAN_UNARMEDBLOCK, archer.getDefendAnimationId());
+		assertEquals(AnimationID.HUMAN_DEATH, archer.getDeathAnimationId());
+
+		// The live polearm elves walk on the halberd walk 1205; the pose slot is replaced, so the
+		// 2005 walk is what plays and 1205 never needs a clip
+		RetroNpcData warrior = Objects.requireNonNull(RetroNpcMapping.get(NpcID.REGICIDE_DARKELF2, "Iorwerth Warrior"));
+		assertEquals(AnimationID.HUMAN_STAFFREADY, warrior.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_WALK_F, warrior.getWalkAnimationId());
+		assertEquals(AnimationID.HUMAN_SCYTHE_SWEEP, warrior.getAttackAnimationId());
+		assertEquals(AnimationID.HUMAN_SPEAR_BLOCK, warrior.getDefendAnimationId());
+
+		RetroNpcData eluned = Objects.requireNonNull(RetroNpcMapping.get(NpcID.ROVING_FEMALE_WOODELF_TEMP_1, "Eluned"));
+		assertEquals(AnimationID.HUMAN_READY, eluned.getIdleAnimationId());
+		assertEquals(-1, eluned.getAttackAnimationId());
+
+		RetroNpcData bowArianwyn = Objects.requireNonNull(RetroNpcMapping.get(NpcID.NZONE_SOTE_ARIANWYN_NORMAL, "Arianwyn"));
+		assertEquals(AnimationID.HUMAN_READY, bowArianwyn.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_BOW, bowArianwyn.getAttackAnimationId());
+
+		// Every combat id an elf is expected to play predates Feb 2005 and ships as a clip under its
+		// own id, so it must pass straight through - the same rule as the guards' 1156
+		for (RetroNpcData elf : new RetroNpcData[]{archer, warrior})
+		{
+			for (int anim : new int[]{AnimationID.HUMAN_BOW, AnimationID.HUMAN_SPEAR_SPIKE,
+				AnimationID.HUMAN_SPEAR_BLOCK, AnimationID.HUMAN_SCYTHE_SWEEP,
+				AnimationID.HUMAN_UNARMEDBLOCK, AnimationID.HUMAN_DEATH})
+			{
+				assertFalse(anim + " ships as a 2005 clip and must not be intercepted",
+					elf.isAttackAnimation(anim) || elf.isDefendAnimation(anim) || elf.isDeathAnimation(anim));
+			}
+		}
+
+		// The 2005 opcode 40 pairs, held inline since elves have no name row to graft them from
+		RetroNpcData islwyn = Objects.requireNonNull(RetroNpcMapping.get(NpcID.ROVING_ISLWYN_1OP, "Islwyn"));
+		assertArrayEquals(new short[]{16701, 9152}, islwyn.getOriginalColors());
+		assertArrayEquals(new short[]{16945, 111}, islwyn.getReplacementColors());
+		RetroNpcData bowIslwyn = Objects.requireNonNull(RetroNpcMapping.get(NpcID.SOTE_ISLWYN_BATTLE, "Islwyn"));
+		assertArrayEquals(islwyn.getReplacementColors(), bowIslwyn.getReplacementColors());
+		assertArrayEquals(new short[]{16701, 9137, 4550}, eluned.getOriginalColors());
+		assertArrayEquals(new short[]{25145, 8, 7062}, eluned.getReplacementColors());
+		assertFalse(archer.hasRecolors());
+		assertFalse(warrior.hasRecolors());
+		assertFalse(bowArianwyn.hasRecolors());
+
+		// Human kit whose parts were edited or re-bound in live, so only the bundle can draw it
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.ELVES));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.ELVES));
+		assertFalse(RetroNpcMapping.usesLiveGeometry(NpcID.REGICIDE_DARKELF));
+
+		// By registered id only: the names alone buy nothing
+		assertNull(RetroNpcMapping.get(0, "Arianwyn"));
+		assertNull(RetroNpcMapping.get(0, "Elf Warrior"));
+		assertNull(RetroNpcMapping.get(0, "Iorwerth Archer"));
+		assertNull(RetroNpcMapping.get(0, "Eluned"));
+
+		// The unnamed multiloc parents stay unregistered - the client reports the named child -
+		// and 890's default child is the Elven Scout. Lady Kelyn Ithell is Kelyn after Song of the
+		// Elves, and the hard Arianwyn shares a registered elf's model but not the name.
+		for (int id : new int[]{
+			NpcID.ROVING_BOWYER, NpcID.MOURNING_TOWN_ELF_5, NpcID.SOTE_LADY_ITHELL_VILLAGE,
+			NpcID.MOURNING_ARIANWYN, NpcID.SOTE_ISLWYN, NpcID.SOTE_ISLWYN_LLETYA,
+			NpcID.SOTE_ISLWYN_UPASS_PRE, NpcID.SOTE_ELUNED_LLETYA, NpcID.SOTE_ARIANWYN_WATERFALL,
+			NpcID.SOTE_ARIANWYN_WATERFALL_BAXTORIAN, NpcID.ROVING_FEMALE_WOODELF,
+			NpcID.ROVING_FEMALE_WOODELF_TEMP})
+		{
+			assertNull("multiloc parent " + id + " must not be swapped", RetroNpcMapping.get(id, null));
+		}
+		assertNull(RetroNpcMapping.get(NpcID.SOTE_LADY_ITHELL_VIS, "Lady Kelyn Ithell"));
+		assertNull(RetroNpcMapping.get(NpcID.SOTE_LADY_ITHELL_UPASS, "Lady Kelyn Ithell"));
+		assertNull(RetroNpcMapping.get(NpcID.NZONE_SOTE_ARIANWYN_HARD, "Arianwyn (hard)"));
+	}
+
 	@Test
 	public void testArdougneGuards()
 	{
@@ -2054,8 +2199,8 @@ public class RetroNpcCategoryTest
 		assertTrue("swapScorpions must default to true", config.swapScorpions());
 		assertTrue("swapSpiders must default to true", config.swapSpiders());
 
-		// The pipeline toggle carries the six bundle-only categories, so its default decides
-		// whether they can render at all - see isCategoryEnabled
+		// The pipeline toggle carries the bundle-only categories, so its default decides whether
+		// they can render at all - see isCategoryEnabled
 		assertTrue("useInjectionPipeline must default to true", config.useInjectionPipeline());
 
 		// The bundle-only categories ship on as well. They are not individually opt-in: what the
@@ -2066,6 +2211,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapImps must default to true", config.swapImps());
 		assertTrue("swapCyclops must default to true", config.swapCyclops());
 		assertTrue("swapGuards must default to true", config.swapGuards());
+		assertTrue("swapElves must default to true", config.swapElves());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());

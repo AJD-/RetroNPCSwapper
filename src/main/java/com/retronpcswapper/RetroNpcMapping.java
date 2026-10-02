@@ -66,6 +66,8 @@ public class RetroNpcMapping
 		NpcID.WANDERING_DOOMSCORPION,
 		// Exclude the gorilla skeleton
 		NpcID.MM_SKELETON,
+		// Arianwyn's model in NMZ
+		NpcID.NZONE_SOTE_ARIANWYN_HARD,
 		// Exclude the Hallowed Sepulchre spiders
 		NpcID.HALLOWED_SPIDER_01, NpcID.HALLOWED_SPIDER_02
 	);
@@ -78,7 +80,7 @@ public class RetroNpcMapping
 	 * onto the archetypes.
 	 */
 	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
-		Set.of(RetroNpcCategory.GUARDS);
+		Set.of(RetroNpcCategory.GUARDS, RetroNpcCategory.ELVES);
 
 	/**
 	 * Ids whose registered row beats the name row even when the two disagree about the category.
@@ -156,6 +158,13 @@ public class RetroNpcMapping
 	public static final Set<Integer> GUARD_MODERN_DEATHS = Set.of(
 		AnimationID.HUMAN_DEATH
 	);
+
+	// Empty on purpose. Everything an elf is expected to play - bow 426, the spear and scythe
+	// families, the blocks and death 836 - predates Feb 2005 and ships as a clip under its own id, so
+	// it should pass straight through.
+	public static final Set<Integer> ELF_MODERN_ATTACKS = Set.of();
+	public static final Set<Integer> ELF_MODERN_DEFENDS = Set.of();
+	public static final Set<Integer> ELF_MODERN_DEATHS = Set.of();
 
 	public static final Set<Integer> IMP_MODERN_ATTACKS = Set.of(
 		AnimationID.IMP_ATTACK
@@ -642,6 +651,83 @@ public class RetroNpcMapping
 	public static final RetroNpcData ARDOUGNE_GUARD_DEFAULT = ardougneGuard(ARDOUGNE_GUARD_PARTS);
 
 	public static final RetroNpcData CARNILLEAN_GUARD_DEFAULT = ardougneGuard(ARDOUGNE_CARNILLEAN_PARTS);
+
+	/**
+	 * 2005 definition 1183, 4044 is the bow.
+	 */
+	private static final int[] ELF_ARCHER_PARTS = {4014, 4018, 4022, 4024, 4044};
+
+	/**
+	 * 2005 definition 1184, Elf with the pike
+	 */
+	private static final int[] ELF_WARRIOR_PARTS = {4014, 4018, 4022, 4024, 4033};
+
+	private static final int[] ARIANWYN_PARTS = {4015, 4021, 4023, 4025, 4027};
+
+	// 4027 is Arianwyn's cloak, not a held item, so her bow is added rather than swapped in
+	private static final int[] ARIANWYN_BOW_PARTS = {4015, 4021, 4023, 4025, 4027, 4044};
+
+	private static final int[] ISLWYN_PARTS = {4015, 4020, 4023, 4025};
+
+	private static final int[] ISLWYN_BOW_PARTS = {4015, 4020, 4023, 4025, 4044};
+
+	/**
+	 * 2005 definition 1679.
+	 */
+	private static final int[] ELUNED_PARTS = {4030, 4032, 4028, 4031, 4029};
+
+	private static final short[] ISLWYN_RECOLOR_FIND = {16701, 9152};
+	private static final short[] ISLWYN_RECOLOR_REPLACE = {16945, 111};
+
+	private static final short[] ELUNED_RECOLOR_FIND = {16701, 9137, 4550};
+	private static final short[] ELUNED_RECOLOR_REPLACE = {25145, 8, 7062};
+
+	/**
+	 * An elf in 2005 human kit. Only the pose is set here: combat ids pass straight through to the
+	 * bundle's 2005 clips, the same way the guards' weapon families do.
+	 */
+	private static RetroNpcData.Builder elf(int[] parts, int idle)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.ELVES)
+			.retroModelIds(parts)
+			.idleAnimationId(idle)
+			.walkAnimationId(AnimationID.HUMAN_WALK_F)
+			.deathAnimationId(AnimationID.HUMAN_DEATH)
+			.modernAttackAnims(ELF_MODERN_ATTACKS)
+			.modernDefendAnims(ELF_MODERN_DEFENDS)
+			.modernDeathAnims(ELF_MODERN_DEATHS);
+	}
+
+	private static RetroNpcData.Builder bowElf(int[] parts, int idle)
+	{
+		return elf(parts, idle)
+			.attackAnimationId(AnimationID.HUMAN_BOW)
+			.defendAnimationId(AnimationID.HUMAN_UNARMEDBLOCK);
+	}
+
+	public static final RetroNpcData ELF_ARCHER = bowElf(ELF_ARCHER_PARTS, AnimationID.HUMAN_STAFFREADY).build();
+
+	public static final RetroNpcData ELF_WARRIOR = elf(ELF_WARRIOR_PARTS, AnimationID.HUMAN_STAFFREADY)
+		.attackAnimationId(AnimationID.HUMAN_SCYTHE_SWEEP)
+		.defendAnimationId(AnimationID.HUMAN_SPEAR_BLOCK)
+		.build();
+
+	public static final RetroNpcData ARIANWYN_DEFAULT = elf(ARIANWYN_PARTS, AnimationID.HUMAN_READY).build();
+
+	public static final RetroNpcData ARIANWYN_BOW = bowElf(ARIANWYN_BOW_PARTS, AnimationID.HUMAN_READY).build();
+
+	public static final RetroNpcData ISLWYN_DEFAULT = elf(ISLWYN_PARTS, AnimationID.HUMAN_READY)
+		.recolors(ISLWYN_RECOLOR_FIND, ISLWYN_RECOLOR_REPLACE)
+		.build();
+
+	public static final RetroNpcData ISLWYN_BOW = bowElf(ISLWYN_BOW_PARTS, AnimationID.HUMAN_READY)
+		.recolors(ISLWYN_RECOLOR_FIND, ISLWYN_RECOLOR_REPLACE)
+		.build();
+
+	public static final RetroNpcData ELUNED_DEFAULT = elf(ELUNED_PARTS, AnimationID.HUMAN_READY)
+		.recolors(ELUNED_RECOLOR_FIND, ELUNED_RECOLOR_REPLACE)
+		.build();
 
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
@@ -1260,7 +1346,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.GUARDS
 			|| category == RetroNpcCategory.SKELETON_MAGES
 			|| category == RetroNpcCategory.COWS
-			|| category == RetroNpcCategory.SCORPIONS;
+			|| category == RetroNpcCategory.SCORPIONS
+			|| category == RetroNpcCategory.ELVES;
 	}
 
 	/**
@@ -1473,6 +1560,53 @@ public class RetroNpcMapping
 
 		// Deliberately left out: DEADMAN_GUARD_ARDOUGNE_VIS, DEADMAN_GUARD_YANILLE_VIS and their
 		// _RANGE_VIS siblings
+
+		// Elves, by id only. Every live id carrying one of the eleven names, including the Song of
+		// the Elves and Prifddinas copies.
+		//
+		// The Mourning's End Elf Archer and Elf Warrior postdate the Feb-2005 cache, so they wear the
+		// Iorwerth bow and pike kits, matched by level and weapon.
+		registerMapping(ELF_ARCHER,
+			NpcID.MOURNING_GUARD_RANGE, NpcID.MOURNING_GUARD_RANGE2,
+			NpcID.REGICIDE_DARKELF, NpcID.REGICIDE_DARKELF4,
+			NpcID.SOTE_CAVE_WARRIOR_2, NpcID.SOTE_IORWERTH_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_2,
+			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_1, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_2,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_2, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_4,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_9, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_10
+		);
+		registerMapping(ELF_WARRIOR,
+			NpcID.MOURNING_GUARD_MELEE, NpcID.MOURNING_GUARD_MELEE2,
+			NpcID.REGICIDE_DARKELF2, NpcID.REGICIDE_DARKELF3,
+			NpcID.SOTE_CAVE_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_3, NpcID.SOTE_IORWERTH_WARRIOR_4,
+			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_3, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_4,
+			NpcID.PRIF_DARKELF2, NpcID.PRIF_DARKELF3,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_1, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_3,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_5, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_6,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_7, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_8
+		);
+		registerMapping(ARIANWYN_DEFAULT,
+			NpcID.REGICIDE_GOOD_ELF3, NpcID.SOTE_ARIANWYN_CUTSCENE, NpcID.SOTE_ARIANWYN_CUTSCENE_NOMOVE,
+			NpcID.MOURNING_ARIANWYN_VIS
+		);
+		registerMapping(ARIANWYN_BOW,
+			NpcID.SOTE_ARIANWYN_COMBAT, NpcID.NZONE_SOTE_ARIANWYN_NORMAL, NpcID.SOTE_ARIANWYN_CUTSCENE_BOW
+		);
+		registerMapping(ISLWYN_DEFAULT,
+			NpcID.ROVING_ISLWYN_1OP, NpcID.ROVING_ISLWYN_2OPS, NpcID.SOTE_ISLWYN_VIS,
+			NpcID.SOTE_ISLWYN_CUTSCENE, NpcID.ISLWYN_PRIF
+		);
+		registerMapping(ISLWYN_BOW,
+			NpcID.SOTE_ISLWYN_UPASS, NpcID.SOTE_ISLWYN_CUTSCENE_BOW, NpcID.SOTE_ISLWYN_BATTLE
+		);
+		registerMapping(ELUNED_DEFAULT,
+			NpcID.ROVING_FEMALE_WOODELF_TEMP_1, NpcID.ROVING_FEMALE_WOODELF_1OP,
+			NpcID.ROVING_FEMALE_WOODELF_2OP, NpcID.SOTE_ELUNED_UPASS, NpcID.SOTE_ELUNED_CUTSCENE,
+			NpcID.ELUNED_PRIF
+		);
+		// Deliberately left out: the Lletya townsfolk Goreu (MOURNING_TOWN_ELF_1), Mawrth
+		// (MOURNING_TOWN_ELF_4, SOTE_MAWRTH, SOTE_MAWRTH_CUTSCENE), Arvel (MOURNING_TOWN_ELF_3) and
+		// Kelyn (MOURNING_TOWN_ELF_5_VIS, SOTE_LADY_ITHELL_NORMAL). They postdate the Feb-2005 cache,
+		// and no 2005 elf is close enough to stand in for them
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.

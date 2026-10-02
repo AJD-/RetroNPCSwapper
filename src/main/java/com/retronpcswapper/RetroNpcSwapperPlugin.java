@@ -691,6 +691,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 				// were re-bound to a different rig, so both the geometry and the animation have to
 				// come from the bundle
 				return config.swapGuards() && injectionEnabled();
+			case ELVES:
+				// The same 2005 human kit as the guards: seven of the seventeen parts were edited in
+				// live and every one was re-bound to the live rig, so only the bundle can draw them
+				return config.swapElves() && injectionEnabled();
 			case GHOSTS:
 				return config.swapGhosts();
 			case ADULT_DRAGONS:
