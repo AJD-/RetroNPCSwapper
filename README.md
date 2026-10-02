@@ -19,6 +19,7 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Hellhounds**
 - **Giant Rats**
 - **Scorpions** — the large scorpions need *Use Converted 2005 Assets*; Pit Scorpions don't
+- **Spiders**
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 
