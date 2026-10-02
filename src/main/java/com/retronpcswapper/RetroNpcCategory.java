@@ -52,5 +52,6 @@ public enum RetroNpcCategory
 	GIANT_RATS,
 	SCORPIONS,
 	SMALL_SCORPIONS,
-	ELVES
+	ELVES,
+	SPIDERS
 }

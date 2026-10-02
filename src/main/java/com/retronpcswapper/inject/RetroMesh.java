@@ -85,7 +85,7 @@ public final class RetroMesh
 
 	/**
 	 * The three vertices of each texture triangle. Indices into this mesh's own vertices, which is
-	 * why {@link RetroMeshMerger} has to shift them like face indices.
+	 * why {@link RetroMeshMerger} welds them like face corners.
 	 *
 	 * <p>All three are null together or none of them is; a texture triangle is one row across them.
 	 */

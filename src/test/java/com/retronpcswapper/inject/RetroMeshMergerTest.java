@@ -40,9 +40,11 @@ import static org.junit.Assert.assertTrue;
 /**
  * Covers the merge that lets the bundle store one part per model id.
  *
- * <p>The offsets are the whole point: a part's face indices and vertex-group members address its
- * own vertices, so both have to be shifted by the running vertex base or the merged mesh draws
- * garbage and animates against the wrong bones.
+ * <p>A part's face indices and vertex-group members address its own vertices, so both have to be
+ * remapped onto the merged list or the merged mesh draws garbage and animates against the wrong
+ * bones. The merge welds the way the client's does - a corner at a position already merged lands on
+ * that vertex - so the synthetic parts here sit apart wherever a test is about the remapping rather
+ * than the weld.
  */
 public class RetroMeshMergerTest
 {
@@ -82,7 +84,7 @@ public class RetroMeshMergerTest
 	}
 
 	@Test
-	public void testFaceIndicesAndVertexGroupsAreOffsetByTheRunningVertexBase()
+	public void testPartsAtDistinctPositionsAppendTheirVerticesInFaceOrder()
 	{
 		RetroMesh body = part(2870, 0, 0f, 1);
 		RetroMesh head = part(2862, 0, 100f, 3);
@@ -100,7 +102,7 @@ public class RetroMeshMergerTest
 		assertArrayEquals(new int[]{0, 2}, merged.getFaceIndices3());
 		assertArrayEquals(new short[]{2870, 2862}, merged.getFaceColors());
 
-		// Group membership is unioned by group index, with the same offset applied
+		// Group membership is unioned by group index, following the vertices to where they landed
 		assertArrayEquals(new int[]{0, 1}, merged.getVertexGroup(1));
 		assertArrayEquals(new int[]{2, 3}, merged.getVertexGroup(3));
 		assertEquals(0, merged.getVertexGroup(0).length);
@@ -161,7 +163,8 @@ public class RetroMeshMergerTest
 	public void testTheShippedDragonStillMergesToItsKnownSize() throws Exception
 	{
 		// Adult dragons shipped pre-merged at 387 verts / 776 faces before the parts were split
-		// apart in the bundle. Merging them back has to land on the same numbers.
+		// apart in the bundle - a concatenation. The weld joins the neck seam and drops the
+		// duplicates, so the faces are all still there on 20 fewer vertices.
 		RetroAssetBundle bundle = loadBundle();
 
 		RetroMesh body = bundle.getMesh(2853);
@@ -170,7 +173,9 @@ public class RetroMeshMergerTest
 		assertNotNull("dragon head 2854 is missing from the bundle", head);
 
 		RetroMesh merged = RetroMeshMerger.merge(2853, Arrays.asList(body, head));
-		assertEquals(387, merged.getVerticesCount());
+		assertEquals(367, merged.getVerticesCount());
+		assertTrue("the weld should join the neck seam",
+			merged.getVerticesCount() < body.getVerticesCount() + head.getVerticesCount());
 		assertEquals(776, merged.getFaceCount());
 	}
 
@@ -196,7 +201,9 @@ public class RetroMeshMergerTest
 		assertNotNull("metal dragon part 4987 is missing from the bundle", unbound);
 
 		RetroMesh merged = RetroMeshMerger.merge(4986, Arrays.asList(body, second, unbound));
-		assertEquals(348 + 122 + 20, merged.getVerticesCount());
+		assertEquals(470, merged.getVerticesCount());
+		assertTrue("the weld should join the neck seam", merged.getVerticesCount()
+			< body.getVerticesCount() + second.getVerticesCount() + unbound.getVerticesCount());
 		assertEquals(674 + 162 + 16, merged.getFaceCount());
 
 		// The 2005 art also left 26 body and 4 jaw vertices on 255, inside faces that animate, which
@@ -242,7 +249,9 @@ public class RetroMeshMergerTest
 			body, bundle.getMesh(2853));
 
 		RetroMesh merged = RetroMeshMerger.merge(2853, Arrays.asList(body, threeHeaded));
-		assertEquals(303 + 197, merged.getVerticesCount());
+		assertEquals(480, merged.getVerticesCount());
+		assertTrue("the weld should join the neck seam",
+			merged.getVerticesCount() < body.getVerticesCount() + threeHeaded.getVerticesCount());
 		assertEquals(634 + 360, merged.getFaceCount());
 
 		// The three-headed head is the bigger of the two, which is the whole reason it is a
@@ -270,7 +279,9 @@ public class RetroMeshMergerTest
 
 		RetroMesh hillGiant = RetroMeshMerger.merge(2870,
 			Arrays.asList(bundle.getMesh(2870), bundle.getMesh(2862)));
-		assertEquals(177 + 86, hillGiant.getVerticesCount());
+		assertEquals(259, hillGiant.getVerticesCount());
+		assertTrue("the weld should join the neck seam", hillGiant.getVerticesCount()
+			< bundle.getMesh(2870).getVerticesCount() + bundle.getMesh(2862).getVerticesCount());
 		assertEquals(355 + 155, hillGiant.getFaceCount());
 	}
 
@@ -317,6 +328,14 @@ public class RetroMeshMergerTest
 		}
 	}
 
+	private static void assertSamePosition(String what, RetroMesh part, int partVertex,
+		RetroMesh merged, int mergedVertex)
+	{
+		assertEquals(what + " x", part.getVerticesX()[partVertex], merged.getVerticesX()[mergedVertex], 0f);
+		assertEquals(what + " y", part.getVerticesY()[partVertex], merged.getVerticesY()[mergedVertex], 0f);
+		assertEquals(what + " z", part.getVerticesZ()[partVertex], merged.getVerticesZ()[mergedVertex], 0f);
+	}
+
 	private static int verticesOn(RetroMesh mesh, int group)
 	{
 		int[][] groups = mesh.getVertexGroups();
@@ -324,11 +343,12 @@ public class RetroMeshMergerTest
 	}
 
 	/**
-	 * A texture triangle names its own part's vertices, so merging has to shift it exactly as a
-	 * face index is shifted - and the per-face index into the triangle table has to shift by the
+	 * A texture triangle names its own part's vertices, so merging has to weld its corners exactly
+	 * as a face's are welded - and the per-face index into the triangle table has to shift by the
 	 * triangles the earlier parts contributed. The guard is the case that exercises both: its head
-	 * is the third of the nine parts a guard wears, so its triangles land at a vertex offset with
-	 * no triangle offset.
+	 * is the third of the nine parts a guard wears, so its corners land wherever the weld put them,
+	 * with no triangle offset. A corner has to stay where the head put it, whichever merged vertex
+	 * now carries that position.
 	 */
 	@Test
 	public void testTheGuardHeadKeepsItsMappingThroughTheMerge() throws Exception
@@ -341,18 +361,17 @@ public class RetroMeshMergerTest
 
 		RetroMesh merged = RetroMeshMerger.merge(233, Arrays.asList(torso, cape, head));
 
-		int vertexBase = torso.getVerticesCount() + cape.getVerticesCount();
 		int faceBase = torso.getFaceCount() + cape.getFaceCount();
 
 		assertEquals(head.getTextureTriangleCount(), merged.getTextureTriangleCount());
 		for (int t = 0; t < head.getTextureTriangleCount(); t++)
 		{
-			assertEquals("triangle " + t + " corner 1",
-				head.getTexIndices1()[t] + vertexBase, merged.getTexIndices1()[t]);
-			assertEquals("triangle " + t + " corner 2",
-				head.getTexIndices2()[t] + vertexBase, merged.getTexIndices2()[t]);
-			assertEquals("triangle " + t + " corner 3",
-				head.getTexIndices3()[t] + vertexBase, merged.getTexIndices3()[t]);
+			assertSamePosition("triangle " + t + " corner 1",
+				head, head.getTexIndices1()[t], merged, merged.getTexIndices1()[t]);
+			assertSamePosition("triangle " + t + " corner 2",
+				head, head.getTexIndices2()[t], merged, merged.getTexIndices2()[t]);
+			assertSamePosition("triangle " + t + " corner 3",
+				head, head.getTexIndices3()[t], merged, merged.getTexIndices3()[t]);
 		}
 
 		byte[] mergedCoords = merged.getTextureCoords();
@@ -423,6 +442,61 @@ public class RetroMeshMergerTest
 		assertEquals(257, merged.getTextureTriangleCount());
 	}
 
+	/** A triangle on one group, at the given corner positions. */
+	private static RetroMesh triangle(int id, int group, float[] x, float[] y, float[] z)
+	{
+		int[][] groups = new int[group + 1][];
+		for (int g = 0; g < group; g++)
+		{
+			groups[g] = new int[0];
+		}
+		groups[group] = new int[]{0, 1, 2};
+		return new RetroMesh(id, 0, x, y, z, new int[]{0}, new int[]{1}, new int[]{2},
+			new short[]{(short) id}, null, null, null, null, null, null, null, null, groups);
+	}
+
+	/**
+	 * The client welds a merge by position: a limb corner sitting exactly on a body corner lands on
+	 * the body's vertex, bone and all, so the limb's faces stretch back to the body when it moves
+	 * instead of parting from it. That is what keeps a multi-part NPC's seams closed.
+	 */
+	@Test
+	public void testCoincidentVerticesWeldToTheFirstPartsVertex()
+	{
+		RetroMesh body = triangle(1, 0, new float[]{0, 10, 0}, new float[]{0, 0, -10}, new float[]{0, 0, 0});
+		// Shares its first corner with the body's second, and binds it to a different bone
+		RetroMesh limb = triangle(2, 1, new float[]{10, 20, 10}, new float[]{0, 0, -10}, new float[]{0, 0, 0});
+
+		RetroMesh merged = RetroMeshMerger.merge(1, Arrays.asList(body, limb));
+
+		assertEquals("five distinct positions, not six copies", 5, merged.getVerticesCount());
+		assertEquals("the limb's seam corner is the body's vertex",
+			merged.getFaceIndices2()[0], merged.getFaceIndices1()[1]);
+
+		// The shared vertex keeps the body's bone - it was merged first - so only two vertices move
+		// with the limb and the face between them stretches
+		assertArrayEquals(new int[]{0, 1, 2}, merged.getVertexGroup(0));
+		assertArrayEquals(new int[]{3, 4}, merged.getVertexGroup(1));
+	}
+
+	@Test
+	public void testDuplicatesWithinAPartWeldAndUnusedVerticesAreDropped()
+	{
+		RetroMesh a = new RetroMesh(1, 0,
+			new float[]{0, 10, 0, 0, 99}, new float[]{0, 0, -10, 0, 99}, new float[]{0, 0, 0, 0, 99},
+			new int[]{0}, new int[]{1}, new int[]{3},
+			new short[]{1}, null, null, null, null, null, null, null, null,
+			new int[][]{{0, 1, 2, 3, 4}});
+		RetroMesh b = part(2, 0, 50f, 0);
+
+		RetroMesh merged = RetroMeshMerger.merge(1, Arrays.asList(a, b));
+
+		// Vertex 3 sits on vertex 0 and welds to it; vertices 2 and 4 are named by no face and go
+		assertEquals(0, merged.getFaceIndices1()[0]);
+		assertEquals(0, merged.getFaceIndices3()[0]);
+		assertEquals(4, merged.getVerticesCount());
+	}
+
 	/** Three vertices, {@code coords.length} faces and {@code triangles} texture triangles. */
 	private static RetroMesh textured(int id, int faceCount, byte[] coords, int triangles)
 	{
@@ -450,7 +524,8 @@ public class RetroMeshMergerTest
 		}
 
 		return new RetroMesh(id, 0,
-			new float[]{0f, 1f, 2f}, new float[]{0f, 1f, 2f}, new float[]{0f, 1f, 2f},
+			// Each part sits at its own offset, so nothing welds and the shift itself is what is tested
+			new float[]{id * 10f, id * 10f + 1f, id * 10f + 2f}, new float[]{0f, 1f, 2f}, new float[]{0f, 1f, 2f},
 			i1, i2, i3, colors, null, null, null, textures,
 			coords, t1, t2, t3, groups(0));
 	}

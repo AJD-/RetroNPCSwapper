@@ -76,7 +76,7 @@ public interface RetroNpcConfig extends Config
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
 			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
 			+ "game cache. Turn it off and only Chickens, Goblins, Skeletons, Zombies, Hill Giants, "
-			+ "Ghosts, Hellhounds, Giant Rats, and small Scorpions will swap to their retro assets. "
+			+ "Ghosts, Hellhounds, Giant Rats, Spiders, and small Scorpions will swap to their retro assets. "
             + "Hill Giants will wear a Jogre head.</body></html>",
 		position = 1
 	)
@@ -285,6 +285,18 @@ public interface RetroNpcConfig extends Config
 		position = 15
 	)
 	default boolean swapScorpions()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapSpiders",
+		name = "Spiders",
+		description = "Swap modern Spider models and animations to their 2004/2005 retro variants.",
+		section = npcTogglesSection,
+		position = 16
+	)
+	default boolean swapSpiders()
 	{
 		return true;
 	}

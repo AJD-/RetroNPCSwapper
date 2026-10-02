@@ -69,6 +69,12 @@ public class RetroNpcData
 	private final int idleAnimationId;
 
 	/**
+	 * Whether the NPC stood unanimated in 2005, so an idle of -1 means "no idle" rather than
+	 * "keep the modern one".
+	 */
+	private final boolean staticIdle;
+
+	/**
 	 * Walking animation sequence ID.
 	 * Set to -1 if preserving default NPC walk animation.
 	 */
@@ -198,7 +204,7 @@ public class RetroNpcData
 		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
 			defendAnimationId, deathAnimationId, miscAnimationId, scaleXZ, scaleY, originalColors,
 			replacementColors, modernAttackAnims, modernDefendAnims, modernDeathAnims, modernMiscAnims,
-			null);
+			null, false);
 	}
 
 	public RetroNpcData(
@@ -219,13 +225,15 @@ public class RetroNpcData
 		Set<Integer> modernDefendAnims,
 		Set<Integer> modernDeathAnims,
 		Set<Integer> modernMiscAnims,
-		Map<Integer, Integer> modernAttackOverrides
+		Map<Integer, Integer> modernAttackOverrides,
+		boolean staticIdle
 	)
 	{
 		this.category = category;
 		this.retroModelIds = retroModelIds != null ? retroModelIds.clone() : new int[0];
 		this.injectedModelIds = injectedModelIds != null ? injectedModelIds.clone() : null;
 		this.idleAnimationId = idleAnimationId;
+		this.staticIdle = staticIdle;
 		this.walkAnimationId = walkAnimationId;
 		this.attackAnimationId = attackAnimationId;
 		this.defendAnimationId = defendAnimationId;
@@ -254,6 +262,11 @@ public class RetroNpcData
 		this.modernAttackOverrides = modernAttackOverrides != null
 			? Collections.unmodifiableMap(new HashMap<>(modernAttackOverrides))
 			: Collections.emptyMap();
+	}
+
+	public boolean hasStaticIdle()
+	{
+		return staticIdle;
 	}
 
 	public static Builder builder()
@@ -363,7 +376,8 @@ public class RetroNpcData
 			modernDefendAnims,
 			modernDeathAnims,
 			modernMiscAnims,
-			modernAttackOverrides);
+			modernAttackOverrides,
+			staticIdle);
 	}
 
 	/**
@@ -393,7 +407,8 @@ public class RetroNpcData
 			modernDefendAnims,
 			modernDeathAnims,
 			modernMiscAnims,
-			modernAttackOverrides);
+			modernAttackOverrides,
+			staticIdle);
 	}
 
 	/**
@@ -430,7 +445,8 @@ public class RetroNpcData
 			modernDefendAnims,
 			modernDeathAnims,
 			modernMiscAnims,
-			modernAttackOverrides);
+			modernAttackOverrides,
+			staticIdle);
 	}
 
 	@Override
@@ -440,6 +456,7 @@ public class RetroNpcData
 		if (o == null || getClass() != o.getClass()) return false;
 		RetroNpcData that = (RetroNpcData) o;
 		return idleAnimationId == that.idleAnimationId &&
+			staticIdle == that.staticIdle &&
 			walkAnimationId == that.walkAnimationId &&
 			attackAnimationId == that.attackAnimationId &&
 			defendAnimationId == that.defendAnimationId &&
@@ -466,6 +483,7 @@ public class RetroNpcData
 		result = 31 * result + Arrays.hashCode(retroModelIds);
 		result = 31 * result + Arrays.hashCode(injectedModelIds);
 		result = 31 * result + idleAnimationId;
+		result = 31 * result + (staticIdle ? 1 : 0);
 		result = 31 * result + walkAnimationId;
 		result = 31 * result + attackAnimationId;
 		result = 31 * result + defendAnimationId;
@@ -489,6 +507,7 @@ public class RetroNpcData
 		private int[] retroModelIds = new int[0];
 		private int[] injectedModelIds;
 		private int idleAnimationId = -1;
+		private boolean staticIdle;
 		private int walkAnimationId = -1;
 		private int attackAnimationId = -1;
 		private int defendAnimationId = -1;
@@ -519,6 +538,16 @@ public class RetroNpcData
 		public Builder idleAnimationId(int idleAnimationId)
 		{
 			this.idleAnimationId = idleAnimationId;
+			return this;
+		}
+
+		/**
+		 * Clears the idle pose instead of leaving the modern one playing, for an NPC that stood
+		 * unanimated in 2005. See {@link RetroNpcData#hasStaticIdle}.
+		 */
+		public Builder staticIdle()
+		{
+			this.staticIdle = true;
 			return this;
 		}
 
@@ -712,7 +741,8 @@ public class RetroNpcData
 				modernDefendAnims,
 				modernDeathAnims,
 				modernMiscAnims,
-				modernAttackOverrides
+				modernAttackOverrides,
+				staticIdle
 			);
 		}
 	}
