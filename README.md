@@ -1,8 +1,7 @@
 # Retro NPC Swapper
 
-Swaps modern NPC models and animations back to their 2004/2005 look — using the retro assets that
-still live in the live Old School RuneScape cache where they survived, and a bundled 2005 set
-where they did not.
+Swaps modern NPC models and animations back to their 2004/2005 look, using the retro assets that
+are in the OSRS cache where they survived, and a bundled 2005 set where they did not.
 
 ![splash](img/retronpcswapper.png)
 
@@ -18,7 +17,7 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Ghosts**
 - **Hellhounds**
 - **Giant Rats**
-- **Scorpions** — the large scorpions need *Use Converted 2005 Assets*; Pit Scorpions don't
+- **Scorpions** — giant scorpions require *Use Converted 2005 Assets*
 - **Spiders**
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
@@ -37,18 +36,16 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 
 ## Requirements
 
-**The `GPU` or `117 HD` plugin must be enabled.** Models are substituted while the scene is
-drawn, so nothing changes while neither is rendering. 117 HD's optional **Legacy renderer** is not
-supported. The plugin detects all of this and simply stands down until a supported renderer holds
-the renderer slot again. 117 HD is not a dependency; the plugin runs the same without it installed.
+**The `GPU` or `117 HD` plugin must be enabled.** Models are substituted via their specific renderers, 
+and the stock CPU renderer and 117 HD's optional **Legacy renderer** are not supported. The plugin will
+automatically detect this and stand down until a supported renderer holds the renderer slot.
 
 <details>
 <summary>Why these NPCs require the 2005 asset pack</summary>
 
 These need converted 2005 assets because swapping IDs is not enough for them, and they fail in two
 different ways. Some lost the mesh outright: the adult dragon and demon meshes were removed from the
-OSRS cache and their IDs reused for unrelated geometry such as statues and skulls, and the fire, ice
-and moss giant heads and the cyclops head went the same way, so there is nothing to swap to. Others
+OSRS cache and their IDs reused for unrelated geometry such as statues and skulls. Others
 kept the mesh but lost the rig: the imp and baby dragon meshes survived, but the animations
 behind their surviving sequence IDs were re-authored for the modern skeletons. Either way the
 geometry, the animation, or both have to come from the 2005 data instead of the live cache.
@@ -86,7 +83,7 @@ are not supported
   cache.
 - **The injected categories ship their assets.** Dragons, demons, imps, guards, elves, cows,
   scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
-  live cache, so `retro-assets.dat` (~98 KB) is bundled in the jar and carries their meshes, rigs and animation
+  live cache, so `retro-assets.dat` (~99 KB) is bundled in the jar and carries their meshes, rigs and animation
   clips, extracted from the February 2005 cache. This is the one thing the plugin distributes rather
   than reads from your own installation, which is why it is all gated behind a single toggle you can
   switch off. Parts are stored individually and joined at spawn, so the body the whole giant family
@@ -126,7 +123,7 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
   were one mesh in several palettes.
 - `./gradlew dumpNpcDefinitions -Pnpc=<id>` prints live-cache NPC definitions (IDs or a name
   substring) — models, scales and pose animations, for comparing against the retro definition.
-- `./gradlew generateRetroAssets` rebuilds `retro-assets.dat` from the same local 2005 cache. It
+- `./gradlew generateRetroAssets` rebuilds `retro-assets.dat` from the local 2005 cache. It
   bundles the meshes the live cache no longer has, the rigs those meshes are skinned to, and the
   2005 animation clips, resampled onto the live sequences' frame counts so the frame index the
   client drives still lines up.
