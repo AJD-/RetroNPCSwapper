@@ -65,7 +65,9 @@ public class RetroNpcMapping
 		// Exclude Colosseum scorpion
 		NpcID.WANDERING_DOOMSCORPION,
 		// Exclude the gorilla skeleton
-		NpcID.MM_SKELETON
+		NpcID.MM_SKELETON,
+		// Exclude the Hallowed Sepulchre spiders
+		NpcID.HALLOWED_SPIDER_01, NpcID.HALLOWED_SPIDER_02
 	);
 
 	/**
@@ -335,9 +337,7 @@ public class RetroNpcMapping
 			AnimationID.SCORPION_UPDATE_DEATH, AnimationID.SMALL_SCORPION_UPDATE_DEATH
 	);
 
-	// GIANTRAT_ATTACK/BLOCK/DEATH (138/139/141) are the surviving 2005 sequences themselves.
-	// The live giant rats moved to the GIANT_RAT_UPDATE family on framemap 1152, which is
-	// what these intercept.
+	// GIANTRAT_ATTACK/BLOCK/DEATH (138/139/141) are the surviving 2005 seqs
 	public static final Set<Integer> GIANT_RAT_MODERN_ATTACKS = Set.of(
 		AnimationID.GIANT_RAT_UPDATE_ATTACK
 	);
@@ -346,6 +346,27 @@ public class RetroNpcMapping
 	);
 	public static final Set<Integer> GIANT_RAT_MODERN_DEATHS = Set.of(
 		AnimationID.GIANT_RAT_UPDATE_DEATH, AnimationID.GIANT_RAT_UPDATE_DEATH_FAST
+	);
+
+	// GIANTSPIDER_* (142-149) and SPIDER_* (279-282) are the surviving 2005 seqs
+	public static final Set<Integer> SPIDER_MODERN_ATTACKS = Set.of(
+		AnimationID.SPIDER_UPDATE_ATTACK, AnimationID.SPIDER_UPDATE_ATTACK_LARGE,
+		AnimationID.SPIDER_UPDATE_TBW_BUSH_ATTACK,
+		AnimationID.SMALL_SPIDER_UPDATE_ATTACK, AnimationID.SMALL_SPIDER_UPDATE_ATTACK_SOUND
+	);
+	public static final Set<Integer> SPIDER_MODERN_DEFENDS = Set.of(
+		AnimationID.SPIDER_UPDATE_DEFEND, AnimationID.SPIDER_UPDATE_DEFEND_LARGE,
+		AnimationID.SMALL_SPIDER_UPDATE_DEFEND, AnimationID.SMALL_SPIDER_UPDATE_DEFEND_SOUND
+	);
+	public static final Set<Integer> SPIDER_MODERN_DEATHS = Set.of(
+		AnimationID.SPIDER_UPDATE_DEATH, AnimationID.SPIDER_UPDATE_DEATH_LARGE,
+		AnimationID.SMALL_SPIDER_UPDATE_DEATH
+	);
+	// GIANTSPIDER_CASTING/TELEPORT (147-149) survive too, but the misc slot is many-to-one, so
+	// these fall back to standing still like the hellhound's
+	public static final Set<Integer> SPIDER_MODERN_MISC = Set.of(
+		AnimationID.SPIDER_UPDATE_CASTING, AnimationID.SPIDER_UPDATE_TELEPORT,
+		AnimationID.SPIDER_UPDATE_TELEPORT_REVERSE
 	);
 
 	// Pre-instantiated archetypes for 2005 cache-backed assets
@@ -978,6 +999,115 @@ public class RetroNpcMapping
 		.recolors(new short[]{-22237}, new short[]{70})
 		.build();
 
+	// The 2005 spiders are four meshes on two rigs, all of which exist in the live cache.
+	// The opcode 40 pairs below live only here. npc-mappings.json has no spider row, so
+	// applyCacheDefinitions has nothing to graft, and SPIDERS stays out of categoryUsesRecolors.
+	private static final int POISON_SPIDER_BODY = 2883;
+	private static final int GIANT_SPIDER_BODY = 2884;
+	private static final int ICE_SPIDER_BODY = 2885;
+	private static final int SMALL_SPIDER_BODY = 2996;
+	private static final int SMALL_SPIDER_LIVE_BASE = 7591;
+
+	private static RetroNpcData.Builder largeSpider(int mesh)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.SPIDERS)
+			.retroModelIds(new int[]{mesh})
+			.idleAnimationId(AnimationID.GIANTSPIDER_READY)
+			.walkAnimationId(AnimationID.GIANTSPIDER_WALK)
+			.attackAnimationId(AnimationID.GIANTSPIDER_ATTACK)
+			.defendAnimationId(AnimationID.GIANTSPIDER_BLOCK)
+			.deathAnimationId(AnimationID.GIANTSPIDER_DEATH)
+			.miscAnimationId(AnimationID.GIANTSPIDER_READY)
+			.modernAttackAnims(SPIDER_MODERN_ATTACKS)
+			.modernDefendAnims(SPIDER_MODERN_DEFENDS)
+			.modernDeathAnims(SPIDER_MODERN_DEATHS)
+			.modernMiscAnims(SPIDER_MODERN_MISC);
+	}
+
+	// Every 2005 small spider has standingAnim -1, and there is no SPIDER_READY animation
+	private static RetroNpcData.Builder smallSpider(int bodyColor)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.SPIDERS)
+			.retroModelIds(new int[]{SMALL_SPIDER_BODY})
+			.staticIdle()
+			.walkAnimationId(AnimationID.SPIDER_WALK)
+			.attackAnimationId(AnimationID.SPIDER_ATTACK)
+			.defendAnimationId(AnimationID.SPIDER_BLOCK)
+			.deathAnimationId(AnimationID.SPIDER_DEATH)
+			.recolor(SMALL_SPIDER_LIVE_BASE, bodyColor)
+			.modernAttackAnims(SPIDER_MODERN_ATTACKS)
+			.modernDefendAnims(SPIDER_MODERN_DEFENDS)
+			.modernDeathAnims(SPIDER_MODERN_DEATHS);
+	}
+
+	// Def 61, the Feb-2005 grey. It has no pair of its own; this one undoes the repaint
+	public static final RetroNpcData SPIDER_DEFAULT = smallSpider(61).build();
+
+	// Def 1004, the Underground Pass spider (61 -> 10258)
+	public static final RetroNpcData SPIDER_UPASS = smallSpider(10258).build();
+
+	// Defs 1473 and 1474, the Monkey Madness warehouse spiders (61 -> 20, resized to 64)
+	public static final RetroNpcData SPIDER_MM = smallSpider(20)
+		.scaleXZ(64)
+		.scaleY(64)
+		.build();
+
+	// Def 1221 (61 -> 900), a non-combat spider
+	public static final RetroNpcData SPIDER_RED = smallSpider(900).build();
+
+	// Def 2034 exists only in the Nov-2005 cache, since Barrows postdates the February one. Its pair
+	// already names 7591, so no correction is needed
+	public static final RetroNpcData CRYPT_SPIDER = smallSpider(12574).build();
+
+	// Defs 59 and 60
+	public static final RetroNpcData GIANT_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{10258}, new short[]{8084})
+		.build();
+
+	// Def 58: 2884's own palette
+	public static final RetroNpcData SHADOW_SPIDER = largeSpider(GIANT_SPIDER_BODY).build();
+
+	// Def 977: 2884's own palette
+	public static final RetroNpcData BLESSED_SPIDER = largeSpider(GIANT_SPIDER_BODY).build();
+
+	// Def 63
+	public static final RetroNpcData DEADLY_RED_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{10258}, new short[]{-1122})
+		.build();
+
+	// Def 62 (and the Nov-2005 Tai Bwo Wannai def 2491)
+	public static final RetroNpcData JUNGLE_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{10258}, new short[]{16945})
+		.build();
+
+	// Nov-2005 def 2492, the Tai Bwo Wannai spider that springs out of a bush.
+	public static final RetroNpcData JUNGLE_SPIDER_BUSH = largeSpider(GIANT_SPIDER_BODY)
+		.walkAnimationId(AnimationID.TBW_CLEANUP_SPIDER_SURPRISE_ATTACK)
+		.attackAnimationOverride(AnimationID.TBW_CLEANUP_SPIDER_SURPRISE_ATTACK,
+			AnimationID.SPIDER_UPDATE_TBW_BUSH_ATTACK)
+		.recolors(new short[]{10258}, new short[]{16945})
+		.build();
+
+	// Def 1478, the Monkey Madness jungle spider
+	public static final RetroNpcData MM_JUNGLE_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{8128, 10258}, new short[]{1835, 12589})
+		.scaleXZ(100)
+		.scaleY(100)
+		.build();
+
+	// Def 2035, Nov-2005 only, like the crypt spider. 2884 kept every face color
+	public static final RetroNpcData GIANT_CRYPT_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{10258, 8128, 127}, new short[]{17930, 13074, 16846})
+		.build();
+
+	// Def 64: 2885's own palette
+	public static final RetroNpcData ICE_SPIDER = largeSpider(ICE_SPIDER_BODY).build();
+
+	// Defs 134 and 1009: 2883's own palette
+	public static final RetroNpcData POISON_SPIDER = largeSpider(POISON_SPIDER_BODY).build();
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -1522,6 +1652,47 @@ public class RetroNpcMapping
 		// Underground Pass "Blessed Giant rat" NPCs
 		NAME_MAPPINGS.put("blessed giant rat", GIANT_RAT_DEFAULT);
 		registerMapping(GIANT_RAT_DEFAULT, NpcID.BLESSED_GIANTRAT, NpcID.BLESSED_GIANTRAT2);
+
+		// Small spiders. The post-2005 NPCs named plain "Spider" swap too, apart from the Hallowed
+		// Sepulchre ones in EXCLUDED_IDS. The variants are all named plain "Spider", so only their
+		// ids reach them
+		NAME_MAPPINGS.put("spider", SPIDER_DEFAULT);
+		registerMapping(SPIDER_DEFAULT,
+			NpcID.SPIDER, NpcID.SOS_PEST_SPIDER,
+			NpcID.SPIDER_NONCOMBAT, NpcID.SPIDER_THAT_SPAWNS_VAMPYRES, NpcID.SPIDER_NOCOMBAT2,
+			NpcID.AKD_SPIDER_NOOP
+		);
+		registerMapping(SPIDER_UPASS, NpcID.UPASS_LITTLE_SPIDER);
+		registerMapping(SPIDER_MM, NpcID.MM_WAREHOUSE_SPIDER, NpcID.MM_CUTSCENE_SPIDER);
+		registerMapping(SPIDER_RED, NpcID.LABORATORY_SPIDER, NpcID.LABORATORY_SPIDER_AGGRESSIVE);
+		NAME_MAPPINGS.put("crypt spider", CRYPT_SPIDER);
+		registerMapping(CRYPT_SPIDER, NpcID.BARROWS_SPIDER);
+
+		// Large spiders
+		NAME_MAPPINGS.put("giant spider", GIANT_SPIDER);
+		registerMapping(GIANT_SPIDER,
+			NpcID.GIANTSPIDER1, NpcID.GIANTSPIDER2, NpcID.SOS_PEST_GIANTSPIDER1
+		);
+		NAME_MAPPINGS.put("shadow spider", SHADOW_SPIDER);
+		registerMapping(SHADOW_SPIDER, NpcID.SHADOW_SPIDER);
+		NAME_MAPPINGS.put("blessed spider", BLESSED_SPIDER);
+		registerMapping(BLESSED_SPIDER, NpcID.BLESSED_SPIDER, NpcID.BLESSED_SPIDER_KALRAG);
+		NAME_MAPPINGS.put("deadly red spider", DEADLY_RED_SPIDER);
+		registerMapping(DEADLY_RED_SPIDER, NpcID.DEADLY_RED_SPIDER);
+		NAME_MAPPINGS.put("jungle spider", JUNGLE_SPIDER);
+		registerMapping(JUNGLE_SPIDER, NpcID.JUNGLE_SPIDER, NpcID.TBWCU_JUNGLE_SPIDER);
+		registerMapping(JUNGLE_SPIDER_BUSH, NpcID.TBWCU_SPIDER_APPEAR);
+		registerMapping(MM_JUNGLE_SPIDER, NpcID.MM_JUNGLE_SPIDER);
+		NAME_MAPPINGS.put("giant crypt spider", GIANT_CRYPT_SPIDER);
+		registerMapping(GIANT_CRYPT_SPIDER, NpcID.BARROWS_GIANTSPIDER);
+		NAME_MAPPINGS.put("ice spider", ICE_SPIDER);
+		registerMapping(ICE_SPIDER,
+			NpcID.ICE_SPIDER, NpcID.ICE_SPIDER_SHORTRANGE, NpcID.TAPO_ICE_SPIDER_SHORTRANGE
+		);
+		NAME_MAPPINGS.put("poison spider", POISON_SPIDER);
+		registerMapping(POISON_SPIDER,
+			NpcID.POISONSPIDER, NpcID.DUNGEONSPIDER, NpcID.WBR_CAVE_POISONSPIDER, NpcID.WBR_POISONSPIDER
+		);
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
