@@ -34,6 +34,9 @@ public class RetroAssetGeneratorTest
 	/** Skeleton ready and walk - 2 and 8 frames in both caches. */
 	private static final int[] SKELETON_SEQUENCES = {262, 259};
 
+	/** BEAR_WALK through BEAR_DEATH - every 2005 bear sequence, with equal frame counts in both caches. */
+	private static final int[] BEAR_SEQUENCES = {37, 38, 39, 40, 41, 42, 43, 44};
+
 	/**
 	 * Checks the runtime merge against the generator's own, over real cache geometry.
 	 * <p>
@@ -240,6 +243,22 @@ public class RetroAssetGeneratorTest
 	@Test
 	public void testRetroAndLiveClipPathsAgreeOnTheSkeleton() throws Exception
 	{
+		assertClipPathsAgree(SKELETON_SEQUENCES);
+	}
+
+	/**
+	 * The fact the Bears category rests on: the live bears moved to the BEAR_REWORK family, but the
+	 * 2005 sequences they left behind still hold the 2005 frames on the 2005 rig, so the cache path can
+	 * play them on mesh 2966.
+	 */
+	@Test
+	public void testRetroAndLiveClipPathsAgreeOnTheBear() throws Exception
+	{
+		assertClipPathsAgree(BEAR_SEQUENCES);
+	}
+
+	private static void assertClipPathsAgree(int[] sequenceIds) throws Exception
+	{
 		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
 		assumeTrue("live cache not present", liveDir != null);
 		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
@@ -255,7 +274,7 @@ public class RetroAssetGeneratorTest
 			Map<Integer, RetroSeqDefinition> sequences = RetroAssetGenerator.decodeRetroSequences(retro);
 			Map<Integer, RetroRig> rigs = new LinkedHashMap<>();
 
-			for (int sequenceId : SKELETON_SEQUENCES)
+			for (int sequenceId : sequenceIds)
 			{
 				RetroClip live = RetroAssetGenerator.buildClip(store, sequenceId, rigs);
 				RetroClip retroClip =
@@ -266,6 +285,18 @@ public class RetroAssetGeneratorTest
 
 				// The rig ids differ by construction - an embedded 2005 framemap has no id, so it
 				// gets a synthetic one - but the transforms they address are the same rig
+				RetroRig liveRig = rigs.get(live.getRigId());
+				RetroRig retroRig = rigs.get(retroClip.getRigId());
+				assertEquals("sequence " + sequenceId + " transform count",
+					liveRig.getTransformCount(), retroRig.getTransformCount());
+				for (int t = 0; t < liveRig.getTransformCount(); t++)
+				{
+					assertEquals("sequence " + sequenceId + " transform " + t + " type",
+						liveRig.getType(t), retroRig.getType(t));
+					assertArrayEquals("sequence " + sequenceId + " transform " + t + " groups",
+						liveRig.getGroups(t), retroRig.getGroups(t));
+				}
+
 				assertEquals("sequence " + sequenceId + " frame count",
 					live.getFrameCount(), retroClip.getFrameCount());
 

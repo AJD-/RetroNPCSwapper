@@ -17,19 +17,20 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Ghosts**
 - **Hellhounds**
 - **Giant Rats**
-- **Scorpions** — giant scorpions require *Use Converted 2005 Assets*
+- **Small Scorpions**
 - **Spiders**
+- **Bears**
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 
-- **Giants** — Fire, Ice and Moss Giants, under the same Giants toggle as the Hill Giants
-- **Dragons** — chromatic/metallic (up to steel) adults, the King Black Dragon, and baby dragons
-- **Demons** — lesser, greater and black demons
+- **Giants** — Fire, Ice and Moss Giants
+- **Dragons** — chromatic/metallic (up to steel), KBD
+- **Demons**
 - **Imps**
 - **Cyclopes**
 - **Guards**
 - **Cows**
-- **Scorpions** — large/king scorpions
+- **Scorpions**
 - **Elves** — (Attackable only)
 
 ![config](img/retronpcswapperconfig.png)

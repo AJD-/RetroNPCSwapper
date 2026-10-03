@@ -2198,6 +2198,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapGiantRats must default to true", config.swapGiantRats());
 		assertTrue("swapScorpions must default to true", config.swapScorpions());
 		assertTrue("swapSpiders must default to true", config.swapSpiders());
+		assertTrue("swapBears must default to true", config.swapBears());
 
 		// The pipeline toggle carries the bundle-only categories, so its default decides whether
 		// they can render at all - see isCategoryEnabled
@@ -2652,6 +2653,85 @@ public class RetroNpcCategoryTest
 			assertFalse(spider.isDeathAnimation(retro));
 			assertFalse(spider.isMiscAnimation(retro));
 		}
+	}
+
+	/**
+	 * Every 2005 bear is mesh 2966 on sequences 37-44, all preserved - a cache-path category. The
+	 * variants differ only by recolour and size.
+	 */
+	@Test
+	public void testBears()
+	{
+		short[] base = {3491};
+		short[] cubBase = {3491, 3377};
+		short[] cubReplace = {3486, 3373};
+
+		// {id, name, find, replace, scale}
+		Object[][] bears = {
+			{NpcID.BROWNBEAR, "Grizzly bear", null, null, 128},
+			{NpcID.WBR_BEAR, "Grizzly bear", null, null, 128},
+			{99993, "Grizzly bear", null, null, 128},
+			{NpcID.DARKBEAR, "Black bear", base, new short[]{12}, 128},
+			{NpcID.REGICIDE_DARKBEAR, "Grizzly bear", base, new short[]{520}, 128},
+			{NpcID.REGICIDE_DARKBEAR_CUB1, "Grizzly bear cub", base, new short[]{520}, 70},
+			{NpcID.REGICIDE_DARKBEAR_CUB2, "Grizzly bear cub", base, new short[]{520}, 80},
+			{NpcID.BROWNBEAR_CUB_1, "Bear Cub", cubBase, cubReplace, 96},
+			{NpcID.PRIF_GEE, "Bear Cub", cubBase, cubReplace, 96},
+			{NpcID.BROWNBEAR_CUB_2, "Bear Cub", cubBase, cubReplace, 64}
+		};
+		for (Object[] c : bears)
+		{
+			int id = (Integer) c[0];
+			RetroNpcData bear = RetroNpcMapping.get(id, (String) c[1]);
+			assertNotNull("Bear " + id + " must be mapped", bear);
+			assertEquals(RetroNpcCategory.BEARS, bear.getCategory());
+			assertArrayEquals(new int[]{2966}, bear.getRetroModelIds());
+			assertEquals(c[4], bear.getScaleXZ());
+			assertEquals(c[4], bear.getScaleY());
+			if (c[2] == null)
+			{
+				assertFalse("Bear " + id + " must keep its mesh's own palette", bear.hasRecolors());
+			}
+			else
+			{
+				assertArrayEquals("Bear " + id + " recolour", (short[]) c[2], bear.getOriginalColors());
+				assertArrayEquals("Bear " + id + " recolour", (short[]) c[3], bear.getReplacementColors());
+			}
+
+			assertFalse(bear.hasStaticIdle());
+			assertEquals(AnimationID.BEAR_READY, bear.getIdleAnimationId());
+			assertEquals(AnimationID.BEAR_WALK, bear.getWalkAnimationId());
+			assertEquals(AnimationID.BEAR_ATTACK, bear.getAttackAnimationId());
+			assertEquals(AnimationID.BEAR_BLOCK, bear.getDefendAnimationId());
+			assertEquals(AnimationID.BEAR_DEATH, bear.getDeathAnimationId());
+			assertEquals(AnimationID.BEAR_READY, bear.getMiscAnimationId());
+
+			// The modern rig is intercepted, the surviving 2005 sequences never are
+			assertTrue(bear.isAttackAnimation(AnimationID.BEAR_REWORK_ATTACK));
+			assertTrue(bear.isAttackAnimation(AnimationID.BEAR_REWORK_CUB_ATTACK));
+			assertTrue(bear.isDefendAnimation(AnimationID.BEAR_REWORK_DEFEND));
+			assertTrue(bear.isDefendAnimation(AnimationID.BEAR_REWORK_CUB_DEFEND));
+			assertTrue(bear.isDeathAnimation(AnimationID.BEAR_REWORK_DEATH));
+			assertTrue(bear.isDeathAnimation(AnimationID.BEAR_REWORK_CUB_DEATH));
+			assertTrue(bear.isMiscAnimation(AnimationID.BEAR_REWORK_READY_GRIZZLY));
+			assertTrue(bear.isMiscAnimation(AnimationID.BEAR_REWORK_READY_CUB_GRIZZLY));
+			for (int retro = AnimationID.BEAR_WALK; retro <= AnimationID.BEAR_DEATH; retro++)
+			{
+				assertFalse(bear.isAttackAnimation(retro));
+				assertFalse(bear.isDefendAnimation(retro));
+				assertFalse(bear.isDeathAnimation(retro));
+				assertFalse(bear.isMiscAnimation(retro));
+			}
+		}
+
+		// Cache path: the mesh and rig both survive
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.BEARS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.BEARS));
+
+		// The bears outside the list are left alone
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_ANGER_BEAR, "Angry bear"));
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_BEAR, "Angry bear"));
+		assertNull(RetroNpcMapping.get(NpcID.ARCEUUS_REANIMATED_BEAR, "Reanimated bear"));
 	}
 
 	/**
