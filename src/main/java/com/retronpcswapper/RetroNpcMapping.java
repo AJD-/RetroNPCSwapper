@@ -378,6 +378,20 @@ public class RetroNpcMapping
 		AnimationID.SPIDER_UPDATE_TELEPORT_REVERSE
 	);
 
+	// BEAR_* (37-44) are the surviving 2005 seqs
+	public static final Set<Integer> BEAR_MODERN_ATTACKS = Set.of(
+		AnimationID.BEAR_REWORK_ATTACK, AnimationID.BEAR_REWORK_CUB_ATTACK
+	);
+	public static final Set<Integer> BEAR_MODERN_DEFENDS = Set.of(
+		AnimationID.BEAR_REWORK_DEFEND, AnimationID.BEAR_REWORK_CUB_DEFEND
+	);
+	public static final Set<Integer> BEAR_MODERN_DEATHS = Set.of(
+		AnimationID.BEAR_REWORK_DEATH, AnimationID.BEAR_REWORK_CUB_DEATH
+	);
+	public static final Set<Integer> BEAR_MODERN_MISC = Set.of(
+		AnimationID.BEAR_REWORK_READY_GRIZZLY, AnimationID.BEAR_REWORK_READY_CUB_GRIZZLY
+	);
+
 	// Pre-instantiated archetypes for 2005 cache-backed assets
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
@@ -1194,6 +1208,66 @@ public class RetroNpcMapping
 	// Defs 134 and 1009: 2883's own palette
 	public static final RetroNpcData POISON_SPIDER = largeSpider(POISON_SPIDER_BODY).build();
 
+	// Every 2005 bear is mesh 2966, and it survives in the live cache with every face color.
+	// The live framemap 275 and the frames behind 37-44 are identical to 2005's. The opcode 40 pairs
+	// are defined here rather than in npc-mappings.json
+	private static final int BEAR_BODY = 2966;
+	private static final short BEAR_BASE = 3491;
+
+	private static RetroNpcData.Builder bear()
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.BEARS)
+			.retroModelIds(new int[]{BEAR_BODY})
+			.idleAnimationId(AnimationID.BEAR_READY)
+			.walkAnimationId(AnimationID.BEAR_WALK)
+			.attackAnimationId(AnimationID.BEAR_ATTACK)
+			.defendAnimationId(AnimationID.BEAR_BLOCK)
+			.deathAnimationId(AnimationID.BEAR_DEATH)
+			.miscAnimationId(AnimationID.BEAR_READY)
+			.modernAttackAnims(BEAR_MODERN_ATTACKS)
+			.modernDefendAnims(BEAR_MODERN_DEFENDS)
+			.modernDeathAnims(BEAR_MODERN_DEATHS)
+			.modernMiscAnims(BEAR_MODERN_MISC);
+	}
+
+	// Def 105, the plain brown "Bear". Live BROWNBEAR is its descendant, renamed Grizzly bear
+	public static final RetroNpcData BEAR_BROWN = bear().build();
+
+	// Def 106
+	public static final RetroNpcData BEAR_BLACK = bear()
+		.recolors(new short[]{BEAR_BASE}, new short[]{12})
+		.build();
+
+	// Def 1195, the Regicide grizzly
+	public static final RetroNpcData GRIZZLY_BEAR = bear()
+		.recolors(new short[]{BEAR_BASE}, new short[]{520})
+		.build();
+
+	// Defs 1196 and 1197, paired with the two live cubs by id order
+	public static final RetroNpcData GRIZZLY_BEAR_CUB_1 = bear()
+		.recolors(new short[]{BEAR_BASE}, new short[]{520})
+		.scaleXZ(70)
+		.scaleY(70)
+		.build();
+	public static final RetroNpcData GRIZZLY_BEAR_CUB_2 = bear()
+		.recolors(new short[]{BEAR_BASE}, new short[]{520})
+		.scaleXZ(80)
+		.scaleY(80)
+		.build();
+
+	// Defs 1326 and 1327
+	public static final RetroNpcData BEAR_CUB_1 = bear()
+		.recolors(new short[]{BEAR_BASE, 3377}, new short[]{3486, 3373})
+		.scaleXZ(96)
+		.scaleY(96)
+		.build();
+	public static final RetroNpcData BEAR_CUB_2 = bear()
+		.recolors(new short[]{BEAR_BASE, 3377}, new short[]{3486, 3373})
+		.scaleXZ(64)
+		.scaleY(64)
+		.build();
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -1827,6 +1901,19 @@ public class RetroNpcMapping
 		registerMapping(POISON_SPIDER,
 			NpcID.POISONSPIDER, NpcID.DUNGEONSPIDER, NpcID.WBR_CAVE_POISONSPIDER, NpcID.WBR_POISONSPIDER
 		);
+
+		// Bears
+		NAME_MAPPINGS.put("grizzly bear", BEAR_BROWN);
+		registerMapping(BEAR_BROWN, NpcID.BROWNBEAR, NpcID.WBR_BEAR);
+		NAME_MAPPINGS.put("black bear", BEAR_BLACK);
+		registerMapping(BEAR_BLACK, NpcID.DARKBEAR);
+		registerMapping(GRIZZLY_BEAR, NpcID.REGICIDE_DARKBEAR);
+		NAME_MAPPINGS.put("grizzly bear cub", GRIZZLY_BEAR_CUB_1);
+		registerMapping(GRIZZLY_BEAR_CUB_1, NpcID.REGICIDE_DARKBEAR_CUB1);
+		registerMapping(GRIZZLY_BEAR_CUB_2, NpcID.REGICIDE_DARKBEAR_CUB2);
+		NAME_MAPPINGS.put("bear cub", BEAR_CUB_1);
+		registerMapping(BEAR_CUB_1, NpcID.BROWNBEAR_CUB_1, NpcID.PRIF_GEE);
+		registerMapping(BEAR_CUB_2, NpcID.BROWNBEAR_CUB_2);
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)

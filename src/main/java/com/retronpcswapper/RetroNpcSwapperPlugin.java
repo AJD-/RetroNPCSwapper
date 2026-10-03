@@ -664,6 +664,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 				// Meshes 2883-2885 and 2996 and sequences 142-149 and 279-282 all survive intact, so
 				// the cache path draws them
 				return config.swapSpiders();
+			case BEARS:
+				// Mesh 2966 and sequences 37-44 survive intact, so the cache path draws them
+				return config.swapBears();
 			case GOBLINS:
 				return config.swapGoblins();
 			case SKELETONS:
