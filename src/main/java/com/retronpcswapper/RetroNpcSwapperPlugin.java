@@ -463,8 +463,14 @@ public class RetroNpcSwapperPlugin extends Plugin
 			}
 			else
 			{
-				partnerOutlines.forget();
-				clientThread.invokeLater(this::onPartnerOutlinesChanged);
+				// Queued rather than done here: Custom NPC Models hands the outlines back on the
+				// client thread after its shutDown, and a sync already queued that saw it gone first
+				// would stash its false values
+				clientThread.invokeLater(() ->
+				{
+					partnerOutlines.forget();
+					onPartnerOutlinesChanged();
+				});
 			}
 		}
 		else if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin()))
@@ -1160,6 +1166,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void finishHandshake()
 	{
+		log.debug("Handshake done; Custom NPC Models {} the outlines",
+			partnerOutlines.isOwning() ? "draws" : "does not draw");
 		partnerOutlines.setHandshakeDone();
 		publishOutlines(true);
 		syncInteractHighlight();
