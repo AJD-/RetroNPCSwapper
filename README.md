@@ -143,9 +143,9 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
 
 The **Custom NPC Models** plugin runs alongside this plugin. Any NPC it has a custom model for is left to it
 entirely: this plugin swaps neither that NPC's model nor its animations. Every other NPC is swapped
-as usual. Turn on the `Fix Interact Highlight outlines` option in only one of the two plugins. Each turns
-`Interact Highlight`'s NPC outlines off and restores them on its own, so with both on, those settings can
-be restored wrong.
+as usual. The `Fix Interact Highlight outlines` option can be on in either plugin, or both: only one of the
+two draws `Interact Highlight`'s NPC outlines, each around whichever plugin's model is on screen. With a
+version of Custom NPC Models from before this was shared, turn it on in only one of the two.
 </details>
 
 ### If you'd like to report a bug or request a feature, please create an issue [here](https://github.com/AJD-/RetroNPCSwapper/issues)
