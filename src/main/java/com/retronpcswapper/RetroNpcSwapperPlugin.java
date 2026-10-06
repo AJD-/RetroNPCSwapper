@@ -336,6 +336,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			final String changedKey = event.getKey();
 			clientThread.invoke(() ->
 			{
+				// First, so Custom NPC Models turns its fix off before we post that we have let go
+				eventBus.post(ModelSwapProtocol.optOutMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
+
 				// optOut() has to clear the suppression before the write below, or
 				// the ConfigChanged it posts comes back through syncInteractHighlight() into
 				// restore(), which would put the stash back over the value the user just chose.
@@ -379,6 +382,20 @@ public class RetroNpcSwapperPlugin extends Plugin
 			// Recorded straight away, so a decision made after this sees it; acted on later
 			partnerOutlines.accept(outlines);
 			clientThread.invokeLater(this::onPartnerOutlinesChanged);
+			return;
+		}
+
+		if (ModelSwapProtocol.isOptOut(event, ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS))
+		{
+			// Custom NPC Models was drawing the outlines and the user turned Interact Highlight's back
+			// on. Written straight away, so the fix is off here before it posts that it has let go
+			// and this plugin would otherwise take the outlines over again.
+			if (config.overrideInteractHighlight())
+			{
+				log.debug("Interact Highlight NPC outlines re-enabled by the user; turning the fix off");
+				configManager.setConfiguration(RetroNpcConfig.GROUP,
+					RetroNpcConfig.OVERRIDE_INTERACT_HIGHLIGHT, false);
+			}
 			return;
 		}
 
@@ -1070,9 +1087,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void syncInteractHighlight()
 	{
-		boolean takeOver = config.overrideInteractHighlight()
-			&& wrapper != null
-			&& interactHighlight.isInteractHighlightActive();
+		boolean takeOver = shouldTakeOver(
+			config.overrideInteractHighlight() && wrapper != null && interactHighlight.isInteractHighlightActive(),
+			outlineTakeover, partnerOutlines.isHandshakeDone(), partnerOutlines.isOwning());
 
 		if (takeOver == outlineTakeover)
 		{
@@ -1094,6 +1111,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Last, so a failure to write config does not leave us recorded as having taken over
 		outlineTakeover = takeOver;
 		publishOutlines(false);
+	}
+
+	/**
+	 * Whether to draw the outlines, given whether they are {@code wanted} here at all.
+	 *
+	 * <p>Only one of this plugin and Custom NPC Models may: both would turn Interact Highlight's
+	 * settings off and stash the other's false as the user's choice. Whichever took them first
+	 * keeps them until it lets go, and neither takes them before its handshake, when it cannot yet
+	 * know whether the other already has.
+	 */
+	static boolean shouldTakeOver(boolean wanted, boolean takenOver, boolean handshakeDone, boolean partnerOwning)
+	{
+		return wanted && handshakeDone && (takenOver || !partnerOwning);
 	}
 
 	/**
