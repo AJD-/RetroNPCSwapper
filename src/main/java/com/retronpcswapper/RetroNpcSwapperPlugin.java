@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import javax.inject.Inject;
 
 import com.retronpcswapper.inject.ClasspathAssetSource;
@@ -46,6 +47,7 @@ import com.retronpcswapper.inject.RetroAssetSource;
 import com.retronpcswapper.compatibility.InteractHighlightCompat;
 import com.retronpcswapper.compatibility.InteractTargetTracker;
 import com.retronpcswapper.compatibility.ModelSwapProtocol;
+import com.retronpcswapper.compatibility.PartnerOutlines;
 import com.retronpcswapper.compatibility.RendererChain;
 import com.retronpcswapper.compatibility.RetroInteractHighlightOverlay;
 import com.retronpcswapper.compatibility.RetroNpcOutliner;
@@ -137,6 +139,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Inject
 	private EventBus eventBus;
 
+	@Inject
+	private PartnerOutlines partnerOutlines;
+
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
 
@@ -153,6 +158,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	private static final String HD_PLUGIN_CLASS = "rs117.hd.HdPlugin";
 
+	/** Another Hub plugin, so recognized by class name alone like 117 HD. */
+	private static final String CUSTOM_PLUGIN_CLASS = "com.customnpcmodels.CustomNpcModelsPlugin";
+
 	// Our decorator, while it owns the client's draw callbacks slot
 	private RetroDrawCallbacks wrapper;
 
@@ -164,6 +172,16 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	// Whether we are currently drawing Interact Highlight's NPC outlines in its place
 	private boolean outlineTakeover;
+
+	// What Custom NPC Models was last told about outlineTakeover, or null when it has been told
+	// nothing this start
+	private Boolean postedOutlines;
+
+	// Handed to Custom NPC Models, which calls it on the client thread while it draws the outlines.
+	// The active check keeps a stopped plugin from posing for it before it hears the poser was
+	// withdrawn, and a claimed NPC is drawn by Custom NPC Models, not us.
+	private final Function<NPC, Model> outlinePoser =
+		npc -> this.active && !claimedByCustom.contains(npc.getId()) ? modelCache.pose(npc) : null;
 
 	/**
 	 * The in-flight bundle read, so shutDown can cancel it.
@@ -269,6 +287,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			// detach() stands the Interact Highlight takeover down as part of dropping the wrapper
 			detach();
+			withdrawOutlines();
 			resetAllModifiedNpcs();
 			modelCache.clear();
 		});
@@ -347,6 +366,22 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onPluginMessage(PluginMessage event)
 	{
+		if (ModelSwapProtocol.isSyncReq(event, ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS))
+		{
+			// Custom NPC Models has just started and knows nothing of our outlines state yet
+			clientThread.invoke(() -> publishOutlines(true));
+			return;
+		}
+
+		ModelSwapProtocol.Outlines outlines = ModelSwapProtocol.readOutlines(event, ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS);
+		if (outlines != null)
+		{
+			// Recorded straight away, so a decision made after this sees it; acted on later
+			partnerOutlines.accept(outlines);
+			clientThread.invokeLater(this::onPartnerOutlinesChanged);
+			return;
+		}
+
 		Set<Integer> claims = ModelSwapProtocol.readClaims(event);
 		if (claims == null || !active || claims.equals(claimedByCustom))
 		{
@@ -394,7 +429,28 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onPluginChanged(PluginChanged event)
 	{
-		if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin()))
+		if (event.getPlugin() == this && event.isLoaded())
+		{
+			// Posted from here as well as startUp, which runs before the event bus has registered
+			// us, so Custom NPC Models' answer is heard. The handshake is finished behind that
+			// answer on the client thread queue, so the takeover decision never races it.
+			eventBus.post(ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
+			clientThread.invokeLater(this::finishHandshake);
+		}
+		else if (isCustomPlugin(event.getPlugin()))
+		{
+			if (event.isLoaded())
+			{
+				// Its sync request goes out before it is listening, so the answer is sent from here too
+				clientThread.invoke(() -> publishOutlines(true));
+			}
+			else
+			{
+				partnerOutlines.forget();
+				clientThread.invokeLater(this::onPartnerOutlinesChanged);
+			}
+		}
+		else if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin()))
 		{
 			// attach() declines on its own when no supported renderer is holding the slot. 117 HD
 			// installs its renderer asynchronously once GL is up, so the per-tick guard is what
@@ -424,6 +480,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 			interactHighlight.restoreStaleStash();
 			syncInteractHighlight();
+			// syncInteractHighlight() sees no change when the new profile is not taken over either,
+			// but Custom NPC Models may still think we draw the outlines
+			publishOutlines(false);
 		});
 	}
 
@@ -981,6 +1040,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 		return plugin != null && HD_PLUGIN_CLASS.equals(plugin.getClass().getName());
 	}
 
+	private static boolean isCustomPlugin(Plugin plugin)
+	{
+		return plugin != null && CUSTOM_PLUGIN_CLASS.equals(plugin.getClass().getName());
+	}
+
 	private Plugin findGpuPlugin()
 	{
 		if (gpuPlugin == null)
@@ -1029,6 +1093,53 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		// Last, so a failure to write config does not leave us recorded as having taken over
 		outlineTakeover = takeOver;
+		publishOutlines(false);
+	}
+
+	/**
+	 * Tells Custom NPC Models whether we draw the outlines, and how to pose our NPCs. Posted only
+	 * when that changes, unless {@code always}. Must be called on the client thread.
+	 */
+	private void publishOutlines(boolean always)
+	{
+		if (!always && postedOutlines != null && postedOutlines == outlineTakeover)
+		{
+			return;
+		}
+
+		postedOutlines = outlineTakeover;
+		eventBus.post(ModelSwapProtocol.outlinesMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER,
+			outlineTakeover, outlinePoser));
+	}
+
+	/**
+	 * Tells Custom NPC Models we have let go of the outlines and the poser, as the plugin stops.
+	 * Called after detach() has handed the outlines back, so Custom NPC Models stashes Interact
+	 * Highlight's restored settings rather than our false ones if it takes them over.
+	 */
+	private void withdrawOutlines()
+	{
+		postedOutlines = null;
+		eventBus.post(ModelSwapProtocol.outlinesMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER, false, null));
+		partnerOutlines.reset();
+	}
+
+	/**
+	 * Finishes the handshake: Custom NPC Models has answered the sync request by now if it is
+	 * running, so deciding whether to take the outlines over can no longer race its answer.
+	 */
+	private void finishHandshake()
+	{
+		partnerOutlines.setHandshakeDone();
+		publishOutlines(true);
+		syncInteractHighlight();
+	}
+
+	private void onPartnerOutlinesChanged()
+	{
+		// The carrier may still hold a model Custom NPC Models posed
+		outliner.clear();
+		syncInteractHighlight();
 	}
 
 	/**

@@ -50,6 +50,9 @@ import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
  *
  * <p>That object is never activated. It is a model carrier handed straight to the outline renderer,
  * never registered with the client, so it adds nothing to the scene and no clickbox of its own.
+ *
+ * <p>An NPC Custom NPC Models swaps is outlined around its custom model the same way, posed by that
+ * plugin through {@link PartnerOutlines}, so only one of the two plugins needs to draw the outlines.
  */
 @Singleton
 public class RetroNpcOutliner
@@ -63,15 +66,18 @@ public class RetroNpcOutliner
 	@Inject
 	private RetroModelCache modelCache;
 
+	@Inject
+	private PartnerOutlines partnerOutlines;
+
 	// Built lazily and reused - creating one per frame would churn for no reason
 	private RuneLiteObject carrier;
 
 	/**
-	 * Outlines the retro model an NPC is drawn with, matching what
+	 * Outlines the retro or custom model an NPC is drawn with, matching what
 	 * {@link ModelOutlineRenderer#drawOutline(net.runelite.api.Actor, int, Color, int)} would
 	 * produce for the vanilla one.
 	 *
-	 * @return false when no retro geometry is available, leaving the caller to fall back to the
+	 * @return false when neither plugin swaps the NPC, leaving the caller to fall back to the
 	 * vanilla outline
 	 */
 	boolean drawOutline(NPC npc, int outlineWidth, Color color, int feather)
@@ -84,6 +90,11 @@ public class RetroNpcOutliner
 		}
 
 		Model posed = modelCache.pose(npc);
+		if (posed == null)
+		{
+			// An NPC Custom NPC Models swaps, which this plugin leaves alone
+			posed = partnerOutlines.pose(npc);
+		}
 		if (posed == null)
 		{
 			return false;
@@ -116,7 +127,8 @@ public class RetroNpcOutliner
 	}
 
 	/**
-	 * Drops the scratch object, releasing its reference to a posed model.
+	 * Drops the scratch object, releasing its reference to a posed model, which may be Custom NPC
+	 * Models'.
 	 */
 	public void clear()
 	{
