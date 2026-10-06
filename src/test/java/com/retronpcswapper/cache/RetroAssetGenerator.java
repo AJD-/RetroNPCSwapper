@@ -193,6 +193,30 @@ public class RetroAssetGenerator
 			new int[]{209, 251, 292, 170, 256, 325},
 			new int[]{808, 819, 836, 711, 422, 423, 424,
 				422, 423, 424}),
+		// Elves are 2005 human kit, the same case as the guards: ten of the seventeen parts survive in
+		// the live cache vertex for vertex but were re-bound (4014: [1..33] -> [17..28]), and 4020,
+		// 4022, 4023, 4027, 4028, 4030 and 4031 were edited in live as well. Everything comes from
+		// the Feb-2005 cache. The Nov-2005 build has the Mourning's End elves too, but it re-authored
+		// the human rig, so its meshes would need clips of their own under the ids the guards own.
+		new Spec("Elves", Source.RETRO, Source.RETRO,
+			// Definitions 1183 (bow) and 1184 (pike) share the first four; 1202
+			// Arianwyn, 1679 Eluned and 1680 Islwyn make up the rest. 4044 is the bow, bound to the
+			// one hand group 33; 4033 is the pike, bound to 34 like the guard's sword. 4027 is
+			// Arianwyn's cloak, not a held item - it spans eight groups out to 88.
+			new int[]{4014, 4015, 4018, 4020, 4021, 4022, 4023, 4024, 4025, 4027,
+				4028, 4029, 4030, 4031, 4032, 4033, 4044},
+			// Both 2005 warriors stand in 813. Whatever the server sends in combat plays straight
+			// through, so each weapon brings its whole family:
+			//
+			//   426      bow
+			//   428-431  spear spike, lunge, block, defence - the pike
+			//   435-440  scythe block, defence, slash, lunge, spin, sweep - the halberd family the
+			//            live polearm elves are built around
+			//   424-425  unarmed block, for everyone who is not holding a pike
+			new int[]{808, 813, 819, 836, 424, 425,
+				426,
+				428, 429, 430, 431,
+				435, 436, 437, 438, 439, 440}),
 		// The large scorpion's 2005 mesh 2967 is gone from the live cache (0% vertex overlap). Its
 		// 2005 sequences 244-248 (frame file 44) have been overwritten as well
 		new Spec("Scorpions", Source.RETRO, Source.RETRO, new int[]{2967},
@@ -612,8 +636,9 @@ public class RetroAssetGenerator
 	}
 
 	/**
-	 * The merge as it stood before it moved to {@code RetroMeshMerger}, kept so
-	 * {@code RetroAssetGeneratorTest} can check the new one against it over real cache geometry.
+	 * The merge as it stood before it moved to {@code RetroMeshMerger}: a plain concatenation, each
+	 * part keeping its own vertices. Kept as the reference {@code RetroAssetGeneratorTest} checks
+	 * the runtime weld against over real cache geometry - same faces, same positions, fewer vertices.
 	 */
 	static RetroMesh legacyToMesh(int meshId, List<ModelDefinition> parts)
 	{

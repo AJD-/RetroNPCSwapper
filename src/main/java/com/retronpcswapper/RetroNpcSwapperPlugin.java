@@ -716,8 +716,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 		log.debug("INTERCEPTED NPC: name='{}', id={}, index={}, category={}",
 			npc.getName(), npc.getId(), npc.getIndex(), data.getCategory());
 
-		// Apply idle animation override from 2005 cache definition
-		if (data.getIdleAnimationId() != -1)
+		// Apply idle animation override from 2005 cache definition. A static idle clears the modern
+		// one outright, since it is keyed to a framemap the retro mesh is not rigged to
+		if (data.getIdleAnimationId() != -1 || data.hasStaticIdle())
 		{
 			log.debug("SWAPPING IDLE ANIMATION for NPC '{}': orig={} -> retro={}",
 				npc.getName(), npc.getIdlePoseAnimation(), data.getIdleAnimationId());
@@ -786,6 +787,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case SMALL_SCORPIONS:
 				// Mesh 2968 and sequences 269-273 survive intact, so the cache path draws it
 				return config.swapScorpions();
+			case SPIDERS:
+				// Meshes 2883-2885 and 2996 and sequences 142-149 and 279-282 all survive intact, so
+				// the cache path draws them
+				return config.swapSpiders();
+			case BEARS:
+				// Mesh 2966 and sequences 37-44 survive intact, so the cache path draws them
+				return config.swapBears();
 			case GOBLINS:
 				return config.swapGoblins();
 			case SKELETONS:
@@ -813,6 +821,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 				// were re-bound to a different rig, so both the geometry and the animation have to
 				// come from the bundle
 				return config.swapGuards() && injectionEnabled();
+			case ELVES:
+				// The same 2005 human kit as the guards: seven of the seventeen parts were edited in
+				// live and every one was re-bound to the live rig, so only the bundle can draw them
+				return config.swapElves() && injectionEnabled();
 			case GHOSTS:
 				return config.swapGhosts();
 			case ADULT_DRAGONS:

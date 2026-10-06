@@ -3,9 +3,12 @@ package com.retronpcswapper.cache;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.retronpcswapper.inject.*;
 import net.runelite.cache.definitions.ModelDefinition;
@@ -31,13 +34,21 @@ public class RetroAssetGeneratorTest
 	/** Skeleton ready and walk - 2 and 8 frames in both caches. */
 	private static final int[] SKELETON_SEQUENCES = {262, 259};
 
+	/** BEAR_WALK through BEAR_DEATH - every 2005 bear sequence, with equal frame counts in both caches. */
+	private static final int[] BEAR_SEQUENCES = {37, 38, 39, 40, 41, 42, 43, 44};
+
 	/**
 	 * Checks the runtime merge against the generator's own, over real cache geometry.
-	 *
-	 * <p>The merge used to run here, storing the result under the first part's model id. That could
+	 * <p>
+	 * The merge used to run here, storing the result under the first part's model id. That could
 	 * not express an NPC family sharing a body mesh, so the bundle now stores parts individually and
-	 * {@link RetroMeshMerger} joins them at spawn. This is the equivalence that makes the move safe:
-	 * the same parts, through the old code and the new, have to produce the same mesh.
+	 * {@link RetroMeshMerger} joins them at spawn.
+	 * <p>
+	 * The two are no longer identical: the old merge concatenated the parts, and the
+	 * runtime one welds coincident vertices the way the client does, so seams stretch rather than
+	 * part. The concatenation stays as the reference the weld is checked against: the same faces
+	 * with the same attributes, every corner at the same position, and exactly one vertex per
+	 * distinct position the faces reach.
 	 */
 	@Test
 	public void testTheRuntimeMergeMatchesTheGeneratorsOwn() throws Exception
@@ -80,17 +91,8 @@ public class RetroAssetGeneratorTest
 		RetroMesh actual = RetroMeshMerger.merge(modelIds[0], parts);
 
 		String where = "merge of " + Arrays.toString(modelIds);
-		assertEquals(where + " vertex count", expected.getVerticesCount(), actual.getVerticesCount());
 		assertEquals(where + " face count", expected.getFaceCount(), actual.getFaceCount());
 		assertEquals(where + " priority", expected.getPriority(), actual.getPriority());
-
-		assertArrayEquals(where + " x", expected.getVerticesX(), actual.getVerticesX(), 0f);
-		assertArrayEquals(where + " y", expected.getVerticesY(), actual.getVerticesY(), 0f);
-		assertArrayEquals(where + " z", expected.getVerticesZ(), actual.getVerticesZ(), 0f);
-
-		assertArrayEquals(where + " i1", expected.getFaceIndices1(), actual.getFaceIndices1());
-		assertArrayEquals(where + " i2", expected.getFaceIndices2(), actual.getFaceIndices2());
-		assertArrayEquals(where + " i3", expected.getFaceIndices3(), actual.getFaceIndices3());
 
 		assertArrayEquals(where + " colors", expected.getFaceColors(), actual.getFaceColors());
 		assertArrayEquals(where + " render types",
@@ -101,13 +103,62 @@ public class RetroAssetGeneratorTest
 			expected.getFaceRenderPriorities(), actual.getFaceRenderPriorities());
 		assertArrayEquals(where + " textures", expected.getFaceTextures(), actual.getFaceTextures());
 
-		int[][] expectedGroups = expected.getVertexGroups();
-		int[][] actualGroups = actual.getVertexGroups();
-		assertEquals(where + " group count", expectedGroups.length, actualGroups.length);
-		for (int group = 0; group < expectedGroups.length; group++)
+		// Every corner of every face has to land where the concatenation put it, whichever merged
+		// vertex now carries that position. And the vertex there has to carry the bone of the corner
+		// that reached the position first - the body's, at a seam - which is the whole reason for
+		// welding: a limb's faces stretch back to the body instead of parting from it.
+		int[] expectedGroupOf = groupOfVertex(expected);
+		int[] actualGroupOf = groupOfVertex(actual);
+		Map<List<Float>, Integer> firstGroupAt = new HashMap<>();
+		Set<List<Float>> positions = new HashSet<>();
+		for (int face = 0; face < expected.getFaceCount(); face++)
 		{
-			assertArrayEquals(where + " group " + group, expectedGroups[group], actualGroups[group]);
+			int[][] corners = {
+				{expected.getFaceIndices1()[face], actual.getFaceIndices1()[face]},
+				{expected.getFaceIndices2()[face], actual.getFaceIndices2()[face]},
+				{expected.getFaceIndices3()[face], actual.getFaceIndices3()[face]},
+			};
+			for (int corner = 0; corner < corners.length; corner++)
+			{
+				List<Float> want = position(expected, corners[corner][0]);
+				assertEquals(where + " face " + face + " corner " + (corner + 1),
+					want, position(actual, corners[corner][1]));
+				positions.add(want);
+
+				firstGroupAt.putIfAbsent(want, expectedGroupOf[corners[corner][0]]);
+				assertEquals(where + " face " + face + " corner " + (corner + 1) + " group",
+					(int) firstGroupAt.get(want), actualGroupOf[corners[corner][1]]);
+			}
 		}
+
+		// One vertex per distinct position: nothing left unwelded, and nothing kept that no face uses
+		assertEquals(where + " welded vertex count", positions.size(), actual.getVerticesCount());
+		assertTrue(where + " should weld at least one seam",
+			actual.getVerticesCount() < expected.getVerticesCount());
+		assertEquals(where + " group count",
+			expected.getVertexGroups().length, actual.getVertexGroups().length);
+	}
+
+	/** Per vertex, the group it is bound to, or -1 for none. */
+	private static int[] groupOfVertex(RetroMesh mesh)
+	{
+		int[] groupOf = new int[mesh.getVerticesCount()];
+		Arrays.fill(groupOf, -1);
+		int[][] groups = mesh.getVertexGroups();
+		for (int group = 0; group < groups.length; group++)
+		{
+			for (int vertex : groups[group])
+			{
+				groupOf[vertex] = group;
+			}
+		}
+		return groupOf;
+	}
+
+	private static List<Float> position(RetroMesh mesh, int vertex)
+	{
+		return Arrays.asList(mesh.getVerticesX()[vertex], mesh.getVerticesY()[vertex],
+			mesh.getVerticesZ()[vertex]);
 	}
 
 	/**
@@ -192,6 +243,22 @@ public class RetroAssetGeneratorTest
 	@Test
 	public void testRetroAndLiveClipPathsAgreeOnTheSkeleton() throws Exception
 	{
+		assertClipPathsAgree(SKELETON_SEQUENCES);
+	}
+
+	/**
+	 * The fact the Bears category rests on: the live bears moved to the BEAR_REWORK family, but the
+	 * 2005 sequences they left behind still hold the 2005 frames on the 2005 rig, so the cache path can
+	 * play them on mesh 2966.
+	 */
+	@Test
+	public void testRetroAndLiveClipPathsAgreeOnTheBear() throws Exception
+	{
+		assertClipPathsAgree(BEAR_SEQUENCES);
+	}
+
+	private static void assertClipPathsAgree(int[] sequenceIds) throws Exception
+	{
 		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
 		assumeTrue("live cache not present", liveDir != null);
 		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
@@ -207,7 +274,7 @@ public class RetroAssetGeneratorTest
 			Map<Integer, RetroSeqDefinition> sequences = RetroAssetGenerator.decodeRetroSequences(retro);
 			Map<Integer, RetroRig> rigs = new LinkedHashMap<>();
 
-			for (int sequenceId : SKELETON_SEQUENCES)
+			for (int sequenceId : sequenceIds)
 			{
 				RetroClip live = RetroAssetGenerator.buildClip(store, sequenceId, rigs);
 				RetroClip retroClip =
@@ -218,6 +285,18 @@ public class RetroAssetGeneratorTest
 
 				// The rig ids differ by construction - an embedded 2005 framemap has no id, so it
 				// gets a synthetic one - but the transforms they address are the same rig
+				RetroRig liveRig = rigs.get(live.getRigId());
+				RetroRig retroRig = rigs.get(retroClip.getRigId());
+				assertEquals("sequence " + sequenceId + " transform count",
+					liveRig.getTransformCount(), retroRig.getTransformCount());
+				for (int t = 0; t < liveRig.getTransformCount(); t++)
+				{
+					assertEquals("sequence " + sequenceId + " transform " + t + " type",
+						liveRig.getType(t), retroRig.getType(t));
+					assertArrayEquals("sequence " + sequenceId + " transform " + t + " groups",
+						liveRig.getGroups(t), retroRig.getGroups(t));
+				}
+
 				assertEquals("sequence " + sequenceId + " frame count",
 					live.getFrameCount(), retroClip.getFrameCount());
 

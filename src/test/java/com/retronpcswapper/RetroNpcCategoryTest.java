@@ -526,6 +526,151 @@ public class RetroNpcCategoryTest
 		assertFalse(guard.isDeathAnimation(7044));
 	}
 
+	/**
+	 * Asserts every id in {@code ids} resolves to the same elf archetype, with its 2005 parts.
+	 */
+	private static void assertElves(String name, int[] parts, int... ids)
+	{
+		for (int id : ids)
+		{
+			RetroNpcData elf = RetroNpcMapping.get(id, name);
+			assertNotNull(name + " " + id + " must be swapped", elf);
+			assertEquals(RetroNpcCategory.ELVES, elf.getCategory());
+			assertArrayEquals(name + " " + id + " wears the wrong kit", parts, elf.getRetroModelIds());
+			assertArrayEquals(elf.getRetroModelIds(), elf.getInjectedModelIds());
+		}
+	}
+
+	@Test
+	public void testElvesCategory()
+	{
+		// Definition 1183 (bow) and 1184 (pike), the Regicide elves. The Mourning's End Elf
+		// Archer/Warrior postdate the Feb-2005 cache and take the same kits by level and weapon.
+		int[] archerParts = {4014, 4018, 4022, 4024, 4044};
+		int[] warriorParts = {4014, 4018, 4022, 4024, 4033};
+		assertElves("Iorwerth Archer", archerParts,
+			NpcID.REGICIDE_DARKELF, NpcID.REGICIDE_DARKELF4,
+			NpcID.SOTE_CAVE_WARRIOR_2, NpcID.SOTE_IORWERTH_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_2,
+			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_1, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_2,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_2, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_4,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_9, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_10);
+		assertElves("Elf Archer", archerParts, NpcID.MOURNING_GUARD_RANGE, NpcID.MOURNING_GUARD_RANGE2);
+		assertElves("Iorwerth Warrior", warriorParts,
+			NpcID.REGICIDE_DARKELF2, NpcID.REGICIDE_DARKELF3,
+			NpcID.SOTE_CAVE_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_3, NpcID.SOTE_IORWERTH_WARRIOR_4,
+			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_3, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_4,
+			NpcID.PRIF_DARKELF2, NpcID.PRIF_DARKELF3,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_1, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_3,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_5, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_6,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_7, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_8);
+		assertElves("Elf Warrior", warriorParts, NpcID.MOURNING_GUARD_MELEE, NpcID.MOURNING_GUARD_MELEE2);
+
+		// The named elves, each with a Song of the Elves bow form carrying 4044
+		assertElves("Arianwyn", new int[]{4015, 4021, 4023, 4025, 4027},
+			NpcID.REGICIDE_GOOD_ELF3, NpcID.SOTE_ARIANWYN_CUTSCENE, NpcID.SOTE_ARIANWYN_CUTSCENE_NOMOVE,
+			NpcID.MOURNING_ARIANWYN_VIS);
+		assertElves("Arianwyn", new int[]{4015, 4021, 4023, 4025, 4027, 4044},
+			NpcID.SOTE_ARIANWYN_COMBAT, NpcID.NZONE_SOTE_ARIANWYN_NORMAL, NpcID.SOTE_ARIANWYN_CUTSCENE_BOW);
+		assertElves("Islwyn", new int[]{4015, 4020, 4023, 4025},
+			NpcID.ROVING_ISLWYN_1OP, NpcID.ROVING_ISLWYN_2OPS, NpcID.SOTE_ISLWYN_VIS,
+			NpcID.SOTE_ISLWYN_CUTSCENE, NpcID.ISLWYN_PRIF);
+		assertElves("Islwyn", new int[]{4015, 4020, 4023, 4025, 4044},
+			NpcID.SOTE_ISLWYN_UPASS, NpcID.SOTE_ISLWYN_CUTSCENE_BOW, NpcID.SOTE_ISLWYN_BATTLE);
+		int[] elunedParts = {4030, 4032, 4028, 4031, 4029};
+		assertElves("Eluned", elunedParts,
+			NpcID.ROVING_FEMALE_WOODELF_TEMP_1, NpcID.ROVING_FEMALE_WOODELF_1OP,
+			NpcID.ROVING_FEMALE_WOODELF_2OP, NpcID.SOTE_ELUNED_UPASS, NpcID.SOTE_ELUNED_CUTSCENE,
+			NpcID.ELUNED_PRIF);
+
+		// The Lletya townsfolk postdate the Feb-2005 cache and stay modern
+		assertNull(RetroNpcMapping.get(NpcID.MOURNING_TOWN_ELF_1, "Goreu"));
+		for (int mawrth : new int[]{NpcID.MOURNING_TOWN_ELF_4, NpcID.SOTE_MAWRTH, NpcID.SOTE_MAWRTH_CUTSCENE})
+		{
+			assertNull("Mawrth " + mawrth + " must not be swapped", RetroNpcMapping.get(mawrth, "Mawrth"));
+		}
+		assertNull(RetroNpcMapping.get(NpcID.MOURNING_TOWN_ELF_3, "Arvel"));
+		for (int kelyn : new int[]{NpcID.MOURNING_TOWN_ELF_5_VIS, NpcID.SOTE_LADY_ITHELL_NORMAL})
+		{
+			assertNull("Kelyn " + kelyn + " must not be swapped", RetroNpcMapping.get(kelyn, "Kelyn"));
+		}
+
+		// Both 2005 warriors stand in 813, the bow elf included
+		RetroNpcData archer = Objects.requireNonNull(RetroNpcMapping.get(NpcID.REGICIDE_DARKELF, "Iorwerth Archer"));
+		assertEquals(AnimationID.HUMAN_STAFFREADY, archer.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_WALK_F, archer.getWalkAnimationId());
+		assertEquals(AnimationID.HUMAN_BOW, archer.getAttackAnimationId());
+		assertEquals(AnimationID.HUMAN_UNARMEDBLOCK, archer.getDefendAnimationId());
+		assertEquals(AnimationID.HUMAN_DEATH, archer.getDeathAnimationId());
+
+		// The live polearm elves walk on the halberd walk 1205; the pose slot is replaced, so the
+		// 2005 walk is what plays and 1205 never needs a clip
+		RetroNpcData warrior = Objects.requireNonNull(RetroNpcMapping.get(NpcID.REGICIDE_DARKELF2, "Iorwerth Warrior"));
+		assertEquals(AnimationID.HUMAN_STAFFREADY, warrior.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_WALK_F, warrior.getWalkAnimationId());
+		assertEquals(AnimationID.HUMAN_SCYTHE_SWEEP, warrior.getAttackAnimationId());
+		assertEquals(AnimationID.HUMAN_SPEAR_BLOCK, warrior.getDefendAnimationId());
+
+		RetroNpcData eluned = Objects.requireNonNull(RetroNpcMapping.get(NpcID.ROVING_FEMALE_WOODELF_TEMP_1, "Eluned"));
+		assertEquals(AnimationID.HUMAN_READY, eluned.getIdleAnimationId());
+		assertEquals(-1, eluned.getAttackAnimationId());
+
+		RetroNpcData bowArianwyn = Objects.requireNonNull(RetroNpcMapping.get(NpcID.NZONE_SOTE_ARIANWYN_NORMAL, "Arianwyn"));
+		assertEquals(AnimationID.HUMAN_READY, bowArianwyn.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_BOW, bowArianwyn.getAttackAnimationId());
+
+		// Every combat id an elf is expected to play predates Feb 2005 and ships as a clip under its
+		// own id, so it must pass straight through - the same rule as the guards' 1156
+		for (RetroNpcData elf : new RetroNpcData[]{archer, warrior})
+		{
+			for (int anim : new int[]{AnimationID.HUMAN_BOW, AnimationID.HUMAN_SPEAR_SPIKE,
+				AnimationID.HUMAN_SPEAR_BLOCK, AnimationID.HUMAN_SCYTHE_SWEEP,
+				AnimationID.HUMAN_UNARMEDBLOCK, AnimationID.HUMAN_DEATH})
+			{
+				assertFalse(anim + " ships as a 2005 clip and must not be intercepted",
+					elf.isAttackAnimation(anim) || elf.isDefendAnimation(anim) || elf.isDeathAnimation(anim));
+			}
+		}
+
+		// The 2005 opcode 40 pairs, held inline since elves have no name row to graft them from
+		RetroNpcData islwyn = Objects.requireNonNull(RetroNpcMapping.get(NpcID.ROVING_ISLWYN_1OP, "Islwyn"));
+		assertArrayEquals(new short[]{16701, 9152}, islwyn.getOriginalColors());
+		assertArrayEquals(new short[]{16945, 111}, islwyn.getReplacementColors());
+		RetroNpcData bowIslwyn = Objects.requireNonNull(RetroNpcMapping.get(NpcID.SOTE_ISLWYN_BATTLE, "Islwyn"));
+		assertArrayEquals(islwyn.getReplacementColors(), bowIslwyn.getReplacementColors());
+		assertArrayEquals(new short[]{16701, 9137, 4550}, eluned.getOriginalColors());
+		assertArrayEquals(new short[]{25145, 8, 7062}, eluned.getReplacementColors());
+		assertFalse(archer.hasRecolors());
+		assertFalse(warrior.hasRecolors());
+		assertFalse(bowArianwyn.hasRecolors());
+
+		// Human kit whose parts were edited or re-bound in live, so only the bundle can draw it
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.ELVES));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.ELVES));
+		assertFalse(RetroNpcMapping.usesLiveGeometry(NpcID.REGICIDE_DARKELF));
+
+		// By registered id only: the names alone buy nothing
+		assertNull(RetroNpcMapping.get(0, "Arianwyn"));
+		assertNull(RetroNpcMapping.get(0, "Elf Warrior"));
+		assertNull(RetroNpcMapping.get(0, "Iorwerth Archer"));
+		assertNull(RetroNpcMapping.get(0, "Eluned"));
+
+		// The unnamed multiloc parents stay unregistered - the client reports the named child -
+		// and 890's default child is the Elven Scout. Lady Kelyn Ithell is Kelyn after Song of the
+		// Elves, and the hard Arianwyn shares a registered elf's model but not the name.
+		for (int id : new int[]{
+			NpcID.ROVING_BOWYER, NpcID.MOURNING_TOWN_ELF_5, NpcID.SOTE_LADY_ITHELL_VILLAGE,
+			NpcID.MOURNING_ARIANWYN, NpcID.SOTE_ISLWYN, NpcID.SOTE_ISLWYN_LLETYA,
+			NpcID.SOTE_ISLWYN_UPASS_PRE, NpcID.SOTE_ELUNED_LLETYA, NpcID.SOTE_ARIANWYN_WATERFALL,
+			NpcID.SOTE_ARIANWYN_WATERFALL_BAXTORIAN, NpcID.ROVING_FEMALE_WOODELF,
+			NpcID.ROVING_FEMALE_WOODELF_TEMP})
+		{
+			assertNull("multiloc parent " + id + " must not be swapped", RetroNpcMapping.get(id, null));
+		}
+		assertNull(RetroNpcMapping.get(NpcID.SOTE_LADY_ITHELL_VIS, "Lady Kelyn Ithell"));
+		assertNull(RetroNpcMapping.get(NpcID.SOTE_LADY_ITHELL_UPASS, "Lady Kelyn Ithell"));
+		assertNull(RetroNpcMapping.get(NpcID.NZONE_SOTE_ARIANWYN_HARD, "Arianwyn (hard)"));
+	}
+
 	@Test
 	public void testArdougneGuards()
 	{
@@ -1885,10 +2030,10 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testCategoryMatchingExclusions()
 	{
-		// A bare "giant" substring would sweep all of these into the giant family. The giant rat is
-		// mapped, but to its own category
+		// A bare "giant" substring would sweep all of these into the giant family. The giant rat and
+		// giant spider are mapped, but to their own categories
 		assertEquals(RetroNpcCategory.GIANT_RATS, RetroNpcMapping.get(0, "Giant rat").getCategory());
-		assertNull(RetroNpcMapping.get(0, "Giant spider"));
+		assertEquals(RetroNpcCategory.SPIDERS, RetroNpcMapping.get(0, "Giant spider").getCategory());
 		assertNull(RetroNpcMapping.get(0, "Giant frog"));
 		assertNull(RetroNpcMapping.get(0, "Giant bat"));
 
@@ -2052,9 +2197,11 @@ public class RetroNpcCategoryTest
 		assertTrue("swapHellhounds must default to true", config.swapHellhounds());
 		assertTrue("swapGiantRats must default to true", config.swapGiantRats());
 		assertTrue("swapScorpions must default to true", config.swapScorpions());
+		assertTrue("swapSpiders must default to true", config.swapSpiders());
+		assertTrue("swapBears must default to true", config.swapBears());
 
-		// The pipeline toggle carries the six bundle-only categories, so its default decides
-		// whether they can render at all - see isCategoryEnabled
+		// The pipeline toggle carries the bundle-only categories, so its default decides whether
+		// they can render at all - see isCategoryEnabled
 		assertTrue("useInjectionPipeline must default to true", config.useInjectionPipeline());
 
 		// The bundle-only categories ship on as well. They are not individually opt-in: what the
@@ -2065,6 +2212,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapImps must default to true", config.swapImps());
 		assertTrue("swapCyclops must default to true", config.swapCyclops());
 		assertTrue("swapGuards must default to true", config.swapGuards());
+		assertTrue("swapElves must default to true", config.swapElves());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
@@ -2363,6 +2511,242 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_ANGER_RAT, "Angry giant rat"));
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_RAT, "Angry giant rat"));
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_RAT2, "Angry giant rat"));
+	}
+
+	/**
+	 * The 2005 spiders are meshes 2883-2885 on sequences 142-146 and the small spider 2996 on
+	 * 279-282, all preserved - a cache-path category. The variants differ only by recolour and size.
+	 */
+	@Test
+	public void testSpiders()
+	{
+		// {id, name, mesh, find, replace, scale}
+		Object[][] large = {
+			{NpcID.GIANTSPIDER1, "Giant spider", 2884, new short[]{10258}, new short[]{8084}, 128},
+			{NpcID.GIANTSPIDER2, "Giant spider", 2884, new short[]{10258}, new short[]{8084}, 128},
+			{NpcID.SOS_PEST_GIANTSPIDER1, "Giant spider", 2884, new short[]{10258}, new short[]{8084}, 128},
+			{99994, "Giant spider", 2884, new short[]{10258}, new short[]{8084}, 128},
+			{NpcID.SHADOW_SPIDER, "Shadow spider", 2884, null, null, 128},
+			{NpcID.BLESSED_SPIDER, "Blessed spider", 2884, null, null, 128},
+			{NpcID.BLESSED_SPIDER_KALRAG, "Blessed spider", 2884, null, null, 128},
+			{NpcID.DEADLY_RED_SPIDER, "Deadly red spider", 2884, new short[]{10258}, new short[]{-1122}, 128},
+			{NpcID.JUNGLE_SPIDER, "Jungle spider", 2884, new short[]{10258}, new short[]{16945}, 128},
+			{NpcID.TBWCU_JUNGLE_SPIDER, "Jungle spider", 2884, new short[]{10258}, new short[]{16945}, 128},
+			{NpcID.TBWCU_SPIDER_APPEAR, "Jungle spider", 2884, new short[]{10258}, new short[]{16945}, 128},
+			{NpcID.MM_JUNGLE_SPIDER, "Jungle spider", 2884,
+				new short[]{8128, 10258}, new short[]{1835, 12589}, 100},
+			{NpcID.BARROWS_GIANTSPIDER, "Giant crypt spider", 2884,
+				new short[]{10258, 8128, 127}, new short[]{17930, 13074, 16846}, 128},
+			{NpcID.ICE_SPIDER, "Ice spider", 2885, null, null, 128},
+			{NpcID.ICE_SPIDER_SHORTRANGE, "Ice spider", 2885, null, null, 128},
+			{NpcID.TAPO_ICE_SPIDER_SHORTRANGE, "Ice spider", 2885, null, null, 128},
+			{NpcID.POISONSPIDER, "Poison spider", 2883, null, null, 128},
+			{NpcID.DUNGEONSPIDER, "Poison spider", 2883, null, null, 128},
+			{NpcID.WBR_CAVE_POISONSPIDER, "Poison spider", 2883, null, null, 128},
+			{NpcID.WBR_POISONSPIDER, "Poison spider", 2883, null, null, 128}
+		};
+		for (Object[] c : large)
+		{
+			int id = (Integer) c[0];
+			RetroNpcData spider = RetroNpcMapping.get(id, (String) c[1]);
+			assertSpider(id, spider, (Integer) c[2], (short[]) c[3], (short[]) c[4], (Integer) c[5]);
+			assertFalse(spider.hasStaticIdle());
+			assertEquals(AnimationID.GIANTSPIDER_READY, spider.getIdleAnimationId());
+			assertEquals(AnimationID.GIANTSPIDER_ATTACK, spider.getAttackAnimationId());
+			assertEquals(AnimationID.GIANTSPIDER_BLOCK, spider.getDefendAnimationId());
+			assertEquals(AnimationID.GIANTSPIDER_DEATH, spider.getDeathAnimationId());
+			assertEquals(AnimationID.GIANTSPIDER_READY, spider.getMiscAnimationId());
+			assertTrue(spider.isMiscAnimation(AnimationID.SPIDER_UPDATE_CASTING));
+			assertTrue(spider.isMiscAnimation(AnimationID.SPIDER_UPDATE_TELEPORT));
+			assertTrue(spider.isMiscAnimation(AnimationID.SPIDER_UPDATE_TELEPORT_REVERSE));
+
+			if (id == NpcID.TBWCU_SPIDER_APPEAR)
+			{
+				// The bush spider keeps its 2005 surprise walk, and the modern one maps onto it
+				assertEquals(AnimationID.TBW_CLEANUP_SPIDER_SURPRISE_ATTACK, spider.getWalkAnimationId());
+				assertEquals(AnimationID.TBW_CLEANUP_SPIDER_SURPRISE_ATTACK,
+					spider.getAttackAnimationFor(AnimationID.SPIDER_UPDATE_TBW_BUSH_ATTACK));
+				assertTrue(spider.isRetroAttackAnimation(AnimationID.TBW_CLEANUP_SPIDER_SURPRISE_ATTACK));
+			}
+			else
+			{
+				assertEquals(AnimationID.GIANTSPIDER_WALK, spider.getWalkAnimationId());
+			}
+		}
+
+		// {id, name, replace, scale}. Every pair keys on 2996's live base 7591
+		Object[][] small = {
+			{NpcID.SPIDER, "Spider", 61, 128},
+			{NpcID.SOS_PEST_SPIDER, "Spider", 61, 128},
+			{NpcID.SPIDER_NONCOMBAT, "Spider", 61, 128},
+			{NpcID.SPIDER_THAT_SPAWNS_VAMPYRES, "Spider", 61, 128},
+			{NpcID.SPIDER_NOCOMBAT2, "Spider", 61, 128},
+			{NpcID.AKD_SPIDER_NOOP, "Spider", 61, 128},
+			{99995, "Spider", 61, 128},
+			{NpcID.UPASS_LITTLE_SPIDER, "Spider", 10258, 128},
+			{NpcID.MM_WAREHOUSE_SPIDER, "Spider", 20, 64},
+			{NpcID.MM_CUTSCENE_SPIDER, "Spider", 20, 64},
+			{NpcID.LABORATORY_SPIDER, "Spider", 900, 128},
+			{NpcID.LABORATORY_SPIDER_AGGRESSIVE, "Spider", 900, 128},
+			{NpcID.BARROWS_SPIDER, "Crypt spider", 12574, 128}
+		};
+		for (Object[] c : small)
+		{
+			int id = (Integer) c[0];
+			RetroNpcData spider = RetroNpcMapping.get(id, (String) c[1]);
+			assertSpider(id, spider, 2996, new short[]{7591},
+				new short[]{(short) (int) (Integer) c[2]}, (Integer) c[3]);
+
+			// No 2005 stand sequence exists, so the modern idle is cleared rather than kept
+			assertTrue("Small spider " + id + " must stand still", spider.hasStaticIdle());
+			assertEquals(-1, spider.getIdleAnimationId());
+			assertEquals(AnimationID.SPIDER_WALK, spider.getWalkAnimationId());
+			assertEquals(AnimationID.SPIDER_ATTACK, spider.getAttackAnimationId());
+			assertEquals(AnimationID.SPIDER_BLOCK, spider.getDefendAnimationId());
+			assertEquals(AnimationID.SPIDER_DEATH, spider.getDeathAnimationId());
+		}
+
+		// Cache path: the meshes and rigs all survive
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SPIDERS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SPIDERS));
+
+		// The Hallowed Sepulchre spiders are excluded, and the families outside the list are left alone
+		assertNull(RetroNpcMapping.get(NpcID.HALLOWED_SPIDER_01, "Spider"));
+		assertNull(RetroNpcMapping.get(NpcID.HALLOWED_SPIDER_02, "Spider"));
+		assertNull(RetroNpcMapping.get(NpcID.POH_GIANTSPIDER, "Huge spider"));
+		assertNull(RetroNpcMapping.get(NpcID.DEAL_FEVER_SPIDERS1, "Fever spider"));
+		assertNull(RetroNpcMapping.get(NpcID.HOSDUN_SPIDER, "Temple Spider"));
+		assertNull(RetroNpcMapping.get(NpcID.VENENATIS_SPIDERLING, "Venenatis spiderling"));
+	}
+
+	private static void assertSpider(int id, RetroNpcData spider, int mesh, short[] find, short[] replace,
+		int scale)
+	{
+		assertNotNull("Spider " + id + " must be mapped", spider);
+		assertEquals(RetroNpcCategory.SPIDERS, spider.getCategory());
+		assertArrayEquals(new int[]{mesh}, spider.getRetroModelIds());
+		assertEquals(scale, spider.getScaleXZ());
+		assertEquals(scale, spider.getScaleY());
+		if (find == null)
+		{
+			assertFalse("Spider " + id + " must keep its mesh's own palette", spider.hasRecolors());
+		}
+		else
+		{
+			assertArrayEquals("Spider " + id + " recolour", find, spider.getOriginalColors());
+			assertArrayEquals("Spider " + id + " recolour", replace, spider.getReplacementColors());
+		}
+
+		// The modern rigs are intercepted, the surviving 2005 sequences never are
+		assertTrue(spider.isAttackAnimation(AnimationID.SPIDER_UPDATE_ATTACK));
+		assertTrue(spider.isAttackAnimation(AnimationID.SMALL_SPIDER_UPDATE_ATTACK));
+		assertTrue(spider.isAttackAnimation(AnimationID.SMALL_SPIDER_UPDATE_ATTACK_SOUND));
+		assertTrue(spider.isDefendAnimation(AnimationID.SPIDER_UPDATE_DEFEND));
+		assertTrue(spider.isDefendAnimation(AnimationID.SMALL_SPIDER_UPDATE_DEFEND));
+		assertTrue(spider.isDefendAnimation(AnimationID.SMALL_SPIDER_UPDATE_DEFEND_SOUND));
+		assertTrue(spider.isDeathAnimation(AnimationID.SPIDER_UPDATE_DEATH));
+		assertTrue(spider.isDeathAnimation(AnimationID.SMALL_SPIDER_UPDATE_DEATH));
+		for (int retro : new int[]{142, 143, 144, 145, 146, 279, 280, 281, 282, 2391})
+		{
+			assertFalse(spider.isAttackAnimation(retro));
+			assertFalse(spider.isDefendAnimation(retro));
+			assertFalse(spider.isDeathAnimation(retro));
+			assertFalse(spider.isMiscAnimation(retro));
+		}
+	}
+
+	/**
+	 * Every 2005 bear is mesh 2966 on sequences 37-44, all preserved - a cache-path category. The
+	 * variants differ only by recolour and size.
+	 */
+	@Test
+	public void testBears()
+	{
+		short[] base = {3491};
+		short[] cubBase = {3491, 3377};
+		short[] cubReplace = {3486, 3373};
+
+		// {id, name, find, replace, scale}
+		Object[][] bears = {
+			{NpcID.BROWNBEAR, "Grizzly bear", null, null, 128},
+			{NpcID.WBR_BEAR, "Grizzly bear", null, null, 128},
+			{99993, "Grizzly bear", null, null, 128},
+			{NpcID.DARKBEAR, "Black bear", base, new short[]{12}, 128},
+			{NpcID.REGICIDE_DARKBEAR, "Grizzly bear", base, new short[]{520}, 128},
+			{NpcID.REGICIDE_DARKBEAR_CUB1, "Grizzly bear cub", base, new short[]{520}, 70},
+			{NpcID.REGICIDE_DARKBEAR_CUB2, "Grizzly bear cub", base, new short[]{520}, 80},
+			{NpcID.BROWNBEAR_CUB_1, "Bear Cub", cubBase, cubReplace, 96},
+			{NpcID.PRIF_GEE, "Bear Cub", cubBase, cubReplace, 96},
+			{NpcID.BROWNBEAR_CUB_2, "Bear Cub", cubBase, cubReplace, 64}
+		};
+		for (Object[] c : bears)
+		{
+			int id = (Integer) c[0];
+			RetroNpcData bear = RetroNpcMapping.get(id, (String) c[1]);
+			assertNotNull("Bear " + id + " must be mapped", bear);
+			assertEquals(RetroNpcCategory.BEARS, bear.getCategory());
+			assertArrayEquals(new int[]{2966}, bear.getRetroModelIds());
+			assertEquals(c[4], bear.getScaleXZ());
+			assertEquals(c[4], bear.getScaleY());
+			if (c[2] == null)
+			{
+				assertFalse("Bear " + id + " must keep its mesh's own palette", bear.hasRecolors());
+			}
+			else
+			{
+				assertArrayEquals("Bear " + id + " recolour", (short[]) c[2], bear.getOriginalColors());
+				assertArrayEquals("Bear " + id + " recolour", (short[]) c[3], bear.getReplacementColors());
+			}
+
+			assertFalse(bear.hasStaticIdle());
+			assertEquals(AnimationID.BEAR_READY, bear.getIdleAnimationId());
+			assertEquals(AnimationID.BEAR_WALK, bear.getWalkAnimationId());
+			assertEquals(AnimationID.BEAR_ATTACK, bear.getAttackAnimationId());
+			assertEquals(AnimationID.BEAR_BLOCK, bear.getDefendAnimationId());
+			assertEquals(AnimationID.BEAR_DEATH, bear.getDeathAnimationId());
+			assertEquals(AnimationID.BEAR_READY, bear.getMiscAnimationId());
+
+			// The modern rig is intercepted, the surviving 2005 sequences never are
+			assertTrue(bear.isAttackAnimation(AnimationID.BEAR_REWORK_ATTACK));
+			assertTrue(bear.isAttackAnimation(AnimationID.BEAR_REWORK_CUB_ATTACK));
+			assertTrue(bear.isDefendAnimation(AnimationID.BEAR_REWORK_DEFEND));
+			assertTrue(bear.isDefendAnimation(AnimationID.BEAR_REWORK_CUB_DEFEND));
+			assertTrue(bear.isDeathAnimation(AnimationID.BEAR_REWORK_DEATH));
+			assertTrue(bear.isDeathAnimation(AnimationID.BEAR_REWORK_CUB_DEATH));
+			assertTrue(bear.isMiscAnimation(AnimationID.BEAR_REWORK_READY_GRIZZLY));
+			assertTrue(bear.isMiscAnimation(AnimationID.BEAR_REWORK_READY_CUB_GRIZZLY));
+			for (int retro = AnimationID.BEAR_WALK; retro <= AnimationID.BEAR_DEATH; retro++)
+			{
+				assertFalse(bear.isAttackAnimation(retro));
+				assertFalse(bear.isDefendAnimation(retro));
+				assertFalse(bear.isDeathAnimation(retro));
+				assertFalse(bear.isMiscAnimation(retro));
+			}
+		}
+
+		// Cache path: the mesh and rig both survive
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.BEARS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.BEARS));
+
+		// The bears outside the list are left alone
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_ANGER_BEAR, "Angry bear"));
+		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_BEAR, "Angry bear"));
+		assertNull(RetroNpcMapping.get(NpcID.ARCEUUS_REANIMATED_BEAR, "Reanimated bear"));
+	}
+
+	/**
+	 * A static idle has to survive every copy the mapping makes - applyCacheDefinitions and the
+	 * weapon variants both rebuild archetypes - or a small spider would quietly keep its modern idle.
+	 */
+	@Test
+	public void testStaticIdleSurvivesCopies()
+	{
+		RetroNpcData spider = RetroNpcMapping.SPIDER_DEFAULT;
+		assertTrue(spider.hasStaticIdle());
+		assertTrue(spider.withRecolors(new short[]{1}, new short[]{2}).hasStaticIdle());
+		assertTrue(spider.withScale(64, 64).hasStaticIdle());
+		assertTrue(spider.withModelIds(new int[]{2996}).hasStaticIdle());
+		assertFalse(RetroNpcMapping.GIANT_SPIDER.hasStaticIdle());
 	}
 
 	@Test

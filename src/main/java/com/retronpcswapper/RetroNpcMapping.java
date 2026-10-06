@@ -65,7 +65,11 @@ public class RetroNpcMapping
 		// Exclude Colosseum scorpion
 		NpcID.WANDERING_DOOMSCORPION,
 		// Exclude the gorilla skeleton
-		NpcID.MM_SKELETON
+		NpcID.MM_SKELETON,
+		// Arianwyn's model in NMZ
+		NpcID.NZONE_SOTE_ARIANWYN_HARD,
+		// Exclude the Hallowed Sepulchre spiders
+		NpcID.HALLOWED_SPIDER_01, NpcID.HALLOWED_SPIDER_02
 	);
 
 	/**
@@ -76,7 +80,7 @@ public class RetroNpcMapping
 	 * onto the archetypes.
 	 */
 	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
-		Set.of(RetroNpcCategory.GUARDS);
+		Set.of(RetroNpcCategory.GUARDS, RetroNpcCategory.ELVES);
 
 	/**
 	 * Ids whose registered row beats the name row even when the two disagree about the category.
@@ -154,6 +158,13 @@ public class RetroNpcMapping
 	public static final Set<Integer> GUARD_MODERN_DEATHS = Set.of(
 		AnimationID.HUMAN_DEATH
 	);
+
+	// Empty on purpose. Everything an elf is expected to play - bow 426, the spear and scythe
+	// families, the blocks and death 836 - predates Feb 2005 and ships as a clip under its own id, so
+	// it should pass straight through.
+	public static final Set<Integer> ELF_MODERN_ATTACKS = Set.of();
+	public static final Set<Integer> ELF_MODERN_DEFENDS = Set.of();
+	public static final Set<Integer> ELF_MODERN_DEATHS = Set.of();
 
 	public static final Set<Integer> IMP_MODERN_ATTACKS = Set.of(
 		AnimationID.IMP_ATTACK
@@ -335,9 +346,7 @@ public class RetroNpcMapping
 			AnimationID.SCORPION_UPDATE_DEATH, AnimationID.SMALL_SCORPION_UPDATE_DEATH
 	);
 
-	// GIANTRAT_ATTACK/BLOCK/DEATH (138/139/141) are the surviving 2005 sequences themselves.
-	// The live giant rats moved to the GIANT_RAT_UPDATE family on framemap 1152, which is
-	// what these intercept.
+	// GIANTRAT_ATTACK/BLOCK/DEATH (138/139/141) are the surviving 2005 seqs
 	public static final Set<Integer> GIANT_RAT_MODERN_ATTACKS = Set.of(
 		AnimationID.GIANT_RAT_UPDATE_ATTACK
 	);
@@ -346,6 +355,41 @@ public class RetroNpcMapping
 	);
 	public static final Set<Integer> GIANT_RAT_MODERN_DEATHS = Set.of(
 		AnimationID.GIANT_RAT_UPDATE_DEATH, AnimationID.GIANT_RAT_UPDATE_DEATH_FAST
+	);
+
+	// GIANTSPIDER_* (142-149) and SPIDER_* (279-282) are the surviving 2005 seqs
+	public static final Set<Integer> SPIDER_MODERN_ATTACKS = Set.of(
+		AnimationID.SPIDER_UPDATE_ATTACK, AnimationID.SPIDER_UPDATE_ATTACK_LARGE,
+		AnimationID.SPIDER_UPDATE_TBW_BUSH_ATTACK,
+		AnimationID.SMALL_SPIDER_UPDATE_ATTACK, AnimationID.SMALL_SPIDER_UPDATE_ATTACK_SOUND
+	);
+	public static final Set<Integer> SPIDER_MODERN_DEFENDS = Set.of(
+		AnimationID.SPIDER_UPDATE_DEFEND, AnimationID.SPIDER_UPDATE_DEFEND_LARGE,
+		AnimationID.SMALL_SPIDER_UPDATE_DEFEND, AnimationID.SMALL_SPIDER_UPDATE_DEFEND_SOUND
+	);
+	public static final Set<Integer> SPIDER_MODERN_DEATHS = Set.of(
+		AnimationID.SPIDER_UPDATE_DEATH, AnimationID.SPIDER_UPDATE_DEATH_LARGE,
+		AnimationID.SMALL_SPIDER_UPDATE_DEATH
+	);
+	// GIANTSPIDER_CASTING/TELEPORT (147-149) survive too, but the misc slot is many-to-one, so
+	// these fall back to standing still like the hellhound's
+	public static final Set<Integer> SPIDER_MODERN_MISC = Set.of(
+		AnimationID.SPIDER_UPDATE_CASTING, AnimationID.SPIDER_UPDATE_TELEPORT,
+		AnimationID.SPIDER_UPDATE_TELEPORT_REVERSE
+	);
+
+	// BEAR_* (37-44) are the surviving 2005 seqs
+	public static final Set<Integer> BEAR_MODERN_ATTACKS = Set.of(
+		AnimationID.BEAR_REWORK_ATTACK, AnimationID.BEAR_REWORK_CUB_ATTACK
+	);
+	public static final Set<Integer> BEAR_MODERN_DEFENDS = Set.of(
+		AnimationID.BEAR_REWORK_DEFEND, AnimationID.BEAR_REWORK_CUB_DEFEND
+	);
+	public static final Set<Integer> BEAR_MODERN_DEATHS = Set.of(
+		AnimationID.BEAR_REWORK_DEATH, AnimationID.BEAR_REWORK_CUB_DEATH
+	);
+	public static final Set<Integer> BEAR_MODERN_MISC = Set.of(
+		AnimationID.BEAR_REWORK_READY_GRIZZLY, AnimationID.BEAR_REWORK_READY_CUB_GRIZZLY
 	);
 
 	// Pre-instantiated archetypes for 2005 cache-backed assets
@@ -621,6 +665,83 @@ public class RetroNpcMapping
 	public static final RetroNpcData ARDOUGNE_GUARD_DEFAULT = ardougneGuard(ARDOUGNE_GUARD_PARTS);
 
 	public static final RetroNpcData CARNILLEAN_GUARD_DEFAULT = ardougneGuard(ARDOUGNE_CARNILLEAN_PARTS);
+
+	/**
+	 * 2005 definition 1183, 4044 is the bow.
+	 */
+	private static final int[] ELF_ARCHER_PARTS = {4014, 4018, 4022, 4024, 4044};
+
+	/**
+	 * 2005 definition 1184, Elf with the pike
+	 */
+	private static final int[] ELF_WARRIOR_PARTS = {4014, 4018, 4022, 4024, 4033};
+
+	private static final int[] ARIANWYN_PARTS = {4015, 4021, 4023, 4025, 4027};
+
+	// 4027 is Arianwyn's cloak, not a held item, so her bow is added rather than swapped in
+	private static final int[] ARIANWYN_BOW_PARTS = {4015, 4021, 4023, 4025, 4027, 4044};
+
+	private static final int[] ISLWYN_PARTS = {4015, 4020, 4023, 4025};
+
+	private static final int[] ISLWYN_BOW_PARTS = {4015, 4020, 4023, 4025, 4044};
+
+	/**
+	 * 2005 definition 1679.
+	 */
+	private static final int[] ELUNED_PARTS = {4030, 4032, 4028, 4031, 4029};
+
+	private static final short[] ISLWYN_RECOLOR_FIND = {16701, 9152};
+	private static final short[] ISLWYN_RECOLOR_REPLACE = {16945, 111};
+
+	private static final short[] ELUNED_RECOLOR_FIND = {16701, 9137, 4550};
+	private static final short[] ELUNED_RECOLOR_REPLACE = {25145, 8, 7062};
+
+	/**
+	 * An elf in 2005 human kit. Only the pose is set here: combat ids pass straight through to the
+	 * bundle's 2005 clips, the same way the guards' weapon families do.
+	 */
+	private static RetroNpcData.Builder elf(int[] parts, int idle)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.ELVES)
+			.retroModelIds(parts)
+			.idleAnimationId(idle)
+			.walkAnimationId(AnimationID.HUMAN_WALK_F)
+			.deathAnimationId(AnimationID.HUMAN_DEATH)
+			.modernAttackAnims(ELF_MODERN_ATTACKS)
+			.modernDefendAnims(ELF_MODERN_DEFENDS)
+			.modernDeathAnims(ELF_MODERN_DEATHS);
+	}
+
+	private static RetroNpcData.Builder bowElf(int[] parts, int idle)
+	{
+		return elf(parts, idle)
+			.attackAnimationId(AnimationID.HUMAN_BOW)
+			.defendAnimationId(AnimationID.HUMAN_UNARMEDBLOCK);
+	}
+
+	public static final RetroNpcData ELF_ARCHER = bowElf(ELF_ARCHER_PARTS, AnimationID.HUMAN_STAFFREADY).build();
+
+	public static final RetroNpcData ELF_WARRIOR = elf(ELF_WARRIOR_PARTS, AnimationID.HUMAN_STAFFREADY)
+		.attackAnimationId(AnimationID.HUMAN_SCYTHE_SWEEP)
+		.defendAnimationId(AnimationID.HUMAN_SPEAR_BLOCK)
+		.build();
+
+	public static final RetroNpcData ARIANWYN_DEFAULT = elf(ARIANWYN_PARTS, AnimationID.HUMAN_READY).build();
+
+	public static final RetroNpcData ARIANWYN_BOW = bowElf(ARIANWYN_BOW_PARTS, AnimationID.HUMAN_READY).build();
+
+	public static final RetroNpcData ISLWYN_DEFAULT = elf(ISLWYN_PARTS, AnimationID.HUMAN_READY)
+		.recolors(ISLWYN_RECOLOR_FIND, ISLWYN_RECOLOR_REPLACE)
+		.build();
+
+	public static final RetroNpcData ISLWYN_BOW = bowElf(ISLWYN_BOW_PARTS, AnimationID.HUMAN_READY)
+		.recolors(ISLWYN_RECOLOR_FIND, ISLWYN_RECOLOR_REPLACE)
+		.build();
+
+	public static final RetroNpcData ELUNED_DEFAULT = elf(ELUNED_PARTS, AnimationID.HUMAN_READY)
+		.recolors(ELUNED_RECOLOR_FIND, ELUNED_RECOLOR_REPLACE)
+		.build();
 
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
@@ -978,6 +1099,175 @@ public class RetroNpcMapping
 		.recolors(new short[]{-22237}, new short[]{70})
 		.build();
 
+	// The 2005 spiders are four meshes on two rigs, all of which exist in the live cache.
+	// The opcode 40 pairs below live only here. npc-mappings.json has no spider row, so
+	// applyCacheDefinitions has nothing to graft, and SPIDERS stays out of categoryUsesRecolors.
+	private static final int POISON_SPIDER_BODY = 2883;
+	private static final int GIANT_SPIDER_BODY = 2884;
+	private static final int ICE_SPIDER_BODY = 2885;
+	private static final int SMALL_SPIDER_BODY = 2996;
+	private static final int SMALL_SPIDER_LIVE_BASE = 7591;
+
+	private static RetroNpcData.Builder largeSpider(int mesh)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.SPIDERS)
+			.retroModelIds(new int[]{mesh})
+			.idleAnimationId(AnimationID.GIANTSPIDER_READY)
+			.walkAnimationId(AnimationID.GIANTSPIDER_WALK)
+			.attackAnimationId(AnimationID.GIANTSPIDER_ATTACK)
+			.defendAnimationId(AnimationID.GIANTSPIDER_BLOCK)
+			.deathAnimationId(AnimationID.GIANTSPIDER_DEATH)
+			.miscAnimationId(AnimationID.GIANTSPIDER_READY)
+			.modernAttackAnims(SPIDER_MODERN_ATTACKS)
+			.modernDefendAnims(SPIDER_MODERN_DEFENDS)
+			.modernDeathAnims(SPIDER_MODERN_DEATHS)
+			.modernMiscAnims(SPIDER_MODERN_MISC);
+	}
+
+	// Every 2005 small spider has standingAnim -1, and there is no SPIDER_READY animation
+	private static RetroNpcData.Builder smallSpider(int bodyColor)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.SPIDERS)
+			.retroModelIds(new int[]{SMALL_SPIDER_BODY})
+			.staticIdle()
+			.walkAnimationId(AnimationID.SPIDER_WALK)
+			.attackAnimationId(AnimationID.SPIDER_ATTACK)
+			.defendAnimationId(AnimationID.SPIDER_BLOCK)
+			.deathAnimationId(AnimationID.SPIDER_DEATH)
+			.recolor(SMALL_SPIDER_LIVE_BASE, bodyColor)
+			.modernAttackAnims(SPIDER_MODERN_ATTACKS)
+			.modernDefendAnims(SPIDER_MODERN_DEFENDS)
+			.modernDeathAnims(SPIDER_MODERN_DEATHS);
+	}
+
+	// Def 61, the Feb-2005 grey. It has no pair of its own; this one undoes the repaint
+	public static final RetroNpcData SPIDER_DEFAULT = smallSpider(61).build();
+
+	// Def 1004, the Underground Pass spider (61 -> 10258)
+	public static final RetroNpcData SPIDER_UPASS = smallSpider(10258).build();
+
+	// Defs 1473 and 1474, the Monkey Madness warehouse spiders (61 -> 20, resized to 64)
+	public static final RetroNpcData SPIDER_MM = smallSpider(20)
+		.scaleXZ(64)
+		.scaleY(64)
+		.build();
+
+	// Def 1221 (61 -> 900), a non-combat spider
+	public static final RetroNpcData SPIDER_RED = smallSpider(900).build();
+
+	// Def 2034 exists only in the Nov-2005 cache, since Barrows postdates the February one. Its pair
+	// already names 7591, so no correction is needed
+	public static final RetroNpcData CRYPT_SPIDER = smallSpider(12574).build();
+
+	// Defs 59 and 60
+	public static final RetroNpcData GIANT_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{10258}, new short[]{8084})
+		.build();
+
+	// Def 58: 2884's own palette
+	public static final RetroNpcData SHADOW_SPIDER = largeSpider(GIANT_SPIDER_BODY).build();
+
+	// Def 977: 2884's own palette
+	public static final RetroNpcData BLESSED_SPIDER = largeSpider(GIANT_SPIDER_BODY).build();
+
+	// Def 63
+	public static final RetroNpcData DEADLY_RED_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{10258}, new short[]{-1122})
+		.build();
+
+	// Def 62 (and the Nov-2005 Tai Bwo Wannai def 2491)
+	public static final RetroNpcData JUNGLE_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{10258}, new short[]{16945})
+		.build();
+
+	// Nov-2005 def 2492, the Tai Bwo Wannai spider that springs out of a bush.
+	public static final RetroNpcData JUNGLE_SPIDER_BUSH = largeSpider(GIANT_SPIDER_BODY)
+		.walkAnimationId(AnimationID.TBW_CLEANUP_SPIDER_SURPRISE_ATTACK)
+		.attackAnimationOverride(AnimationID.TBW_CLEANUP_SPIDER_SURPRISE_ATTACK,
+			AnimationID.SPIDER_UPDATE_TBW_BUSH_ATTACK)
+		.recolors(new short[]{10258}, new short[]{16945})
+		.build();
+
+	// Def 1478, the Monkey Madness jungle spider
+	public static final RetroNpcData MM_JUNGLE_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{8128, 10258}, new short[]{1835, 12589})
+		.scaleXZ(100)
+		.scaleY(100)
+		.build();
+
+	// Def 2035, Nov-2005 only, like the crypt spider. 2884 kept every face color
+	public static final RetroNpcData GIANT_CRYPT_SPIDER = largeSpider(GIANT_SPIDER_BODY)
+		.recolors(new short[]{10258, 8128, 127}, new short[]{17930, 13074, 16846})
+		.build();
+
+	// Def 64: 2885's own palette
+	public static final RetroNpcData ICE_SPIDER = largeSpider(ICE_SPIDER_BODY).build();
+
+	// Defs 134 and 1009: 2883's own palette
+	public static final RetroNpcData POISON_SPIDER = largeSpider(POISON_SPIDER_BODY).build();
+
+	// Every 2005 bear is mesh 2966, and it survives in the live cache with every face color.
+	// The live framemap 275 and the frames behind 37-44 are identical to 2005's. The opcode 40 pairs
+	// are defined here rather than in npc-mappings.json
+	private static final int BEAR_BODY = 2966;
+	private static final short BEAR_BASE = 3491;
+
+	private static RetroNpcData.Builder bear()
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.BEARS)
+			.retroModelIds(new int[]{BEAR_BODY})
+			.idleAnimationId(AnimationID.BEAR_READY)
+			.walkAnimationId(AnimationID.BEAR_WALK)
+			.attackAnimationId(AnimationID.BEAR_ATTACK)
+			.defendAnimationId(AnimationID.BEAR_BLOCK)
+			.deathAnimationId(AnimationID.BEAR_DEATH)
+			.miscAnimationId(AnimationID.BEAR_READY)
+			.modernAttackAnims(BEAR_MODERN_ATTACKS)
+			.modernDefendAnims(BEAR_MODERN_DEFENDS)
+			.modernDeathAnims(BEAR_MODERN_DEATHS)
+			.modernMiscAnims(BEAR_MODERN_MISC);
+	}
+
+	// Def 105, the plain brown "Bear". Live BROWNBEAR is its descendant, renamed Grizzly bear
+	public static final RetroNpcData BEAR_BROWN = bear().build();
+
+	// Def 106
+	public static final RetroNpcData BEAR_BLACK = bear()
+		.recolors(new short[]{BEAR_BASE}, new short[]{12})
+		.build();
+
+	// Def 1195, the Regicide grizzly
+	public static final RetroNpcData GRIZZLY_BEAR = bear()
+		.recolors(new short[]{BEAR_BASE}, new short[]{520})
+		.build();
+
+	// Defs 1196 and 1197, paired with the two live cubs by id order
+	public static final RetroNpcData GRIZZLY_BEAR_CUB_1 = bear()
+		.recolors(new short[]{BEAR_BASE}, new short[]{520})
+		.scaleXZ(70)
+		.scaleY(70)
+		.build();
+	public static final RetroNpcData GRIZZLY_BEAR_CUB_2 = bear()
+		.recolors(new short[]{BEAR_BASE}, new short[]{520})
+		.scaleXZ(80)
+		.scaleY(80)
+		.build();
+
+	// Defs 1326 and 1327
+	public static final RetroNpcData BEAR_CUB_1 = bear()
+		.recolors(new short[]{BEAR_BASE, 3377}, new short[]{3486, 3373})
+		.scaleXZ(96)
+		.scaleY(96)
+		.build();
+	public static final RetroNpcData BEAR_CUB_2 = bear()
+		.recolors(new short[]{BEAR_BASE, 3377}, new short[]{3486, 3373})
+		.scaleXZ(64)
+		.scaleY(64)
+		.build();
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -1130,7 +1420,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.GUARDS
 			|| category == RetroNpcCategory.SKELETON_MAGES
 			|| category == RetroNpcCategory.COWS
-			|| category == RetroNpcCategory.SCORPIONS;
+			|| category == RetroNpcCategory.SCORPIONS
+			|| category == RetroNpcCategory.ELVES;
 	}
 
 	/**
@@ -1344,6 +1635,53 @@ public class RetroNpcMapping
 		// Deliberately left out: DEADMAN_GUARD_ARDOUGNE_VIS, DEADMAN_GUARD_YANILLE_VIS and their
 		// _RANGE_VIS siblings
 
+		// Elves, by id only. Every live id carrying one of the eleven names, including the Song of
+		// the Elves and Prifddinas copies.
+		//
+		// The Mourning's End Elf Archer and Elf Warrior postdate the Feb-2005 cache, so they wear the
+		// Iorwerth bow and pike kits, matched by level and weapon.
+		registerMapping(ELF_ARCHER,
+			NpcID.MOURNING_GUARD_RANGE, NpcID.MOURNING_GUARD_RANGE2,
+			NpcID.REGICIDE_DARKELF, NpcID.REGICIDE_DARKELF4,
+			NpcID.SOTE_CAVE_WARRIOR_2, NpcID.SOTE_IORWERTH_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_2,
+			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_1, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_2,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_2, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_4,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_9, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_10
+		);
+		registerMapping(ELF_WARRIOR,
+			NpcID.MOURNING_GUARD_MELEE, NpcID.MOURNING_GUARD_MELEE2,
+			NpcID.REGICIDE_DARKELF2, NpcID.REGICIDE_DARKELF3,
+			NpcID.SOTE_CAVE_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_3, NpcID.SOTE_IORWERTH_WARRIOR_4,
+			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_3, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_4,
+			NpcID.PRIF_DARKELF2, NpcID.PRIF_DARKELF3,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_1, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_3,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_5, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_6,
+			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_7, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_8
+		);
+		registerMapping(ARIANWYN_DEFAULT,
+			NpcID.REGICIDE_GOOD_ELF3, NpcID.SOTE_ARIANWYN_CUTSCENE, NpcID.SOTE_ARIANWYN_CUTSCENE_NOMOVE,
+			NpcID.MOURNING_ARIANWYN_VIS
+		);
+		registerMapping(ARIANWYN_BOW,
+			NpcID.SOTE_ARIANWYN_COMBAT, NpcID.NZONE_SOTE_ARIANWYN_NORMAL, NpcID.SOTE_ARIANWYN_CUTSCENE_BOW
+		);
+		registerMapping(ISLWYN_DEFAULT,
+			NpcID.ROVING_ISLWYN_1OP, NpcID.ROVING_ISLWYN_2OPS, NpcID.SOTE_ISLWYN_VIS,
+			NpcID.SOTE_ISLWYN_CUTSCENE, NpcID.ISLWYN_PRIF
+		);
+		registerMapping(ISLWYN_BOW,
+			NpcID.SOTE_ISLWYN_UPASS, NpcID.SOTE_ISLWYN_CUTSCENE_BOW, NpcID.SOTE_ISLWYN_BATTLE
+		);
+		registerMapping(ELUNED_DEFAULT,
+			NpcID.ROVING_FEMALE_WOODELF_TEMP_1, NpcID.ROVING_FEMALE_WOODELF_1OP,
+			NpcID.ROVING_FEMALE_WOODELF_2OP, NpcID.SOTE_ELUNED_UPASS, NpcID.SOTE_ELUNED_CUTSCENE,
+			NpcID.ELUNED_PRIF
+		);
+		// Deliberately left out: the Lletya townsfolk Goreu (MOURNING_TOWN_ELF_1), Mawrth
+		// (MOURNING_TOWN_ELF_4, SOTE_MAWRTH, SOTE_MAWRTH_CUTSCENE), Arvel (MOURNING_TOWN_ELF_3) and
+		// Kelyn (MOURNING_TOWN_ELF_5_VIS, SOTE_LADY_ITHELL_NORMAL). They postdate the Feb-2005 cache,
+		// and no 2005 elf is close enough to stand in for them
+
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.
 		NAME_MAPPINGS.put("hill giant", HILL_GIANT_DEFAULT);
@@ -1522,6 +1860,60 @@ public class RetroNpcMapping
 		// Underground Pass "Blessed Giant rat" NPCs
 		NAME_MAPPINGS.put("blessed giant rat", GIANT_RAT_DEFAULT);
 		registerMapping(GIANT_RAT_DEFAULT, NpcID.BLESSED_GIANTRAT, NpcID.BLESSED_GIANTRAT2);
+
+		// Small spiders. The post-2005 NPCs named plain "Spider" swap too, apart from the Hallowed
+		// Sepulchre ones in EXCLUDED_IDS. The variants are all named plain "Spider", so only their
+		// ids reach them
+		NAME_MAPPINGS.put("spider", SPIDER_DEFAULT);
+		registerMapping(SPIDER_DEFAULT,
+			NpcID.SPIDER, NpcID.SOS_PEST_SPIDER,
+			NpcID.SPIDER_NONCOMBAT, NpcID.SPIDER_THAT_SPAWNS_VAMPYRES, NpcID.SPIDER_NOCOMBAT2,
+			NpcID.AKD_SPIDER_NOOP
+		);
+		registerMapping(SPIDER_UPASS, NpcID.UPASS_LITTLE_SPIDER);
+		registerMapping(SPIDER_MM, NpcID.MM_WAREHOUSE_SPIDER, NpcID.MM_CUTSCENE_SPIDER);
+		registerMapping(SPIDER_RED, NpcID.LABORATORY_SPIDER, NpcID.LABORATORY_SPIDER_AGGRESSIVE);
+		NAME_MAPPINGS.put("crypt spider", CRYPT_SPIDER);
+		registerMapping(CRYPT_SPIDER, NpcID.BARROWS_SPIDER);
+
+		// Large spiders
+		NAME_MAPPINGS.put("giant spider", GIANT_SPIDER);
+		registerMapping(GIANT_SPIDER,
+			NpcID.GIANTSPIDER1, NpcID.GIANTSPIDER2, NpcID.SOS_PEST_GIANTSPIDER1
+		);
+		NAME_MAPPINGS.put("shadow spider", SHADOW_SPIDER);
+		registerMapping(SHADOW_SPIDER, NpcID.SHADOW_SPIDER);
+		NAME_MAPPINGS.put("blessed spider", BLESSED_SPIDER);
+		registerMapping(BLESSED_SPIDER, NpcID.BLESSED_SPIDER, NpcID.BLESSED_SPIDER_KALRAG);
+		NAME_MAPPINGS.put("deadly red spider", DEADLY_RED_SPIDER);
+		registerMapping(DEADLY_RED_SPIDER, NpcID.DEADLY_RED_SPIDER);
+		NAME_MAPPINGS.put("jungle spider", JUNGLE_SPIDER);
+		registerMapping(JUNGLE_SPIDER, NpcID.JUNGLE_SPIDER, NpcID.TBWCU_JUNGLE_SPIDER);
+		registerMapping(JUNGLE_SPIDER_BUSH, NpcID.TBWCU_SPIDER_APPEAR);
+		registerMapping(MM_JUNGLE_SPIDER, NpcID.MM_JUNGLE_SPIDER);
+		NAME_MAPPINGS.put("giant crypt spider", GIANT_CRYPT_SPIDER);
+		registerMapping(GIANT_CRYPT_SPIDER, NpcID.BARROWS_GIANTSPIDER);
+		NAME_MAPPINGS.put("ice spider", ICE_SPIDER);
+		registerMapping(ICE_SPIDER,
+			NpcID.ICE_SPIDER, NpcID.ICE_SPIDER_SHORTRANGE, NpcID.TAPO_ICE_SPIDER_SHORTRANGE
+		);
+		NAME_MAPPINGS.put("poison spider", POISON_SPIDER);
+		registerMapping(POISON_SPIDER,
+			NpcID.POISONSPIDER, NpcID.DUNGEONSPIDER, NpcID.WBR_CAVE_POISONSPIDER, NpcID.WBR_POISONSPIDER
+		);
+
+		// Bears
+		NAME_MAPPINGS.put("grizzly bear", BEAR_BROWN);
+		registerMapping(BEAR_BROWN, NpcID.BROWNBEAR, NpcID.WBR_BEAR);
+		NAME_MAPPINGS.put("black bear", BEAR_BLACK);
+		registerMapping(BEAR_BLACK, NpcID.DARKBEAR);
+		registerMapping(GRIZZLY_BEAR, NpcID.REGICIDE_DARKBEAR);
+		NAME_MAPPINGS.put("grizzly bear cub", GRIZZLY_BEAR_CUB_1);
+		registerMapping(GRIZZLY_BEAR_CUB_1, NpcID.REGICIDE_DARKBEAR_CUB1);
+		registerMapping(GRIZZLY_BEAR_CUB_2, NpcID.REGICIDE_DARKBEAR_CUB2);
+		NAME_MAPPINGS.put("bear cub", BEAR_CUB_1);
+		registerMapping(BEAR_CUB_1, NpcID.BROWNBEAR_CUB_1, NpcID.PRIF_GEE);
+		registerMapping(BEAR_CUB_2, NpcID.BROWNBEAR_CUB_2);
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
