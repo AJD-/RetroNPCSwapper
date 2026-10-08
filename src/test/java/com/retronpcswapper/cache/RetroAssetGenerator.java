@@ -294,7 +294,11 @@ public class RetroAssetGenerator
 		// survives as today's Magical symbol and so does model id 2086, but the mesh behind it was
 		// overwritten in 2006 and is nowhere else in the live cache. Static - no rig, no clips -
 		// and flat colored, so there is no texture to carry either.
-		new Spec("Mystical wall chart", Source.RETRO, Source.RETRO, new int[]{2086}, new int[]{})
+		new Spec("Mystical wall chart", Source.RETRO, Source.RETRO, new int[]{2086}, new int[]{}),
+		// Scenery: the well, object 884. Model id 1410 now holds a rebuilt 265-vertex well with no
+		// textures; the 2005 one (132 vertices, textures 2 and 22, both unchanged live) is nowhere
+		// else in the live cache. Static, like the wall chart
+		new Spec("Well", Source.RETRO, Source.RETRO, new int[]{1410}, new int[]{})
 	);
 
 	private enum Source

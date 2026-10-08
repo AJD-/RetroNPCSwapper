@@ -45,11 +45,14 @@ import net.runelite.cache.fs.Store;
  * thing is not an NPC. This tool is what tells those two apart.
  *
  * <p>Run with {@code ./gradlew dumpObjectDefinitions -Pobj=dairy} (ids, or a name substring), and
- * optionally {@code -PcacheDir=...}. Lives in the test sourceSet and is never shipped.
+ * optionally {@code -PcacheDir=...}. {@code -Pmodels=1410,1453} instead lists every object that
+ * draws one of those models - which is how a scenery swap finds all the copies of a replaced mesh,
+ * not just the object it was first seen on. Lives in the test sourceSet and is never shipped.
  */
 public class ModernObjectDumper
 {
 	private static final String CACHE_DIR_PROPERTY = "retronpcswapper.cacheDir";
+	private static final String MODELS_PROPERTY = "retronpcswapper.models";
 
 	private static final String[] DEFAULT_CACHE_DIRS = {
 		".runelite/jagexcache/oldschool/LIVE",
@@ -85,10 +88,21 @@ public class ModernObjectDumper
 			System.out.println("Object definitions: " + objectManager.getObjects().size());
 			System.out.println();
 
+			String models = System.getProperty(MODELS_PROPERTY);
+			if (models != null && !models.isEmpty())
+			{
+				for (String model : models.split(","))
+				{
+					dumpByModel(objectManager, Integer.parseInt(model.trim()));
+				}
+				return;
+			}
+
 			if (args.length == 0)
 			{
 				System.out.println("Usage: ./gradlew dumpObjectDefinitions -Pobj=1234,5678");
 				System.out.println("       ./gradlew dumpObjectDefinitions -Pobj=dairy");
+				System.out.println("       ./gradlew dumpObjectDefinitions -Pmodels=1410");
 				return;
 			}
 
@@ -168,14 +182,43 @@ public class ModernObjectDumper
 		}
 	}
 
+	/**
+	 * Prints every definition that draws a model, with no cap - the point is the complete list.
+	 */
+	private static void dumpByModel(ObjectManager objectManager, int model)
+	{
+		List<Integer> ids = new ArrayList<>();
+		for (ObjectDefinition object : objectManager.getObjects())
+		{
+			int[] objectModels = object.getObjectModels();
+			if (objectModels != null && Arrays.stream(objectModels).anyMatch(m -> m == model))
+			{
+				print(object);
+				ids.add(object.getId());
+			}
+		}
+		System.out.println("Model " + model + " is drawn by " + ids.size() + " objects: " + ids);
+		System.out.println();
+	}
+
 	private static void print(ObjectDefinition object)
 	{
 		System.out.println(object.getName() + " (id " + object.getId() + ")");
 		System.out.println("  models        " + Arrays.toString(object.getObjectModels()));
+		if (object.getObjectTypes() != null)
+		{
+			System.out.println("  modelTypes    " + Arrays.toString(object.getObjectTypes()));
+		}
 		System.out.println("  modelSize     " + object.getModelSizeX() + "/" + object.getModelSizeHeight()
 			+ "/" + object.getModelSizeY());
 		System.out.println("  size          " + object.getSizeX() + "x" + object.getSizeY());
 		System.out.println("  animationID   " + object.getAnimationID());
+		System.out.println("  ambient       " + object.getAmbient() + " contrast " + object.getContrast());
+		System.out.println("  contoured     " + object.getContouredGround() + " rotated " + object.isRotated());
+		if (object.getConfigChangeDest() != null)
+		{
+			System.out.println("  children      " + Arrays.toString(object.getConfigChangeDest()));
+		}
 		if (object.getRecolorToFind() != null)
 		{
 			System.out.println("  recolor       " + Arrays.toString(object.getRecolorToFind())

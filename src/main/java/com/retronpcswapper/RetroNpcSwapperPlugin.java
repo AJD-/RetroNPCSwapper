@@ -31,9 +31,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
@@ -60,6 +62,8 @@ import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.DecorativeObjectDespawned;
 import net.runelite.api.events.DecorativeObjectSpawned;
+import net.runelite.api.events.GameObjectDespawned;
+import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.InteractingChanged;
@@ -440,6 +444,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 	public void onDecorativeObjectDespawned(DecorativeObjectDespawned event)
 	{
 		scenerySwapper.onDespawned(event.getDecorativeObject());
+	}
+
+	@Subscribe
+	public void onGameObjectSpawned(GameObjectSpawned event)
+	{
+		scenerySwapper.onSpawned(event.getGameObject());
+	}
+
+	@Subscribe
+	public void onGameObjectDespawned(GameObjectDespawned event)
+	{
+		scenerySwapper.onDespawned(event.getGameObject());
 	}
 
 	@Subscribe
@@ -888,8 +904,25 @@ public class RetroNpcSwapperPlugin extends Plugin
 		boolean shield = config.swapAntiDragonShield() && allowed;
 		// Without the wrapper there is no draw to swap the worn shield in at, and nothing to undo
 		shieldSwapper.refresh(shield, shield);
-		// Likewise the pentagrams
-		scenerySwapper.refresh(config.swapMysticalWallCharts() && allowed && wrapper != null);
+		// Likewise the scenery
+		scenerySwapper.refresh(allowed && wrapper != null ? wantedScenery(config) : EnumSet.noneOf(RetroScenery.class));
+	}
+
+	/**
+	 * The scenery the config asks to see as 2005.
+	 */
+	static Set<RetroScenery> wantedScenery(RetroNpcConfig config)
+	{
+		Set<RetroScenery> wanted = EnumSet.noneOf(RetroScenery.class);
+		if (config.swapMysticalWallCharts())
+		{
+			wanted.add(RetroScenery.MYSTICAL_WALL_CHART);
+		}
+		if (config.swapWells())
+		{
+			wanted.add(RetroScenery.WELL);
+		}
+		return wanted;
 	}
 
 	/**
