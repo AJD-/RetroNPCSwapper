@@ -91,6 +91,9 @@ enum RetroScenery
 	 * vertex and face color - and simply went unused when the live magic tree moved to model 7978,
 	 * so it is drawn straight from the live cache. The untinted copies on 7978 follow; the farming
 	 * patch's growth stage on it does not, or one stage of eleven would grow into a 2005 tree.
+	 * A magic tree placed as 10835 - a parent switching by varbit 4153 between this tree and its
+	 * stump - stays live: the swapper knows an object by the id placed in the map, not the child
+	 * the client resolves it to.
 	 */
 	MAGIC_TREE(Source.LIVE_CACHE, Placement.GAME_OBJECT, 1693, 0, 0, ObjectID.MAGICTREE,
 		ObjectID.CRAB_MAGICTREE, ObjectID.CRAB_MAGICTREE_NOOP);
