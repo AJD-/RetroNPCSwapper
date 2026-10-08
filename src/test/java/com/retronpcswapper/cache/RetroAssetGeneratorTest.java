@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.retronpcswapper.inject.*;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.cache.definitions.ModelDefinition;
 import net.runelite.cache.fs.Store;
 import org.junit.Test;
@@ -255,6 +256,83 @@ public class RetroAssetGeneratorTest
 	public void testRetroAndLiveClipPathsAgreeOnTheBear() throws Exception
 	{
 		assertClipPathsAgree(BEAR_SEQUENCES);
+	}
+
+	/**
+	 * The Kalphite deaths are 2005 clips keyed under longer modern sequences - 5 frames over 40, 13
+	 * over 20, 7 over 34. Each must run through its own frames once and then hold the corpse, not
+	 * collapse onto it or stretch.
+	 */
+	@Test
+	public void testKalphiteDeathsPlayOnceAndHold() throws Exception
+	{
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not present", liveDir != null);
+		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
+
+		RetroCacheReader retro = new RetroCacheReader(RETRO_CACHE_DIR);
+		assertTrue("could not open the 2005 cache", retro.init());
+
+		// modern id, 2005 sequence, 2005 frame count
+		int[][] deaths = {
+			{AnimationID.KALPHITE_UPDATE_DEATH, 1190, 5},
+			{AnimationID.KALPHITE_UPDATE_QUEEN_DEATH, 1187, 13},
+			{AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEATH, 1182, 7}
+		};
+
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+
+			RetroFrameIndex frames = RetroFrameDecoder.decodeAll(retro);
+			Map<Integer, RetroSeqDefinition> sequences = RetroAssetGenerator.decodeRetroSequences(retro);
+			Map<Integer, RetroRig> rigs = new LinkedHashMap<>();
+
+			for (int[] death : deaths)
+			{
+				RetroClip clip = RetroAssetGenerator.buildRetroClip(
+					store, death[0], death[1], frames, sequences, rigs);
+				assertNotNull("clip " + death[0], clip);
+
+				int retroCount = death[2];
+				assertTrue("clip " + death[0] + " should be longer than its 2005 source",
+					clip.getFrameCount() > retroCount);
+
+				for (int frame = 1; frame < retroCount; frame++)
+				{
+					assertFalse("clip " + death[0] + " frame " + frame + " repeats the one before it",
+						samePose(clip, frame - 1, frame));
+				}
+				for (int frame = retroCount; frame < clip.getFrameCount(); frame++)
+				{
+					assertTrue("clip " + death[0] + " frame " + frame + " must hold the corpse",
+						samePose(clip, retroCount - 1, frame));
+				}
+			}
+		}
+		finally
+		{
+			retro.close();
+		}
+	}
+
+	private static boolean samePose(RetroClip clip, int a, int b)
+	{
+		if (clip.getOpCount(a) != clip.getOpCount(b))
+		{
+			return false;
+		}
+		for (int op = 0; op < clip.getOpCount(a); op++)
+		{
+			if (clip.getTransform(a, op) != clip.getTransform(b, op)
+				|| clip.getDx(a, op) != clip.getDx(b, op)
+				|| clip.getDy(a, op) != clip.getDy(b, op)
+				|| clip.getDz(a, op) != clip.getDz(b, op))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static void assertClipPathsAgree(int[] sequenceIds) throws Exception

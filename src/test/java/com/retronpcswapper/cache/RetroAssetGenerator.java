@@ -226,6 +226,70 @@ public class RetroAssetGenerator
 				AnimationID.SCORPION_UPDATE_DEATH},
 			// the 2005 sequences whose frames fill them
 			new int[]{245, 244, 246, 247, 248}),
+		// Every 2005 Kalphite mesh (3849-3854) is gone from the live cache, replaced by 16-vertex
+		// placeholders, and the 2005 sequences were reused (1176-1182, 1187) or re-rigged (1170, 1178,
+		// 1185, 1188, 1250). So, as with the scorpion, the archetypes play the modern
+		// KALPHITE_UPDATE ids and the 2005 frames are keyed under them.
+		//
+		// Guardian 3849, crawling queen 3850, soldier 3851 and worker/larva 3852 all ride 2005 rig
+		// file 282, which addresses every group they bind
+		new Spec("Kalphites", Source.RETRO, Source.RETRO, new int[]{3849, 3850, 3851, 3852},
+			new int[]{
+				AnimationID.KALPHITE_UPDATE_READY, AnimationID.KALPHITE_UPDATE_LORD_READY,
+				AnimationID.KALPHITE_UPDATE_WALK, AnimationID.KALPHITE_UPDATE_LARVAE_WALK,
+				AnimationID.KALPHITE_UPDATE_LORD_WALK,
+				AnimationID.KALPHITE_UPDATE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_LARVAE_JAWS_ATTACK,
+				AnimationID.KALPHITE_UPDATE_CLAW_ATTACK, AnimationID.KALPHITE_UPDATE_CLAW_LORD_ATTACK,
+				AnimationID.KALPHITE_UPDATE_RANGED_ATTACK,
+				AnimationID.KALPHITE_UPDATE_DEFEND,
+				AnimationID.KALPHITE_UPDATE_DEATH, AnimationID.KALPHITE_UPDATE_LARVAE_DEATH,
+				AnimationID.KALPHITE_UPDATE_LORD_DEATH,
+				AnimationID.KALPHITE_UPDATE_QUEEN_READY, AnimationID.KALPHITE_UPDATE_QUEEN_WALK,
+				AnimationID.KALPHITE_UPDATE_QUEEN_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_QUEEN_RANGED_ATTACK,
+				AnimationID.KALPHITE_UPDATE_QUEEN_DEFEND, AnimationID.KALPHITE_UPDATE_QUEEN_DEATH,
+				// Old ids live re-rigged onto the modern ground framemap 1422 rather than retiring,
+				// so the server may still send them
+				AnimationID.KALPHITE_LIGHTNING, AnimationID.KALPHITE_LIGHTNING_DUPE,
+				AnimationID.KALPHITE_ATTACK_CLAWS, AnimationID.KALPHITE_HATCHING},
+			// KALPHITE_READY 1183, WALK 1189, ATTACK_MANDIBLES 1184, ATTACK_CLAWS 1185, RANGED_ATTACK
+			// 1251, BLOCK 1186, DEATH 1190. The crawling queen shares the kit, and takes 1187 as her
+			// death - the only other clip on the rig that ends on a corpse hold. 1188 HATCHING is a
+			// larva leaving its egg, not a death
+			new int[]{
+				1183, 1183,
+				1189, 1189,
+				1189,
+				1184, 1184,
+				1185, 1185,
+				1251,
+				1186,
+				1190, 1190,
+				1190,
+				1183, 1189,
+				1184, 1251,
+				1186, 1187,
+				1172, 1172,
+				1185, 1188}),
+		// The airborne queen 3854 is the only mesh on rig file 284, the same family live
+		// FLYING_QUEEN ids sit on (framemap 1425) - so they take only its clips
+		new Spec("Kalphite Queen (airborne)", Source.RETRO, Source.RETRO, new int[]{3854},
+			new int[]{
+				AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_READY_WALK,
+				AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_STINGER_ATTACK,
+				AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_RANGED_ATTACK,
+				AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEFEND,
+				AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEATH,
+				AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_EMERGING,
+				// The same for the airborne framemap 1425
+				AnimationID.KALPHITE_QUEEN_LIGHTNING, AnimationID.KALPHITE_QUEEN_ATTACK_CLAWS,
+				AnimationID.KALPHITE_QUEEN_RANGED_ATTACK, AnimationID.KALPHITE_QUEEN_RANGED_ATTACK_DUPE},
+			// 1176 is the 2005 def's own stand and walk, 1178 KALPHITE_QUEEN_ATTACK_CLAWS, 1250
+			// KALPHITE_QUEEN_RANGED_ATTACK and 1182 the death (corpse hold). 1179 carries no attack
+			// priority, so it is the block. 1181 unfolds from the single held pose of 1180, which is
+			// the emerge
+			new int[]{1176, 1178, 1250, 1179, 1182, 1181,
+				1170, 1178,
+				1250, 1250}),
 		// Scenery, not an NPC: the pentagram on the Mystical wall chart, object 908. The object id
 		// survives as today's Magical symbol and so does model id 2086, but the mesh behind it was
 		// overwritten in 2006 and is nowhere else in the live cache. Static - no rig, no clips -

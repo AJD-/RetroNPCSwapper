@@ -77,6 +77,11 @@ public class RetroClipReachTest
 	static
 	{
 		CLIP_FLOORS.put(130, 80);
+		// Kalphite hatching on the worker mesh the larva shares, 84%. The worker's smaller body has
+		// no slice for some of rig 100282's groups, and its every clip sits at 88-92% for the same
+		// reason; this one simply moves more of them. The same clip reaches 90-100% on the bigger
+		// ground meshes
+		CLIP_FLOORS.put(1188, 80);
 		for (int humanClip : new int[]{808, 819, 836, 1156,
 			386, 387, 388, 389, 390, 391, 392,
 			393, 394, 395, 396, 397, 398, 399,
@@ -138,6 +143,22 @@ public class RetroClipReachTest
 		// The large scorpion, keyed by the modern SCORPION_UPDATE sequences its 2005 frames
 		// (244-248) were bundled under
 		{6252, 2967}, {6253, 2967}, {6254, 2967}, {6255, 2967}, {6256, 2967},
+		// The Kalphites, keyed by the modern KALPHITE_UPDATE sequences their 2005 frames fill. The
+		// ground family rides 2005 rig 100282 at 100% on the soldier, guardian and crawling queen.
+		// The worker lands at 88-92% - its smaller body has no slice for a few of the rig's ops,
+		// which is the same mesh the larva shares
+		{6218, 3852}, {6220, 3852}, {6221, 3852}, {6223, 3852}, {6224, 3852},
+		{6227, 3852}, {6228, 3852}, {6229, 3852},
+		{6218, 3851}, {6220, 3851}, {6223, 3851}, {6225, 3851}, {6227, 3851}, {6228, 3851},
+		{6219, 3849}, {6222, 3849}, {6225, 3849}, {6226, 3849}, {6227, 3849}, {6228, 3849},
+		{6230, 3849},
+		{6239, 3850}, {6238, 3850}, {6241, 3850}, {6240, 3850}, {6232, 3850}, {6242, 3850},
+		// Old ids live re-rigged onto the modern ground framemap, filled from their own 2005 frames
+		{1172, 3850}, {11814, 3850}, {1185, 3849}, {1185, 3851}, {1188, 3852},
+		// The airborne queen alone rides 2005 rig 100284, which reaches none of the ground meshes
+		// fully - 63-90%, with groups left orphaned - and all of hers
+		{6236, 3854}, {6235, 3854}, {6234, 3854}, {6237, 3854}, {6233, 3854}, {6270, 3854},
+		{1170, 3854}, {1178, 3854}, {1250, 3854}, {11813, 3854},
 		// A full 2005 guard kit against the 2005 human rig. Measured against the LIVE rig these
 		// score 60-63%, which looks like a mismatch but is not: framemap 0 addresses 218 groups for
 		// every equipment slot, and a nine-part kit only ever uses the ~35 named in the javadoc.
