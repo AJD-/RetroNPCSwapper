@@ -29,6 +29,7 @@ import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
 import com.retronpcswapper.inject.RetroModel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -272,11 +273,11 @@ public class RetroScenerySwapper implements RenderCallback
 		{
 			DecorativeObject decoration = (DecorativeObject) object;
 			int config = decoration.getConfig();
-			int type = RetroDecorController.type(config);
+			int type = ObjectPlacement.type(config);
 			for (boolean second : RetroDecorController.isDrawnTwice(type) ? new boolean[]{false, true} : new boolean[]{false})
 			{
 				Model model = carrier(scenery,
-					RetroDecorController.quarterTurns(type, RetroDecorController.orientation(config), second));
+					RetroDecorController.quarterTurns(type, ObjectPlacement.orientation(config), second));
 				if (model == null)
 				{
 					return;
@@ -287,7 +288,7 @@ public class RetroScenerySwapper implements RenderCallback
 		else
 		{
 			GameObject gameObject = (GameObject) object;
-			Model model = carrier(scenery, RetroDecorController.orientation(gameObject.getConfig()));
+			Model model = carrier(scenery, ObjectPlacement.orientation(gameObject.getConfig()));
 			if (model == null)
 			{
 				return;
@@ -644,14 +645,9 @@ public class RetroScenerySwapper implements RenderCallback
 		}
 
 		int count = mesh.getVerticesCount();
-		float[] x = new float[count];
-		float[] z = new float[count];
-		for (int v = 0; v < count; v++)
-		{
-			float[] turned = rotate(mesh.getVerticesX()[v], mesh.getVerticesZ()[v], quarterTurns);
-			x[v] = turned[0];
-			z[v] = turned[1];
-		}
+		float[] x = Arrays.copyOf(mesh.getVerticesX(), count);
+		float[] z = Arrays.copyOf(mesh.getVerticesZ(), count);
+		ObjectPlacement.turn(x, z, count, quarterTurns);
 
 		return new RetroMesh(mesh.getId(), mesh.getPriority(), x, mesh.getVerticesY(), z,
 			mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
@@ -667,34 +663,8 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	private static ModelData rotate(ModelData data, int quarterTurns)
 	{
-		float[] xs = data.getVerticesX();
-		float[] zs = data.getVerticesZ();
-		for (int v = 0; v < data.getVerticesCount(); v++)
-		{
-			float[] turned = rotate(xs[v], zs[v], quarterTurns);
-			xs[v] = turned[0];
-			zs[v] = turned[1];
-		}
+		ObjectPlacement.turn(data.getVerticesX(), data.getVerticesZ(), data.getVerticesCount(), quarterTurns);
 		return data;
-	}
-
-	/**
-	 * Turns a point by whole quarter turns, the way the renderer turns a model by its orientation:
-	 * {@code x' = z sin + x cos, z' = z cos - x sin}.
-	 */
-	static float[] rotate(float x, float z, int quarterTurns)
-	{
-		switch (quarterTurns & 3)
-		{
-			case 1:
-				return new float[]{z, -x};
-			case 2:
-				return new float[]{-x, -z};
-			case 3:
-				return new float[]{-z, x};
-			default:
-				return new float[]{x, z};
-		}
 	}
 
 	/**

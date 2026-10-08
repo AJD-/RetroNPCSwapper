@@ -121,20 +121,28 @@ public class RetroScenerySwapperTest
 	}
 
 	/**
-	 * Quarter turns of an offset must match the renderer's own rotation,
-	 * {@code x' = z sin + x cos, z' = z cos - x sin}, or the diagonal shift lands off the wall.
+	 * Quarter turns must match the renderer's own rotation,
+	 * {@code x' = z sin + x cos, z' = z cos - x sin}, or a diagonal shift lands off the wall and a
+	 * turned model faces the wrong way.
 	 */
 	@Test
-	public void testRotateMatchesTheRenderer()
+	public void testTurnMatchesTheRenderer()
 	{
+		float[] x0 = {45, 30};
+		float[] z0 = {-45, -70};
 		for (int quarters = 0; quarters < 4; quarters++)
 		{
 			double angle = quarters * Math.PI / 2;
 			long sin = Math.round(Math.sin(angle));
 			long cos = Math.round(Math.cos(angle));
-			int[] turned = RetroDecorController.rotate(45, -45, quarters);
-			assertEquals(-45 * sin + 45 * cos, turned[0]);
-			assertEquals(-45 * cos - 45 * sin, turned[1]);
+			float[] x = x0.clone();
+			float[] z = z0.clone();
+			ObjectPlacement.turn(x, z, 2, quarters);
+			for (int v = 0; v < 2; v++)
+			{
+				assertEquals(z0[v] * sin + x0[v] * cos, x[v], 0);
+				assertEquals(z0[v] * cos - x0[v] * sin, z[v], 0);
+			}
 		}
 	}
 
@@ -298,19 +306,6 @@ public class RetroScenerySwapperTest
 		assertEquals(256, RetroGameObjectController.orientation(config(11, 2)));
 	}
 
-	/** Turning a model's points matches turning the stand-in by the same quarter turns did. */
-	@Test
-	public void testModelTurnsMatchTheRenderers()
-	{
-		for (int quarters = 0; quarters < 4; quarters++)
-		{
-			int[] expected = RetroDecorController.rotate(30, -70, quarters);
-			float[] turned = RetroScenerySwapper.rotate(30, -70, quarters);
-			assertEquals(expected[0], turned[0], 0);
-			assertEquals(expected[1], turned[1], 0);
-		}
-	}
-
 	/**
 	 * The bookcase's books face +x, away from the client's light. Lit where it stands, a bookcase
 	 * turned half round must be lit as the client lights it - turned first, so the books face the
@@ -439,7 +434,7 @@ public class RetroScenerySwapperTest
 	{
 		int config = config(5, 3) | 1 << 5;     // bit 5 sits between the two fields and belongs to neither
 
-		assertEquals(5, RetroDecorController.type(config));
-		assertEquals(3, RetroDecorController.orientation(config));
+		assertEquals(5, ObjectPlacement.type(config));
+		assertEquals(3, ObjectPlacement.orientation(config));
 	}
 }

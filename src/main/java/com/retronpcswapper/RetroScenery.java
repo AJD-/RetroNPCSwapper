@@ -123,10 +123,6 @@ enum RetroScenery
 		GAME_OBJECT
 	}
 
-	// Placement types, as the client numbers them
-	static final int TYPE_CENTREPIECE = 10;
-	static final int TYPE_DIAGONAL_CENTREPIECE = 11;
-
 	private static final Map<Integer, RetroScenery> BY_OBJECT_ID = new HashMap<>();
 
 	static
@@ -203,15 +199,16 @@ enum RetroScenery
 		{
 			case WALL_DECORATION:
 				return object instanceof DecorativeObject
-					&& RetroDecorController.isSupportedType(RetroDecorController.type(((DecorativeObject) object).getConfig()))
+					&& RetroDecorController.isSupportedType(ObjectPlacement.type(((DecorativeObject) object).getConfig()))
 					? scenery : null;
 			case GAME_OBJECT:
 				if (!(object instanceof GameObject))
 				{
 					return null;
 				}
-				int type = RetroDecorController.type(((GameObject) object).getConfig());
-				return type == TYPE_CENTREPIECE || type == TYPE_DIAGONAL_CENTREPIECE ? scenery : null;
+				int type = ObjectPlacement.type(((GameObject) object).getConfig());
+				return type == ObjectPlacement.TYPE_CENTREPIECE || type == ObjectPlacement.TYPE_DIAGONAL_CENTREPIECE
+					? scenery : null;
 			default:
 				return null;
 		}
