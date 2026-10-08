@@ -928,6 +928,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			wanted.add(RetroScenery.WELL);
 		}
+		if (config.swapWardrobes())
+		{
+			wanted.add(RetroScenery.WARDROBE);
+			wanted.add(RetroScenery.WARDROBE_OPEN);
+			wanted.add(RetroScenery.WARDROBE_OPEN_SKELETON);
+		}
 		return wanted;
 	}
 

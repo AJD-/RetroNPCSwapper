@@ -298,7 +298,11 @@ public class RetroAssetGenerator
 		// Scenery: the well, object 884. Model id 1410 now holds a rebuilt 265-vertex well with no
 		// textures; the 2005 one (132 vertices, textures 2 and 22, both unchanged live) is nowhere
 		// else in the live cache. Static, like the wall chart
-		new Spec("Well", Source.RETRO, Source.RETRO, new int[]{1410}, new int[]{})
+		new Spec("Well", Source.RETRO, Source.RETRO, new int[]{1410}, new int[]{}),
+		// Scenery: the Draynor Manor wardrobe closed (388), open (389) and open with the skeleton
+		// (390). All three ids now hold rebuilt wardrobes (0-3% vertex overlap) and the 2005 meshes
+		// are nowhere else in the live cache. Their texture 26 is unchanged live
+		new Spec("Wardrobes", Source.RETRO, Source.RETRO, new int[]{1951, 1953, 1949}, new int[]{})
 	);
 
 	private enum Source

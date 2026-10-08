@@ -452,4 +452,16 @@ public interface RetroNpcConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "swapWardrobes",
+		name = "Wardrobes",
+		description = "Restore the 2005 Draynor Manor wardrobes - closed, open, and with the skeleton inside.",
+		section = scenerySection,
+		position = 3
+	)
+	default boolean swapWardrobes()
+	{
+		return true;
+	}
 }

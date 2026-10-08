@@ -204,6 +204,35 @@ public class RetroScenerySwapperTest
 		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WELL, config(4, 0)), ALL));
 	}
 
+	/**
+	 * The Draynor Manor wardrobes, Fenkenstrain's broom cupboard - the same meshes in 2005 - and
+	 * their untinted copies all take a stand-in.
+	 */
+	@Test
+	public void testTheWardrobesAreHiddenWhileActive()
+	{
+		for (int id : new int[]{ObjectID.SPOOKYWARDROBE, ObjectID.SPOOKYWARDROBE_OPEN,
+			ObjectID.SPOOKYWARDROBE_OPEN_SKELETON, ObjectID.DRAGONSLAYER_SPOOKYWARDROBE,
+			ObjectID.DRAGONSLAYER_SPOOKYWARDROBE_OPEN, ObjectID.FENK_BROOMCUPBOARD,
+			ObjectID.FENK_BROOMCUPBOARD_OPEN, ObjectID.DEAL_BROOMCUPBOARD, ObjectID.DEAL_BROOMCUPBOARD_OPEN})
+		{
+			assertTrue("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
+	/** The recoloured wardrobes on the same live meshes are left alone, like the later wells. */
+	@Test
+	public void testRecolouredWardrobesAreLeftAlone()
+	{
+		for (int id : new int[]{ObjectID.DRAYNOR_WARDROBE, ObjectID.DRAYNOR_WARDROBE_OPEN,
+			ObjectID.DRAYNOR_WARDROBE_OPEN_SKELETON, ObjectID.SITHIKS_WARDROBE,
+			ObjectID.GRIM_WITCH_HOUSE_SPOOKYWARDROBE, ObjectID.KR_CAM_SPOOKYWARDROBE,
+			ObjectID.MISTMYST_BOSS_WARDROBE})
+		{
+			assertFalse("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
 	/** The later wells on the same live mesh never had a 2005 look and are not restored. */
 	@Test
 	public void testLaterWellsAreLeftAlone()

@@ -53,7 +53,26 @@ enum RetroScenery
 	 * left alone: they never had a 2005 look, and their recolours target colours the 2005 mesh
 	 * does not use.
 	 */
-	WELL(Placement.GAME_OBJECT, 1410, 0, 0, ObjectID.WELL, ObjectID.FAI_VARROCK_WELL);
+	WELL(Placement.GAME_OBJECT, 1410, 0, 0, ObjectID.WELL, ObjectID.FAI_VARROCK_WELL),
+
+	/**
+	 * 2005 def 388, mesh 1951 - the Draynor Manor wardrobe. The live id holds a rebuilt wardrobe
+	 * that carries its texture-26 panel as a second model, 5531; the 2005 mesh has the panel
+	 * built in, so hiding the object hides both. Fenkenstrain's broom cupboard was the same mesh
+	 * on a 1x2 footprint in 2005 (def 5156), and the untinted Dragon Slayer and broom cupboard
+	 * copies follow it. The recoloured copies - Draynor village, Sithik, the Grim witch's house,
+	 * Kourend, Mistmyst - are left alone, for the same reason as the later wells.
+	 */
+	WARDROBE(Placement.GAME_OBJECT, 1951, 0, 0, ObjectID.SPOOKYWARDROBE,
+		ObjectID.DRAGONSLAYER_SPOOKYWARDROBE, ObjectID.FENK_BROOMCUPBOARD, ObjectID.DEAL_BROOMCUPBOARD),
+
+	/** 2005 def 389, mesh 1953: the same wardrobe opened, and its copies as for {@link #WARDROBE}. */
+	WARDROBE_OPEN(Placement.GAME_OBJECT, 1953, 0, 0, ObjectID.SPOOKYWARDROBE_OPEN,
+		ObjectID.DRAGONSLAYER_SPOOKYWARDROBE_OPEN, ObjectID.FENK_BROOMCUPBOARD_OPEN,
+		ObjectID.DEAL_BROOMCUPBOARD_OPEN),
+
+	/** 2005 def 390, mesh 1949: opened, with the skeleton inside. Its only copy is recoloured. */
+	WARDROBE_OPEN_SKELETON(Placement.GAME_OBJECT, 1949, 0, 0, ObjectID.SPOOKYWARDROBE_OPEN_SKELETON);
 
 	/** How a scenery object sits in the scene, which decides how its stand-in is placed. */
 	enum Placement
