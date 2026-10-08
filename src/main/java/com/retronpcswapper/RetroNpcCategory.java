@@ -54,5 +54,6 @@ public enum RetroNpcCategory
 	SMALL_SCORPIONS,
 	ELVES,
 	SPIDERS,
-	BEARS
+	BEARS,
+	KALPHITES
 }

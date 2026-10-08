@@ -327,6 +327,20 @@ public interface RetroNpcConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "swapKalphites",
+		name = "Kalphites",
+		description = "<html><body style='width:170px'>Swap the modern Kalphite Queen, Guardians, "
+			+ "Soldiers, Workers and Larvae to their 2004/2005 retro models and animations.<br><br>Needs "
+			+ "<b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
+		section = npcTogglesSection,
+		position = 19
+	)
+	default boolean swapKalphites()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Safety",
 		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",
