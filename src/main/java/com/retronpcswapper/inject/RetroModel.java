@@ -32,8 +32,8 @@ import net.runelite.api.Node;
 
 /**
  * Geometry this plugin owns, presented to the renderer as a {@link Model}.
- *
- * <p>This is the whole point of the injection work: it makes it possible to draw a mesh that has no
+ * <p>
+ * This is the whole point of the injection work: it makes it possible to draw a mesh that has no
  * live cache id at all, which is the only way to bring back assets Jagex overwrote.
  *
  * <h2>Why this can be handed to the renderer at all</h2>
@@ -68,20 +68,20 @@ import net.runelite.api.Node;
  * does set {@code NORMALS}, and {@code UNLIT_FACE_COLORS} under some shading modes, but null-checks
  * both: missing normals fall back to flat face normals, and missing unlit colors to the lit ones.
  * {@code drawFrustum} and {@code drawOrtho} belong to the software rasterizer, which neither uses.
- *
- * <p><b>Maintenance cost, deliberately accepted:</b> {@code Model} has no default methods, so a
+ * <p>
+ * <b>Maintenance cost, deliberately accepted:</b> {@code Model} has no default methods, so a
  * RuneLite release that adds one breaks compilation here. Nothing pins the client version to stop
  * that: {@code build.gradle} resolves {@code latest.release}, matching the example-plugin template,
  * and the Hub rebuilds against whatever is current regardless of what a plugin asks for.
- *
- * <p>That cuts two ways, and the difference matters. Through the Hub the failure is loud and
+ * <p>
+ * That cuts two ways, and the difference matters. Through the Hub the failure is loud and
  * contained - the rebuild fails, the plugin is delisted until it is patched, and no user ever runs
  * a jar missing a method. A <b>sideloaded</b> jar is the dangerous case: it meets whatever client
  * the launcher runs, and a method added since it was compiled surfaces at runtime as
  * {@link AbstractMethodError} inside the uploader - an {@code Error}, which the GPU plugin's
  * {@code catch (Exception)} will not contain.
- *
- * <p>So the mitigation is upkeep rather than a version range: when {@code Model} changes, this
+ * <p>
+ * So the mitigation is upkeep rather than a version range: when {@code Model} changes, this
  * class changes with it. The interface was last read in full against client 1.12.38.
  */
 @Slf4j
@@ -209,12 +209,12 @@ public class RetroModel implements Model
 
 	/**
 	 * Takes a full copy of another model's geometry into this one's own buffers.
-	 *
-	 * <p>Copying rather than aliasing is the point: the client's posed model is shared and is
+	 * <p>
+	 * Copying rather than aliasing is the point: the client's posed model is shared and is
 	 * invalidated by the next {@code applyTransformations} call, including the client's own, so
 	 * holding a reference to its arrays would be a use-after-free in slow motion.
-	 *
-	 * <p>Every buffer but the texture triangles' is grown on demand and reused, so a steady state
+	 * <p>
+	 * Every buffer but the texture triangles' is grown on demand and reused, so a steady state
 	 * does not allocate. The per-face columns that may be null stay null when the source's are: a
 	 * null there carries meaning to the renderer, so such a column is set to its buffer or to null.
 	 */
@@ -362,8 +362,8 @@ public class RetroModel implements Model
 
 	/**
 	 * Appends the source's texture triangles, and its per-face references to them.
-	 *
-	 * <p>{@code textureFaces} names a texture triangle per face as an unsigned byte, with -1 for
+	 * <p>
+	 * {@code textureFaces} names a texture triangle per face as an unsigned byte, with -1 for
 	 * none, so the two models together can address at most 255. Past that the appended faces drop
 	 * their mapping rather than wrap onto the wrong triangle - the uploader then falls back to its
 	 * default UVs for them.
@@ -618,17 +618,17 @@ public class RetroModel implements Model
 	/**
 	 * Recomputes the bounding cylinder the renderer reads through {@link #getRadius()} and
 	 * {@link #getDiameter()} for culling and sorting.
-	 *
-	 * <p>The client calls this on every model it is about to draw, so it has to be cheap and it has
+	 * <p>
+	 * The client calls this on every model it is about to draw, so it has to be cheap and it has
 	 * to be idempotent. A transcription of the client's own bounds routine, kept deliberately
 	 * faithful.
-	 *
-	 * <p>These are not free-form numbers. {@code ModelUploader.uploadSortedModel} buckets each face
+	 * <p>
+	 * These are not free-form numbers. {@code ModelUploader.uploadSortedModel} buckets each face
 	 * by {@code radius + meanDepth} into an array of {@code diameter} slots and asserts the index
 	 * lands in {@code [0, diameter)}, so a radius that is too small is an {@code AssertionError}
 	 * inside the renderer rather than a cosmetic difference.
-	 *
-	 * <p>Note the arithmetic is done in floats with a {@link Math#ceil} at each step, and that the
+	 * <p>
+	 * Note the arithmetic is done in floats with a {@link Math#ceil} at each step, and that the
 	 * result is asymmetric: {@code radius} uses the extent <em>above</em> the origin and the second
 	 * term uses the extent below. That is not an oversight in the original - it leans on the game's
 	 * constrained camera pitch, so a model's top is never the far side.

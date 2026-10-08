@@ -34,6 +34,15 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Elves** — (Attackable only)
 - **Kalphites** — KQ, Guardians, Soldiers, Workers, Larvae
 
+Under **Scenery**, each restored to its 2005 model:
+
+- **Mystical wall charts** — the pre-2006 pentagram in place of the Magical symbol
+- **Wells** — the 2005 well, in place of the rebuilt one and Varrock's 2007 replacement
+- **Wardrobes** — the 2005 Draynor Manor wardrobe, closed, open and with the skeleton inside
+- **Trees** — the 2005 oak and magic trees. The magic tree's 2005 model is still in the live cache,
+  unused, and is drawn from there
+- **Picnic benches** — the 2005 picnic bench
+
 ![config](img/retronpcswapperconfig.png)
 
 ## Requirements
@@ -52,15 +61,6 @@ kept the mesh but lost the rig: the imp and baby dragon meshes survived, but the
 behind their surviving sequence IDs were re-authored for the modern skeletons. Either way the
 geometry, the animation, or both have to come from the 2005 data instead of the live cache.
 </details>
-
-Under **Scenery**, each restored to its 2005 model:
-
-- **Mystical wall charts** — the pre-2006 pentagram in place of the Magical symbol
-- **Wells** — the 2005 well, in place of the rebuilt one and Varrock's 2007 replacement
-- **Wardrobes** — the 2005 Draynor Manor wardrobe, closed, open and with the skeleton inside
-- **Trees** — the 2005 oak and magic trees. The magic tree's 2005 model is still in the live cache,
-  unused, and is drawn from there
-- **Picnic benches** — the 2005 picnic bench
 
 Scenery stand-ins draw over the live object, which stays in the scene: its clickbox and menu
 options are the live ones. Scenery is lit with its 2005 values, so it can read a shade darker than
