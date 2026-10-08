@@ -33,8 +33,8 @@ import net.runelite.api.gameval.ObjectID;
 
 /**
  * The scenery restored to its 2005 model, one constant per config toggle's worth.
- *
- * <p>Each names its 2005 mesh, carried in the bundle under its 2005 model id, and the live objects
+ * <p>
+ * Each names its 2005 mesh, carried in the bundle under its 2005 model id, and the live objects
  * it stands in for. Those are keyed by live id, never by the 2005 definition's: many 2005 object
  * ids now belong to something else entirely. The lighting is the 2005 definition's own (loc
  * opcodes 29 and 39), from {@code ./gradlew dumpRetroObjectDefinitions}.

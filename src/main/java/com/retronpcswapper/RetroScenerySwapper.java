@@ -61,11 +61,11 @@ import net.runelite.client.callback.RenderCallback;
 /**
  * Puts 2005 scenery back: the pre-2006 pentagram on the Mystical wall charts, the old well, and
  * whatever else {@link RetroScenery} lists.
- *
- * <p>The live objects and their model ids mostly survive, but the 2005 meshes behind those ids were
+ * <p>
+ * The live objects and their model ids mostly survive, but the 2005 meshes behind those ids were
  * overwritten and are nowhere else in the live cache, so the 2005 geometry comes from the bundle.
- *
- * <p>Scenery is static, uploaded into the renderer's zone geometry when the scene loads, so there
+ * <p>
+ * Scenery is static, uploaded into the renderer's zone geometry when the scene loads, so there
  * is no per-frame draw to substitute into the way there is for an NPC. Instead:
  * <ul>
  *   <li>The live object is left out of the upload through {@link RenderCallback#drawObject},
@@ -75,8 +75,8 @@ import net.runelite.client.callback.RenderCallback;
  *       wall, a {@link RetroGameObjectController} on the ground - and the draw callback swaps the
  *       2005 geometry onto it at {@code drawTemp}.</li>
  * </ul>
- *
- * <p>Everything but {@link #drawObject} runs on the client thread.
+ * <p>
+ * Everything but {@link #drawObject} runs on the client thread.
  */
 @Slf4j
 @Singleton
@@ -102,8 +102,8 @@ public class RetroScenerySwapper implements RenderCallback
 
 	/**
 	 * The scenery being hidden and drawn as 2005. Replaced whole, never modified in place.
-	 *
-	 * <p>Volatile because {@link #drawObject} reads it on the map loader thread.
+	 * <p>
+	 * Volatile because {@link #drawObject} reads it on the map loader thread.
 	 */
 	private volatile Set<RetroScenery> active = Collections.emptySet();
 
@@ -340,8 +340,8 @@ public class RetroScenerySwapper implements RenderCallback
 	/**
 	 * Swaps the 2005 geometry onto a stand-in's carrier as it is drawn, or returns null for
 	 * anything else.
-	 *
-	 * <p>Recognized by the model alone. Asking the renderable for its model instead would pose an
+	 * <p>
+	 * Recognized by the model alone. Asking the renderable for its model instead would pose an
 	 * NPC or player all over again, into the shared buffer the model being drawn sits in.
 	 */
 	public Model substitute(Model vanilla)
