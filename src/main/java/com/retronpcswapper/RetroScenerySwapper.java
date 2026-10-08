@@ -112,8 +112,19 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	private volatile Set<RetroScenery> active = Collections.emptySet();
 
-	/** Every restored object in the loaded scene, with the stand-ins placed for it - two for a wall chart on both faces of a wall. */
-	private final Map<TileObject, List<RuneLiteObjectController>> placed = new HashMap<>();
+	/** Every restored object in the loaded scene, with the stand-ins placed for it. */
+	private final Map<TileObject, Placed> placed = new HashMap<>();
+
+	/**
+	 * The scenery an object is restored as, and its stand-ins - two for a wall chart on both faces
+	 * of a wall.
+	 */
+	@Value
+	private static class Placed
+	{
+		RetroScenery scenery;
+		List<RuneLiteObjectController> standIns;
+	}
 
 	/**
 	 * The 2005 models, lit and bound, for each scenery the bundle brought - one for each quarter turn
@@ -225,17 +236,16 @@ public class RetroScenerySwapper implements RenderCallback
 		}
 
 		active = Collections.unmodifiableSet(next);
-		for (Map.Entry<TileObject, List<RuneLiteObjectController>> entry : placed.entrySet())
+		for (Placed object : placed.values())
 		{
-			RetroScenery scenery = RetroScenery.forObject(entry.getKey().getId());
-			if (!changed.contains(scenery))
+			if (!changed.contains(object.getScenery()))
 			{
 				continue;
 			}
 
-			for (RuneLiteObjectController controller : entry.getValue())
+			for (RuneLiteObjectController controller : object.getStandIns())
 			{
-				if (next.contains(scenery))
+				if (next.contains(object.getScenery()))
 				{
 					client.registerRuneLiteObject(controller);
 				}
@@ -296,7 +306,7 @@ public class RetroScenerySwapper implements RenderCallback
 			controllers.add(new RetroGameObjectController(gameObject, model));
 		}
 
-		placed.put(object, controllers);
+		placed.put(object, new Placed(scenery, controllers));
 		if (active.contains(scenery))
 		{
 			for (RuneLiteObjectController controller : controllers)
@@ -308,10 +318,10 @@ public class RetroScenerySwapper implements RenderCallback
 
 	public void onDespawned(TileObject object)
 	{
-		List<RuneLiteObjectController> controllers = placed.remove(object);
-		if (controllers != null)
+		Placed removed = placed.remove(object);
+		if (removed != null)
 		{
-			for (RuneLiteObjectController controller : controllers)
+			for (RuneLiteObjectController controller : removed.getStandIns())
 			{
 				client.removeRuneLiteObject(controller);
 			}
@@ -401,9 +411,9 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	public List<RuneLiteObjectController> getStandIns(TileObject object)
 	{
-		RetroScenery scenery = RetroScenery.forObject(object.getId());
-		List<RuneLiteObjectController> controllers = placed.get(object);
-		return controllers != null && active.contains(scenery) ? controllers : Collections.emptyList();
+		Placed standing = placed.get(object);
+		return standing != null && active.contains(standing.getScenery())
+			? standing.getStandIns() : Collections.emptyList();
 	}
 
 	/**
@@ -511,9 +521,9 @@ public class RetroScenerySwapper implements RenderCallback
 
 	private void removeAll()
 	{
-		for (List<RuneLiteObjectController> controllers : placed.values())
+		for (Placed object : placed.values())
 		{
-			for (RuneLiteObjectController controller : controllers)
+			for (RuneLiteObjectController controller : object.getStandIns())
 			{
 				client.removeRuneLiteObject(controller);
 			}
@@ -535,13 +545,14 @@ public class RetroScenerySwapper implements RenderCallback
 		}
 
 		Map<Scene, Set<Integer>> invalidated = new HashMap<>();
-		for (TileObject object : placed.keySet())
+		for (Map.Entry<TileObject, Placed> entry : placed.entrySet())
 		{
-			if (!scenery.contains(RetroScenery.forObject(object.getId())))
+			if (!scenery.contains(entry.getValue().getScenery()))
 			{
 				continue;
 			}
 
+			TileObject object = entry.getKey();
 			WorldView worldView = object.getWorldView();
 			Scene scene = worldView == null ? null : worldView.getScene();
 			if (scene == null)
