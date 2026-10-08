@@ -2213,6 +2213,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapCyclops must default to true", config.swapCyclops());
 		assertTrue("swapGuards must default to true", config.swapGuards());
 		assertTrue("swapElves must default to true", config.swapElves());
+		assertTrue("swapKalphites must default to true", config.swapKalphites());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
@@ -2732,6 +2733,150 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_ANGER_BEAR, "Angry bear"));
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_BEAR, "Angry bear"));
 		assertNull(RetroNpcMapping.get(NpcID.ARCEUUS_REANIMATED_BEAR, "Reanimated bear"));
+	}
+
+	/**
+	 * Every 2005 Kalphite mesh (3849-3854) is gone from the live cache, so the family is bundle-only.
+	 * Its 2005 frames are keyed under the modern KALPHITE_UPDATE ids, which the archetypes play.
+	 */
+	@Test
+	public void testKalphites()
+	{
+		short shell = 10659;
+		short underside = 22412;
+		short[] workerReplace = {20364, 11160};
+		short[] soldierReplace = {26506, 10894};
+		int[] worker = {
+			AnimationID.KALPHITE_UPDATE_READY, AnimationID.KALPHITE_UPDATE_WALK,
+			AnimationID.KALPHITE_UPDATE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_DEFEND,
+			AnimationID.KALPHITE_UPDATE_DEATH};
+		int[] guardian = {
+			AnimationID.KALPHITE_UPDATE_LORD_READY, AnimationID.KALPHITE_UPDATE_LORD_WALK,
+			AnimationID.KALPHITE_UPDATE_CLAW_LORD_ATTACK, AnimationID.KALPHITE_UPDATE_DEFEND,
+			AnimationID.KALPHITE_UPDATE_LORD_DEATH};
+		int[] larva = {
+			AnimationID.KALPHITE_UPDATE_READY, AnimationID.KALPHITE_UPDATE_LARVAE_WALK,
+			AnimationID.KALPHITE_UPDATE_LARVAE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_DEFEND,
+			AnimationID.KALPHITE_UPDATE_LARVAE_DEATH};
+		int[] crawling = {
+			AnimationID.KALPHITE_UPDATE_QUEEN_READY, AnimationID.KALPHITE_UPDATE_QUEEN_WALK,
+			AnimationID.KALPHITE_UPDATE_QUEEN_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_QUEEN_DEFEND,
+			AnimationID.KALPHITE_UPDATE_QUEEN_DEATH};
+		int[] airborne = {
+			AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_READY_WALK, AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_READY_WALK,
+			AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_STINGER_ATTACK, AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEFEND,
+			AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEATH};
+
+		Object[][] kalphites = {
+			// id, name, mesh, scale, recolour find, recolour replace, idle/walk/attack/defend/death
+			{NpcID.KALPHITE_WORKER, "Kalphite Worker", 3852, 128,
+				new short[]{shell, underside}, workerReplace, worker},
+			{NpcID.KALPHITE_WORKER_STRONGHOLDCAVE, "Kalphite Worker", 3852, 128,
+				new short[]{shell, underside}, workerReplace, worker},
+			{NpcID.KALPHITE_WORKER_CHAMBER, "Kalphite Worker", 3852, 128,
+				new short[]{shell, underside}, workerReplace, worker},
+			{NpcID.KALPHITE_SOLDIER, "Kalphite Soldier", 3851, 172,
+				new short[]{shell, underside}, soldierReplace, worker},
+			{NpcID.KALPHITE_SOLDIER_STRONGHOLDCAVE, "Kalphite Soldier", 3851, 172,
+				new short[]{shell, underside}, soldierReplace, worker},
+			{NpcID.POH_KALPHITE_SOLDIER, "Kalphite Soldier", 3851, 172,
+				new short[]{shell, underside}, soldierReplace, worker},
+			{NpcID.KALPHITE_LORD, "Kalphite Guardian", 3849, 256,
+				new short[]{shell}, new short[]{27528}, guardian},
+			{NpcID.KALPHITE_LORD_STRONGHOLDCAVE, "Kalphite Guardian", 3849, 256,
+				new short[]{shell}, new short[]{27528}, guardian},
+			{NpcID.KALPHITE_LORD_CHAMBER, "Kalphite Guardian", 3849, 256,
+				new short[]{shell}, new short[]{27528}, guardian},
+			{NpcID.KALPHITE_LARVA, "Kalphite Larva", 3852, 32,
+				new short[]{shell, underside}, new short[]{11596, 17102}, larva},
+			{NpcID.KALPHITE_QUEEN, "Kalphite Queen", 3850, 128, null, null, crawling},
+			{NpcID.SWAN_KALPHITE_1, "Kalphite Queen", 3850, 128, null, null, crawling},
+			{NpcID.KALPHITE_FLYINGQUEEN, "Kalphite Queen", 3854, 256, null, null, airborne},
+			{NpcID.SWAN_KALPHITE_2, "Kalphite Queen", 3854, 256, null, null, airborne}
+		};
+
+		for (Object[] c : kalphites)
+		{
+			int id = (Integer) c[0];
+			RetroNpcData kalphite = RetroNpcMapping.get(id, (String) c[1]);
+			assertNotNull("Kalphite " + id + " must be mapped", kalphite);
+			assertEquals(RetroNpcCategory.KALPHITES, kalphite.getCategory());
+			assertArrayEquals(new int[]{(Integer) c[2]}, kalphite.getRetroModelIds());
+			assertEquals(c[3], kalphite.getScaleXZ());
+			assertEquals(c[3], kalphite.getScaleY());
+			if (c[4] == null)
+			{
+				assertFalse("Kalphite " + id + " must keep its mesh's own palette", kalphite.hasRecolors());
+			}
+			else
+			{
+				assertArrayEquals("Kalphite " + id + " recolour", (short[]) c[4], kalphite.getOriginalColors());
+				assertArrayEquals("Kalphite " + id + " recolour", (short[]) c[5], kalphite.getReplacementColors());
+			}
+
+			int[] anims = (int[]) c[6];
+			assertEquals(anims[0], kalphite.getIdleAnimationId());
+			assertEquals(anims[1], kalphite.getWalkAnimationId());
+			assertEquals(anims[2], kalphite.getAttackAnimationId());
+			assertEquals(anims[3], kalphite.getDefendAnimationId());
+			assertEquals(anims[4], kalphite.getDeathAnimationId());
+			assertEquals(anims[0], kalphite.getMiscAnimationId());
+		}
+
+		// Each attack plays its own clip. Collapsing two onto one would change what a boss shows
+		int[] groundAttacks = {
+			AnimationID.KALPHITE_UPDATE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_LARVAE_JAWS_ATTACK,
+			AnimationID.KALPHITE_UPDATE_CLAW_ATTACK, AnimationID.KALPHITE_UPDATE_CLAW_LORD_ATTACK,
+			AnimationID.KALPHITE_UPDATE_RANGED_ATTACK,
+			AnimationID.KALPHITE_UPDATE_QUEEN_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_QUEEN_RANGED_ATTACK,
+			// Old ids live re-rigged onto the modern ground framemap rather than retiring
+			AnimationID.KALPHITE_ATTACK_CLAWS, AnimationID.KALPHITE_LIGHTNING, AnimationID.KALPHITE_LIGHTNING_DUPE
+		};
+		for (RetroNpcData ground : new RetroNpcData[]{RetroNpcMapping.KALPHITE_WORKER,
+			RetroNpcMapping.KALPHITE_SOLDIER, RetroNpcMapping.KALPHITE_GUARDIAN,
+			RetroNpcMapping.KALPHITE_LARVA, RetroNpcMapping.KALPHITE_QUEEN_CRAWLING})
+		{
+			for (int attack : groundAttacks)
+			{
+				assertEquals(attack, ground.getAttackAnimationFor(attack));
+				// So onAnimationChanged takes it as the swap having already landed
+				assertTrue(ground.isRetroAttackAnimation(attack));
+			}
+
+			// The airborne queen's clips ride another 2005 rig and must never reach a ground mesh
+			assertFalse(ground.isAttackAnimation(AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_STINGER_ATTACK));
+			assertFalse(ground.isDefendAnimation(AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEFEND));
+			assertFalse(ground.isDeathAnimation(AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEATH));
+		}
+
+		RetroNpcData flying = RetroNpcMapping.KALPHITE_QUEEN_AIRBORNE;
+		for (int attack : new int[]{AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_STINGER_ATTACK,
+			AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_RANGED_ATTACK,
+			AnimationID.KALPHITE_QUEEN_ATTACK_CLAWS, AnimationID.KALPHITE_QUEEN_LIGHTNING,
+			AnimationID.KALPHITE_QUEEN_RANGED_ATTACK, AnimationID.KALPHITE_QUEEN_RANGED_ATTACK_DUPE})
+		{
+			assertEquals(attack, flying.getAttackAnimationFor(attack));
+			assertTrue(flying.isRetroAttackAnimation(attack));
+		}
+		for (int attack : groundAttacks)
+		{
+			assertFalse(flying.isAttackAnimation(attack));
+		}
+		assertFalse(flying.isDeathAnimation(AnimationID.KALPHITE_UPDATE_QUEEN_DEATH));
+
+		// A guardian sent the plain death still lands on a clip of its own family
+		assertTrue(RetroNpcMapping.KALPHITE_GUARDIAN.isDeathAnimation(AnimationID.KALPHITE_UPDATE_DEATH));
+
+		// Only the bundle holds the 2005 meshes
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.KALPHITES));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.KALPHITES));
+
+		// Id-only: the Kalphites outside the list are left alone, whatever they are called
+		assertNull(RetroNpcMapping.get(NpcID.CLANCUP_KALPHITE_QUEEN, "Kalphite Queen"));
+		assertNull(RetroNpcMapping.get(NpcID.CLANCUP_KALPHITE_FLYINGQUEEN, "Kalphite Queen"));
+		assertNull(RetroNpcMapping.get(NpcID.KQ_PET_FLYING, "Kalphite Princess"));
+		assertNull(RetroNpcMapping.get(NpcID.KQ_PET_WALKING, "Kalphite Princess"));
+		assertNull(RetroNpcMapping.get(NpcID.POH_MOUNTED_KQ, "Kalphite Queen"));
 	}
 
 	/**

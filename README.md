@@ -32,6 +32,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Cows**
 - **Scorpions**
 - **Elves** — (Attackable only)
+- **Kalphites** — KQ, Guardians, Soldiers, Workers, Larvae
 
 ![config](img/retronpcswapperconfig.png)
 

@@ -392,6 +392,37 @@ public class RetroNpcMapping
 		AnimationID.BEAR_REWORK_READY_GRIZZLY, AnimationID.BEAR_REWORK_READY_CUB_GRIZZLY
 	);
 
+	// Kalphites play their modern ids, which the bundle fills with 2005 frames. The ground family
+	// (workers, soldiers, guardians, larvae, crawling queen) and the airborne queen ride different
+	// 2005 rigs, so each set only names ids whose clips fit that family's meshes. That includes the
+	// old ids live re-rigged onto each family's modern framemap rather than retiring
+	public static final Set<Integer> KALPHITE_MODERN_ATTACKS = Set.of(
+		AnimationID.KALPHITE_UPDATE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_LARVAE_JAWS_ATTACK,
+		AnimationID.KALPHITE_UPDATE_CLAW_ATTACK, AnimationID.KALPHITE_UPDATE_CLAW_LORD_ATTACK,
+		AnimationID.KALPHITE_UPDATE_RANGED_ATTACK,
+		AnimationID.KALPHITE_UPDATE_QUEEN_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_QUEEN_RANGED_ATTACK,
+		AnimationID.KALPHITE_ATTACK_CLAWS, AnimationID.KALPHITE_LIGHTNING, AnimationID.KALPHITE_LIGHTNING_DUPE
+	);
+	public static final Set<Integer> KALPHITE_MODERN_DEFENDS = Set.of(
+		AnimationID.KALPHITE_UPDATE_DEFEND, AnimationID.KALPHITE_UPDATE_QUEEN_DEFEND
+	);
+	public static final Set<Integer> KALPHITE_MODERN_DEATHS = Set.of(
+		AnimationID.KALPHITE_UPDATE_DEATH, AnimationID.KALPHITE_UPDATE_LARVAE_DEATH,
+		AnimationID.KALPHITE_UPDATE_LORD_DEATH, AnimationID.KALPHITE_UPDATE_QUEEN_DEATH
+	);
+	public static final Set<Integer> KALPHITE_FLYING_QUEEN_MODERN_ATTACKS = Set.of(
+		AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_STINGER_ATTACK,
+		AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_RANGED_ATTACK,
+		AnimationID.KALPHITE_QUEEN_ATTACK_CLAWS, AnimationID.KALPHITE_QUEEN_LIGHTNING,
+		AnimationID.KALPHITE_QUEEN_RANGED_ATTACK, AnimationID.KALPHITE_QUEEN_RANGED_ATTACK_DUPE
+	);
+	public static final Set<Integer> KALPHITE_FLYING_QUEEN_MODERN_DEFENDS = Set.of(
+		AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEFEND
+	);
+	public static final Set<Integer> KALPHITE_FLYING_QUEEN_MODERN_DEATHS = Set.of(
+		AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEATH
+	);
+
 	// Pre-instantiated archetypes for 2005 cache-backed assets
 	public static final RetroNpcData LESSER_DEMON_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.LESSER_DEMONS)
@@ -1268,6 +1299,94 @@ public class RetroNpcMapping
 		.scaleY(64)
 		.build();
 
+	// Every 2005 Kalphite mesh is gone from the live cache, so the whole family is bundle-only. The
+	// opcode 40 pairs and the scales are the 2005 definitions; npc-mappings.json has no Kalphite
+	// row to graft from
+	private static final short KALPHITE_SHELL = 10659;
+	private static final short KALPHITE_UNDERSIDE = 22412;
+
+	private static RetroNpcData.Builder kalphite(int mesh, int scale, int idle, int walk,
+		int attack, int defend, int death, Set<Integer> attacks, Set<Integer> defends, Set<Integer> deaths)
+	{
+		RetroNpcData.Builder builder = RetroNpcData.builder()
+			.category(RetroNpcCategory.KALPHITES)
+			.retroModelIds(new int[]{mesh})
+			.idleAnimationId(idle)
+			.walkAnimationId(walk)
+			.attackAnimationId(attack)
+			.defendAnimationId(defend)
+			.deathAnimationId(death)
+			.miscAnimationId(idle)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.modernDefendAnims(defends)
+			.modernDeathAnims(deaths);
+
+		// Each attack keeps its own clip rather than collapsing onto attackAnimationId. The Queen is
+		// a boss, so the swap stays one to one and tells apart exactly the attacks live does
+		for (int modern : attacks)
+		{
+			builder.attackAnimationOverride(modern, modern);
+		}
+		return builder;
+	}
+
+	private static RetroNpcData.Builder groundKalphite(int mesh, int scale, int idle, int walk,
+		int attack, int defend, int death)
+	{
+		return kalphite(mesh, scale, idle, walk, attack, defend, death,
+			KALPHITE_MODERN_ATTACKS, KALPHITE_MODERN_DEFENDS, KALPHITE_MODERN_DEATHS);
+	}
+
+	// Def 1153
+	public static final RetroNpcData KALPHITE_WORKER = groundKalphite(3852, 128,
+		AnimationID.KALPHITE_UPDATE_READY, AnimationID.KALPHITE_UPDATE_WALK,
+		AnimationID.KALPHITE_UPDATE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_DEFEND,
+		AnimationID.KALPHITE_UPDATE_DEATH)
+		.recolors(new short[]{KALPHITE_SHELL, KALPHITE_UNDERSIDE}, new short[]{20364, 11160})
+		.build();
+
+	// Def 1154
+	public static final RetroNpcData KALPHITE_SOLDIER = groundKalphite(3851, 172,
+		AnimationID.KALPHITE_UPDATE_READY, AnimationID.KALPHITE_UPDATE_WALK,
+		AnimationID.KALPHITE_UPDATE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_DEFEND,
+		AnimationID.KALPHITE_UPDATE_DEATH)
+		.recolors(new short[]{KALPHITE_SHELL, KALPHITE_UNDERSIDE}, new short[]{26506, 10894})
+		.build();
+
+	// Def 1155. The live gamevals call it a lord
+	public static final RetroNpcData KALPHITE_GUARDIAN = groundKalphite(3849, 256,
+		AnimationID.KALPHITE_UPDATE_LORD_READY, AnimationID.KALPHITE_UPDATE_LORD_WALK,
+		AnimationID.KALPHITE_UPDATE_CLAW_LORD_ATTACK, AnimationID.KALPHITE_UPDATE_DEFEND,
+		AnimationID.KALPHITE_UPDATE_LORD_DEATH)
+		.recolors(new short[]{KALPHITE_SHELL}, new short[]{27528})
+		.build();
+
+	// Def 1161: the worker's mesh at a quarter size
+	public static final RetroNpcData KALPHITE_LARVA = groundKalphite(3852, 32,
+		AnimationID.KALPHITE_UPDATE_READY, AnimationID.KALPHITE_UPDATE_LARVAE_WALK,
+		AnimationID.KALPHITE_UPDATE_LARVAE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_DEFEND,
+		AnimationID.KALPHITE_UPDATE_LARVAE_DEATH)
+		.recolors(new short[]{KALPHITE_SHELL, KALPHITE_UNDERSIDE}, new short[]{11596, 17102})
+		.build();
+
+	// Def 1158. Mesh 3850 rides the same 2005 rig as the rest of the ground family
+	public static final RetroNpcData KALPHITE_QUEEN_CRAWLING = groundKalphite(3850, 128,
+		AnimationID.KALPHITE_UPDATE_QUEEN_READY, AnimationID.KALPHITE_UPDATE_QUEEN_WALK,
+		AnimationID.KALPHITE_UPDATE_QUEEN_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_QUEEN_DEFEND,
+		AnimationID.KALPHITE_UPDATE_QUEEN_DEATH)
+		.build();
+
+	// Def 1160, on a 2005 rig of its own. The transform from the crawling form arrives as an
+	// NpcChanged, which processNpc rebuilds onto this
+	public static final RetroNpcData KALPHITE_QUEEN_AIRBORNE = kalphite(3854, 256,
+		AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_READY_WALK, AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_READY_WALK,
+		AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_STINGER_ATTACK, AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEFEND,
+		AnimationID.KALPHITE_UPDATE_FLYING_QUEEN_DEATH,
+		KALPHITE_FLYING_QUEEN_MODERN_ATTACKS, KALPHITE_FLYING_QUEEN_MODERN_DEFENDS,
+		KALPHITE_FLYING_QUEEN_MODERN_DEATHS)
+		.build();
+
 	/**
 	 * Populates mappings from the bundled npc-mappings.json entries (generated
 	 * from the 2005 cache by the dev-only NpcMappingGenerator tool), while
@@ -1421,7 +1540,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.SKELETON_MAGES
 			|| category == RetroNpcCategory.COWS
 			|| category == RetroNpcCategory.SCORPIONS
-			|| category == RetroNpcCategory.ELVES;
+			|| category == RetroNpcCategory.ELVES
+			|| category == RetroNpcCategory.KALPHITES;
 	}
 
 	/**
@@ -1914,6 +2034,18 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("bear cub", BEAR_CUB_1);
 		registerMapping(BEAR_CUB_1, NpcID.BROWNBEAR_CUB_1, NpcID.PRIF_GEE);
 		registerMapping(BEAR_CUB_2, NpcID.BROWNBEAR_CUB_2);
+
+		// Kalphites, by id only. A name row would also take the Clan Cup queens and anything else
+		// that shares the names
+		registerMapping(KALPHITE_WORKER,
+			NpcID.KALPHITE_WORKER, NpcID.KALPHITE_WORKER_STRONGHOLDCAVE, NpcID.KALPHITE_WORKER_CHAMBER);
+		registerMapping(KALPHITE_SOLDIER,
+			NpcID.KALPHITE_SOLDIER, NpcID.KALPHITE_SOLDIER_STRONGHOLDCAVE, NpcID.POH_KALPHITE_SOLDIER);
+		registerMapping(KALPHITE_GUARDIAN,
+			NpcID.KALPHITE_LORD, NpcID.KALPHITE_LORD_STRONGHOLDCAVE, NpcID.KALPHITE_LORD_CHAMBER);
+		registerMapping(KALPHITE_LARVA, NpcID.KALPHITE_LARVA);
+		registerMapping(KALPHITE_QUEEN_CRAWLING, NpcID.KALPHITE_QUEEN, NpcID.SWAN_KALPHITE_1);
+		registerMapping(KALPHITE_QUEEN_AIRBORNE, NpcID.KALPHITE_FLYINGQUEEN, NpcID.SWAN_KALPHITE_2);
 	}
 
 	private static RetroNpcData createMappingData(RetroNpcMappingEntry entry)
