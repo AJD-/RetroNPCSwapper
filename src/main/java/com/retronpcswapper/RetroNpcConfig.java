@@ -426,4 +426,16 @@ public interface RetroNpcConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "swapWells",
+		name = "Wells",
+		description = "Restore the 2005 well in place of the rebuilt one that replaced it.",
+		section = scenerySection,
+		position = 2
+	)
+	default boolean swapWells()
+	{
+		return true;
+	}
 }

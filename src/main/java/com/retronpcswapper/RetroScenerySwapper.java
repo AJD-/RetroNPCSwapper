@@ -28,9 +28,13 @@ import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
 import com.retronpcswapper.inject.RetroModel;
-import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,30 +48,32 @@ import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
 import net.runelite.api.ModelData;
+import net.runelite.api.Point;
+import net.runelite.api.RuneLiteObjectController;
 import net.runelite.api.Scene;
 import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
 import net.runelite.api.WorldView;
 import net.runelite.api.coords.LocalPoint;
-import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.RenderCallback;
 
 /**
- * Puts the pre-2006 pentagram back on the Mystical wall charts.
+ * Puts 2005 scenery back: the pre-2006 pentagram on the Mystical wall charts, the old well, and
+ * whatever else {@link RetroScenery} lists.
  *
- * <p>The wall chart is object 908 - today's Magical symbol. The object and its model id 2086 both
- * survive, but the 2005 mesh behind that id was overwritten when the pentagrams were removed in
- * January 2006 and is nowhere else in the live cache, so the pentagram comes from the bundle.
+ * <p>The live objects and their model ids mostly survive, but the 2005 meshes behind those ids were
+ * overwritten and are nowhere else in the live cache, so the 2005 geometry comes from the bundle.
  *
- * <p>A wall decoration is static scenery, uploaded into the renderer's zone geometry when the scene
- * loads, so there is no per-frame draw to substitute into the way there is for an NPC. Instead:
+ * <p>Scenery is static, uploaded into the renderer's zone geometry when the scene loads, so there
+ * is no per-frame draw to substitute into the way there is for an NPC. Instead:
  * <ul>
- *   <li>The Magical symbol is left out of the upload through {@link RenderCallback#drawObject},
+ *   <li>The live object is left out of the upload through {@link RenderCallback#drawObject},
  *       which the GPU plugin and 117 HD both consult as they build each zone. Only the drawing is
- *       skipped - the object, and its Examine clickbox, are untouched.</li>
- *   <li>A {@link RetroDecorController} stands in its place carrying a client model, and the draw
- *       callback swaps the pentagram onto it at {@code drawTemp}.</li>
+ *       skipped - the object, its clickbox and its menu are untouched.</li>
+ *   <li>A stand-in takes its place carrying a client model - a {@link RetroDecorController} on a
+ *       wall, a {@link RetroGameObjectController} on the ground - and the draw callback swaps the
+ *       2005 geometry onto it at {@code drawTemp}.</li>
  * </ul>
  *
  * <p>Everything but {@link #drawObject} runs on the client thread.
@@ -76,12 +82,6 @@ import net.runelite.client.callback.RenderCallback;
 @Singleton
 public class RetroScenerySwapper implements RenderCallback
 {
-	/** The wall chart's model id, in the bundle as its 2005 mesh and in the live cache as the symbol. */
-	static final int CHART_MODEL = 2086;
-
-	/** The 2005 definition's ambient adjustment (loc opcode 29), on top of the client's base. */
-	private static final int CHART_AMBIENT = ModelData.DEFAULT_AMBIENT + 50;
-
 	/** Scene tiles per renderer zone, as a shift. */
 	private static final int ZONE_SHIFT = 3;
 
@@ -94,37 +94,43 @@ public class RetroScenerySwapper implements RenderCallback
 	/** Local units per tile, as a shift. */
 	private static final int TILE_SHIFT = 7;
 
+	/** The 2005 client's contrast step: each unit of a definition's opcode 39 is five of the client's. */
+	private static final int CONTRAST_STEP = 5;
+
 	@Inject
 	private Client client;
 
 	/**
-	 * Whether the symbols are being hidden and the pentagrams drawn.
+	 * The scenery being hidden and drawn as 2005. Replaced whole, never modified in place.
 	 *
 	 * <p>Volatile because {@link #drawObject} reads it on the map loader thread.
 	 */
-	private volatile boolean active;
+	private volatile Set<RetroScenery> active = Collections.emptySet();
 
-	/** Every wall chart in the loaded scene, with the stand-ins placed for it - two on a wall it decorates both faces of. */
-	private final Map<DecorativeObject, List<RetroDecorController>> charts = new HashMap<>();
+	/** Every restored object in the loaded scene, with the stand-ins placed for it - two for a wall chart on both faces of a wall. */
+	private final Map<TileObject, List<RuneLiteObjectController>> placed = new HashMap<>();
 
-	/** The pentagram, lit and bound, or null until the bundle brings one. */
-	private RetroModel pentagram;
+	/** The 2005 models, lit and bound, for each scenery the bundle brought. */
+	private final Map<RetroScenery, RetroModel> replacements = new EnumMap<>(RetroScenery.class);
 
-	/** The client model the stand-ins carry, recognized at draw time. */
-	private Model carrier;
+	/** The client model each scenery's stand-ins carry, loaded as the first one is placed. */
+	private final Map<RetroScenery, Model> carriers = new EnumMap<>(RetroScenery.class);
+
+	/** The same carriers the other way round, recognized at draw time by identity alone. */
+	private final Map<Model, RetroScenery> carried = new IdentityHashMap<>();
 
 	/**
-	 * Whether a scene object is one this hides.
-	 *
-	 * <p>The {@code instanceof} is load-bearing: this is also asked about temporary entities, the
-	 * stand-ins among them, and those must never be hidden.
+	 * Whether a scene object is one this hides: a restored object, placed the way its stand-in
+	 * reproduces, while its scenery is active.
 	 */
-	static boolean shouldHide(TileObject object, boolean active)
+	static boolean shouldHide(TileObject object, Set<RetroScenery> active)
 	{
-		return active
-			&& object instanceof DecorativeObject
-			&& object.getId() == ObjectID.WITCHESWALLCHART
-			&& RetroDecorController.isSupportedType(RetroDecorController.type(((DecorativeObject) object).getConfig()));
+		if (active.isEmpty())
+		{
+			return false;
+		}
+		RetroScenery scenery = RetroScenery.forObject(object);
+		return scenery != null && active.contains(scenery);
 	}
 
 	@Override
@@ -134,45 +140,71 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
-	 * Takes the pentagram from a freshly loaded bundle.
+	 * Takes the 2005 meshes from a freshly loaded bundle.
 	 */
 	public void setBundle(RetroAssetBundle bundle)
 	{
-		RetroMesh mesh = bundle.getMesh(CHART_MODEL);
-		pentagram = mesh == null ? null : light(mesh);
-		if (pentagram == null)
+		replacements.clear();
+		for (RetroScenery scenery : RetroScenery.values())
 		{
-			log.debug("Bundle has no mesh {}; the wall charts stay as they are", CHART_MODEL);
+			RetroMesh mesh = bundle.getMesh(scenery.meshId);
+			if (mesh == null)
+			{
+				log.debug("Bundle has no mesh {}; {} stays as it is", scenery.meshId, scenery);
+				continue;
+			}
+			replacements.put(scenery, light(mesh, scenery));
 		}
 	}
 
 	/**
-	 * Brings the swap in line with what is wanted, doing nothing if it already is.
+	 * Brings the swap in line with what is wanted, doing nothing for scenery already in the state
+	 * asked for.
 	 *
-	 * @param wanted whether the pentagrams should show - which also needs a renderer attached to
-	 *               draw them, or the symbols would simply vanish
+	 * @param wanted the scenery that should show as 2005 - which also needs a renderer attached to
+	 *               draw it, or the live objects would simply vanish
 	 */
-	public void refresh(boolean wanted)
+	public void refresh(Set<RetroScenery> wanted)
 	{
-		boolean next = wanted && pentagram != null && carrier() != null;
-		if (next == active)
+		Set<RetroScenery> next = EnumSet.noneOf(RetroScenery.class);
+		for (RetroScenery scenery : wanted)
+		{
+			if (replacements.containsKey(scenery) && carrier(scenery) != null)
+			{
+				next.add(scenery);
+			}
+		}
+
+		if (next.equals(active))
 		{
 			return;
 		}
 
-		if (next)
+		// What is switching either way
+		Set<RetroScenery> changed = EnumSet.noneOf(RetroScenery.class);
+		changed.addAll(next);
+		changed.addAll(active);
+		changed.removeIf(scenery -> next.contains(scenery) && active.contains(scenery));
+
+		if (!next.isEmpty())
 		{
-			// A chart that spawned while the carrier could not be loaded went untracked, and would
+			// An object that spawned while its carrier could not be loaded went untracked, and would
 			// now be hidden with nothing in its place - so pick up any the spawns missed first
 			scanLoadedScene();
 		}
 
-		active = next;
-		for (List<RetroDecorController> controllers : charts.values())
+		active = Collections.unmodifiableSet(next);
+		for (Map.Entry<TileObject, List<RuneLiteObjectController>> entry : placed.entrySet())
 		{
-			for (RetroDecorController controller : controllers)
+			RetroScenery scenery = RetroScenery.forObject(entry.getKey().getId());
+			if (!changed.contains(scenery))
 			{
-				if (active)
+				continue;
+			}
+
+			for (RuneLiteObjectController controller : entry.getValue())
+			{
+				if (next.contains(scenery))
 				{
 					client.registerRuneLiteObject(controller);
 				}
@@ -183,54 +215,65 @@ public class RetroScenerySwapper implements RenderCallback
 			}
 		}
 
-		// The symbols already uploaded have to be uploaded again for the change to show
-		invalidateZones();
+		// The live objects already uploaded have to be uploaded again for the change to show
+		invalidateZones(changed);
 	}
 
-	public void onSpawned(DecorativeObject decoration)
+	public void onSpawned(TileObject object)
 	{
-		if (decoration.getId() != ObjectID.WITCHESWALLCHART || charts.containsKey(decoration))
+		RetroScenery scenery = RetroScenery.forObject(object);
+		if (scenery == null)
+		{
+			if (RetroScenery.forObject(object.getId()) != null)
+			{
+				log.debug("Object {} at {} is placed with config {}; leaving it alone",
+					object.getId(), object.getWorldLocation(), configOf(object));
+			}
+			return;
+		}
+
+		if (placed.containsKey(object))
 		{
 			return;
 		}
 
-		int type = RetroDecorController.type(decoration.getConfig());
-		if (!RetroDecorController.isSupportedType(type))
-		{
-			log.debug("Wall chart at {} has placement type {}; leaving it alone",
-				decoration.getWorldLocation(), RetroDecorController.type(decoration.getConfig()));
-			return;
-		}
-
-		Model model = carrier();
+		Model model = carrier(scenery);
 		if (model == null)
 		{
 			return;
 		}
 
-		List<RetroDecorController> controllers = new ArrayList<>(2);
-		controllers.add(new RetroDecorController(decoration, model, false));
-		if (RetroDecorController.isDrawnTwice(type))
+		List<RuneLiteObjectController> controllers = new ArrayList<>(2);
+		if (object instanceof DecorativeObject)
 		{
-			controllers.add(new RetroDecorController(decoration, model, true));
+			DecorativeObject decoration = (DecorativeObject) object;
+			controllers.add(new RetroDecorController(decoration, model, false));
+			if (RetroDecorController.isDrawnTwice(RetroDecorController.type(decoration.getConfig())))
+			{
+				controllers.add(new RetroDecorController(decoration, model, true));
+			}
+		}
+		else
+		{
+			controllers.add(new RetroGameObjectController((GameObject) object, model));
 		}
 
-		charts.put(decoration, controllers);
-		if (active)
+		placed.put(object, controllers);
+		if (active.contains(scenery))
 		{
-			for (RetroDecorController controller : controllers)
+			for (RuneLiteObjectController controller : controllers)
 			{
 				client.registerRuneLiteObject(controller);
 			}
 		}
 	}
 
-	public void onDespawned(DecorativeObject decoration)
+	public void onDespawned(TileObject object)
 	{
-		List<RetroDecorController> controllers = charts.remove(decoration);
+		List<RuneLiteObjectController> controllers = placed.remove(object);
 		if (controllers != null)
 		{
-			for (RetroDecorController controller : controllers)
+			for (RuneLiteObjectController controller : controllers)
 			{
 				client.removeRuneLiteObject(controller);
 			}
@@ -238,7 +281,7 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
-	 * A new scene is loading. Its decorations arrive as spawns of their own, and the old ones are not
+	 * A new scene is loading. Its objects arrive as spawns of their own, and the old ones are not
 	 * guaranteed a despawn, so the stand-ins go now.
 	 */
 	public void onLoading()
@@ -247,8 +290,8 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
-	 * Picks up the wall charts in a scene that loaded before the plugin started. A one-off, run at
-	 * startup - from then on the spawn events keep track.
+	 * Picks up the restored objects in a scene that loaded before they could be tracked - at
+	 * startup, and as scenery is switched on. From then on the spawn events keep track.
 	 */
 	public void scanLoadedScene()
 	{
@@ -270,10 +313,24 @@ public class RetroScenerySwapper implements RenderCallback
 			{
 				for (Tile tile : column)
 				{
-					DecorativeObject decoration = tile == null ? null : tile.getDecorativeObject();
+					if (tile == null)
+					{
+						continue;
+					}
+
+					DecorativeObject decoration = tile.getDecorativeObject();
 					if (decoration != null)
 					{
 						onSpawned(decoration);
+					}
+
+					// An object bigger than a tile is on every tile it covers; onSpawned skips the repeats
+					for (GameObject gameObject : tile.getGameObjects())
+					{
+						if (gameObject != null)
+						{
+							onSpawned(gameObject);
+						}
 					}
 				}
 			}
@@ -281,25 +338,26 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
-	 * Swaps the pentagram onto a stand-in's carrier as it is drawn, or returns null for anything
-	 * else.
+	 * Swaps the 2005 geometry onto a stand-in's carrier as it is drawn, or returns null for
+	 * anything else.
 	 *
 	 * <p>Recognized by the model alone. Asking the renderable for its model instead would pose an
 	 * NPC or player all over again, into the shared buffer the model being drawn sits in.
 	 */
 	public Model substitute(Model vanilla)
 	{
-		return active && vanilla != null && vanilla == carrier ? pentagram : null;
+		RetroScenery scenery = vanilla == null ? null : carried.get(vanilla);
+		return scenery != null && active.contains(scenery) ? replacements.get(scenery) : null;
 	}
 
 	/**
 	 * Whether a stand-in being drawn sits where the renderer is hiding the scenery this frame - an
-	 * upper floor, under a roof the client has taken off. The symbol it stands in for is hidden
-	 * there, so the pentagram must be too. Anything that is not a stand-in is left to the client.
+	 * upper floor, under a roof the client has taken off. The object it stands in for is hidden
+	 * there, so the stand-in must be too. Anything that is not a stand-in is left to the client.
 	 */
 	public boolean isHidden(Scene scene, GameObject gameObject, Model model, RetroDrawCallbacks.SceneLevels levels)
 	{
-		if (model == null || model != carrier)
+		if (model == null || !carried.containsKey(model))
 		{
 			return false;
 		}
@@ -356,33 +414,53 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
-	 * Puts the Magical symbols back. Called as the plugin stops.
+	 * The renderer zones a footprint covers, from its south-west to its north-east scene tile, each
+	 * packed as {@code zoneX << 16 | zoneZ}. An object bigger than a tile can straddle a zone edge;
+	 * rebuilding every zone it touches is the safe side of which one the renderer filed it under.
+	 */
+	static Set<Integer> zones(int minSceneX, int minSceneY, int maxSceneX, int maxSceneY)
+	{
+		Set<Integer> zones = new HashSet<>();
+		for (int zoneX = minSceneX >> ZONE_SHIFT; zoneX <= maxSceneX >> ZONE_SHIFT; zoneX++)
+		{
+			for (int zoneZ = minSceneY >> ZONE_SHIFT; zoneZ <= maxSceneY >> ZONE_SHIFT; zoneZ++)
+			{
+				zones.add((zoneX + ZONE_OFFSET) << 16 | (zoneZ + ZONE_OFFSET));
+			}
+		}
+		return zones;
+	}
+
+	/**
+	 * Puts the live scenery back. Called as the plugin stops.
 	 */
 	public void shutDown()
 	{
-		refresh(false);
+		refresh(Collections.emptySet());
 		removeAll();
-		pentagram = null;
-		carrier = null;
+		replacements.clear();
+		carriers.clear();
+		carried.clear();
 	}
 
 	private void removeAll()
 	{
-		for (List<RetroDecorController> controllers : charts.values())
+		for (List<RuneLiteObjectController> controllers : placed.values())
 		{
-			for (RetroDecorController controller : controllers)
+			for (RuneLiteObjectController controller : controllers)
 			{
 				client.removeRuneLiteObject(controller);
 			}
 		}
-		charts.clear();
+		placed.clear();
 	}
 
 	/**
-	 * Has the renderer rebuild every zone holding a wall chart. Only those: a zone the renderer has
-	 * not built yet is not safe to invalidate, and one holding a chart was built for it.
+	 * Has the renderer rebuild every zone holding an object of the given scenery. Only those: a zone
+	 * the renderer has not built yet is not safe to invalidate, and one holding a placed object was
+	 * built for it.
 	 */
-	private void invalidateZones()
+	private void invalidateZones(Set<RetroScenery> scenery)
 	{
 		DrawCallbacks drawCallbacks = client.getDrawCallbacks();
 		if (drawCallbacks == null || client.getGameState() != GameState.LOGGED_IN)
@@ -391,40 +469,79 @@ public class RetroScenerySwapper implements RenderCallback
 		}
 
 		Map<Scene, Set<Integer>> invalidated = new HashMap<>();
-		for (DecorativeObject decoration : charts.keySet())
+		for (TileObject object : placed.keySet())
 		{
-			WorldView worldView = decoration.getWorldView();
+			if (!scenery.contains(RetroScenery.forObject(object.getId())))
+			{
+				continue;
+			}
+
+			WorldView worldView = object.getWorldView();
 			Scene scene = worldView == null ? null : worldView.getScene();
 			if (scene == null)
 			{
 				continue;
 			}
 
-			LocalPoint location = decoration.getLocalLocation();
-			int zoneX = (location.getSceneX() >> ZONE_SHIFT) + ZONE_OFFSET;
-			int zoneZ = (location.getSceneY() >> ZONE_SHIFT) + ZONE_OFFSET;
-			if (invalidated.computeIfAbsent(scene, s -> new HashSet<>()).add(zoneX << 16 | zoneZ))
+			Set<Integer> done = invalidated.computeIfAbsent(scene, s -> new HashSet<>());
+			for (int zone : zonesOf(object))
 			{
-				drawCallbacks.invalidateZone(scene, zoneX, zoneZ);
+				if (done.add(zone))
+				{
+					drawCallbacks.invalidateZone(scene, zone >>> 16, zone & 0xFFFF);
+				}
 			}
 		}
 	}
 
-	/** The live Magical symbol, as a client model the stand-ins can carry. */
-	private Model carrier()
+	private static Set<Integer> zonesOf(TileObject object)
 	{
+		if (object instanceof GameObject)
+		{
+			GameObject gameObject = (GameObject) object;
+			Point min = gameObject.getSceneMinLocation();
+			Point max = gameObject.getSceneMaxLocation();
+			return zones(min.getX(), min.getY(), max.getX(), max.getY());
+		}
+
+		LocalPoint location = object.getLocalLocation();
+		return zones(location.getSceneX(), location.getSceneY(), location.getSceneX(), location.getSceneY());
+	}
+
+	private static int configOf(TileObject object)
+	{
+		if (object instanceof DecorativeObject)
+		{
+			return ((DecorativeObject) object).getConfig();
+		}
+		return object instanceof GameObject ? ((GameObject) object).getConfig() : -1;
+	}
+
+	/**
+	 * The live model a scenery's stand-ins carry - lit afresh, so the instance is this scenery's
+	 * alone and is told apart at draw time from every other model, its own live copy included.
+	 */
+	private Model carrier(RetroScenery scenery)
+	{
+		Model carrier = carriers.get(scenery);
 		if (carrier == null)
 		{
-			carrier = client.loadModel(CHART_MODEL);
+			ModelData data = client.loadModelData(scenery.meshId);
+			carrier = data == null ? null : data.light();
+			if (carrier != null)
+			{
+				carriers.put(scenery, carrier);
+				carried.put(carrier, scenery);
+			}
 		}
 		return carrier;
 	}
 
 	/**
-	 * Lights the 2005 mesh the way the client lights scenery: the client's base ambient plus the
-	 * definition's own adjustment.
+	 * Lights a 2005 mesh the way the 2005 client lit scenery: the client's base ambient and
+	 * contrast plus the definition's own adjustments.
 	 */
-	private static RetroModel light(RetroMesh mesh)
+	private static RetroModel light(RetroMesh mesh, RetroScenery scenery)
 	{
 		int faceCount = mesh.getFaceCount();
 		int[] colors1 = new int[faceCount];
@@ -435,7 +552,8 @@ public class RetroScenerySwapper implements RenderCallback
 			mesh.getVerticesCount(), mesh.getVerticesX(), mesh.getVerticesY(), mesh.getVerticesZ(),
 			faceCount, mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
 			mesh.getFaceColors(), mesh.getFaceRenderTypes(), mesh.getFaceTextures(),
-			CHART_AMBIENT, ModelData.DEFAULT_CONTRAST,
+			ModelData.DEFAULT_AMBIENT + scenery.ambient,
+			ModelData.DEFAULT_CONTRAST + scenery.contrast * CONTRAST_STEP,
 			ModelData.DEFAULT_X, ModelData.DEFAULT_Y, ModelData.DEFAULT_Z,
 			colors1, colors2, colors3);
 

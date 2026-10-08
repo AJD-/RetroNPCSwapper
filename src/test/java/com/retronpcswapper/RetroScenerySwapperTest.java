@@ -30,7 +30,10 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.Set;
 import net.runelite.api.Constants;
 import net.runelite.api.DecorativeObject;
 import net.runelite.api.GameObject;
@@ -39,6 +42,9 @@ import org.junit.Test;
 
 public class RetroScenerySwapperTest
 {
+	private static final Set<RetroScenery> ALL = EnumSet.allOf(RetroScenery.class);
+	private static final Set<RetroScenery> NONE = Collections.emptySet();
+
 	/** Config bits as the client packs them: placement type in the low five, orientation at six. */
 	private static int config(int type, int orientation)
 	{
@@ -56,29 +62,29 @@ public class RetroScenerySwapperTest
 	@Test
 	public void testTheWallChartIsHiddenWhileActive()
 	{
-		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(4, 1)), true));
-		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(5, 3)), true));
+		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(4, 1)), ALL));
+		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(5, 3)), ALL));
 	}
 
 	@Test
 	public void testNothingIsHiddenWhileInactive()
 	{
-		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(4, 0)), false));
+		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(4, 0)), NONE));
 	}
 
 	@Test
 	public void testOtherDecorationsAreLeftAlone()
 	{
-		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART + 1, config(4, 0)), true));
+		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART + 1, config(4, 0)), ALL));
 	}
 
 	/** Every wall decoration placement is handled now, the diagonal ones included. */
 	@Test
 	public void testDiagonalPlacementsAreHidden()
 	{
-		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(6, 0)), true));
-		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(7, 2)), true));
-		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(8, 0)), true));
+		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(6, 0)), ALL));
+		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(7, 2)), ALL));
+		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(8, 0)), ALL));
 	}
 
 	/**
@@ -88,8 +94,8 @@ public class RetroScenerySwapperTest
 	@Test
 	public void testNonWallDecorationPlacementsAreLeftAlone()
 	{
-		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(3, 0)), true));
-		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(10, 0)), true));
+		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(3, 0)), ALL));
+		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(10, 0)), ALL));
 	}
 
 	/**
@@ -139,7 +145,112 @@ public class RetroScenerySwapperTest
 		GameObject gameObject = mock(GameObject.class);
 		when(gameObject.getId()).thenReturn(ObjectID.WITCHESWALLCHART);
 
-		assertFalse(RetroScenerySwapper.shouldHide(gameObject, true));
+		assertFalse(RetroScenerySwapper.shouldHide(gameObject, ALL));
+	}
+
+	private static GameObject gameObject(int id, int config)
+	{
+		GameObject gameObject = mock(GameObject.class);
+		when(gameObject.getId()).thenReturn(id);
+		when(gameObject.getConfig()).thenReturn(config);
+		return gameObject;
+	}
+
+	@Test
+	public void testTheWellIsHiddenWhileActive()
+	{
+		Set<RetroScenery> wells = EnumSet.of(RetroScenery.WELL);
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.WELL, config(10, 0)), wells));
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.WELL, config(10, 3)), wells));
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.WELL, config(11, 1)), wells));
+	}
+
+	/** Varrock's wells are their own object since the 2007 rework, and take the 2005 well too. */
+	@Test
+	public void testTheVarrockWellIsHiddenWhileActive()
+	{
+		Set<RetroScenery> wells = EnumSet.of(RetroScenery.WELL);
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.FAI_VARROCK_WELL, config(10, 0)), wells));
+	}
+
+	/** Each toggle hides only its own scenery. */
+	@Test
+	public void testTheWellIsLeftAloneWhileOnlyTheChartsAreActive()
+	{
+		Set<RetroScenery> charts = EnumSet.of(RetroScenery.MYSTICAL_WALL_CHART);
+		assertFalse(RetroScenerySwapper.shouldHide(gameObject(ObjectID.WELL, config(10, 0)), charts));
+		assertTrue(RetroScenerySwapper.shouldHide(decoration(ObjectID.WITCHESWALLCHART, config(4, 0)), charts));
+	}
+
+	/**
+	 * A stand-in is a temporary game object of its own, asked about like any other. Whatever id it
+	 * reports, it carries no centrepiece placement, and that is what keeps it from hiding itself.
+	 */
+	@Test
+	public void testAStandInIsNeverHidden()
+	{
+		assertFalse(RetroScenerySwapper.shouldHide(gameObject(ObjectID.WELL, 0), ALL));
+	}
+
+	/** Placed as anything but a centrepiece, the well gets no stand-in, so it must stay drawn. */
+	@Test
+	public void testNonCentrepieceGameObjectsAreLeftAlone()
+	{
+		assertFalse(RetroScenerySwapper.shouldHide(gameObject(ObjectID.WELL, config(22, 0)), ALL));
+		assertFalse(RetroScenerySwapper.shouldHide(gameObject(ObjectID.WELL, config(12, 0)), ALL));
+		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WELL, config(4, 0)), ALL));
+	}
+
+	/** The later wells on the same live mesh never had a 2005 look and are not restored. */
+	@Test
+	public void testLaterWellsAreLeftAlone()
+	{
+		for (int id : new int[]{ObjectID.DWARF_KELDAGRIM_WELL, ObjectID.RELLEKKA_WELL,
+			ObjectID.FAI_FALADOR_WELL, ObjectID.GNOME_WELL})
+		{
+			assertFalse(RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
+	@Test
+	public void testCentrepieceOrientation()
+	{
+		assertEquals(0, RetroGameObjectController.orientation(config(10, 0)));
+		assertEquals(512, RetroGameObjectController.orientation(config(10, 1)));
+		assertEquals(1536, RetroGameObjectController.orientation(config(10, 3)));
+		// A diagonal centrepiece is an ordinary one turned a further eighth
+		assertEquals(256, RetroGameObjectController.orientation(config(11, 0)));
+		assertEquals(1280, RetroGameObjectController.orientation(config(11, 2)));
+	}
+
+	/** The default radius for one tile, and as far again for each tile more. */
+	@Test
+	public void testStandInRadiusCoversTheFootprint()
+	{
+		assertEquals(60, RetroGameObjectController.radius(1, 1));
+		assertEquals(124, RetroGameObjectController.radius(2, 2));
+		assertEquals(188, RetroGameObjectController.radius(3, 3));
+		assertEquals(124, RetroGameObjectController.radius(1, 2));
+	}
+
+	private static int zone(int sceneZoneX, int sceneZoneZ)
+	{
+		int offset = (Constants.EXTENDED_SCENE_SIZE - Constants.SCENE_SIZE) / 2 >> 3;
+		return (sceneZoneX + offset) << 16 | (sceneZoneZ + offset);
+	}
+
+	@Test
+	public void testAFootprintInsideOneZoneInvalidatesOnlyIt()
+	{
+		assertEquals(Collections.singleton(zone(1, 2)), RetroScenerySwapper.zones(8, 16, 9, 17));
+	}
+
+	/** A 2x2 well on tiles 7-8 sits across a zone edge, so both zones it touches are rebuilt. */
+	@Test
+	public void testAFootprintAcrossAZoneEdgeInvalidatesEveryZoneItTouches()
+	{
+		assertEquals(new HashSet<>(Arrays.asList(zone(0, 0), zone(1, 0), zone(0, 1), zone(1, 1))),
+			RetroScenerySwapper.zones(7, 7, 8, 8));
 	}
 
 	private static RetroDrawCallbacks.SceneLevels levels(int level, Integer... hiddenRoofs)
