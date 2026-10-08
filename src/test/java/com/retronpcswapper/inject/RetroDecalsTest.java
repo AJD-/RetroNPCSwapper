@@ -82,6 +82,62 @@ public class RetroDecalsTest
 	}
 
 	/**
+	 * The wardrobe's doors: a decal painted in two layers - a fill and a border round it at the
+	 * next priority up, sharing its corners - both under the surface. The shared corners are the
+	 * decal's own, not the surface's, so the whole door comes forward as one piece.
+	 */
+	@Test
+	public void testADecalInTwoLayersIsLiftedWhole()
+	{
+		// The surface square at y = -18, then a fill triangle and a border triangle at y = -16,
+		// sharing the edge between vertices 4 and 5
+		float[] x = {-20, 20, 20, -20, 0, 5, 0, 5};
+		float[] y = {-18, -18, -18, -18, -16, -16, -16, -16};
+		float[] z = {-20, -20, 20, 20, 0, 0, 5, -5};
+
+		int moved = RetroDecals.lift(x, y, z, new int[]{0, 0, 4, 4}, new int[]{1, 2, 5, 7},
+			new int[]{2, 3, 6, 5}, new byte[]{0, 0, 1, 2}, 0, 4);
+
+		assertEquals(4, moved);
+		for (int vertex = 4; vertex < 8; vertex++)
+		{
+			assertEquals(-18 - RetroDecals.CLEARANCE, y[vertex], 0.01f);
+		}
+	}
+
+	/**
+	 * A piece is lifted off the surface behind it, not off its own lower layer: the picnic bench's
+	 * legs are drawn in two priorities that meet edge to edge, with nothing painted on anything.
+	 */
+	@Test
+	public void testAPieceIsNotLiftedOffItsOwnLowerLayer()
+	{
+		// Only the two layers, coplanar and sharing an edge; the surface square is far below
+		float[] x = {-20, 20, 20, -20, 0, 5, 0, 5};
+		float[] y = {40, 40, 40, 40, -16, -16, -16, -16};
+		float[] z = {-20, -20, 20, 20, 0, 0, 5, -5};
+
+		int moved = RetroDecals.lift(x, y, z, new int[]{0, 0, 4, 4}, new int[]{1, 2, 5, 7},
+			new int[]{2, 3, 6, 5}, new byte[]{0, 0, 1, 2}, 0, 4);
+
+		assertEquals(0, moved);
+	}
+
+	/**
+	 * A surface further behind than a decal is ever painted is another part of the model - as the
+	 * cabinet is, 7.6 behind an open wardrobe's door, which would otherwise be pushed out of shape.
+	 */
+	@Test
+	public void testASurfaceBeyondReachIsLeftAlone()
+	{
+		float[][] v = vertices(-18, -18 + 7.6f);
+
+		int moved = RetroDecals.lift(v[0], v[1], v[2], FACES1, FACES2, FACES3, PRIORITIES, 0, 3);
+
+		assertEquals(0, moved);
+	}
+
+	/**
 	 * A decal welded to its surface cannot move without dragging the surface with it, so it stays
 	 * where it is and is left to the depth bias.
 	 */

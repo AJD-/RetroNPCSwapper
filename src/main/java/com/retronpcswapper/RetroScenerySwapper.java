@@ -25,6 +25,7 @@
 package com.retronpcswapper;
 
 import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroDecals;
 import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
 import com.retronpcswapper.inject.RetroModel;
@@ -680,9 +681,11 @@ public class RetroScenerySwapper implements RenderCallback
 
 	/**
 	 * Lights a 2005 mesh the way the 2005 client lit scenery: the client's base ambient and
-	 * contrast plus the definition's own adjustments.
+	 * contrast plus the definition's own adjustments. Then, for a mesh that paints detail on by
+	 * priority, brings that detail to the front, where the 2005 client drew it and a
+	 * depth-buffered renderer does not - see {@link RetroScenery#hasPaintedDetail}.
 	 */
-	private static RetroModel light(RetroMesh mesh, RetroScenery scenery)
+	static RetroModel light(RetroMesh mesh, RetroScenery scenery)
 	{
 		int faceCount = mesh.getFaceCount();
 		int[] colors1 = new int[faceCount];
@@ -700,6 +703,11 @@ public class RetroScenerySwapper implements RenderCallback
 
 		RetroModel model = new RetroModel();
 		model.bind(mesh, colors1, colors2, colors3);
+		if (scenery.hasPaintedDetail())
+		{
+			// Moves the model's own copy of the vertices; the mesh is shared by every quarter turn
+			RetroDecals.lift(model, 0);
+		}
 		return model;
 	}
 }

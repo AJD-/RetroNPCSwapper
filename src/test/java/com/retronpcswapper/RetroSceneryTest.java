@@ -32,6 +32,7 @@ import static org.junit.Assert.assertTrue;
 import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroAssetCodec;
 import com.retronpcswapper.inject.RetroMesh;
+import com.retronpcswapper.inject.RetroModel;
 import java.io.InputStream;
 import net.runelite.api.gameval.ObjectID;
 import org.junit.Test;
@@ -75,6 +76,67 @@ public class RetroSceneryTest
 			assertEquals(132, well.getVerticesCount());
 			assertEquals(210, well.getFaceCount());
 		}
+	}
+
+	/**
+	 * The closed wardrobe's doors lie on a slanted plane that crosses the slanted cabinet front
+	 * behind them: the tops sit just in front of it, the bottoms nearly a unit behind. The 2005
+	 * client drew them over the front by priority; a depth-buffered renderer hides their bottom
+	 * halves unless they are lifted clear.
+	 */
+	@Test
+	public void testTheWardrobeDoorsAreDrawnInFrontOfTheCabinet() throws Exception
+	{
+		RetroMesh mesh;
+		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))
+		{
+			mesh = RetroAssetCodec.read(in).getMesh(RetroScenery.WARDROBE.meshId);
+		}
+
+		RetroModel model = RetroScenerySwapper.light(mesh, RetroScenery.WARDROBE);
+
+		// The cabinet front runs from x = 4 at its top, y = -176, to x = -4 on the floor
+		float[] x = mesh.getVerticesX();
+		float[] y = mesh.getVerticesY();
+		int[][] faces = {mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3()};
+		byte[] priorities = mesh.getFaceRenderPriorities();
+		int doorFaces = 0;
+		for (int f = 0; f < mesh.getFaceCount(); f++)
+		{
+			if (priorities[f] == 0 || !onCabinetFront(x, y, faces, f))
+			{
+				continue;
+			}
+
+			doorFaces++;
+			for (int[] corner : faces)
+			{
+				int v = corner[f];
+				assertTrue("face " + f + " vertex " + v + " is behind the cabinet front",
+					inFrontOfCabinet(model.getVerticesX()[v], model.getVerticesY()[v]) > 0);
+			}
+		}
+		assertTrue(doorFaces > 0);
+	}
+
+	/** Signed distance along x from the wardrobe's cabinet front: positive is in front of it. */
+	private static float inFrontOfCabinet(float x, float y)
+	{
+		return x + y / 22 + 4;
+	}
+
+	/** Whether a face lies on the cabinet front, which stands from the floor to y = -176. */
+	private static boolean onCabinetFront(float[] x, float[] y, int[][] faces, int f)
+	{
+		for (int[] corner : faces)
+		{
+			int v = corner[f];
+			if (y[v] < -176 || Math.abs(inFrontOfCabinet(x[v], y[v])) >= 2)
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	@Test

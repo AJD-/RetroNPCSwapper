@@ -168,6 +168,18 @@ enum RetroScenery
 		this.objectIds = objectIds;
 	}
 
+	/**
+	 * Whether the 2005 mesh paints detail onto a surface by priority, where a depth-buffered
+	 * renderer would hide it, and so has its decals lifted to the front. The wardrobes' doors lie
+	 * partly behind the cabinet front. Decided per mesh, from measuring each, rather than for all:
+	 * the lift leaves the other meshes' vertices where they are, but would still bias their
+	 * higher-priority faces toward the camera.
+	 */
+	boolean hasPaintedDetail()
+	{
+		return this == WARDROBE || this == WARDROBE_OPEN || this == WARDROBE_OPEN_SKELETON;
+	}
+
 	int[] getObjectIds()
 	{
 		return objectIds.clone();
