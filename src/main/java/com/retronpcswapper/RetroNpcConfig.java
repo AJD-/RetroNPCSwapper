@@ -308,7 +308,7 @@ public interface RetroNpcConfig extends Config
 			+ "2004/2005 retro variants.<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by "
 			+ "default.</body></html>",
 		section = npcTogglesSection,
-		position = 16
+		position = 17
 	)
 	default boolean swapElves()
 	{
@@ -320,7 +320,7 @@ public interface RetroNpcConfig extends Config
 		name = "Bears",
 		description = "Swap modern Bear models and animations to their 2004/2005 retro variants.",
 		section = npcTogglesSection,
-		position = 17
+		position = 18
 	)
 	default boolean swapBears()
 	{
@@ -338,7 +338,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "disablePvpWorld",
 		name = "Disable on PvP worlds",
-		description = "Disable retro NPC swapping for all NPCs when on a PvP world.",
+		description = "Disable retro NPC, item and scenery swapping when on a PvP world.",
 		section = safetySection,
 		position = 1
 	)
@@ -350,7 +350,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "disableWilderness",
 		name = "Disable in Wilderness",
-		description = "Disable retro NPC swapping for all NPCs while in the Wilderness.",
+		description = "Disable retro NPC, item and scenery swapping while in the Wilderness.",
 		section = safetySection,
 		position = 2
 	)
@@ -382,5 +382,48 @@ public interface RetroNpcConfig extends Config
 	default boolean overrideInteractHighlight()
 	{
 		return false;
+	}
+
+	@ConfigSection(
+		name = "Items",
+		description = "Retro item models",
+		position = 5,
+		closedByDefault = false
+	)
+	String itemsSection = "itemsSection";
+
+	@ConfigItem(
+		keyName = "swapAntiDragonShield",
+		name = "Anti-dragon shield",
+		description = "<html><body style='width:170px'>Restore the 2004-2007 anti-dragon shield: its "
+			+ "inventory icon, the model on the ground, and the shield worn by players.<br><br>The "
+			+ "icon swaps on any renderer. The worn shield needs the <b>GPU</b> or <b>117 HD</b> "
+			+ "plugin.</body></html>",
+		section = itemsSection,
+		position = 1
+	)
+	default boolean swapAntiDragonShield()
+	{
+		return true;
+	}
+
+	@ConfigSection(
+		name = "Scenery",
+		description = "Retro scenery models",
+		position = 6,
+		closedByDefault = false
+	)
+	String scenerySection = "scenerySection";
+
+	@ConfigItem(
+		keyName = "swapMysticalWallCharts",
+		name = "Mystical wall charts",
+		description = "Restore the pre-2006 pentagram wall charts in place of the Magical symbols that replaced them.",
+		section = scenerySection,
+		position = 1
+	)
+	default boolean swapMysticalWallCharts()
+	{
+		return true;
 	}
 }

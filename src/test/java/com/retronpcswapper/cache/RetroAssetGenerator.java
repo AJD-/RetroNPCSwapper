@@ -225,7 +225,12 @@ public class RetroAssetGenerator
 				AnimationID.SCORPION_UPDATE_ATTACK_TAIL, AnimationID.SCORPION_UPDATE_DEFEND,
 				AnimationID.SCORPION_UPDATE_DEATH},
 			// the 2005 sequences whose frames fill them
-			new int[]{245, 244, 246, 247, 248})
+			new int[]{245, 244, 246, 247, 248}),
+		// Scenery, not an NPC: the pentagram on the Mystical wall chart, object 908. The object id
+		// survives as today's Magical symbol and so does model id 2086, but the mesh behind it was
+		// overwritten in 2006 and is nowhere else in the live cache. Static - no rig, no clips -
+		// and flat colored, so there is no texture to carry either.
+		new Spec("Mystical wall chart", Source.RETRO, Source.RETRO, new int[]{2086}, new int[]{})
 	);
 
 	private enum Source

@@ -238,6 +238,172 @@ public class RetroModelTest
 		assertNull(model.getFaceRenderPriorities());
 	}
 
+	/** Three vertices along X at {@code x0}, one face over them. */
+	private static Source triangle(float x0)
+	{
+		Source src = source(3, 1);
+		for (int v = 0; v < 3; v++)
+		{
+			src.x[v] = x0 + v;
+		}
+		src.i1[0] = 0;
+		src.i2[0] = 1;
+		src.i3[0] = 2;
+		src.c1[0] = 100;
+		return src;
+	}
+
+	/** Four vertices along X from 10, two faces over them. */
+	private static Source quad()
+	{
+		Source src = source(4, 2);
+		for (int v = 0; v < 4; v++)
+		{
+			src.x[v] = 10 + v;
+		}
+		src.i1[0] = 0;
+		src.i2[0] = 1;
+		src.i3[0] = 2;
+		src.i1[1] = 1;
+		src.i2[1] = 2;
+		src.i3[1] = 3;
+		src.c1[0] = 200;
+		src.c1[1] = 201;
+		return src;
+	}
+
+	@Test
+	public void testAppendOffsetsTheAppendedFacesPastTheExistingVertices()
+	{
+		RetroModel model = new RetroModel();
+		model.copyFrom(triangle(0));
+		model.appendFrom(quad());
+
+		assertEquals(7, model.getVerticesCount());
+		assertEquals(3, model.getFaceCount());
+		assertEquals(10f, model.getVerticesX()[3], 0f);
+		assertEquals(13f, model.getVerticesX()[6], 0f);
+
+		// The original face still names its own vertices
+		assertEquals(0, model.getFaceIndices1()[0]);
+		// The appended faces name the appended vertices, not the first three
+		assertEquals(3, model.getFaceIndices1()[1]);
+		assertEquals(4, model.getFaceIndices1()[2]);
+		assertEquals(6, model.getFaceIndices3()[2]);
+
+		assertEquals(100, model.getFaceColors1()[0]);
+		assertEquals(201, model.getFaceColors1()[2]);
+	}
+
+	@Test
+	public void testAppendKeepsAColumnNeitherSideHasNull()
+	{
+		RetroModel model = new RetroModel();
+		model.copyFrom(triangle(0));
+		model.appendFrom(quad());
+
+		// Null transparencies are what keep the model on the opaque path
+		assertNull(model.getFaceTransparencies());
+		assertNull(model.getFaceTextures());
+		assertNull(model.getFaceRenderPriorities());
+		assertNull(model.getTextureFaces());
+	}
+
+	/**
+	 * A column only one side has is filled for the other with what a null meant for it - which is
+	 * nothing: opaque, untextured.
+	 */
+	@Test
+	public void testAppendFillsAColumnOnlyOneSideHas()
+	{
+		Source base = triangle(0);
+		base.textures = new short[]{7};
+
+		Source added = quad();
+		added.transparencies = new byte[]{5, 6};
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(base);
+		model.appendFrom(added);
+
+		byte[] transparencies = model.getFaceTransparencies();
+		assertEquals(3, transparencies.length);
+		assertEquals(0, transparencies[0]);
+		assertEquals(5, transparencies[1]);
+		assertEquals(6, transparencies[2]);
+
+		short[] textures = model.getFaceTextures();
+		assertEquals(7, textures[0]);
+		assertEquals(-1, textures[1]);
+		assertEquals(-1, textures[2]);
+	}
+
+	@Test
+	public void testAppendOffsetsTheTextureMapping()
+	{
+		Source base = triangle(0);
+		base.textures = new short[]{7};
+		base.textureFaces = new byte[]{0};
+		base.t1 = new int[]{0};
+		base.t2 = new int[]{1};
+		base.t3 = new int[]{2};
+
+		Source added = quad();
+		added.textures = new short[]{8, -1};
+		added.textureFaces = new byte[]{0, -1};
+		added.t1 = new int[]{1};
+		added.t2 = new int[]{2};
+		added.t3 = new int[]{3};
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(base);
+		model.appendFrom(added);
+
+		byte[] textureFaces = model.getTextureFaces();
+		assertEquals(0, textureFaces[0]);
+		// The appended face names the appended texture triangle, which comes after the base's one
+		assertEquals(1, textureFaces[1]);
+		assertEquals(-1, textureFaces[2]);
+
+		// And that triangle names the appended vertices
+		assertEquals(4, model.getTexIndices1()[1]);
+		assertEquals(6, model.getTexIndices3()[1]);
+	}
+
+	@Test
+	public void testAppendGrowsTheBounds()
+	{
+		Source tall = quad();
+		tall.y[3] = -400f;
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(triangle(0));
+		model.appendFrom(tall);
+
+		assertEquals(400, model.getModelHeight());
+	}
+
+	/**
+	 * The composed model is reused every frame: a fresh copy has to drop what the last append
+	 * added, or every frame would draw last frame's shield as well.
+	 */
+	@Test
+	public void testCopyAfterAppendStartsOver()
+	{
+		RetroModel model = new RetroModel();
+		model.copyFrom(triangle(0));
+		model.appendFrom(quad());
+
+		model.copyFrom(triangle(0));
+		assertEquals(3, model.getVerticesCount());
+		assertEquals(1, model.getFaceCount());
+
+		model.appendFrom(quad());
+		assertEquals(7, model.getVerticesCount());
+		assertEquals(3, model.getFaceCount());
+		assertEquals(4, model.getFaceIndices1()[2]);
+	}
+
 	/** Minimal stand-in for a posed client model. */
 	private static final class Source extends RetroModel
 	{
@@ -252,6 +418,48 @@ public class RetroModelTest
 		private int[] c1;
 		private int[] c2;
 		private int[] c3;
+		private byte[] transparencies;
+		private short[] textures;
+		private byte[] textureFaces;
+		private int[] t1;
+		private int[] t2;
+		private int[] t3;
+
+		@Override
+		public byte[] getFaceTransparencies()
+		{
+			return transparencies;
+		}
+
+		@Override
+		public short[] getFaceTextures()
+		{
+			return textures;
+		}
+
+		@Override
+		public byte[] getTextureFaces()
+		{
+			return textureFaces;
+		}
+
+		@Override
+		public int[] getTexIndices1()
+		{
+			return t1;
+		}
+
+		@Override
+		public int[] getTexIndices2()
+		{
+			return t2;
+		}
+
+		@Override
+		public int[] getTexIndices3()
+		{
+			return t3;
+		}
 
 		@Override
 		public int getVerticesCount()

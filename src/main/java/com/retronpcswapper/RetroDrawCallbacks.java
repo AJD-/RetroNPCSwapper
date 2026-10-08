@@ -26,10 +26,10 @@ package com.retronpcswapper;
 
 import java.util.Set;
 import lombok.Getter;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
 import net.runelite.api.Model;
-import net.runelite.api.NPC;
 import net.runelite.api.Projection;
 import net.runelite.api.Renderable;
 import net.runelite.api.Scene;
@@ -42,12 +42,14 @@ import net.runelite.api.hooks.DrawCallbacks;
 
 /**
  * Decorates the renderer currently holding {@code Client.setDrawCallbacks} (the bundled GPU plugin,
- * or 117 HD's zone renderer) so retro geometry can be substituted for an NPC at draw time.
+ * or 117 HD's zone renderer) so retro geometry can be substituted for an NPC, a player or a placed
+ * carrier at draw time.
  *
- * <p>Only {@link #drawTemp} does anything other than forward: temporary entities (NPCs, players,
- * projectiles, spotanims) are drawn through it, and the {@code Model} arrives as a parameter, so
- * handing the delegate a different one is enough to change what is rendered. The delegate keeps
- * doing all the actual upload work.
+ * <p>Only {@link #drawTemp} and {@link #drawDynamic} do anything other than forward. Temporary
+ * entities (NPCs, players, projectiles, spotanims) are drawn through the first, and dynamic objects
+ * (animated scenery, ground items) through the second. Either way the {@code Model} arrives as a
+ * parameter, so handing the delegate a different one is enough to change what is rendered. The
+ * delegate keeps doing all the actual upload work.
  *
  * <p>Every other method forwards verbatim. This is deliberate and load bearing: the methods on
  * {@link DrawCallbacks} are {@code default} no-ops, so any method left un-overridden here would
@@ -69,12 +71,43 @@ import net.runelite.api.hooks.DrawCallbacks;
 public class RetroDrawCallbacks implements DrawCallbacks
 {
 	/**
-	 * Supplies replacement geometry for an NPC, or {@code null} to leave it alone.
+	 * Supplies replacement geometry for a temporary entity - an NPC, a player, or a carrier this
+	 * plugin placed - or {@code null} to leave it alone.
+	 * <p>
+	 * Called for every temporary entity drawn, projectiles and spotanims included, so it has to
+	 * turn away what it does not recognize cheaply.
 	 */
 	@FunctionalInterface
 	public interface ModelSubstitutor
 	{
-		Model substitute(NPC npc, Model vanilla);
+		Model substitute(Renderable renderable, Model vanilla);
+	}
+
+	/**
+	 * Decides whether a temporary entity should be left out of the frame entirely.
+	 * <p>
+	 * The renderer culls static scenery on upper floors by level and roof, but leaves temporary
+	 * entities to the client - which culls its own, and not the stand-ins this plugin places for
+	 * static scenery. This is where those get the same treatment the scenery they replace gets.
+	 */
+	@FunctionalInterface
+	public interface TempFilter
+	{
+		boolean isHidden(Scene scene, GameObject gameObject, Model model, SceneLevels levels);
+	}
+
+	/**
+	 * The levels the client asked the renderer to draw this frame, as handed to
+	 * {@code preSceneDraw}: everything from {@code minLevel} to {@code maxLevel}, except that above
+	 * {@code level} the roofs named in {@code hideRoofIds} are left out.
+	 */
+	@Value
+	public static class SceneLevels
+	{
+		int minLevel;
+		int level;
+		int maxLevel;
+		Set<Integer> hideRoofIds;
 	}
 
 	@Getter
@@ -82,30 +115,44 @@ public class RetroDrawCallbacks implements DrawCallbacks
 
 	private final ModelSubstitutor substitutor;
 
-	public RetroDrawCallbacks(DrawCallbacks delegate, ModelSubstitutor substitutor)
+	/**
+	 * For dynamic objects - animated scenery and ground items. Unlike {@link #substitutor} this is
+	 * called from the renderer's own threads, possibly several at once, so it must be thread safe.
+	 */
+	private final ModelSubstitutor dynamicSubstitutor;
+
+	private final TempFilter tempFilter;
+
+	/** This frame's levels, or null before the first frame. */
+	private SceneLevels levels;
+
+	public RetroDrawCallbacks(DrawCallbacks delegate, ModelSubstitutor substitutor,
+		ModelSubstitutor dynamicSubstitutor, TempFilter tempFilter)
 	{
 		this.delegate = delegate;
 		this.substitutor = substitutor;
+		this.dynamicSubstitutor = dynamicSubstitutor;
+		this.tempFilter = tempFilter;
 	}
 
 	@Override
 	public void drawTemp(Projection worldProjection, Scene scene, GameObject gameObject, Model m, int orient, int x, int y, int z)
 	{
-		Model substitute = null;
+		Model substitute;
 
-		Renderable renderable = gameObject.getRenderable();
-		if (renderable instanceof NPC)
+		// Never allow a substitution failure to take the renderer down with it
+		try
 		{
-			// Never allow a substitution failure to take the renderer down with it
-			try
+			if (levels != null && tempFilter.isHidden(scene, gameObject, m, levels))
 			{
-				substitute = substitutor.substitute((NPC) renderable, m);
+				return;
 			}
-			catch (Exception ex)
-			{
-				substitute = null;
-				log.debug("Retro model substitution failed, drawing the vanilla model", ex);
-			}
+			substitute = substitutor.substitute(gameObject.getRenderable(), m);
+		}
+		catch (Exception ex)
+		{
+			substitute = null;
+			log.debug("Retro model substitution failed, drawing the vanilla model", ex);
 		}
 
 		delegate.drawTemp(worldProjection, scene, gameObject, substitute != null ? substitute : m, orient, x, y, z);
@@ -197,6 +244,7 @@ public class RetroDrawCallbacks implements DrawCallbacks
 		float cameraX, float cameraY, float cameraZ, float cameraPitch, float cameraYaw,
 		int minLevel, int level, int maxLevel, Set<Integer> hideRoofIds)
 	{
+		levels = new SceneLevels(minLevel, level, maxLevel, hideRoofIds);
 		delegate.preSceneDraw(scene, entityProjection, cameraX, cameraY, cameraZ, cameraPitch, cameraYaw,
 			minLevel, level, maxLevel, hideRoofIds);
 	}
@@ -207,6 +255,7 @@ public class RetroDrawCallbacks implements DrawCallbacks
 		float cameraX, float cameraY, float cameraZ, float cameraPitch, float cameraYaw,
 		int minLevel, int level, int maxLevel, Set<Integer> hideRoofIds)
 	{
+		levels = new SceneLevels(minLevel, level, maxLevel, hideRoofIds);
 		delegate.preSceneDraw(scene, cameraX, cameraY, cameraZ, cameraPitch, cameraYaw,
 			minLevel, level, maxLevel, hideRoofIds);
 	}
@@ -239,14 +288,33 @@ public class RetroDrawCallbacks implements DrawCallbacks
 	public void drawDynamic(Projection worldProjection, Scene scene, TileObject tileObject, Renderable r, Model m,
 		int orient, int x, int y, int z)
 	{
-		delegate.drawDynamic(worldProjection, scene, tileObject, r, m, orient, x, y, z);
+		delegate.drawDynamic(worldProjection, scene, tileObject, r, substituteDynamic(r, m), orient, x, y, z);
 	}
 
 	@Override
 	public void drawDynamic(int renderThreadId, Projection worldProjection, Scene scene, TileObject tileObject,
 		Renderable r, Model m, int orient, int x, int y, int z)
 	{
-		delegate.drawDynamic(renderThreadId, worldProjection, scene, tileObject, r, m, orient, x, y, z);
+		delegate.drawDynamic(renderThreadId, worldProjection, scene, tileObject, r, substituteDynamic(r, m),
+			orient, x, y, z);
+	}
+
+	/**
+	 * The dynamic counterpart of the substitution in {@link #drawTemp}, with the same guarantee:
+	 * a failure draws the vanilla model rather than nothing.
+	 */
+	private Model substituteDynamic(Renderable r, Model m)
+	{
+		try
+		{
+			Model substitute = dynamicSubstitutor.substitute(r, m);
+			return substitute != null ? substitute : m;
+		}
+		catch (Exception ex)
+		{
+			log.debug("Retro dynamic model substitution failed, drawing the vanilla model", ex);
+			return m;
+		}
 	}
 
 	@Override
