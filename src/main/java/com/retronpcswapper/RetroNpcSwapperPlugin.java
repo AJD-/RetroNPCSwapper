@@ -52,9 +52,12 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
 import net.runelite.api.NPC;
+import net.runelite.api.Renderable;
 import net.runelite.api.WorldType;
 import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
+import net.runelite.api.events.DecorativeObjectDespawned;
+import net.runelite.api.events.DecorativeObjectSpawned;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.InteractingChanged;
@@ -67,6 +70,7 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WorldChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.callback.RenderCallbackManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -128,6 +132,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Inject
 	private RetroNpcOutliner outliner;
 
+	@Inject
+	private RetroScenerySwapper scenerySwapper;
+
+	@Inject
+	private RenderCallbackManager renderCallbackManager;
+
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
 
@@ -173,11 +183,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 		migrateLegacyToggles();
 		loadMappings();
 		loadAssetBundle();
+		renderCallbackManager.register(scenerySwapper);
 		clientThread.invoke(() ->
 		{
 			// A session that died while suppressing left Interact Highlight's NPC outlines off.
 			// Put them back before attach() decides whether to suppress again.
 			interactHighlight.restoreStaleStash();
+			scenerySwapper.scanLoadedScene();
 			recheckLoadedNpcs();
 			attach();
 		});
@@ -242,9 +254,16 @@ public class RetroNpcSwapperPlugin extends Plugin
 			bundleLoad = null;
 		}
 
+		// Here rather than in the invoke below, mirroring startUp's register. Deferred, a quick
+		// off-and-on would let this run after the next startUp registered, and unregister that.
+		// Once it is gone nothing hides the symbols, so the zone rebuild below puts them back.
+		renderCallbackManager.unregister(scenerySwapper);
+
 		clientThread.invoke(() ->
 		{
 			// detach() stands the Interact Highlight takeover down as part of dropping the wrapper
+			// Ahead of detach, so the zones it rebuilds are rebuilt by whichever renderer is drawing
+			scenerySwapper.shutDown();
 			detach();
 			resetAllModifiedNpcs();
 			modelCache.clear();
@@ -405,6 +424,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	@Subscribe
+	public void onDecorativeObjectSpawned(DecorativeObjectSpawned event)
+	{
+		scenerySwapper.onSpawned(event.getDecorativeObject());
+	}
+
+	@Subscribe
+	public void onDecorativeObjectDespawned(DecorativeObjectDespawned event)
+	{
+		scenerySwapper.onDespawned(event.getDecorativeObject());
+	}
+
+	@Subscribe
 	public void onNpcDespawned(NpcDespawned event)
 	{
 		NPC npc = event.getNpc();
@@ -496,6 +527,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			originalNpcState.clear();
 			targetTracker.reset();
+		}
+
+		if (gameStateChanged.getGameState() == GameState.LOADING
+			|| gameStateChanged.getGameState() == GameState.LOGGING_IN
+			|| gameStateChanged.getGameState() == GameState.HOPPING)
+		{
+			scenerySwapper.onLoading();
 		}
 		else if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
@@ -780,6 +818,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 				}
 
 				modelCache.setBundle(bundle);
+				scenerySwapper.setBundle(bundle);
 
 				// The load is off-thread, so NPCs are usually already on screen by the time it
 				// lands - and setBundle only drops what was built, it does not rebuild. Without
@@ -799,6 +838,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// startup, config change, world change, a landed bundle, and attach
 		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
 
+		// Ahead of the login check: the same triggers - config, safety, attach - decide these swaps
+		// as decide the NPCs
+		refreshScenerySwaps();
+
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			return;
@@ -817,6 +860,17 @@ public class RetroNpcSwapperPlugin extends Plugin
 				processNpc(npc);
 			}
 		}
+	}
+
+	/**
+	 * Brings the scenery swaps in line with config, safety and whether a renderer is attached. The
+	 * swapper does nothing for a state it is already in.
+	 */
+	private void refreshScenerySwaps()
+	{
+		boolean allowed = !isSafetyDisabled();
+		// Without the wrapper there is no draw to swap the pentagrams in at, and nothing to undo
+		scenerySwapper.refresh(config.swapMysticalWallCharts() && allowed && wrapper != null);
 	}
 
 	/**
@@ -866,7 +920,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		if (isSupportedHost(current, findGpuPlugin()))
 		{
-			RetroDrawCallbacks callbacks = new RetroDrawCallbacks(current, this::substitute);
+			RetroDrawCallbacks callbacks = new RetroDrawCallbacks(current, this::substitute,
+				scenerySwapper::isHidden);
 			client.setDrawCallbacks(callbacks);
 			wrapper = callbacks;
 			declinedHost = null;
@@ -987,16 +1042,21 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Supplies retro geometry for an NPC being drawn, or null to let the vanilla model through.
+	 * Supplies retro geometry for a temporary entity being drawn, or null to let the vanilla model
+	 * through.
 	 *
-	 * <p>Runs per NPC per frame, so it does map lookups only - eligibility is decided in
-	 * {@link #processNpc} and the geometry is built by {@link RetroModelCache} ahead of time.
+	 * <p>Runs per entity per frame, so it does map lookups only - eligibility is decided ahead of
+	 * time ({@link #processNpc} for NPCs, the swappers for the rest) and the geometry is built then.
 	 */
-	private Model substitute(NPC npc, Model vanilla)
+	private Model substitute(Renderable renderable, Model vanilla)
 	{
-		// The posed model is shared and only valid until the next applyTransformations call. It is
-		// handed straight to the delegate and uploaded before anything else can run, which is what
-		// makes that safe here. Returns null for an NPC that is not being substituted.
-		return modelCache.pose(npc);
+		// The posed models are shared and only valid until the next applyTransformations call. They
+		// are handed straight to the delegate and uploaded before anything else can run, which is
+		// what makes that safe here.
+		if (renderable instanceof NPC)
+		{
+			return modelCache.pose((NPC) renderable);
+		}
+		return scenerySwapper.substitute(vanilla);
 	}
 }

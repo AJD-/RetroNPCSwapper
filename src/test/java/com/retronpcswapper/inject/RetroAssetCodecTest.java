@@ -148,6 +148,35 @@ public class RetroAssetCodecTest
 	}
 
 	/**
+	 * Scenery ships unrigged: no vertex groups, no rig, no clips. The generator writes such a mesh
+	 * with an empty group table, and it has to come back as one rather than being refused for
+	 * lacking the rig every NPC mesh has.
+	 */
+	@Test
+	public void testUnriggedMeshSurvivesRoundTrip() throws IOException
+	{
+		RetroMesh unrigged = new RetroMesh(2086, 0,
+			new float[]{-64f, -64f, -64f},
+			new float[]{-62f, -232f, -62f},
+			new float[]{-64f, 0f, 66f},
+			new int[]{0}, new int[]{1}, new int[]{2},
+			new short[]{912},
+			null, null, null, null, null, null, null, null,
+			new int[0][]);
+
+		Map<Integer, RetroMesh> meshes = new LinkedHashMap<>();
+		meshes.put(2086, unrigged);
+		RetroMesh restored = roundTrip(new RetroAssetBundle(meshes, Collections.emptyMap(),
+			Collections.emptyMap())).getMesh(2086);
+
+		assertNotNull(restored);
+		assertEquals(3, restored.getVerticesCount());
+		assertEquals(1, restored.getFaceCount());
+		assertArrayEquals(unrigged.getFaceColors(), restored.getFaceColors());
+		assertTrue("an unrigged mesh must stay unrigged", !restored.isRigged());
+	}
+
+	/**
 	 * Null and empty are different to the renderer - a null transparency array is what puts a model
 	 * on the opaque path, while an empty one is a zero-face model - so the encoding has to keep them
 	 * apart rather than normalising one into the other.

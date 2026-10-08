@@ -26,10 +26,10 @@ package com.retronpcswapper;
 
 import java.util.Set;
 import lombok.Getter;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
 import net.runelite.api.Model;
-import net.runelite.api.NPC;
 import net.runelite.api.Projection;
 import net.runelite.api.Renderable;
 import net.runelite.api.Scene;
@@ -42,7 +42,8 @@ import net.runelite.api.hooks.DrawCallbacks;
 
 /**
  * Decorates the renderer currently holding {@code Client.setDrawCallbacks} (the bundled GPU plugin,
- * or 117 HD's zone renderer) so retro geometry can be substituted for an NPC at draw time.
+ * or 117 HD's zone renderer) so retro geometry can be substituted for an NPC or a placed carrier at
+ * draw time.
  *
  * <p>Only {@link #drawTemp} does anything other than forward: temporary entities (NPCs, players,
  * projectiles, spotanims) are drawn through it, and the {@code Model} arrives as a parameter, so
@@ -69,12 +70,43 @@ import net.runelite.api.hooks.DrawCallbacks;
 public class RetroDrawCallbacks implements DrawCallbacks
 {
 	/**
-	 * Supplies replacement geometry for an NPC, or {@code null} to leave it alone.
+	 * Supplies replacement geometry for a temporary entity - an NPC, or a carrier this plugin
+	 * placed - or {@code null} to leave it alone.
+	 * <p>
+	 * Called for every temporary entity drawn, projectiles and spotanims included, so it has to
+	 * turn away what it does not recognize cheaply.
 	 */
 	@FunctionalInterface
 	public interface ModelSubstitutor
 	{
-		Model substitute(NPC npc, Model vanilla);
+		Model substitute(Renderable renderable, Model vanilla);
+	}
+
+	/**
+	 * Decides whether a temporary entity should be left out of the frame entirely.
+	 * <p>
+	 * The renderer culls static scenery on upper floors by level and roof, but leaves temporary
+	 * entities to the client - which culls its own, and not the stand-ins this plugin places for
+	 * static scenery. This is where those get the same treatment the scenery they replace gets.
+	 */
+	@FunctionalInterface
+	public interface TempFilter
+	{
+		boolean isHidden(Scene scene, GameObject gameObject, Model model, SceneLevels levels);
+	}
+
+	/**
+	 * The levels the client asked the renderer to draw this frame, as handed to
+	 * {@code preSceneDraw}: everything from {@code minLevel} to {@code maxLevel}, except that above
+	 * {@code level} the roofs named in {@code hideRoofIds} are left out.
+	 */
+	@Value
+	public static class SceneLevels
+	{
+		int minLevel;
+		int level;
+		int maxLevel;
+		Set<Integer> hideRoofIds;
 	}
 
 	@Getter
@@ -82,30 +114,36 @@ public class RetroDrawCallbacks implements DrawCallbacks
 
 	private final ModelSubstitutor substitutor;
 
-	public RetroDrawCallbacks(DrawCallbacks delegate, ModelSubstitutor substitutor)
+	private final TempFilter tempFilter;
+
+	/** This frame's levels, or null before the first frame. */
+	private SceneLevels levels;
+
+	public RetroDrawCallbacks(DrawCallbacks delegate, ModelSubstitutor substitutor, TempFilter tempFilter)
 	{
 		this.delegate = delegate;
 		this.substitutor = substitutor;
+		this.tempFilter = tempFilter;
 	}
 
 	@Override
 	public void drawTemp(Projection worldProjection, Scene scene, GameObject gameObject, Model m, int orient, int x, int y, int z)
 	{
-		Model substitute = null;
+		Model substitute;
 
-		Renderable renderable = gameObject.getRenderable();
-		if (renderable instanceof NPC)
+		// Never allow a substitution failure to take the renderer down with it
+		try
 		{
-			// Never allow a substitution failure to take the renderer down with it
-			try
+			if (levels != null && tempFilter.isHidden(scene, gameObject, m, levels))
 			{
-				substitute = substitutor.substitute((NPC) renderable, m);
+				return;
 			}
-			catch (Exception ex)
-			{
-				substitute = null;
-				log.debug("Retro model substitution failed, drawing the vanilla model", ex);
-			}
+			substitute = substitutor.substitute(gameObject.getRenderable(), m);
+		}
+		catch (Exception ex)
+		{
+			substitute = null;
+			log.debug("Retro model substitution failed, drawing the vanilla model", ex);
 		}
 
 		delegate.drawTemp(worldProjection, scene, gameObject, substitute != null ? substitute : m, orient, x, y, z);
@@ -197,6 +235,7 @@ public class RetroDrawCallbacks implements DrawCallbacks
 		float cameraX, float cameraY, float cameraZ, float cameraPitch, float cameraYaw,
 		int minLevel, int level, int maxLevel, Set<Integer> hideRoofIds)
 	{
+		levels = new SceneLevels(minLevel, level, maxLevel, hideRoofIds);
 		delegate.preSceneDraw(scene, entityProjection, cameraX, cameraY, cameraZ, cameraPitch, cameraYaw,
 			minLevel, level, maxLevel, hideRoofIds);
 	}
@@ -207,6 +246,7 @@ public class RetroDrawCallbacks implements DrawCallbacks
 		float cameraX, float cameraY, float cameraZ, float cameraPitch, float cameraYaw,
 		int minLevel, int level, int maxLevel, Set<Integer> hideRoofIds)
 	{
+		levels = new SceneLevels(minLevel, level, maxLevel, hideRoofIds);
 		delegate.preSceneDraw(scene, cameraX, cameraY, cameraZ, cameraPitch, cameraYaw,
 			minLevel, level, maxLevel, hideRoofIds);
 	}
