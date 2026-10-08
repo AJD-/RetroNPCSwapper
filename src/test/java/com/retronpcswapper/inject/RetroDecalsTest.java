@@ -138,6 +138,46 @@ public class RetroDecalsTest
 		assertEquals(-16, v[1][4], 0f);
 	}
 
+	/**
+	 * Why the worn shield can be lifted once at rest: lifting and then turning and moving it puts
+	 * every vertex where turning and moving it and then lifting does.
+	 */
+	@Test
+	public void testLiftingCommutesWithATurnAndAMove()
+	{
+		double yaw = 0.7;
+		double pitch = -0.4;
+		// Turn about Y, then about X, then move - as a map from RetroAttachment.fit is laid out
+		double cy = Math.cos(yaw);
+		double sy = Math.sin(yaw);
+		double cp = Math.cos(pitch);
+		double sp = Math.sin(pitch);
+		double[] map = {
+			cy, 0, sy, 30,
+			sp * sy, cp, -sp * cy, -12,
+			-cp * sy, sp, cp * cy, 55,
+		};
+
+		float[][] liftedFirst = vertices(-18, -16);
+		RetroDecals.lift(liftedFirst[0], liftedFirst[1], liftedFirst[2], FACES1, FACES2, FACES3, PRIORITIES, 0, 3);
+		float[][] placedAfter = new float[3][7];
+		RetroAttachment.transform(map, liftedFirst[0], liftedFirst[1], liftedFirst[2], 7,
+			placedAfter[0], placedAfter[1], placedAfter[2]);
+
+		float[][] rest = vertices(-18, -16);
+		float[][] placedFirst = new float[3][7];
+		RetroAttachment.transform(map, rest[0], rest[1], rest[2], 7, placedFirst[0], placedFirst[1], placedFirst[2]);
+		RetroDecals.lift(placedFirst[0], placedFirst[1], placedFirst[2], FACES1, FACES2, FACES3, PRIORITIES, 0, 3);
+
+		for (int axis = 0; axis < 3; axis++)
+		{
+			for (int v = 0; v < 7; v++)
+			{
+				assertEquals(placedFirst[axis][v], placedAfter[axis][v], 0.01f);
+			}
+		}
+	}
+
 	private static RetroModel bound(float[][] v)
 	{
 		RetroMesh mesh = new RetroMesh(1, 0, v[0], v[1], v[2], FACES1, FACES2, FACES3,

@@ -27,6 +27,7 @@ package com.retronpcswapper.inject;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import java.util.Arrays;
 import java.util.Random;
 import org.junit.Test;
 
@@ -184,5 +185,54 @@ public class RetroAttachmentTest
 		}
 
 		assertNull(RetroAttachment.fit(rest[0], rest[1], rest[2], PART, posed[0], posed[1], posed[2], 0));
+	}
+
+	/** A part found once is found again from its precomputed rest shape, hint or none. */
+	@Test
+	public void testAPrecomputedPartIsFoundTheSameWay()
+	{
+		float[][] rest = part(1);
+		float[][] model = model(posed(rest, 1.1, 0.3, -20, 5, 40), 333, 517);
+		RetroAttachment.Part part = new RetroAttachment.Part(rest[0], rest[1], rest[2], PART);
+
+		assertEquals(PART, part.getCount());
+		assertEquals(333, RetroAttachment.locate(part, model[0], model[1], model[2], model[0].length, -1).start);
+		assertEquals(333, RetroAttachment.locate(part, model[0], model[1], model[2], model[0].length, 12).start);
+	}
+
+	@Test
+	public void testATooSmallPartIsNeverFound()
+	{
+		float[][] rest = part(1);
+		RetroAttachment.Part part = new RetroAttachment.Part(rest[0], rest[1], rest[2], 3);
+
+		assertNull(RetroAttachment.locate(part, rest[0], rest[1], rest[2], PART, -1));
+	}
+
+	/** Placed at an offset, the part lands where it would alone, and nothing before it is touched. */
+	@Test
+	public void testTransformWritesFromTheOffset()
+	{
+		float[][] rest = part(1);
+		float[][] posed = posed(rest, 0.7, -0.4, 30, -12, 55);
+		double[] map = RetroAttachment.fit(rest[0], rest[1], rest[2], PART, posed[0], posed[1], posed[2], 0);
+
+		float[] alone = new float[PART];
+		RetroAttachment.transform(map, rest[0], rest[1], rest[2], PART, alone, new float[PART], new float[PART]);
+
+		int offset = 7;
+		float[] x = new float[offset + PART];
+		Arrays.fill(x, 0, offset, -999);
+		RetroAttachment.transform(map, rest[0], rest[1], rest[2], PART, x, new float[offset + PART],
+			new float[offset + PART], offset);
+
+		for (int v = 0; v < offset; v++)
+		{
+			assertEquals(-999, x[v], 0f);
+		}
+		for (int v = 0; v < PART; v++)
+		{
+			assertEquals(alone[v], x[offset + v], 0f);
+		}
 	}
 }

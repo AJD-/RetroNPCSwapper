@@ -133,15 +133,14 @@ public class RetroShieldSwapper
 	/** The posed player and shield together. Shared between players, consumed as each is drawn. */
 	private final RetroModel composed = new RetroModel();
 
-	/** The 2005 shield at rest, lit, and the copy of it moved into place each draw. */
+	/**
+	 * The 2005 shield at rest: lit, and with its decals already lifted. Appended to each player as
+	 * it is, then moved into place there.
+	 */
 	private RetroModel shieldRest;
-	private final RetroModel shieldPlaced = new RetroModel();
 
 	/** The live shield at rest, for finding it in the posed player. */
-	private float[] liveRestX;
-	private float[] liveRestY;
-	private float[] liveRestZ;
-	private int liveRestCount;
+	private RetroAttachment.Part liveRest;
 
 	private boolean shieldModelsFailed;
 
@@ -216,9 +215,7 @@ public class RetroShieldSwapper
 	{
 		refresh(false, false);
 		shieldRest = null;
-		liveRestX = null;
-		liveRestY = null;
-		liveRestZ = null;
+		liveRest = null;
 		shieldModelsFailed = false;
 		placementHint = -1;
 		placementMissLogged = false;
@@ -244,7 +241,7 @@ public class RetroShieldSwapper
 			return null;
 		}
 
-		RetroAttachment.Placement placement = RetroAttachment.locate(liveRestX, liveRestY, liveRestZ, liveRestCount,
+		RetroAttachment.Placement placement = RetroAttachment.locate(liveRest,
 			vanilla.getVerticesX(), vanilla.getVerticesY(), vanilla.getVerticesZ(), vanilla.getVerticesCount(),
 			placementHint);
 		if (placement == null)
@@ -260,18 +257,16 @@ public class RetroShieldSwapper
 		placementHint = placement.start;
 
 		composed.copyFrom(vanilla);
-		hideFaces(composed, placement.start, placement.start + liveRestCount);
-		int shieldFaces = composed.getFaceCount();
+		hideFaces(composed, placement.start, placement.start + liveRest.getCount());
 
-		shieldPlaced.copyFrom(shieldRest);
+		// Appended at rest, decals and bias included, then moved into place where it now sits. The
+		// map is affine, so a decal lifted in front of its surface at rest is still in front of it.
+		int shieldStart = composed.getVerticesCount();
+		composed.appendFrom(shieldRest);
 		RetroAttachment.transform(placement.map, shieldRest.getVerticesX(), shieldRest.getVerticesY(),
 			shieldRest.getVerticesZ(), shieldRest.getVerticesCount(),
-			shieldPlaced.getVerticesX(), shieldPlaced.getVerticesY(), shieldPlaced.getVerticesZ());
-		shieldPlaced.calculateBoundsCylinder();
-
-		composed.appendFrom(shieldPlaced);
-		// Only the shield's own faces - the player's are drawn as the client made them
-		RetroDecals.lift(composed, shieldFaces);
+			composed.getVerticesX(), composed.getVerticesY(), composed.getVerticesZ(), shieldStart);
+		composed.calculateBoundsCylinder();
 
 		return composed;
 	}
@@ -342,7 +337,7 @@ public class RetroShieldSwapper
 
 	/**
 	 * Builds what placing the shield needs, once: the live shield's rest vertices, and the 2005
-	 * shield turned back and lit.
+	 * shield turned back, lit and with its decals lifted.
 	 */
 	private boolean ensureShieldModels()
 	{
@@ -365,10 +360,9 @@ public class RetroShieldSwapper
 			return false;
 		}
 
-		liveRestCount = live.getVerticesCount();
-		liveRestX = Arrays.copyOf(live.getVerticesX(), liveRestCount);
-		liveRestY = Arrays.copyOf(live.getVerticesY(), liveRestCount);
-		liveRestZ = Arrays.copyOf(live.getVerticesZ(), liveRestCount);
+		int liveCount = live.getVerticesCount();
+		liveRest = new RetroAttachment.Part(Arrays.copyOf(live.getVerticesX(), liveCount),
+			Arrays.copyOf(live.getVerticesY(), liveCount), Arrays.copyOf(live.getVerticesZ(), liveCount), liveCount);
 
 		// Negating Y and Z together is the half turn about X - a rotation, not a mirror, so the faces
 		// keep their winding. Turned before lighting, so the light falls the way it did in 2005.
@@ -379,7 +373,11 @@ public class RetroShieldSwapper
 
 		RetroModel rest = new RetroModel();
 		rest.copyFrom(lit);
+		// Before the lift, which moves the sword further than the check allows for
 		checkBounds(rest);
+		// Once, here, rather than on every player drawn: the shield is placed by an affine map, which
+		// keeps a lifted decal on the near side of the surface behind it
+		RetroDecals.lift(rest, 0);
 		shieldRest = rest;
 		return true;
 	}
