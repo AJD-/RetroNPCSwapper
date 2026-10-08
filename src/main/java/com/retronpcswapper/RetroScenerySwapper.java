@@ -389,6 +389,28 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
+	 * The stand-ins drawn in an object's place, or an empty list when the object is drawn as it is.
+	 * For outlining: anything outlining the object itself traces the live model the renderer no
+	 * longer draws.
+	 */
+	public List<RuneLiteObjectController> getStandIns(TileObject object)
+	{
+		RetroScenery scenery = RetroScenery.forObject(object.getId());
+		List<RuneLiteObjectController> controllers = placed.get(object);
+		return controllers != null && active.contains(scenery) ? controllers : Collections.emptyList();
+	}
+
+	/**
+	 * The model a stand-in shows: the 2005 geometry swapped onto its carrier, or the carrier itself.
+	 */
+	public Model getDrawnModel(RuneLiteObjectController standIn)
+	{
+		Model carrier = standIn.getModel();
+		Model replacement = substitute(carrier);
+		return replacement != null ? replacement : carrier;
+	}
+
+	/**
 	 * Whether a stand-in being drawn sits where the renderer is hiding the scenery this frame - an
 	 * upper floor, under a roof the client has taken off. The object it stands in for is hidden
 	 * there, so the stand-in must be too. Anything that is not a stand-in is left to the client.

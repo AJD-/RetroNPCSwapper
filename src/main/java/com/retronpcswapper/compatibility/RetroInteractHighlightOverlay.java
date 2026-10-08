@@ -37,6 +37,7 @@ import net.runelite.api.Menu;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.NPC;
 import net.runelite.api.Point;
+import net.runelite.api.TileObject;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.WidgetUtil;
 import net.runelite.client.plugins.interacthighlight.InteractHighlightConfig;
@@ -47,16 +48,19 @@ import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 import net.runelite.client.util.ColorUtil;
 
 /**
- * Draws Interact Highlight's NPC outlines, so that a swapped NPC is outlined around the retro model
- * on screen rather than the vanilla one the API still reports.
+ * Draws Interact Highlight's NPC and object outlines, so that a swapped NPC or restored piece of
+ * scenery is outlined around the retro model on screen rather than the vanilla one the API still
+ * reports.
  *
- * <p>Registered only while {@link InteractHighlightCompat} has that plugin's own NPC outlines
- * suppressed, so the two never draw at once. Every color, border width and feather value is read
- * from {@link InteractHighlightConfig}, so the result is that plugin's appearance and settings, not
- * a second set of them. NPCs this plugin does not swap take the ordinary path and look unchanged.
+ * <p>Registered only while {@link InteractHighlightCompat} has that plugin's own NPC and object
+ * outlines suppressed, so the two never draw at once. Every color, border width and feather value is
+ * read from {@link InteractHighlightConfig}, so the result is that plugin's appearance and settings,
+ * not a second set of them. NPCs and objects this plugin does not swap take the ordinary path and
+ * look unchanged.
  *
  * <p>The hover and target logic is Interact Highlight's, reproduced because its own is package
- * private. Only the NPC half is here; that plugin still draws objects, ground items and players.
+ * private. Only the NPC and object halves are here; that plugin still draws ground items and
+ * players.
  */
 public class RetroInteractHighlightOverlay extends Overlay
 {
@@ -65,17 +69,19 @@ public class RetroInteractHighlightOverlay extends Overlay
 	private final Client client;
 	private final InteractTargetTracker tracker;
 	private final RetroNpcOutliner outliner;
+	private final RetroSceneryOutliner sceneryOutliner;
 	private final ModelOutlineRenderer modelOutlineRenderer;
 	private final InteractHighlightCompat compat;
 
 	@Inject
 	private RetroInteractHighlightOverlay(Client client,
-		InteractTargetTracker tracker, RetroNpcOutliner outliner,
+		InteractTargetTracker tracker, RetroNpcOutliner outliner, RetroSceneryOutliner sceneryOutliner,
 		ModelOutlineRenderer modelOutlineRenderer, InteractHighlightCompat compat)
 	{
 		this.client = client;
 		this.tracker = tracker;
 		this.outliner = outliner;
+		this.sceneryOutliner = sceneryOutliner;
 		this.modelOutlineRenderer = modelOutlineRenderer;
 		this.compat = compat;
 		setPosition(OverlayPosition.DYNAMIC);
@@ -93,11 +99,6 @@ public class RetroInteractHighlightOverlay extends Overlay
 
 	private void renderHover()
 	{
-		if (!compat.npcShowHover())
-		{
-			return;
-		}
-
 		Menu menu = client.getMenu();
 		MenuEntry[] menuEntries = menu.getMenuEntries();
 		if (menuEntries.length == 0)
@@ -110,6 +111,15 @@ public class RetroInteractHighlightOverlay extends Overlay
 
 		switch (menuAction)
 		{
+			case WIDGET_TARGET_ON_GAME_OBJECT:
+			case GAME_OBJECT_FIRST_OPTION:
+			case GAME_OBJECT_SECOND_OPTION:
+			case GAME_OBJECT_THIRD_OPTION:
+			case GAME_OBJECT_FOURTH_OPTION:
+			case GAME_OBJECT_FIFTH_OPTION:
+			case EXAMINE_OBJECT:
+				renderObjectHover(entry);
+				return;
 			case WIDGET_TARGET_ON_NPC:
 			case NPC_FIRST_OPTION:
 			case NPC_SECOND_OPTION:
@@ -120,6 +130,11 @@ public class RetroInteractHighlightOverlay extends Overlay
 				break;
 			default:
 				return;
+		}
+
+		if (!compat.npcShowHover())
+		{
+			return;
 		}
 
 		NPC npc = entry.getNpc();
@@ -137,8 +152,28 @@ public class RetroInteractHighlightOverlay extends Overlay
 		drawOutline(npc, color);
 	}
 
+	private void renderObjectHover(MenuEntry entry)
+	{
+		if (!compat.objectShowHover())
+		{
+			return;
+		}
+
+		TileObject object = tracker.findTileObject(entry.getWorldViewId(), entry.getParam0(), entry.getParam1(),
+			entry.getIdentifier());
+		if (object == null || (object == tracker.getInteractedObject() && compat.objectShowInteract()))
+		{
+			// The target pass draws this one, and drawing both would double the outline
+			return;
+		}
+
+		drawOutline(object, compat.config().objectHoverHighlightColor());
+	}
+
 	private void renderTarget()
 	{
+		renderObjectTarget();
+
 		if (!compat.npcShowInteract())
 		{
 			return;
@@ -154,6 +189,35 @@ public class RetroInteractHighlightOverlay extends Overlay
 		Color startColor = tracker.isAttacked() ? appearance.npcAttackHoverHighlightColor() : appearance.npcHoverHighlightColor();
 		Color endColor = tracker.isAttacked() ? appearance.npcAttackHighlightColor() : appearance.npcInteractHighlightColor();
 		drawOutline((NPC) target, getClickColor(startColor, endColor, client.getGameCycle() - tracker.getGameCycle()));
+	}
+
+	private void renderObjectTarget()
+	{
+		TileObject object = tracker.getInteractedObject();
+		if (object == null || !compat.objectShowInteract())
+		{
+			return;
+		}
+
+		InteractHighlightConfig appearance = compat.config();
+		drawOutline(object, getClickColor(appearance.objectHoverHighlightColor(),
+			appearance.objectInteractHighlightColor(), client.getGameCycle() - tracker.getGameCycle()));
+	}
+
+	private void drawOutline(TileObject object, Color color)
+	{
+		InteractHighlightConfig appearance = compat.config();
+		int borderWidth = appearance.borderWidth();
+		int feather = appearance.outlineFeather();
+
+		// The 2005 model when this is scenery we restore, which falls through to the live object's
+		// own outline for anything else
+		if (sceneryOutliner.drawOutline(object, borderWidth, color, feather))
+		{
+			return;
+		}
+
+		modelOutlineRenderer.drawOutline(object, borderWidth, color, feather);
 	}
 
 	private void drawOutline(NPC npc, Color color)

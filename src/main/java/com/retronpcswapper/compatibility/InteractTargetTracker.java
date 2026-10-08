@@ -32,20 +32,31 @@ import com.retronpcswapper.RetroNpcSwapperPlugin;
 import lombok.Getter;
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
+import net.runelite.api.Constants;
+import net.runelite.api.DecorativeObject;
+import net.runelite.api.GameObject;
+import net.runelite.api.GroundObject;
 import net.runelite.api.MenuAction;
 import net.runelite.api.NPC;
+import net.runelite.api.ObjectComposition;
 import net.runelite.api.Player;
+import net.runelite.api.Scene;
+import net.runelite.api.Tile;
+import net.runelite.api.TileObject;
+import net.runelite.api.WallObject;
+import net.runelite.api.WorldView;
 import net.runelite.api.events.InteractingChanged;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.WidgetUtil;
 
 /**
- * Tracks which actor the local player is interacting with, so an outline can be drawn around it.
+ * Tracks which actor or object the local player is interacting with, so an outline can be drawn
+ * around it.
  *
- * <p>This mirrors the actor half of RuneLite's Interact Highlight plugin, whose own state is
- * package private and cannot be read from here. Only the actor half is reproduced: while this
- * plugin draws NPC outlines, that plugin is still the one drawing objects, ground items and
+ * <p>This mirrors the actor and object halves of RuneLite's Interact Highlight plugin, whose own
+ * state is package private and cannot be read from here. Ground items are not reproduced: while
+ * this plugin draws NPC and object outlines, that plugin is still the one drawing ground items and
  * players, with its own code and its own state.
  *
  * <p>Events are forwarded from {@link RetroNpcSwapperPlugin} rather than subscribed to here - the
@@ -64,6 +75,9 @@ public class InteractTargetTracker
 	@Getter
 	private boolean attacked;
 
+	// The object clicked, until the player gets there or does something else
+	private TileObject interactedObject;
+
 	private int clickTick;
 
 	@Getter
@@ -81,6 +95,7 @@ public class InteractTargetTracker
 			case NPC_FIFTH_OPTION:
 			{
 				interactedActor = event.getMenuEntry().getNpc();
+				interactedObject = null;
 				attacked = event.getMenuAction() == MenuAction.NPC_SECOND_OPTION
 					|| event.getMenuAction() == MenuAction.WIDGET_TARGET_ON_NPC
 						&& client.getSelectedWidget() != null
@@ -100,19 +115,28 @@ public class InteractTargetTracker
 			case PLAYER_EIGHTH_OPTION:
 			{
 				interactedActor = event.getMenuEntry().getPlayer();
+				interactedObject = null;
 				attacked = false;
 				clickTick = client.getTickCount();
 				gameCycle = client.getGameCycle();
 				break;
 			}
-			// Any click that ends the interaction. Object and ground item clicks land here too:
-			// they end ours, and Interact Highlight goes on tracking them for its own outlines.
 			case WIDGET_TARGET_ON_GAME_OBJECT:
 			case GAME_OBJECT_FIRST_OPTION:
 			case GAME_OBJECT_SECOND_OPTION:
 			case GAME_OBJECT_THIRD_OPTION:
 			case GAME_OBJECT_FOURTH_OPTION:
 			case GAME_OBJECT_FIFTH_OPTION:
+			{
+				interactedObject = findTileObject(event.getMenuEntry().getWorldViewId(),
+					event.getParam0(), event.getParam1(), event.getId());
+				interactedActor = null;
+				clickTick = client.getTickCount();
+				gameCycle = client.getGameCycle();
+				break;
+			}
+			// Any click that ends the interaction. Ground item clicks land here too: they end ours,
+			// and Interact Highlight goes on tracking them for its own outlines.
 			case WIDGET_TARGET_ON_GROUND_ITEM:
 			case GROUND_ITEM_FIRST_OPTION:
 			case GROUND_ITEM_SECOND_OPTION:
@@ -122,11 +146,13 @@ public class InteractTargetTracker
 			case WIDGET_TARGET_ON_WIDGET:
 			case WALK:
 				interactedActor = null;
+				interactedObject = null;
 				break;
 			default:
 				if (event.isItemOp())
 				{
 					interactedActor = null;
+					interactedObject = null;
 				}
 		}
 	}
@@ -137,6 +163,7 @@ public class InteractTargetTracker
 		{
 			// The destination has been reached, so the interaction we were tracking is over
 			interactedActor = null;
+			interactedObject = null;
 		}
 	}
 
@@ -146,6 +173,7 @@ public class InteractTargetTracker
 			&& client.getTickCount() > clickTick && event.getTarget() != interactedActor)
 		{
 			interactedActor = null;
+			interactedObject = null;
 			attacked = event.getTarget() != null && event.getTarget().getCombatLevel() > 0;
 		}
 	}
@@ -161,7 +189,102 @@ public class InteractTargetTracker
 	public void reset()
 	{
 		interactedActor = null;
+		interactedObject = null;
 		attacked = false;
+	}
+
+	/**
+	 * A new scene is loading, and the object being interacted with goes with the old one.
+	 */
+	public void onLoading()
+	{
+		interactedObject = null;
+	}
+
+	/**
+	 * The object being interacted with, or null.
+	 */
+	TileObject getInteractedObject()
+	{
+		return interactedObject;
+	}
+
+	/**
+	 * The object a menu entry names, found the way Interact Highlight finds it: on the scene tile
+	 * the entry gives, matching the entry's id against the object's own or the one it currently
+	 * stands in for.
+	 */
+	TileObject findTileObject(int worldViewId, int x, int y, int id)
+	{
+		WorldView wv = client.getWorldView(worldViewId);
+		if (wv == null)
+		{
+			return null;
+		}
+
+		int offset = worldViewId == WorldView.TOPLEVEL ? (Constants.EXTENDED_SCENE_SIZE - Constants.SCENE_SIZE) / 2 : 0;
+		x += offset;
+		y += offset;
+
+		Scene scene = wv.getScene();
+		Tile[][][] tiles = scene.getExtendedTiles();
+		if (x < 0 || y < 0 || x >= tiles[0].length || y >= tiles[0][0].length)
+		{
+			return null;
+		}
+
+		Tile tile = tiles[wv.getPlane()][x][y];
+		if (tile == null)
+		{
+			return null;
+		}
+
+		for (GameObject gameObject : tile.getGameObjects())
+		{
+			if (gameObject != null && objIdEquals(id, gameObject.getId()))
+			{
+				return gameObject;
+			}
+		}
+
+		WallObject wallObject = tile.getWallObject();
+		if (wallObject != null && objIdEquals(id, wallObject.getId()))
+		{
+			return wallObject;
+		}
+
+		DecorativeObject decorativeObject = tile.getDecorativeObject();
+		if (decorativeObject != null && objIdEquals(id, decorativeObject.getId()))
+		{
+			return decorativeObject;
+		}
+
+		GroundObject groundObject = tile.getGroundObject();
+		if (groundObject != null && objIdEquals(id, groundObject.getId()))
+		{
+			return groundObject;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Whether a menu entry's id - the object's own, or the one a multiloc currently shows - names an
+	 * object placed with the given id.
+	 */
+	private boolean objIdEquals(int menuId, int placedId)
+	{
+		if (menuId == placedId)
+		{
+			return true;
+		}
+
+		ObjectComposition composition = client.getObjectDefinition(placedId);
+		if (composition != null && composition.getImpostorIds() != null)
+		{
+			composition = composition.getImpostor();
+		}
+		return composition != null && composition.getId() == menuId;
 	}
 
 	/**

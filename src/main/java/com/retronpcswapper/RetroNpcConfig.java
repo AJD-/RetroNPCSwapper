@@ -385,11 +385,11 @@ public interface RetroNpcConfig extends Config
 		keyName = OVERRIDE_INTERACT_HIGHLIGHT,
 		name = "Fix Interact Highlight outlines",
 		description = "<html><body style='width:170px'>Draw the Interact Highlight plugin's NPC "
-			+ "outlines around the retro model instead of the modern one.<br><br>While this is on "
-			+ "and models are being swapped, Interact Highlight's own <b>NPCs: Show on hover</b> "
-			+ "and <b>Show on interact</b> are turned off and this plugin draws those outlines in "
-			+ "their place, using that plugin's own colors and border settings. Both are turned back "
-			+ "on when this plugin stops.</body></html>",
+			+ "and object outlines around the retro model instead of the modern one.<br><br>While "
+			+ "this is on and models are being swapped, Interact Highlight's own <b>Show on hover</b> "
+			+ "and <b>Show on interact</b> for NPCs and objects are turned off and this plugin draws "
+			+ "those outlines in their place, using that plugin's own colors and border settings. "
+			+ "They are turned back on when this plugin stops.</body></html>",
 		section = compatibilitySection,
 		position = 1
 	)
