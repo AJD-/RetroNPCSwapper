@@ -934,6 +934,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 			wanted.add(RetroScenery.WARDROBE_OPEN);
 			wanted.add(RetroScenery.WARDROBE_OPEN_SKELETON);
 		}
+		if (config.swapTrees())
+		{
+			wanted.add(RetroScenery.OAK_TREE);
+			wanted.add(RetroScenery.MAGIC_TREE);
+		}
 		return wanted;
 	}
 

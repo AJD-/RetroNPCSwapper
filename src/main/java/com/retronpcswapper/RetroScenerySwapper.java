@@ -167,6 +167,11 @@ public class RetroScenerySwapper implements RenderCallback
 		replacements.clear();
 		for (RetroScenery scenery : RetroScenery.values())
 		{
+			if (scenery.source != RetroScenery.Source.BUNDLE)
+			{
+				continue;
+			}
+
 			RetroMesh mesh = bundle.getMesh(scenery.meshId);
 			if (mesh == null)
 			{
@@ -194,7 +199,7 @@ public class RetroScenerySwapper implements RenderCallback
 		Set<RetroScenery> next = EnumSet.noneOf(RetroScenery.class);
 		for (RetroScenery scenery : wanted)
 		{
-			if (replacements.containsKey(scenery) && carrier(scenery, 0) != null)
+			if (isReady(scenery) && carrier(scenery, 0) != null)
 			{
 				next.add(scenery);
 			}
@@ -578,9 +583,22 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
+	 * Whether a scenery's 2005 model is to hand: from the bundle once it has loaded, or from the live
+	 * cache, where the carrier is the 2005 model itself.
+	 */
+	private boolean isReady(RetroScenery scenery)
+	{
+		return scenery.source == RetroScenery.Source.LIVE_CACHE || replacements.containsKey(scenery);
+	}
+
+	/**
 	 * The live model a scenery's stand-ins at one quarter turn carry - lit afresh, so the instance is
 	 * that scenery's at that turn alone and is told apart at draw time from every other model, its
 	 * own live copy included.
+	 *
+	 * <p>For a mesh the live cache still holds, this is the 2005 model, turned to the quarter turns
+	 * and then lit the way the 2005 definition lit it, as the client would. Nothing is swapped onto
+	 * it at draw time; it only needs recognizing.
 	 */
 	private Model carrier(RetroScenery scenery, int quarterTurns)
 	{
@@ -588,7 +606,22 @@ public class RetroScenerySwapper implements RenderCallback
 		if (turned[quarterTurns] == null)
 		{
 			ModelData data = client.loadModelData(scenery.meshId);
-			Model carrier = data == null ? null : data.light();
+			Model carrier;
+			if (data == null)
+			{
+				carrier = null;
+			}
+			else if (scenery.source == RetroScenery.Source.LIVE_CACHE)
+			{
+				carrier = rotate(data.cloneVertices(), quarterTurns).light(
+					ModelData.DEFAULT_AMBIENT + scenery.ambient,
+					ModelData.DEFAULT_CONTRAST + scenery.contrast * CONTRAST_STEP,
+					ModelData.DEFAULT_X, ModelData.DEFAULT_Y, ModelData.DEFAULT_Z);
+			}
+			else
+			{
+				carrier = data.light();
+			}
 			if (carrier != null)
 			{
 				turned[quarterTurns] = carrier;
@@ -626,6 +659,23 @@ public class RetroScenerySwapper implements RenderCallback
 			mesh.getFaceRenderPriorities(), mesh.getFaceTextures(),
 			mesh.getTextureCoords(), mesh.getTexIndices1(), mesh.getTexIndices2(), mesh.getTexIndices3(),
 			mesh.getVertexGroups());
+	}
+
+	/**
+	 * Turns a live model's vertices in place by whole quarter turns, as {@link #rotate(RetroMesh, int)}
+	 * turns a bundled one. The caller hands over a copy with its own vertices.
+	 */
+	private static ModelData rotate(ModelData data, int quarterTurns)
+	{
+		float[] xs = data.getVerticesX();
+		float[] zs = data.getVerticesZ();
+		for (int v = 0; v < data.getVerticesCount(); v++)
+		{
+			float[] turned = rotate(xs[v], zs[v], quarterTurns);
+			xs[v] = turned[0];
+			zs[v] = turned[1];
+		}
+		return data;
 	}
 
 	/**

@@ -302,7 +302,11 @@ public class RetroAssetGenerator
 		// Scenery: the Draynor Manor wardrobe closed (388), open (389) and open with the skeleton
 		// (390). All three ids now hold rebuilt wardrobes (0-3% vertex overlap) and the 2005 meshes
 		// are nowhere else in the live cache. Their texture 26 is unchanged live
-		new Spec("Wardrobes", Source.RETRO, Source.RETRO, new int[]{1951, 1953, 1949}, new int[]{})
+		new Spec("Wardrobes", Source.RETRO, Source.RETRO, new int[]{1951, 1953, 1949}, new int[]{}),
+		// Scenery: the oak, object 10820. Live 1571 is the 2005 oak touched up (61% vertex overlap,
+		// 114 faces against 122), and the exact copy at 8288 is shrunk to 80/128. Texture 8 is
+		// unchanged live. The magic tree needs no spec: its 2005 mesh 1693 is intact in the live cache
+		new Spec("Oak tree", Source.RETRO, Source.RETRO, new int[]{1571}, new int[]{})
 	);
 
 	private enum Source

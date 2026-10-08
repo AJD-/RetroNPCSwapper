@@ -233,6 +233,31 @@ public class RetroScenerySwapperTest
 		}
 	}
 
+	@Test
+	public void testTheTreesAreHiddenWhileActive()
+	{
+		for (int id : new int[]{ObjectID.OAKTREE, ObjectID.NEWBIEOAKTREE, ObjectID.TUT2_OAK,
+			ObjectID.TUT2_OAK_NOOP, ObjectID.TREE_OAK_DEFAULT01, ObjectID.OAKTREE_NOOP, ObjectID.GIM_OAKTREE,
+			ObjectID.MAGICTREE, ObjectID.CRAB_MAGICTREE, ObjectID.CRAB_MAGICTREE_NOOP})
+		{
+			assertTrue("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
+	/**
+	 * The rescaled and snowy oaks are left alone, and so is the farming patch's magic tree, whose
+	 * live mesh only one growth stage shares. Stumps keep their live model.
+	 */
+	@Test
+	public void testOtherTreesAreLeftAlone()
+	{
+		for (int id : new int[]{ObjectID.AVIUM_OAK_1, ObjectID.XMAS24_OAKTREE01_SNOW01, ObjectID.MAGIC_TREE_9,
+			ObjectID.OAKTREE_STUMP, ObjectID.MAGIC_TREE_STUMP})
+		{
+			assertFalse("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
 	/** The later wells on the same live mesh never had a 2005 look and are not restored. */
 	@Test
 	public void testLaterWellsAreLeftAlone()

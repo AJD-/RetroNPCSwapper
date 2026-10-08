@@ -464,4 +464,16 @@ public interface RetroNpcConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "swapTrees",
+		name = "Trees",
+		description = "Restore the 2005 oak and magic trees.",
+		section = scenerySection,
+		position = 4
+	)
+	default boolean swapTrees()
+	{
+		return true;
+	}
 }

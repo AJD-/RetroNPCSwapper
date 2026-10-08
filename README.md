@@ -58,6 +58,8 @@ Under **Scenery**, each restored from the bundled 2005 set:
 - **Mystical wall charts** — the pre-2006 pentagram in place of the Magical symbol
 - **Wells** — the 2005 well, in place of the rebuilt one and Varrock's 2007 replacement
 - **Wardrobes** — the 2005 Draynor Manor wardrobe, closed, open and with the skeleton inside
+- **Trees** — the 2005 oak and magic trees. The magic tree's 2005 model is still in the live cache,
+  unused, and is drawn from there
 
 Scenery stand-ins draw over the live object, which stays in the scene: its clickbox and menu
 options are the live ones. Scenery is lit with its 2005 values, so it can read a shade darker than

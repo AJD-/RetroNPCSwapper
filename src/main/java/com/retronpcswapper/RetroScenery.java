@@ -72,7 +72,37 @@ enum RetroScenery
 		ObjectID.DEAL_BROOMCUPBOARD_OPEN),
 
 	/** 2005 def 390, mesh 1949: opened, with the skeleton inside. Its only copy is recoloured. */
-	WARDROBE_OPEN_SKELETON(Placement.GAME_OBJECT, 1949, 0, 0, ObjectID.SPOOKYWARDROBE_OPEN_SKELETON);
+	WARDROBE_OPEN_SKELETON(Placement.GAME_OBJECT, 1949, 0, 0, ObjectID.SPOOKYWARDROBE_OPEN_SKELETON),
+
+	/**
+	 * 2005 def 1281, mesh 1571. The live id is the same oak touched up - 61% of the 2005 vertex
+	 * positions, eight fewer faces - and the exact 2005 copy at 8288 is shrunk to 80/128, so the
+	 * mesh comes from the bundle. The live oak's trunk recolour is the live repaint, not the 2005
+	 * look, so it is not carried. The untinted copies - Tutorial Island's, the group ironman oak -
+	 * and the copies sharing the live oak's own recolour follow it; the 4x4 Avium oak, drawn at
+	 * 160/190, and the snowy Christmas oak are left alone.
+	 */
+	OAK_TREE(Placement.GAME_OBJECT, 1571, 0, 0, ObjectID.OAKTREE, ObjectID.NEWBIEOAKTREE,
+		ObjectID.TUT2_OAK, ObjectID.TUT2_OAK_NOOP, ObjectID.TREE_OAK_DEFAULT01, ObjectID.OAKTREE_NOOP,
+		ObjectID.GIM_OAKTREE),
+
+	/**
+	 * 2005 def 1306, mesh 1693. Unlike the rest, the 2005 mesh survives at its id untouched - every
+	 * vertex and face color - and simply went unused when the live magic tree moved to model 7978,
+	 * so it is drawn straight from the live cache. The untinted copies on 7978 follow; the farming
+	 * patch's growth stage on it does not, or one stage of eleven would grow into a 2005 tree.
+	 */
+	MAGIC_TREE(Source.LIVE_CACHE, Placement.GAME_OBJECT, 1693, 0, 0, ObjectID.MAGICTREE,
+		ObjectID.CRAB_MAGICTREE, ObjectID.CRAB_MAGICTREE_NOOP);
+
+	/** Where the 2005 mesh comes from. */
+	enum Source
+	{
+		/** The bundle, under its 2005 model id - the live cache no longer has it. */
+		BUNDLE,
+		/** The live cache, at its 2005 model id, which still holds it unchanged. */
+		LIVE_CACHE
+	}
 
 	/** How a scenery object sits in the scene, which decides how its stand-in is placed. */
 	enum Placement
@@ -105,9 +135,10 @@ enum RetroScenery
 		}
 	}
 
+	final Source source;
 	final Placement placement;
 
-	/** The 2005 model id the bundle carries the mesh under. */
+	/** The 2005 model id, which the bundle or the live cache - as {@link #source} says - holds the mesh under. */
 	final int meshId;
 
 	/** The 2005 definition's lighting adjustments, on top of the client's base. */
@@ -118,6 +149,12 @@ enum RetroScenery
 
 	RetroScenery(Placement placement, int meshId, int ambient, int contrast, int... objectIds)
 	{
+		this(Source.BUNDLE, placement, meshId, ambient, contrast, objectIds);
+	}
+
+	RetroScenery(Source source, Placement placement, int meshId, int ambient, int contrast, int... objectIds)
+	{
+		this.source = source;
 		this.placement = placement;
 		this.meshId = meshId;
 		this.ambient = ambient;
