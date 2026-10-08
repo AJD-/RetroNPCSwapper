@@ -939,6 +939,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 			wanted.add(RetroScenery.OAK_TREE);
 			wanted.add(RetroScenery.MAGIC_TREE);
 		}
+		if (config.swapPicnicBenches())
+		{
+			wanted.add(RetroScenery.PICNIC_BENCH);
+		}
 		return wanted;
 	}
 

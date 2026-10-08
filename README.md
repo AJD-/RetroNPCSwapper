@@ -60,6 +60,7 @@ Under **Scenery**, each restored to its 2005 model:
 - **Wardrobes** — the 2005 Draynor Manor wardrobe, closed, open and with the skeleton inside
 - **Trees** — the 2005 oak and magic trees. The magic tree's 2005 model is still in the live cache,
   unused, and is drawn from there
+- **Picnic benches** — the 2005 picnic bench
 
 Scenery stand-ins draw over the live object, which stays in the scene: its clickbox and menu
 options are the live ones. Scenery is lit with its 2005 values, so it can read a shade darker than

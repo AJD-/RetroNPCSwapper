@@ -258,6 +258,24 @@ public class RetroScenerySwapperTest
 		}
 	}
 
+	@Test
+	public void testThePicnicBenchesAreHiddenWhileActive()
+	{
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.PICNICBENCH, config(10, 0)), ALL));
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.SARIM_PICNICBENCH, config(10, 0)), ALL));
+	}
+
+	/** The recoloured benches on the same live mesh are left alone, like the later wells. */
+	@Test
+	public void testRecolouredPicnicBenchesAreLeftAlone()
+	{
+		for (int id : new int[]{ObjectID.GARDEN_PICNICBENCH, ObjectID.PIRATETREASURE_PICNICBENCH,
+			ObjectID.FAI_FALADOR_PICNICBENCH, ObjectID.CLANWARS_TOURNAMENT_TABLE_SUPPLIES})
+		{
+			assertFalse("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
 	/** The later wells on the same live mesh never had a 2005 look and are not restored. */
 	@Test
 	public void testLaterWellsAreLeftAlone()

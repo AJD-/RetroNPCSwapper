@@ -96,7 +96,14 @@ enum RetroScenery
 	 * the client resolves it to.
 	 */
 	MAGIC_TREE(Source.LIVE_CACHE, Placement.GAME_OBJECT, 1693, 0, 0, ObjectID.MAGICTREE,
-		ObjectID.CRAB_MAGICTREE, ObjectID.CRAB_MAGICTREE_NOOP);
+		ObjectID.CRAB_MAGICTREE, ObjectID.CRAB_MAGICTREE_NOOP),
+
+	/**
+	 * 2005 def 611, mesh 1453. The live id holds a rebuilt bench (4% vertex overlap). Port
+	 * Sarim's untinted copy follows; the recoloured garden, Pirate's Treasure, Falador and Clan
+	 * Wars copies are left alone, as the later wells are.
+	 */
+	PICNIC_BENCH(Placement.GAME_OBJECT, 1453, 0, 0, ObjectID.PICNICBENCH, ObjectID.SARIM_PICNICBENCH);
 
 	/** Where the 2005 mesh comes from. */
 	enum Source

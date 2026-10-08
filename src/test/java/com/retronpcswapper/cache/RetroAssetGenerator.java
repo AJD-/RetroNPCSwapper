@@ -306,7 +306,10 @@ public class RetroAssetGenerator
 		// Scenery: the oak, object 10820. Live 1571 is the 2005 oak touched up (61% vertex overlap,
 		// 114 faces against 122), and the exact copy at 8288 is shrunk to 80/128. Texture 8 is
 		// unchanged live. The magic tree needs no spec: its 2005 mesh 1693 is intact in the live cache
-		new Spec("Oak tree", Source.RETRO, Source.RETRO, new int[]{1571}, new int[]{})
+		new Spec("Oak tree", Source.RETRO, Source.RETRO, new int[]{1571}, new int[]{}),
+		// Scenery: the picnic bench, object 611. Model id 1453 now holds a rebuilt 160-vertex bench
+		// (4% vertex overlap); the 2005 one is nowhere else in the live cache. Texture 22 is unchanged
+		new Spec("Picnic bench", Source.RETRO, Source.RETRO, new int[]{1453}, new int[]{})
 	);
 
 	private enum Source

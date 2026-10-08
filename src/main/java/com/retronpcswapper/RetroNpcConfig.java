@@ -476,4 +476,16 @@ public interface RetroNpcConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "swapPicnicBenches",
+		name = "Picnic benches",
+		description = "Restore the 2005 picnic bench.",
+		section = scenerySection,
+		position = 5
+	)
+	default boolean swapPicnicBenches()
+	{
+		return true;
+	}
 }
