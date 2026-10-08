@@ -404,6 +404,66 @@ public class RetroModelTest
 		assertEquals(4, model.getFaceIndices1()[2]);
 	}
 
+	/**
+	 * The copy runs per NPC per frame, so a column copied again at the same size goes into the
+	 * buffer it went into last time.
+	 */
+	@Test
+	public void testCopyingAgainReusesTheColumn()
+	{
+		Source src = triangle(0);
+		src.transparencies = new byte[]{5};
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(src);
+		byte[] first = model.getFaceTransparencies();
+		model.copyFrom(src);
+
+		assertSame(first, model.getFaceTransparencies());
+		assertNotSame(src.transparencies, first);
+	}
+
+	/** A reused buffer must not keep a column alive that the next source does not have. */
+	@Test
+	public void testAColumnTheNextSourceLacksIsNullAgain()
+	{
+		Source with = triangle(0);
+		with.transparencies = new byte[]{5};
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(with);
+		model.copyFrom(triangle(0));
+
+		assertNull(model.getFaceTransparencies());
+	}
+
+	/**
+	 * The composed shield model, frame to frame: one frame appends a column, the next appends a
+	 * source without it, and nothing of the first frame's values shows through.
+	 */
+	@Test
+	public void testAppendingAgainLeavesNoStaleValues()
+	{
+		Source base = triangle(0);
+		base.transparencies = new byte[]{9};
+		Source added = quad();
+		added.transparencies = new byte[]{5, 6};
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(base);
+		model.appendFrom(added);
+		byte[] first = model.getFaceTransparencies();
+
+		model.copyFrom(base);
+		model.appendFrom(quad());
+
+		byte[] transparencies = model.getFaceTransparencies();
+		assertSame(first, transparencies);
+		assertEquals(9, transparencies[0]);
+		assertEquals(0, transparencies[1]);
+		assertEquals(0, transparencies[2]);
+	}
+
 	/** Minimal stand-in for a posed client model. */
 	private static final class Source extends RetroModel
 	{
