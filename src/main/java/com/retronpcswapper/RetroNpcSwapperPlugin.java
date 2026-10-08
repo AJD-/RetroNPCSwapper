@@ -52,7 +52,9 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
 import net.runelite.api.NPC;
+import net.runelite.api.Player;
 import net.runelite.api.Renderable;
+import net.runelite.api.TileItem;
 import net.runelite.api.WorldType;
 import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
@@ -66,6 +68,7 @@ import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.PlayerDespawned;
+import net.runelite.api.events.PostItemComposition;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WorldChanged;
 import net.runelite.api.hooks.DrawCallbacks;
@@ -131,6 +134,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	@Inject
 	private RetroNpcOutliner outliner;
+
+	@Inject
+	private RetroShieldSwapper shieldSwapper;
 
 	@Inject
 	private RetroScenerySwapper scenerySwapper;
@@ -266,6 +272,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			scenerySwapper.shutDown();
 			detach();
 			resetAllModifiedNpcs();
+			shieldSwapper.shutDown();
 			modelCache.clear();
 		});
 	}
@@ -433,6 +440,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 	public void onDecorativeObjectDespawned(DecorativeObjectDespawned event)
 	{
 		scenerySwapper.onDespawned(event.getDecorativeObject());
+	}
+
+	@Subscribe
+	public void onPostItemComposition(PostItemComposition event)
+	{
+		shieldSwapper.onPostItemComposition(event.getItemComposition());
 	}
 
 	@Subscribe
@@ -838,9 +851,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// startup, config change, world change, a landed bundle, and attach
 		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
 
-		// Ahead of the login check: the same triggers - config, safety, attach - decide these swaps
-		// as decide the NPCs
-		refreshScenerySwaps();
+		// Ahead of the login check: the icon is drawn on the login-free paths too, and the same
+		// triggers - config, safety, attach - decide these swaps as decide the NPCs
+		refreshItemAndScenerySwaps();
 
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
@@ -863,13 +876,16 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Brings the scenery swaps in line with config, safety and whether a renderer is attached. The
-	 * swapper does nothing for a state it is already in.
+	 * Brings the item and scenery swaps in line with config, safety and whether a renderer is
+	 * attached. Each swapper does nothing for a state it is already in.
 	 */
-	private void refreshScenerySwaps()
+	private void refreshItemAndScenerySwaps()
 	{
 		boolean allowed = !isSafetyDisabled();
-		// Without the wrapper there is no draw to swap the pentagrams in at, and nothing to undo
+		boolean shield = config.swapAntiDragonShield() && allowed;
+		// Without the wrapper there is no draw to swap the worn shield in at, and nothing to undo
+		shieldSwapper.refresh(shield, shield);
+		// Likewise the pentagrams
 		scenerySwapper.refresh(config.swapMysticalWallCharts() && allowed && wrapper != null);
 	}
 
@@ -921,7 +937,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		if (isSupportedHost(current, findGpuPlugin()))
 		{
 			RetroDrawCallbacks callbacks = new RetroDrawCallbacks(current, this::substitute,
-				scenerySwapper::isHidden);
+				shieldSwapper::substituteGroundItem, scenerySwapper::isHidden);
 			client.setDrawCallbacks(callbacks);
 			wrapper = callbacks;
 			declinedHost = null;
@@ -1056,6 +1072,14 @@ public class RetroNpcSwapperPlugin extends Plugin
 		if (renderable instanceof NPC)
 		{
 			return modelCache.pose((NPC) renderable);
+		}
+		if (renderable instanceof Player)
+		{
+			return shieldSwapper.substitute((Player) renderable, vanilla);
+		}
+		if (renderable instanceof TileItem)
+		{
+			return shieldSwapper.substituteGroundItem(renderable, vanilla);
 		}
 		return scenerySwapper.substitute(vanilla);
 	}

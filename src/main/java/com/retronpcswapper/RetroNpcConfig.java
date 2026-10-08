@@ -338,7 +338,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "disablePvpWorld",
 		name = "Disable on PvP worlds",
-		description = "Disable retro NPC and scenery swapping when on a PvP world.",
+		description = "Disable retro NPC, item and scenery swapping when on a PvP world.",
 		section = safetySection,
 		position = 1
 	)
@@ -350,7 +350,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "disableWilderness",
 		name = "Disable in Wilderness",
-		description = "Disable retro NPC and scenery swapping while in the Wilderness.",
+		description = "Disable retro NPC, item and scenery swapping while in the Wilderness.",
 		section = safetySection,
 		position = 2
 	)
@@ -382,6 +382,29 @@ public interface RetroNpcConfig extends Config
 	default boolean overrideInteractHighlight()
 	{
 		return false;
+	}
+
+	@ConfigSection(
+		name = "Items",
+		description = "Retro item models",
+		position = 5,
+		closedByDefault = false
+	)
+	String itemsSection = "itemsSection";
+
+	@ConfigItem(
+		keyName = "swapAntiDragonShield",
+		name = "Anti-dragon shield",
+		description = "<html><body style='width:170px'>Restore the 2004-2007 anti-dragon shield: its "
+			+ "inventory icon, the model on the ground, and the shield worn by players.<br><br>The "
+			+ "icon swaps on any renderer. The worn shield needs the <b>GPU</b> or <b>117 HD</b> "
+			+ "plugin.</body></html>",
+		section = itemsSection,
+		position = 1
+	)
+	default boolean swapAntiDragonShield()
+	{
+		return true;
 	}
 
 	@ConfigSection(

@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper.inject;
 
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.AABB;
 import net.runelite.api.Model;
@@ -280,6 +281,223 @@ public class RetroModel implements Model
 	}
 
 	/**
+	 * Adds another model's geometry to what this one already holds, so two posed client models can
+	 * be drawn as one.
+	 *
+	 * <p>For the same reason as {@link #copyFrom}, this copies: the source is typically the shared
+	 * output of {@code applyTransformations}, and must be appended before the next call to it. Call
+	 * {@link #copyFrom} first - this one builds on its buffers, and must never run on geometry set
+	 * up by {@link #bind}, whose face arrays belong to the mesh.
+	 *
+	 * <p>The per-face columns that may be null stay null only when both sides lack them. When one
+	 * side has a column the other does not, the missing side is filled with what a null array meant
+	 * for it: no transparency, priority or bias, and no texture.
+	 */
+	public void appendFrom(Model source)
+	{
+		float[] sourceX = source.getVerticesX();
+		float[] sourceY = source.getVerticesY();
+		float[] sourceZ = source.getVerticesZ();
+
+		int[] sourceI1 = source.getFaceIndices1();
+		int[] sourceI2 = source.getFaceIndices2();
+		int[] sourceI3 = source.getFaceIndices3();
+
+		int[] sourceC1 = source.getFaceColors1();
+		int[] sourceC2 = source.getFaceColors2();
+		int[] sourceC3 = source.getFaceColors3();
+
+		// Settled against what actually arrived, the same way copyFrom does it
+		int addedVertices = Math.min(source.getVerticesCount(),
+			Math.min(length(sourceX), Math.min(length(sourceY), length(sourceZ))));
+		int addedFaces = Math.min(source.getFaceCount(), Math.min(
+			Math.min(length(sourceI1), Math.min(length(sourceI2), length(sourceI3))),
+			Math.min(length(sourceC1), Math.min(length(sourceC2), length(sourceC3)))));
+
+		if (addedVertices == 0 || addedFaces == 0)
+		{
+			return;
+		}
+
+		int baseVertices = verticesCount;
+		int baseFaces = faceCount;
+		int vertices = baseVertices + addedVertices;
+		int faces = baseFaces + addedFaces;
+
+		verticesX = append(verticesX, baseVertices, sourceX, addedVertices);
+		verticesY = append(verticesY, baseVertices, sourceY, addedVertices);
+		verticesZ = append(verticesZ, baseVertices, sourceZ, addedVertices);
+
+		faceIndices1 = appendIndices(faceIndices1, baseFaces, sourceI1, addedFaces, baseVertices);
+		faceIndices2 = appendIndices(faceIndices2, baseFaces, sourceI2, addedFaces, baseVertices);
+		faceIndices3 = appendIndices(faceIndices3, baseFaces, sourceI3, addedFaces, baseVertices);
+
+		faceColors1 = appendIndices(faceColors1, baseFaces, sourceC1, addedFaces, 0);
+		faceColors2 = appendIndices(faceColors2, baseFaces, sourceC2, addedFaces, 0);
+		faceColors3 = appendIndices(faceColors3, baseFaces, sourceC3, addedFaces, 0);
+
+		faceRenderPriorities = appendColumn(faceRenderPriorities, baseFaces,
+			source.getFaceRenderPriorities(), addedFaces, (byte) 0);
+		faceTransparencies = appendColumn(faceTransparencies, baseFaces,
+			source.getFaceTransparencies(), addedFaces, (byte) 0);
+		faceBias = appendColumn(faceBias, baseFaces, source.getFaceBias(), addedFaces, (byte) 0);
+		faceTextures = appendColumn(faceTextures, baseFaces, source.getFaceTextures(), addedFaces, (short) -1);
+
+		appendTextureMapping(source, baseFaces, addedFaces, baseVertices);
+
+		verticesCount = vertices;
+		faceCount = faces;
+
+		calculateBoundsCylinder();
+	}
+
+	/**
+	 * Appends the source's texture triangles, and its per-face references to them.
+	 *
+	 * <p>{@code textureFaces} names a texture triangle per face as an unsigned byte, with -1 for
+	 * none, so the two models together can address at most 255. Past that the appended faces drop
+	 * their mapping rather than wrap onto the wrong triangle - the uploader then falls back to its
+	 * default UVs for them.
+	 */
+	private void appendTextureMapping(Model source, int baseFaces, int addedFaces, int baseVertices)
+	{
+		byte[] sourceFaces = source.getTextureFaces();
+		int[] sourceT1 = source.getTexIndices1();
+		int[] sourceT2 = source.getTexIndices2();
+		int[] sourceT3 = source.getTexIndices3();
+
+		int baseTriangles = Math.min(length(texIndices1), Math.min(length(texIndices2), length(texIndices3)));
+		int addedTriangles = Math.min(length(sourceT1), Math.min(length(sourceT2), length(sourceT3)));
+		boolean mapped = sourceFaces != null && addedTriangles > 0
+			&& baseTriangles + addedTriangles <= MAX_TEXTURE_TRIANGLES;
+
+		if (textureFaces == null && !mapped)
+		{
+			return;
+		}
+
+		byte[] merged = new byte[baseFaces + addedFaces];
+		if (textureFaces != null)
+		{
+			System.arraycopy(textureFaces, 0, merged, 0, Math.min(baseFaces, textureFaces.length));
+		}
+		else
+		{
+			Arrays.fill(merged, 0, baseFaces, (byte) -1);
+		}
+
+		for (int i = 0; i < addedFaces; i++)
+		{
+			byte triangle = mapped && i < sourceFaces.length ? sourceFaces[i] : -1;
+			merged[baseFaces + i] = triangle == -1 ? -1 : (byte) ((triangle & 0xFF) + baseTriangles);
+		}
+		textureFaces = merged;
+
+		if (mapped)
+		{
+			texIndices1 = appendIndices(texIndices1, baseTriangles, sourceT1, addedTriangles, baseVertices);
+			texIndices2 = appendIndices(texIndices2, baseTriangles, sourceT2, addedTriangles, baseVertices);
+			texIndices3 = appendIndices(texIndices3, baseTriangles, sourceT3, addedTriangles, baseVertices);
+		}
+	}
+
+	/** Texture triangles one model can address: {@code textureFaces} is an unsigned byte, 255 is -1. */
+	private static final int MAX_TEXTURE_TRIANGLES = 255;
+
+	private static float[] append(float[] target, int at, float[] source, int count)
+	{
+		float[] out = target != null && target.length >= at + count ? target : grow(target, at, at + count);
+		System.arraycopy(source, 0, out, at, count);
+		return out;
+	}
+
+	private static float[] grow(float[] values, int keep, int size)
+	{
+		float[] out = new float[size];
+		if (values != null)
+		{
+			System.arraycopy(values, 0, out, 0, Math.min(keep, values.length));
+		}
+		return out;
+	}
+
+	/** Appends {@code count} values from {@code source}, each shifted by {@code offset}. */
+	private static int[] appendIndices(int[] target, int at, int[] source, int count, int offset)
+	{
+		int[] out = target;
+		if (out == null || out.length < at + count)
+		{
+			out = new int[at + count];
+			if (target != null)
+			{
+				System.arraycopy(target, 0, out, 0, Math.min(at, target.length));
+			}
+		}
+
+		for (int i = 0; i < count; i++)
+		{
+			out[at + i] = source[i] + offset;
+		}
+		return out;
+	}
+
+	private static byte[] appendColumn(byte[] target, int at, byte[] source, int count, byte fill)
+	{
+		if (target == null && source == null)
+		{
+			return null;
+		}
+
+		byte[] out = new byte[at + count];
+		if (target != null)
+		{
+			System.arraycopy(target, 0, out, 0, Math.min(at, target.length));
+		}
+		else
+		{
+			Arrays.fill(out, 0, at, fill);
+		}
+
+		if (source != null)
+		{
+			System.arraycopy(source, 0, out, at, Math.min(count, source.length));
+		}
+		else
+		{
+			Arrays.fill(out, at, at + count, fill);
+		}
+		return out;
+	}
+
+	private static short[] appendColumn(short[] target, int at, short[] source, int count, short fill)
+	{
+		if (target == null && source == null)
+		{
+			return null;
+		}
+
+		short[] out = new short[at + count];
+		if (target != null)
+		{
+			System.arraycopy(target, 0, out, 0, Math.min(at, target.length));
+		}
+		else
+		{
+			Arrays.fill(out, 0, at, fill);
+		}
+
+		if (source != null)
+		{
+			System.arraycopy(source, 0, out, at, Math.min(count, source.length));
+		}
+		else
+		{
+			Arrays.fill(out, at, at + count, fill);
+		}
+		return out;
+	}
+
+	/**
 	 * While the geometry is still a copy of a client model, that model's own bounds are ground
 	 * truth for ours - so check them against each other rather than waiting to find out from a
 	 * renderer assertion.
@@ -521,6 +739,24 @@ public class RetroModel implements Model
 	@Override
 	public byte[] getFaceBias()
 	{
+		return faceBias;
+	}
+
+	/**
+	 * The per-face depth bias, materialized as zeroes if this model had none, for
+	 * {@link RetroDecals} to write into. Sized to the current face count.
+	 */
+	byte[] writableFaceBias()
+	{
+		if (faceBias == null || faceBias.length < faceCount)
+		{
+			byte[] bias = new byte[faceCount];
+			if (faceBias != null)
+			{
+				System.arraycopy(faceBias, 0, bias, 0, faceBias.length);
+			}
+			faceBias = bias;
+		}
 		return faceBias;
 	}
 
