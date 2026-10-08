@@ -53,7 +53,7 @@ behind their surviving sequence IDs were re-authored for the modern skeletons. E
 geometry, the animation, or both have to come from the 2005 data instead of the live cache.
 </details>
 
-Under **Scenery**, each restored from the bundled 2005 set:
+Under **Scenery**, each restored to its 2005 model:
 
 - **Mystical wall charts** — the pre-2006 pentagram in place of the Magical symbol
 - **Wells** — the 2005 well, in place of the rebuilt one and Varrock's 2007 replacement
