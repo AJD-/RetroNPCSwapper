@@ -123,10 +123,6 @@ enum RetroScenery
 		GAME_OBJECT
 	}
 
-	// Placement types, as the client numbers them
-	static final int TYPE_CENTREPIECE = 10;
-	static final int TYPE_DIAGONAL_CENTREPIECE = 11;
-
 	private static final Map<Integer, RetroScenery> BY_OBJECT_ID = new HashMap<>();
 
 	static
@@ -172,6 +168,18 @@ enum RetroScenery
 		this.objectIds = objectIds;
 	}
 
+	/**
+	 * Whether the 2005 mesh paints detail onto a surface by priority, where a depth-buffered
+	 * renderer would hide it, and so has its decals lifted to the front. The wardrobes' doors lie
+	 * partly behind the cabinet front. Decided per mesh, from measuring each, rather than for all:
+	 * the lift leaves the other meshes' vertices where they are, but would still bias their
+	 * higher-priority faces toward the camera.
+	 */
+	boolean hasPaintedDetail()
+	{
+		return this == WARDROBE || this == WARDROBE_OPEN || this == WARDROBE_OPEN_SKELETON;
+	}
+
 	int[] getObjectIds()
 	{
 		return objectIds.clone();
@@ -203,15 +211,16 @@ enum RetroScenery
 		{
 			case WALL_DECORATION:
 				return object instanceof DecorativeObject
-					&& RetroDecorController.isSupportedType(RetroDecorController.type(((DecorativeObject) object).getConfig()))
+					&& RetroDecorController.isSupportedType(ObjectPlacement.type(((DecorativeObject) object).getConfig()))
 					? scenery : null;
 			case GAME_OBJECT:
 				if (!(object instanceof GameObject))
 				{
 					return null;
 				}
-				int type = RetroDecorController.type(((GameObject) object).getConfig());
-				return type == TYPE_CENTREPIECE || type == TYPE_DIAGONAL_CENTREPIECE ? scenery : null;
+				int type = ObjectPlacement.type(((GameObject) object).getConfig());
+				return type == ObjectPlacement.TYPE_CENTREPIECE || type == ObjectPlacement.TYPE_DIAGONAL_CENTREPIECE
+					? scenery : null;
 			default:
 				return null;
 		}

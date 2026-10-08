@@ -70,8 +70,65 @@ public final class RetroAttachment
 	}
 
 	/**
+	 * A part at rest, with the spacing {@link #locate} checks each candidate run against worked out
+	 * once rather than on every search.
+	 */
+	public static final class Part
+	{
+		final float[] x;
+		final float[] y;
+		final float[] z;
+		final int count;
+
+		/** Pairs of the part's vertices, far apart across it, and the distance between each pair. */
+		final int[] pairs;
+		final double[] distances;
+
+		/**
+		 * Takes the rest vertices as they are, without copying - the caller must not change them.
+		 */
+		public Part(float[] x, float[] y, float[] z, int count)
+		{
+			this.x = x;
+			this.y = y;
+			this.z = z;
+			this.count = count;
+
+			if (count < 4)
+			{
+				// Too few vertices to pin a map down; locate turns these away
+				pairs = null;
+				distances = null;
+				return;
+			}
+
+			pairs = new int[]{0, count - 1, count / 4, count * 3 / 4, count / 3, count - 2, 1, count / 2};
+			distances = new double[pairs.length / 2];
+			for (int p = 0; p < distances.length; p++)
+			{
+				distances[p] = distance(x, y, z, pairs[2 * p], x, y, z, pairs[2 * p + 1]);
+			}
+		}
+
+		/** How many vertices the part has - the length of the run {@link #locate} looks for. */
+		public int getCount()
+		{
+			return count;
+		}
+	}
+
+	/**
+	 * Finds where a part's vertices sit in a posed model. See {@link #locate(Part, float[], float[], float[], int, int)}.
+	 */
+	public static Placement locate(float[] restX, float[] restY, float[] restZ, int restCount,
+		float[] x, float[] y, float[] z, int count, int hint)
+	{
+		return locate(new Part(restX, restY, restZ, restCount), x, y, z, count, hint);
+	}
+
+	/**
 	 * Finds where a part's vertices sit in a posed model, and how they got there: a run of
-	 * {@code restCount} vertices whose spacing matches the part's at rest, confirmed by an affine
+	 * {@code part.count} vertices whose spacing matches the part's at rest, confirmed by an affine
 	 * map that fits every one of them.
 	 *
 	 * <p>The client builds a player's model by appending each part's vertices in turn, so a part is
@@ -82,24 +139,17 @@ public final class RetroAttachment
 	 * @param hint where it was found last time, tried first; -1 for none
 	 * @return the placement, or null if no run is the part
 	 */
-	public static Placement locate(float[] restX, float[] restY, float[] restZ, int restCount,
-		float[] x, float[] y, float[] z, int count, int hint)
+	public static Placement locate(Part part, float[] x, float[] y, float[] z, int count, int hint)
 	{
+		int restCount = part.count;
 		if (restCount < 4 || count < restCount)
 		{
 			return null;
 		}
 
-		int[] pairs = {0, restCount - 1, restCount / 4, restCount * 3 / 4, restCount / 3, restCount - 2, 1, restCount / 2};
-		double[] distances = new double[pairs.length / 2];
-		for (int p = 0; p < distances.length; p++)
+		if (hint >= 0 && hint <= count - restCount && matches(part.pairs, part.distances, x, y, z, hint))
 		{
-			distances[p] = distance(restX, restY, restZ, pairs[2 * p], restX, restY, restZ, pairs[2 * p + 1]);
-		}
-
-		if (hint >= 0 && hint <= count - restCount && matches(pairs, distances, x, y, z, hint))
-		{
-			double[] map = fit(restX, restY, restZ, restCount, x, y, z, hint);
+			double[] map = fit(part.x, part.y, part.z, restCount, x, y, z, hint);
 			if (map != null)
 			{
 				return new Placement(hint, map);
@@ -108,9 +158,9 @@ public final class RetroAttachment
 
 		for (int start = 0; start <= count - restCount; start++)
 		{
-			if (start != hint && matches(pairs, distances, x, y, z, start))
+			if (start != hint && matches(part.pairs, part.distances, x, y, z, start))
 			{
-				double[] map = fit(restX, restY, restZ, restCount, x, y, z, start);
+				double[] map = fit(part.x, part.y, part.z, restCount, x, y, z, start);
 				if (map != null)
 				{
 					return new Placement(start, map);
@@ -228,14 +278,25 @@ public final class RetroAttachment
 	public static void transform(double[] map, float[] restX, float[] restY, float[] restZ, int count,
 		float[] outX, float[] outY, float[] outZ)
 	{
+		transform(map, restX, restY, restZ, count, outX, outY, outZ, 0);
+	}
+
+	/**
+	 * As {@link #transform(double[], float[], float[], float[], int, float[], float[], float[])}, but
+	 * writing from {@code outOffset} on - so a part appended to a larger model can be placed where it
+	 * sits, with no copy of its own.
+	 */
+	public static void transform(double[] map, float[] restX, float[] restY, float[] restZ, int count,
+		float[] outX, float[] outY, float[] outZ, int outOffset)
+	{
 		for (int v = 0; v < count; v++)
 		{
 			float vx = restX[v];
 			float vy = restY[v];
 			float vz = restZ[v];
-			outX[v] = (float) apply(map, 0, vx, vy, vz);
-			outY[v] = (float) apply(map, 4, vx, vy, vz);
-			outZ[v] = (float) apply(map, 8, vx, vy, vz);
+			outX[outOffset + v] = (float) apply(map, 0, vx, vy, vz);
+			outY[outOffset + v] = (float) apply(map, 4, vx, vy, vz);
+			outZ[outOffset + v] = (float) apply(map, 8, vx, vy, vz);
 		}
 	}
 

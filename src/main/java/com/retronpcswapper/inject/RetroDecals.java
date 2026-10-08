@@ -38,16 +38,20 @@ import java.util.Arrays;
  * This moves each such decal forward along its own normal until it clears the surface behind it.
  * A decal is a connected group of faces drawn at a higher priority than the faces around them, and
  * it moves as one piece, by the largest distance any of its vertices needs, so it stays flat. Only
- * vertices the decal does not share with lower-priority faces move, so the surface is never
- * deformed - a decal welded to its surface keeps those corners where they are.
+ * vertices the decal does not share with the surface - the faces at the lowest priority - move, so
+ * the surface is never deformed: a decal welded to its surface keeps those corners where they are.
  */
 public final class RetroDecals
 {
 	/** How far in front of the surface a decal ends up. */
 	static final float CLEARANCE = 1f;
 
-	/** How far behind a decal the surface it decorates may be found. Further than this is another part. */
-	static final float REACH = 8f;
+	/**
+	 * How far behind a decal the surface it decorates may be found. Further than this is another
+	 * part. Measured: the deepest decal found sits 2.7 behind its surface (the shield icon's sword);
+	 * the nearest part that is not a decal, 7.6 (an open wardrobe's door, off the cabinet behind it).
+	 */
+	static final float REACH = 4f;
 
 	/** Slack for a surface the decal lies exactly in, which a ray can find a hair behind its start. */
 	private static final float COPLANAR = 0.5f;
@@ -84,19 +88,17 @@ public final class RetroDecals
 			return 0;
 		}
 
-		// The lowest priority a vertex is drawn at, and the highest. A vertex any lower face uses is
-		// part of that face's surface and stays put.
-		int[] vertexLow = new int[vertexEnd];
-		int[] vertexHigh = new int[vertexEnd];
-		Arrays.fill(vertexLow, Integer.MAX_VALUE);
-		Arrays.fill(vertexHigh, Integer.MIN_VALUE);
+		// A vertex the surface uses - any face at the lowest priority - stays put. One shared only
+		// between decal faces is the decal's own, though they are at different priorities: a door
+		// painted as a fill and a border round it moves as one.
+		boolean[] anchored = new boolean[vertexEnd];
 		for (int f = firstFace; f < faceCount; f++)
 		{
-			int p = priorities[f];
-			for (int v : new int[]{faces1[f], faces2[f], faces3[f]})
+			if (priorities[f] == lowest)
 			{
-				vertexLow[v] = Math.min(vertexLow[v], p);
-				vertexHigh[v] = Math.max(vertexHigh[v], p);
+				anchored[faces1[f]] = true;
+				anchored[faces2[f]] = true;
+				anchored[faces3[f]] = true;
 			}
 		}
 
@@ -165,15 +167,16 @@ public final class RetroDecals
 
 			for (int v : new int[]{faces1[f], faces2[f], faces3[f]})
 			{
-				if (vertexLow[v] != vertexHigh[v])
+				if (anchored[v])
 				{
-					// Shared with a face at another priority - an anchor, not something to move
+					// Shared with the surface - an anchor, not something to move
 					continue;
 				}
 
 				for (int g = firstFace; g < faceCount; g++)
 				{
-					if (priorities[g] >= priorities[f])
+					// The surface behind a piece, never the piece's own lower layer
+					if (priorities[g] >= priorities[f] || priorities[g] != lowest && find(parent, g) == root)
 					{
 						continue;
 					}
@@ -208,7 +211,7 @@ public final class RetroDecals
 
 			for (int v : new int[]{faces1[f], faces2[f], faces3[f]})
 			{
-				if (moved[v] || vertexLow[v] < vertexHigh[v])
+				if (moved[v] || anchored[v])
 				{
 					continue;
 				}

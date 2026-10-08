@@ -82,6 +82,62 @@ public class RetroDecalsTest
 	}
 
 	/**
+	 * The wardrobe's doors: a decal painted in two layers - a fill and a border round it at the
+	 * next priority up, sharing its corners - both under the surface. The shared corners are the
+	 * decal's own, not the surface's, so the whole door comes forward as one piece.
+	 */
+	@Test
+	public void testADecalInTwoLayersIsLiftedWhole()
+	{
+		// The surface square at y = -18, then a fill triangle and a border triangle at y = -16,
+		// sharing the edge between vertices 4 and 5
+		float[] x = {-20, 20, 20, -20, 0, 5, 0, 5};
+		float[] y = {-18, -18, -18, -18, -16, -16, -16, -16};
+		float[] z = {-20, -20, 20, 20, 0, 0, 5, -5};
+
+		int moved = RetroDecals.lift(x, y, z, new int[]{0, 0, 4, 4}, new int[]{1, 2, 5, 7},
+			new int[]{2, 3, 6, 5}, new byte[]{0, 0, 1, 2}, 0, 4);
+
+		assertEquals(4, moved);
+		for (int vertex = 4; vertex < 8; vertex++)
+		{
+			assertEquals(-18 - RetroDecals.CLEARANCE, y[vertex], 0.01f);
+		}
+	}
+
+	/**
+	 * A piece is lifted off the surface behind it, not off its own lower layer: the picnic bench's
+	 * legs are drawn in two priorities that meet edge to edge, with nothing painted on anything.
+	 */
+	@Test
+	public void testAPieceIsNotLiftedOffItsOwnLowerLayer()
+	{
+		// Only the two layers, coplanar and sharing an edge; the surface square is far below
+		float[] x = {-20, 20, 20, -20, 0, 5, 0, 5};
+		float[] y = {40, 40, 40, 40, -16, -16, -16, -16};
+		float[] z = {-20, -20, 20, 20, 0, 0, 5, -5};
+
+		int moved = RetroDecals.lift(x, y, z, new int[]{0, 0, 4, 4}, new int[]{1, 2, 5, 7},
+			new int[]{2, 3, 6, 5}, new byte[]{0, 0, 1, 2}, 0, 4);
+
+		assertEquals(0, moved);
+	}
+
+	/**
+	 * A surface further behind than a decal is ever painted is another part of the model - as the
+	 * cabinet is, 7.6 behind an open wardrobe's door, which would otherwise be pushed out of shape.
+	 */
+	@Test
+	public void testASurfaceBeyondReachIsLeftAlone()
+	{
+		float[][] v = vertices(-18, -18 + 7.6f);
+
+		int moved = RetroDecals.lift(v[0], v[1], v[2], FACES1, FACES2, FACES3, PRIORITIES, 0, 3);
+
+		assertEquals(0, moved);
+	}
+
+	/**
 	 * A decal welded to its surface cannot move without dragging the surface with it, so it stays
 	 * where it is and is left to the depth bias.
 	 */
@@ -136,6 +192,46 @@ public class RetroDecalsTest
 
 		assertEquals(0, moved);
 		assertEquals(-16, v[1][4], 0f);
+	}
+
+	/**
+	 * Why the worn shield can be lifted once at rest: lifting and then turning and moving it puts
+	 * every vertex where turning and moving it and then lifting does.
+	 */
+	@Test
+	public void testLiftingCommutesWithATurnAndAMove()
+	{
+		double yaw = 0.7;
+		double pitch = -0.4;
+		// Turn about Y, then about X, then move - as a map from RetroAttachment.fit is laid out
+		double cy = Math.cos(yaw);
+		double sy = Math.sin(yaw);
+		double cp = Math.cos(pitch);
+		double sp = Math.sin(pitch);
+		double[] map = {
+			cy, 0, sy, 30,
+			sp * sy, cp, -sp * cy, -12,
+			-cp * sy, sp, cp * cy, 55,
+		};
+
+		float[][] liftedFirst = vertices(-18, -16);
+		RetroDecals.lift(liftedFirst[0], liftedFirst[1], liftedFirst[2], FACES1, FACES2, FACES3, PRIORITIES, 0, 3);
+		float[][] placedAfter = new float[3][7];
+		RetroAttachment.transform(map, liftedFirst[0], liftedFirst[1], liftedFirst[2], 7,
+			placedAfter[0], placedAfter[1], placedAfter[2]);
+
+		float[][] rest = vertices(-18, -16);
+		float[][] placedFirst = new float[3][7];
+		RetroAttachment.transform(map, rest[0], rest[1], rest[2], 7, placedFirst[0], placedFirst[1], placedFirst[2]);
+		RetroDecals.lift(placedFirst[0], placedFirst[1], placedFirst[2], FACES1, FACES2, FACES3, PRIORITIES, 0, 3);
+
+		for (int axis = 0; axis < 3; axis++)
+		{
+			for (int v = 0; v < 7; v++)
+			{
+				assertEquals(placedFirst[axis][v], placedAfter[axis][v], 0.01f);
+			}
+		}
 	}
 
 	private static RetroModel bound(float[][] v)

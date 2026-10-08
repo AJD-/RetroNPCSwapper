@@ -32,8 +32,8 @@ import net.runelite.api.Node;
 
 /**
  * Geometry this plugin owns, presented to the renderer as a {@link Model}.
- *
- * <p>This is the whole point of the injection work: it makes it possible to draw a mesh that has no
+ * <p>
+ * This is the whole point of the injection work: it makes it possible to draw a mesh that has no
  * live cache id at all, which is the only way to bring back assets Jagex overwrote.
  *
  * <h2>Why this can be handed to the renderer at all</h2>
@@ -68,20 +68,20 @@ import net.runelite.api.Node;
  * does set {@code NORMALS}, and {@code UNLIT_FACE_COLORS} under some shading modes, but null-checks
  * both: missing normals fall back to flat face normals, and missing unlit colors to the lit ones.
  * {@code drawFrustum} and {@code drawOrtho} belong to the software rasterizer, which neither uses.
- *
- * <p><b>Maintenance cost, deliberately accepted:</b> {@code Model} has no default methods, so a
+ * <p>
+ * <b>Maintenance cost, deliberately accepted:</b> {@code Model} has no default methods, so a
  * RuneLite release that adds one breaks compilation here. Nothing pins the client version to stop
  * that: {@code build.gradle} resolves {@code latest.release}, matching the example-plugin template,
  * and the Hub rebuilds against whatever is current regardless of what a plugin asks for.
- *
- * <p>That cuts two ways, and the difference matters. Through the Hub the failure is loud and
+ * <p>
+ * That cuts two ways, and the difference matters. Through the Hub the failure is loud and
  * contained - the rebuild fails, the plugin is delisted until it is patched, and no user ever runs
  * a jar missing a method. A <b>sideloaded</b> jar is the dangerous case: it meets whatever client
  * the launcher runs, and a method added since it was compiled surfaces at runtime as
  * {@link AbstractMethodError} inside the uploader - an {@code Error}, which the GPU plugin's
  * {@code catch (Exception)} will not contain.
- *
- * <p>So the mitigation is upkeep rather than a version range: when {@code Model} changes, this
+ * <p>
+ * So the mitigation is upkeep rather than a version range: when {@code Model} changes, this
  * class changes with it. The interface was last read in full against client 1.12.38.
  */
 @Slf4j
@@ -113,6 +113,16 @@ public class RetroModel implements Model
 	private int[] texIndices1;
 	private int[] texIndices2;
 	private int[] texIndices3;
+
+	/**
+	 * The buffers behind those columns while they hold a copy - see {@link ByteColumn}. The texture
+	 * triangles are cloned instead: nearly every model has none, and their length is their count.
+	 */
+	private final ByteColumn priorityColumn = new ByteColumn();
+	private final ByteColumn transparencyColumn = new ByteColumn();
+	private final ByteColumn biasColumn = new ByteColumn();
+	private final ShortColumn textureColumn = new ShortColumn();
+	private final ByteColumn textureFaceColumn = new ByteColumn();
 
 	private byte transparency;
 	private byte overrideAmount;
@@ -199,15 +209,14 @@ public class RetroModel implements Model
 
 	/**
 	 * Takes a full copy of another model's geometry into this one's own buffers.
-	 *
-	 * <p>Copying rather than aliasing is the point: the client's posed model is shared and is
+	 * <p>
+	 * Copying rather than aliasing is the point: the client's posed model is shared and is
 	 * invalidated by the next {@code applyTransformations} call, including the client's own, so
 	 * holding a reference to its arrays would be a use-after-free in slow motion.
-	 *
-	 * <p>The vertex, index and color buffers are grown on demand and reused, so a steady state does
-	 * not allocate for those. The per-face columns go through {@code copyOrNull}, which clones
-	 * every time: a null there carries meaning to the renderer, and a reused buffer cannot express
-	 * one.
+	 * <p>
+	 * Every buffer but the texture triangles' is grown on demand and reused, so a steady state
+	 * does not allocate. The per-face columns that may be null stay null when the source's are: a
+	 * null there carries meaning to the renderer, so such a column is set to its buffer or to null.
 	 */
 	public void copyFrom(Model source)
 	{
@@ -253,11 +262,11 @@ public class RetroModel implements Model
 		// These are legitimately null on most models, and null carries meaning to the renderer -
 		// a null transparency array is what puts a model on the opaque path - so do not
 		// substitute empty arrays for them
-		faceRenderPriorities = copyOrNull(source.getFaceRenderPriorities());
-		faceTransparencies = copyOrNull(source.getFaceTransparencies());
-		faceBias = copyOrNull(source.getFaceBias());
-		faceTextures = copyOrNull(source.getFaceTextures());
-		textureFaces = copyOrNull(source.getTextureFaces());
+		faceRenderPriorities = priorityColumn.copy(source.getFaceRenderPriorities(), faceCount);
+		faceTransparencies = transparencyColumn.copy(source.getFaceTransparencies(), faceCount);
+		faceBias = biasColumn.copy(source.getFaceBias(), faceCount);
+		faceTextures = textureColumn.copy(source.getFaceTextures(), faceCount);
+		textureFaces = textureFaceColumn.copy(source.getTextureFaces(), faceCount);
 		texIndices1 = copyOrNull(source.getTexIndices1());
 		texIndices2 = copyOrNull(source.getTexIndices2());
 		texIndices3 = copyOrNull(source.getTexIndices3());
@@ -336,12 +345,12 @@ public class RetroModel implements Model
 		faceColors2 = appendIndices(faceColors2, baseFaces, sourceC2, addedFaces, 0);
 		faceColors3 = appendIndices(faceColors3, baseFaces, sourceC3, addedFaces, 0);
 
-		faceRenderPriorities = appendColumn(faceRenderPriorities, baseFaces,
+		faceRenderPriorities = priorityColumn.append(faceRenderPriorities, baseFaces,
 			source.getFaceRenderPriorities(), addedFaces, (byte) 0);
-		faceTransparencies = appendColumn(faceTransparencies, baseFaces,
+		faceTransparencies = transparencyColumn.append(faceTransparencies, baseFaces,
 			source.getFaceTransparencies(), addedFaces, (byte) 0);
-		faceBias = appendColumn(faceBias, baseFaces, source.getFaceBias(), addedFaces, (byte) 0);
-		faceTextures = appendColumn(faceTextures, baseFaces, source.getFaceTextures(), addedFaces, (short) -1);
+		faceBias = biasColumn.append(faceBias, baseFaces, source.getFaceBias(), addedFaces, (byte) 0);
+		faceTextures = textureColumn.append(faceTextures, baseFaces, source.getFaceTextures(), addedFaces, (short) -1);
 
 		appendTextureMapping(source, baseFaces, addedFaces, baseVertices);
 
@@ -353,8 +362,8 @@ public class RetroModel implements Model
 
 	/**
 	 * Appends the source's texture triangles, and its per-face references to them.
-	 *
-	 * <p>{@code textureFaces} names a texture triangle per face as an unsigned byte, with -1 for
+	 * <p>
+	 * {@code textureFaces} names a texture triangle per face as an unsigned byte, with -1 for
 	 * none, so the two models together can address at most 255. Past that the appended faces drop
 	 * their mapping rather than wrap onto the wrong triangle - the uploader then falls back to its
 	 * default UVs for them.
@@ -376,16 +385,7 @@ public class RetroModel implements Model
 			return;
 		}
 
-		byte[] merged = new byte[baseFaces + addedFaces];
-		if (textureFaces != null)
-		{
-			System.arraycopy(textureFaces, 0, merged, 0, Math.min(baseFaces, textureFaces.length));
-		}
-		else
-		{
-			Arrays.fill(merged, 0, baseFaces, (byte) -1);
-		}
-
+		byte[] merged = textureFaceColumn.keep(textureFaces, baseFaces, baseFaces + addedFaces, (byte) -1);
 		for (int i = 0; i < addedFaces; i++)
 		{
 			byte triangle = mapped && i < sourceFaces.length ? sourceFaces[i] : -1;
@@ -441,60 +441,137 @@ public class RetroModel implements Model
 		return out;
 	}
 
-	private static byte[] appendColumn(byte[] target, int at, byte[] source, int count, byte fill)
+	/**
+	 * The buffer behind one per-face column that may be null, grown on demand and reused so that
+	 * copying or appending to the column does not allocate in a steady state. The column is either
+	 * this buffer or null - which is how a reused buffer still tells the renderer there is none -
+	 * and never a mesh's own array, which {@link #bind} hands the column by reference.
+	 */
+	private static final class ByteColumn
 	{
-		if (target == null && source == null)
+		private byte[] buffer = new byte[0];
+
+		/** The first {@code count} values of {@code source}, in the buffer - or null for a null source. */
+		byte[] copy(byte[] source, int count)
 		{
-			return null;
+			if (source == null)
+			{
+				return null;
+			}
+			byte[] out = keep(null, 0, count, (byte) 0);
+			System.arraycopy(source, 0, out, 0, Math.min(count, source.length));
+			return out;
 		}
 
-		byte[] out = new byte[at + count];
-		if (target != null)
+		/**
+		 * {@code column}'s first {@code at} values followed by {@code count} of {@code source}, in the
+		 * buffer. A side that is missing is filled with {@code fill}; the result is null only when
+		 * both are.
+		 */
+		byte[] append(byte[] column, int at, byte[] source, int count, byte fill)
 		{
-			System.arraycopy(target, 0, out, 0, Math.min(at, target.length));
-		}
-		else
-		{
-			Arrays.fill(out, 0, at, fill);
+			if (column == null && source == null)
+			{
+				return null;
+			}
+
+			byte[] out = keep(column, at, at + count, fill);
+			int copied = source == null ? 0 : Math.min(count, source.length);
+			if (copied > 0)
+			{
+				System.arraycopy(source, 0, out, at, copied);
+			}
+			Arrays.fill(out, at + copied, at + count, fill);
+			return out;
 		}
 
-		if (source != null)
+		/**
+		 * The buffer, at least {@code size} long, starting with {@code column}'s first {@code at}
+		 * values - or {@code fill} where the column is null or runs short.
+		 */
+		byte[] keep(byte[] column, int at, int size, byte fill)
 		{
-			System.arraycopy(source, 0, out, at, Math.min(count, source.length));
+			boolean inPlace = column == buffer;
+			if (buffer.length < size)
+			{
+				byte[] grown = new byte[size];
+				if (inPlace)
+				{
+					System.arraycopy(buffer, 0, grown, 0, Math.min(at, buffer.length));
+				}
+				buffer = grown;
+			}
+
+			if (!inPlace)
+			{
+				int copied = column == null ? 0 : Math.min(at, column.length);
+				if (copied > 0)
+				{
+					System.arraycopy(column, 0, buffer, 0, copied);
+				}
+				Arrays.fill(buffer, copied, at, fill);
+			}
+			return buffer;
 		}
-		else
-		{
-			Arrays.fill(out, at, at + count, fill);
-		}
-		return out;
 	}
 
-	private static short[] appendColumn(short[] target, int at, short[] source, int count, short fill)
+	/** A {@link ByteColumn} for the one column of shorts. */
+	private static final class ShortColumn
 	{
-		if (target == null && source == null)
+		private short[] buffer = new short[0];
+
+		short[] copy(short[] source, int count)
 		{
-			return null;
+			if (source == null)
+			{
+				return null;
+			}
+			short[] out = keep(null, 0, count, (short) 0);
+			System.arraycopy(source, 0, out, 0, Math.min(count, source.length));
+			return out;
 		}
 
-		short[] out = new short[at + count];
-		if (target != null)
+		short[] append(short[] column, int at, short[] source, int count, short fill)
 		{
-			System.arraycopy(target, 0, out, 0, Math.min(at, target.length));
-		}
-		else
-		{
-			Arrays.fill(out, 0, at, fill);
+			if (column == null && source == null)
+			{
+				return null;
+			}
+
+			short[] out = keep(column, at, at + count, fill);
+			int copied = source == null ? 0 : Math.min(count, source.length);
+			if (copied > 0)
+			{
+				System.arraycopy(source, 0, out, at, copied);
+			}
+			Arrays.fill(out, at + copied, at + count, fill);
+			return out;
 		}
 
-		if (source != null)
+		short[] keep(short[] column, int at, int size, short fill)
 		{
-			System.arraycopy(source, 0, out, at, Math.min(count, source.length));
+			boolean inPlace = column == buffer;
+			if (buffer.length < size)
+			{
+				short[] grown = new short[size];
+				if (inPlace)
+				{
+					System.arraycopy(buffer, 0, grown, 0, Math.min(at, buffer.length));
+				}
+				buffer = grown;
+			}
+
+			if (!inPlace)
+			{
+				int copied = column == null ? 0 : Math.min(at, column.length);
+				if (copied > 0)
+				{
+					System.arraycopy(column, 0, buffer, 0, copied);
+				}
+				Arrays.fill(buffer, copied, at, fill);
+			}
+			return buffer;
 		}
-		else
-		{
-			Arrays.fill(out, at, at + count, fill);
-		}
-		return out;
 	}
 
 	/**
@@ -541,17 +618,17 @@ public class RetroModel implements Model
 	/**
 	 * Recomputes the bounding cylinder the renderer reads through {@link #getRadius()} and
 	 * {@link #getDiameter()} for culling and sorting.
-	 *
-	 * <p>The client calls this on every model it is about to draw, so it has to be cheap and it has
+	 * <p>
+	 * The client calls this on every model it is about to draw, so it has to be cheap and it has
 	 * to be idempotent. A transcription of the client's own bounds routine, kept deliberately
 	 * faithful.
-	 *
-	 * <p>These are not free-form numbers. {@code ModelUploader.uploadSortedModel} buckets each face
+	 * <p>
+	 * These are not free-form numbers. {@code ModelUploader.uploadSortedModel} buckets each face
 	 * by {@code radius + meanDepth} into an array of {@code diameter} slots and asserts the index
 	 * lands in {@code [0, diameter)}, so a radius that is too small is an {@code AssertionError}
 	 * inside the renderer rather than a cosmetic difference.
-	 *
-	 * <p>Note the arithmetic is done in floats with a {@link Math#ceil} at each step, and that the
+	 * <p>
+	 * Note the arithmetic is done in floats with a {@link Math#ceil} at each step, and that the
 	 * result is asymmetric: {@code radius} uses the extent <em>above</em> the origin and the second
 	 * term uses the extent below. That is not an oversight in the original - it leans on the game's
 	 * constrained camera pitch, so a model's top is never the far side.
@@ -631,16 +708,6 @@ public class RetroModel implements Model
 		int[] target = into.length >= length ? into : new int[length];
 		System.arraycopy(source, 0, target, 0, Math.min(length, source.length));
 		return target;
-	}
-
-	private static byte[] copyOrNull(byte[] source)
-	{
-		return source == null ? null : source.clone();
-	}
-
-	private static short[] copyOrNull(short[] source)
-	{
-		return source == null ? null : source.clone();
 	}
 
 	private static int[] copyOrNull(int[] source)

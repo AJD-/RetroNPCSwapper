@@ -36,9 +36,6 @@ import net.runelite.api.coords.LocalPoint;
  */
 class RetroGameObjectController extends RuneLiteObjectController
 {
-	/** Jagex angle units in the eighth turn a diagonal placement adds. */
-	private static final int EIGHTH_TURN = 256;
-
 	/** Half a tile, less the margin the controller's default radius of 60 leaves a one-tile model. */
 	private static final int RADIUS_PER_TILE = 64;
 	private static final int RADIUS_MARGIN = 4;
@@ -73,7 +70,7 @@ class RetroGameObjectController extends RuneLiteObjectController
 	 */
 	static int orientation(int config)
 	{
-		return RetroDecorController.type(config) == RetroScenery.TYPE_DIAGONAL_CENTREPIECE ? EIGHTH_TURN : 0;
+		return ObjectPlacement.type(config) == ObjectPlacement.TYPE_DIAGONAL_CENTREPIECE ? ObjectPlacement.EIGHTH_TURN : 0;
 	}
 
 	/**

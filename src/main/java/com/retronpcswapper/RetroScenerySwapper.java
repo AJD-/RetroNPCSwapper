@@ -25,10 +25,12 @@
 package com.retronpcswapper;
 
 import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroDecals;
 import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
 import com.retronpcswapper.inject.RetroModel;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
@@ -111,8 +113,19 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	private volatile Set<RetroScenery> active = Collections.emptySet();
 
-	/** Every restored object in the loaded scene, with the stand-ins placed for it - two for a wall chart on both faces of a wall. */
-	private final Map<TileObject, List<RuneLiteObjectController>> placed = new HashMap<>();
+	/** Every restored object in the loaded scene, with the stand-ins placed for it. */
+	private final Map<TileObject, Placed> placed = new HashMap<>();
+
+	/**
+	 * The scenery an object is restored as, and its stand-ins - two for a wall chart on both faces
+	 * of a wall.
+	 */
+	@Value
+	private static class Placed
+	{
+		RetroScenery scenery;
+		List<RuneLiteObjectController> standIns;
+	}
 
 	/**
 	 * The 2005 models, lit and bound, for each scenery the bundle brought - one for each quarter turn
@@ -224,17 +237,16 @@ public class RetroScenerySwapper implements RenderCallback
 		}
 
 		active = Collections.unmodifiableSet(next);
-		for (Map.Entry<TileObject, List<RuneLiteObjectController>> entry : placed.entrySet())
+		for (Placed object : placed.values())
 		{
-			RetroScenery scenery = RetroScenery.forObject(entry.getKey().getId());
-			if (!changed.contains(scenery))
+			if (!changed.contains(object.getScenery()))
 			{
 				continue;
 			}
 
-			for (RuneLiteObjectController controller : entry.getValue())
+			for (RuneLiteObjectController controller : object.getStandIns())
 			{
-				if (next.contains(scenery))
+				if (next.contains(object.getScenery()))
 				{
 					client.registerRuneLiteObject(controller);
 				}
@@ -272,11 +284,11 @@ public class RetroScenerySwapper implements RenderCallback
 		{
 			DecorativeObject decoration = (DecorativeObject) object;
 			int config = decoration.getConfig();
-			int type = RetroDecorController.type(config);
+			int type = ObjectPlacement.type(config);
 			for (boolean second : RetroDecorController.isDrawnTwice(type) ? new boolean[]{false, true} : new boolean[]{false})
 			{
 				Model model = carrier(scenery,
-					RetroDecorController.quarterTurns(type, RetroDecorController.orientation(config), second));
+					RetroDecorController.quarterTurns(type, ObjectPlacement.orientation(config), second));
 				if (model == null)
 				{
 					return;
@@ -287,7 +299,7 @@ public class RetroScenerySwapper implements RenderCallback
 		else
 		{
 			GameObject gameObject = (GameObject) object;
-			Model model = carrier(scenery, RetroDecorController.orientation(gameObject.getConfig()));
+			Model model = carrier(scenery, ObjectPlacement.orientation(gameObject.getConfig()));
 			if (model == null)
 			{
 				return;
@@ -295,7 +307,7 @@ public class RetroScenerySwapper implements RenderCallback
 			controllers.add(new RetroGameObjectController(gameObject, model));
 		}
 
-		placed.put(object, controllers);
+		placed.put(object, new Placed(scenery, controllers));
 		if (active.contains(scenery))
 		{
 			for (RuneLiteObjectController controller : controllers)
@@ -307,10 +319,10 @@ public class RetroScenerySwapper implements RenderCallback
 
 	public void onDespawned(TileObject object)
 	{
-		List<RuneLiteObjectController> controllers = placed.remove(object);
-		if (controllers != null)
+		Placed removed = placed.remove(object);
+		if (removed != null)
 		{
-			for (RuneLiteObjectController controller : controllers)
+			for (RuneLiteObjectController controller : removed.getStandIns())
 			{
 				client.removeRuneLiteObject(controller);
 			}
@@ -400,9 +412,9 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	public List<RuneLiteObjectController> getStandIns(TileObject object)
 	{
-		RetroScenery scenery = RetroScenery.forObject(object.getId());
-		List<RuneLiteObjectController> controllers = placed.get(object);
-		return controllers != null && active.contains(scenery) ? controllers : Collections.emptyList();
+		Placed standing = placed.get(object);
+		return standing != null && active.contains(standing.getScenery())
+			? standing.getStandIns() : Collections.emptyList();
 	}
 
 	/**
@@ -510,9 +522,9 @@ public class RetroScenerySwapper implements RenderCallback
 
 	private void removeAll()
 	{
-		for (List<RuneLiteObjectController> controllers : placed.values())
+		for (Placed object : placed.values())
 		{
-			for (RuneLiteObjectController controller : controllers)
+			for (RuneLiteObjectController controller : object.getStandIns())
 			{
 				client.removeRuneLiteObject(controller);
 			}
@@ -534,13 +546,14 @@ public class RetroScenerySwapper implements RenderCallback
 		}
 
 		Map<Scene, Set<Integer>> invalidated = new HashMap<>();
-		for (TileObject object : placed.keySet())
+		for (Map.Entry<TileObject, Placed> entry : placed.entrySet())
 		{
-			if (!scenery.contains(RetroScenery.forObject(object.getId())))
+			if (!scenery.contains(entry.getValue().getScenery()))
 			{
 				continue;
 			}
 
+			TileObject object = entry.getKey();
 			WorldView worldView = object.getWorldView();
 			Scene scene = worldView == null ? null : worldView.getScene();
 			if (scene == null)
@@ -644,14 +657,9 @@ public class RetroScenerySwapper implements RenderCallback
 		}
 
 		int count = mesh.getVerticesCount();
-		float[] x = new float[count];
-		float[] z = new float[count];
-		for (int v = 0; v < count; v++)
-		{
-			float[] turned = rotate(mesh.getVerticesX()[v], mesh.getVerticesZ()[v], quarterTurns);
-			x[v] = turned[0];
-			z[v] = turned[1];
-		}
+		float[] x = Arrays.copyOf(mesh.getVerticesX(), count);
+		float[] z = Arrays.copyOf(mesh.getVerticesZ(), count);
+		ObjectPlacement.turn(x, z, count, quarterTurns);
 
 		return new RetroMesh(mesh.getId(), mesh.getPriority(), x, mesh.getVerticesY(), z,
 			mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
@@ -667,41 +675,17 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	private static ModelData rotate(ModelData data, int quarterTurns)
 	{
-		float[] xs = data.getVerticesX();
-		float[] zs = data.getVerticesZ();
-		for (int v = 0; v < data.getVerticesCount(); v++)
-		{
-			float[] turned = rotate(xs[v], zs[v], quarterTurns);
-			xs[v] = turned[0];
-			zs[v] = turned[1];
-		}
+		ObjectPlacement.turn(data.getVerticesX(), data.getVerticesZ(), data.getVerticesCount(), quarterTurns);
 		return data;
 	}
 
 	/**
-	 * Turns a point by whole quarter turns, the way the renderer turns a model by its orientation:
-	 * {@code x' = z sin + x cos, z' = z cos - x sin}.
-	 */
-	static float[] rotate(float x, float z, int quarterTurns)
-	{
-		switch (quarterTurns & 3)
-		{
-			case 1:
-				return new float[]{z, -x};
-			case 2:
-				return new float[]{-x, -z};
-			case 3:
-				return new float[]{-z, x};
-			default:
-				return new float[]{x, z};
-		}
-	}
-
-	/**
 	 * Lights a 2005 mesh the way the 2005 client lit scenery: the client's base ambient and
-	 * contrast plus the definition's own adjustments.
+	 * contrast plus the definition's own adjustments. Then, for a mesh that paints detail on by
+	 * priority, brings that detail to the front, where the 2005 client drew it and a
+	 * depth-buffered renderer does not - see {@link RetroScenery#hasPaintedDetail}.
 	 */
-	private static RetroModel light(RetroMesh mesh, RetroScenery scenery)
+	static RetroModel light(RetroMesh mesh, RetroScenery scenery)
 	{
 		int faceCount = mesh.getFaceCount();
 		int[] colors1 = new int[faceCount];
@@ -719,6 +703,11 @@ public class RetroScenerySwapper implements RenderCallback
 
 		RetroModel model = new RetroModel();
 		model.bind(mesh, colors1, colors2, colors3);
+		if (scenery.hasPaintedDetail())
+		{
+			// Moves the model's own copy of the vertices; the mesh is shared by every quarter turn
+			RetroDecals.lift(model, 0);
+		}
 		return model;
 	}
 }
