@@ -36,7 +36,10 @@ import java.util.HashSet;
 import java.util.Set;
 import net.runelite.api.Constants;
 import net.runelite.api.DecorativeObject;
+import com.retronpcswapper.inject.RetroLighter;
+import com.retronpcswapper.inject.RetroMesh;
 import net.runelite.api.GameObject;
+import net.runelite.api.ModelData;
 import net.runelite.api.gameval.ObjectID;
 import org.junit.Test;
 
@@ -212,15 +215,61 @@ public class RetroScenerySwapperTest
 		}
 	}
 
+	/** The quarter turns are in the model; the renderer is left only a diagonal's eighth. */
 	@Test
 	public void testCentrepieceOrientation()
 	{
 		assertEquals(0, RetroGameObjectController.orientation(config(10, 0)));
-		assertEquals(512, RetroGameObjectController.orientation(config(10, 1)));
-		assertEquals(1536, RetroGameObjectController.orientation(config(10, 3)));
-		// A diagonal centrepiece is an ordinary one turned a further eighth
+		assertEquals(0, RetroGameObjectController.orientation(config(10, 1)));
+		assertEquals(0, RetroGameObjectController.orientation(config(10, 3)));
 		assertEquals(256, RetroGameObjectController.orientation(config(11, 0)));
-		assertEquals(1280, RetroGameObjectController.orientation(config(11, 2)));
+		assertEquals(256, RetroGameObjectController.orientation(config(11, 2)));
+	}
+
+	/** Turning a model's points matches turning the stand-in by the same quarter turns did. */
+	@Test
+	public void testModelTurnsMatchTheRenderers()
+	{
+		for (int quarters = 0; quarters < 4; quarters++)
+		{
+			int[] expected = RetroDecorController.rotate(30, -70, quarters);
+			float[] turned = RetroScenerySwapper.rotate(30, -70, quarters);
+			assertEquals(expected[0], turned[0], 0);
+			assertEquals(expected[1], turned[1], 0);
+		}
+	}
+
+	/**
+	 * The bookcase's books face +x, away from the client's light. Lit where it stands, a bookcase
+	 * turned half round must be lit as the client lights it - turned first, so the books face the
+	 * light - not lit facing away and then turned, which leaves them black.
+	 */
+	@Test
+	public void testAHalfTurnedModelIsLitAfterTurning()
+	{
+		// One square facing +x, in the yz plane, wound as the bookcase's books are
+		RetroMesh facingX = new RetroMesh(1, 0,
+			new float[]{0, 0, 0, 0}, new float[]{0, -100, -100, 0}, new float[]{0, 0, -100, -100},
+			new int[]{0, 0}, new int[]{1, 2}, new int[]{2, 3},
+			new short[]{127, 127}, new byte[]{1, 1}, null, null, null, null, null, null, null, null);
+
+		int facingAway = litLightness(facingX);
+		int turnedFirst = litLightness(RetroScenerySwapper.rotate(facingX, 2));
+
+		assertTrue("facing away from the light, it is dark: " + facingAway, facingAway < 20);
+		assertTrue("turned to face the light first, it is lit: " + turnedFirst, turnedFirst > 100);
+	}
+
+	private static int litLightness(RetroMesh mesh)
+	{
+		int[] colors = new int[mesh.getFaceCount()];
+		RetroLighter.light(mesh.getVerticesCount(), mesh.getVerticesX(), mesh.getVerticesY(), mesh.getVerticesZ(),
+			mesh.getFaceCount(), mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
+			mesh.getFaceColors(), mesh.getFaceRenderTypes(), mesh.getFaceTextures(),
+			ModelData.DEFAULT_AMBIENT, ModelData.DEFAULT_CONTRAST,
+			ModelData.DEFAULT_X, ModelData.DEFAULT_Y, ModelData.DEFAULT_Z,
+			colors, new int[colors.length], new int[colors.length]);
+		return colors[0] & 127;
 	}
 
 	/** The default radius for one tile, and as far again for each tile more. */

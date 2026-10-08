@@ -36,8 +36,7 @@ import net.runelite.api.coords.LocalPoint;
  */
 class RetroGameObjectController extends RuneLiteObjectController
 {
-	/** Jagex angle units in a quarter turn, and in the eighth turn a diagonal adds. */
-	private static final int QUARTER_TURN = 512;
+	/** Jagex angle units in the eighth turn a diagonal placement adds. */
 	private static final int EIGHTH_TURN = 256;
 
 	/** Half a tile, less the margin the controller's default radius of 60 leaves a one-tile model. */
@@ -46,6 +45,10 @@ class RetroGameObjectController extends RuneLiteObjectController
 
 	private final Model carrier;
 
+	/**
+	 * @param carrier the carrier for the object's quarter turns - the model comes already turned, as
+	 *                the client turns it before lighting it
+	 */
 	RetroGameObjectController(GameObject object, Model carrier)
 	{
 		this.carrier = carrier;
@@ -64,17 +67,13 @@ class RetroGameObjectController extends RuneLiteObjectController
 	}
 
 	/**
-	 * The turn the client gives the model: its quarter turns, and an extra eighth for a diagonal
-	 * placement, which the client draws as an ordinary one turned onto the diagonal.
+	 * The turn left to the renderer once the model has been turned to its placement's quarter
+	 * turns: an extra eighth for a diagonal placement, which the client draws as an ordinary one
+	 * turned onto the diagonal, and none otherwise.
 	 */
 	static int orientation(int config)
 	{
-		int turn = RetroDecorController.orientation(config) * QUARTER_TURN;
-		if (RetroDecorController.type(config) == RetroScenery.TYPE_DIAGONAL_CENTREPIECE)
-		{
-			turn += EIGHTH_TURN;
-		}
-		return turn;
+		return RetroDecorController.type(config) == RetroScenery.TYPE_DIAGONAL_CENTREPIECE ? EIGHTH_TURN : 0;
 	}
 
 	/**
