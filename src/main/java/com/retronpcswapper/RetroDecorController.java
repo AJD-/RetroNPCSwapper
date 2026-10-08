@@ -40,8 +40,7 @@ import net.runelite.api.coords.LocalPoint;
  */
 class RetroDecorController extends RuneLiteObjectController
 {
-	/** Jagex angle units in a quarter turn, and in the eighth turn a diagonal adds. */
-	private static final int QUARTER_TURN = 512;
+	/** Jagex angle units in the eighth turn a diagonal adds. */
 	private static final int EIGHTH_TURN = 256;
 
 	/**
@@ -61,8 +60,10 @@ class RetroDecorController extends RuneLiteObjectController
 	private final Model carrier;
 
 	/**
-	 * @param second for a decoration drawn twice - one on each face of a diagonal wall - the second
-	 *               of the two
+	 * @param carrier the carrier for this stand-in's quarter turns, {@link #quarterTurns} - the
+	 *                model comes already turned, as the client turns it before lighting it
+	 * @param second  for a decoration drawn twice - one on each face of a diagonal wall - the second
+	 *                of the two
 	 */
 	RetroDecorController(DecorativeObject decoration, Model carrier, boolean second)
 	{
@@ -88,7 +89,8 @@ class RetroDecorController extends RuneLiteObjectController
 
 		setLocation(new LocalPoint(x, y, decoration.getWorldView()), decoration.getPlane());
 		setZ(decoration.getZ());
-		setOrientation(quarters * QUARTER_TURN + (diagonal ? EIGHTH_TURN : 0));
+		// The quarter turns are in the model already; only a diagonal's eighth is left to the renderer
+		setOrientation(diagonal ? EIGHTH_TURN : 0);
 	}
 
 	@Override

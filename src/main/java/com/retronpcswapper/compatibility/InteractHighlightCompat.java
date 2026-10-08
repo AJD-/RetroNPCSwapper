@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper.compatibility;
 
+import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
@@ -36,14 +37,15 @@ import net.runelite.client.plugins.interacthighlight.InteractHighlightConfig;
 import net.runelite.client.plugins.interacthighlight.InteractHighlightPlugin;
 
 /**
- * Turns off Interact Highlight's own NPC outlines while this plugin draws them instead.
+ * Turns off Interact Highlight's own NPC and object outlines while this plugin draws them instead.
  *
  * <p>An outline has to be suppressed rather than painted over: the outline renderer writes straight
  * into the frame buffer, so a second overlay drawing later only adds a second outline. Interact
  * Highlight's overlay is package private and cannot be filtered or subclassed, but its config
- * interface is public, and it reads that config on every frame - so clearing the two NPC keys stops
- * it drawing NPCs on the next frame while it goes on drawing objects, ground items and players with
- * its own code.
+ * interface is public, and it reads that config on every frame - so clearing the NPC and object
+ * keys stops it drawing those on the next frame while it goes on drawing ground items and players
+ * with its own code. Objects are taken over for the scenery this plugin restores, which Interact
+ * Highlight would otherwise outline around the live model it no longer draws.
  *
  * <p>The previous values are stashed in this plugin's own config group, not held in memory, so a
  * client that dies while suppressing is repaired on the next startup rather than leaving the user's
@@ -56,6 +58,11 @@ public class InteractHighlightCompat
 	private static final String GROUP = "interacthighlight";
 	private static final String SHOW_HOVER = "npcShowHover";
 	private static final String SHOW_INTERACT = "npcShowInteract";
+	private static final String OBJECT_SHOW_HOVER = "objectShowHover";
+	private static final String OBJECT_SHOW_INTERACT = "objectShowInteract";
+
+	/** Every Interact Highlight key suppressed while this plugin draws those outlines itself. */
+	private static final String[] KEYS = {SHOW_HOVER, SHOW_INTERACT, OBJECT_SHOW_HOVER, OBJECT_SHOW_INTERACT};
 
 	private static final String STASH_PREFIX = "interactHighlightStash_";
 
@@ -101,6 +108,22 @@ public class InteractHighlightCompat
 	boolean npcShowInteract()
 	{
 		return wanted(SHOW_INTERACT, config().npcShowInteract());
+	}
+
+	/**
+	 * Whether the user wants object hover outlines. See {@link #npcShowHover()}.
+	 */
+	boolean objectShowHover()
+	{
+		return wanted(OBJECT_SHOW_HOVER, config().objectShowHover());
+	}
+
+	/**
+	 * Whether the user wants object interact outlines. See {@link #npcShowHover()}.
+	 */
+	boolean objectShowInteract()
+	{
+		return wanted(OBJECT_SHOW_INTERACT, config().objectShowInteract());
 	}
 
 	private boolean wanted(String key, boolean live)
@@ -173,15 +196,21 @@ public class InteractHighlightCompat
 		// over the user's real ones
 		suppressing = true;
 
-		if (configManager.getConfiguration(RetroNpcConfig.GROUP, STASH_PREFIX + SHOW_HOVER) == null)
+		// Key by key, so a stash left by a version that suppressed fewer keys is kept and the rest
+		// are added to it
+		for (String key : KEYS)
 		{
-			stash(SHOW_HOVER);
-			stash(SHOW_INTERACT);
+			if (!isStashed(key))
+			{
+				stash(key);
+			}
 		}
 
-		write(SHOW_HOVER, "false");
-		write(SHOW_INTERACT, "false");
-		log.debug("Suppressed Interact Highlight NPC outlines");
+		for (String key : KEYS)
+		{
+			write(key, "false");
+		}
+		log.debug("Suppressed Interact Highlight NPC and object outlines");
 	}
 
 	public void restore()
@@ -192,9 +221,11 @@ public class InteractHighlightCompat
 		}
 
 		suppressing = false;
-		unstash(SHOW_HOVER);
-		unstash(SHOW_INTERACT);
-		log.debug("Restored Interact Highlight NPC outlines");
+		for (String key : KEYS)
+		{
+			unstash(key);
+		}
+		log.debug("Restored Interact Highlight NPC and object outlines");
 	}
 
 	/**
@@ -203,7 +234,12 @@ public class InteractHighlightCompat
 	 */
 	public void restoreStaleStash()
 	{
-		if (configManager.getConfiguration(RetroNpcConfig.GROUP, STASH_PREFIX + SHOW_HOVER) == null)
+		boolean stale = false;
+		for (String key : KEYS)
+		{
+			stale |= isStashed(key);
+		}
+		if (!stale)
 		{
 			return;
 		}
@@ -214,27 +250,27 @@ public class InteractHighlightCompat
 	}
 
 	/**
-	 * Whether a config change is the user turning Interact Highlight's NPC outlines back on while
-	 * we have them suppressed.
+	 * Whether a config change is the user turning Interact Highlight's NPC or object outlines back
+	 * on while we have them suppressed.
 	 */
 	public boolean isUserOverride(ConfigChanged event)
 	{
 		return !selfWrite
 			&& suppressing
 			&& GROUP.equals(event.getGroup())
-			&& (SHOW_HOVER.equals(event.getKey()) || SHOW_INTERACT.equals(event.getKey()))
+			&& Arrays.asList(KEYS).contains(event.getKey())
 			&& "true".equals(event.getNewValue());
 	}
 
 	/**
-	 * Hands Interact Highlight's NPC outlines back after the user re-enabled one of the settings
-	 * themselves.
+	 * Hands Interact Highlight's NPC and object outlines back after the user re-enabled one of the
+	 * settings themselves.
 	 *
 	 * <p>The key they just set keeps their value - writing the stash back over it would undo the
-	 * choice they made. The other one is restored normally, so turning "show on hover" back on does
+	 * choice they made. The others are restored normally, so turning "show on hover" back on does
 	 * not silently leave "show on interact" off.
 	 *
-	 * <p>This gives up the two foreign keys and nothing else: the caller must turn
+	 * <p>This gives up the foreign keys and nothing else: the caller must turn
 	 * {@code overrideInteractHighlight} off afterward, which is what actually ends the takeover.
 	 * Left on, the config still asks for a takeover this object is no longer suppressing for, and
 	 * both plugins draw their outlines.
@@ -243,8 +279,13 @@ public class InteractHighlightCompat
 	{
 		discard(changedKey);
 
-		String other = SHOW_HOVER.equals(changedKey) ? SHOW_INTERACT : SHOW_HOVER;
-		unstash(other);
+		for (String key : KEYS)
+		{
+			if (!key.equals(changedKey))
+			{
+				unstash(key);
+			}
+		}
 		suppressing = false;
 	}
 
@@ -264,6 +305,11 @@ public class InteractHighlightCompat
 	public static boolean isStashKey(String key)
 	{
 		return key != null && key.startsWith(STASH_PREFIX);
+	}
+
+	private boolean isStashed(String key)
+	{
+		return configManager.getConfiguration(RetroNpcConfig.GROUP, STASH_PREFIX + key) != null;
 	}
 
 	private void stash(String key)

@@ -47,6 +47,7 @@ import com.retronpcswapper.compatibility.InteractHighlightCompat;
 import com.retronpcswapper.compatibility.InteractTargetTracker;
 import com.retronpcswapper.compatibility.RetroInteractHighlightOverlay;
 import com.retronpcswapper.compatibility.RetroNpcOutliner;
+import com.retronpcswapper.compatibility.RetroSceneryOutliner;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.Actor;
@@ -138,6 +139,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	@Inject
 	private RetroNpcOutliner outliner;
+
+	@Inject
+	private RetroSceneryOutliner sceneryOutliner;
 
 	@Inject
 	private RetroShieldSwapper shieldSwapper;
@@ -409,6 +413,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			interactHighlight.forget();
 			overlayManager.remove(interactHighlightOverlay);
 			outliner.clear();
+			sceneryOutliner.clear();
 			outlineTakeover = false;
 
 			interactHighlight.restoreStaleStash();
@@ -563,6 +568,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			|| gameStateChanged.getGameState() == GameState.HOPPING)
 		{
 			scenerySwapper.onLoading();
+			targetTracker.onLoading();
 		}
 		else if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
@@ -922,6 +928,21 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			wanted.add(RetroScenery.WELL);
 		}
+		if (config.swapWardrobes())
+		{
+			wanted.add(RetroScenery.WARDROBE);
+			wanted.add(RetroScenery.WARDROBE_OPEN);
+			wanted.add(RetroScenery.WARDROBE_OPEN_SKELETON);
+		}
+		if (config.swapTrees())
+		{
+			wanted.add(RetroScenery.OAK_TREE);
+			wanted.add(RetroScenery.MAGIC_TREE);
+		}
+		if (config.swapPicnicBenches())
+		{
+			wanted.add(RetroScenery.PICNIC_BENCH);
+		}
 		return wanted;
 	}
 
@@ -1087,6 +1108,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			interactHighlight.restore();
 			overlayManager.remove(interactHighlightOverlay);
 			outliner.clear();
+			sceneryOutliner.clear();
 		}
 
 		// Last, so a failure to write config does not leave us recorded as having taken over

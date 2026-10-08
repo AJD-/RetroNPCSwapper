@@ -40,6 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Constants;
@@ -94,6 +95,9 @@ public class RetroScenerySwapper implements RenderCallback
 	/** Local units per tile, as a shift. */
 	private static final int TILE_SHIFT = 7;
 
+	/** The quarter turns a scenery object can be placed at. */
+	private static final int QUARTER_TURNS = 4;
+
 	/** The 2005 client's contrast step: each unit of a definition's opcode 39 is five of the client's. */
 	private static final int CONTRAST_STEP = 5;
 
@@ -110,14 +114,30 @@ public class RetroScenerySwapper implements RenderCallback
 	/** Every restored object in the loaded scene, with the stand-ins placed for it - two for a wall chart on both faces of a wall. */
 	private final Map<TileObject, List<RuneLiteObjectController>> placed = new HashMap<>();
 
-	/** The 2005 models, lit and bound, for each scenery the bundle brought. */
-	private final Map<RetroScenery, RetroModel> replacements = new EnumMap<>(RetroScenery.class);
+	/**
+	 * The 2005 models, lit and bound, for each scenery the bundle brought - one for each quarter turn
+	 * an object can be placed at, indexed by it.
+	 *
+	 * <p>One per turn because the client turns a scenery model to its placement before it lights it,
+	 * so the light falls the same way on every copy whichever way it faces. Lighting the model once
+	 * and turning the stand-in instead turns the shading with it: an object placed half a turn round
+	 * is lit from behind, and a face the light should reach goes black.
+	 */
+	private final Map<RetroScenery, RetroModel[]> replacements = new EnumMap<>(RetroScenery.class);
 
-	/** The client model each scenery's stand-ins carry, loaded as the first one is placed. */
-	private final Map<RetroScenery, Model> carriers = new EnumMap<>(RetroScenery.class);
+	/** The client models each scenery's stand-ins carry, one per quarter turn, loaded as needed. */
+	private final Map<RetroScenery, Model[]> carriers = new EnumMap<>(RetroScenery.class);
 
 	/** The same carriers the other way round, recognized at draw time by identity alone. */
-	private final Map<Model, RetroScenery> carried = new IdentityHashMap<>();
+	private final Map<Model, Carried> carried = new IdentityHashMap<>();
+
+	/** Which scenery, at which quarter turn, a carrier stands for. */
+	@Value
+	private static class Carried
+	{
+		RetroScenery scenery;
+		int quarterTurns;
+	}
 
 	/**
 	 * Whether a scene object is one this hides: a restored object, placed the way its stand-in
@@ -147,13 +167,23 @@ public class RetroScenerySwapper implements RenderCallback
 		replacements.clear();
 		for (RetroScenery scenery : RetroScenery.values())
 		{
+			if (scenery.source != RetroScenery.Source.BUNDLE)
+			{
+				continue;
+			}
+
 			RetroMesh mesh = bundle.getMesh(scenery.meshId);
 			if (mesh == null)
 			{
 				log.debug("Bundle has no mesh {}; {} stays as it is", scenery.meshId, scenery);
 				continue;
 			}
-			replacements.put(scenery, light(mesh, scenery));
+			RetroModel[] turned = new RetroModel[QUARTER_TURNS];
+			for (int quarters = 0; quarters < QUARTER_TURNS; quarters++)
+			{
+				turned[quarters] = light(rotate(mesh, quarters), scenery);
+			}
+			replacements.put(scenery, turned);
 		}
 	}
 
@@ -169,7 +199,7 @@ public class RetroScenerySwapper implements RenderCallback
 		Set<RetroScenery> next = EnumSet.noneOf(RetroScenery.class);
 		for (RetroScenery scenery : wanted)
 		{
-			if (replacements.containsKey(scenery) && carrier(scenery) != null)
+			if (isReady(scenery) && carrier(scenery, 0) != null)
 			{
 				next.add(scenery);
 			}
@@ -237,25 +267,32 @@ public class RetroScenerySwapper implements RenderCallback
 			return;
 		}
 
-		Model model = carrier(scenery);
-		if (model == null)
-		{
-			return;
-		}
-
 		List<RuneLiteObjectController> controllers = new ArrayList<>(2);
 		if (object instanceof DecorativeObject)
 		{
 			DecorativeObject decoration = (DecorativeObject) object;
-			controllers.add(new RetroDecorController(decoration, model, false));
-			if (RetroDecorController.isDrawnTwice(RetroDecorController.type(decoration.getConfig())))
+			int config = decoration.getConfig();
+			int type = RetroDecorController.type(config);
+			for (boolean second : RetroDecorController.isDrawnTwice(type) ? new boolean[]{false, true} : new boolean[]{false})
 			{
-				controllers.add(new RetroDecorController(decoration, model, true));
+				Model model = carrier(scenery,
+					RetroDecorController.quarterTurns(type, RetroDecorController.orientation(config), second));
+				if (model == null)
+				{
+					return;
+				}
+				controllers.add(new RetroDecorController(decoration, model, second));
 			}
 		}
 		else
 		{
-			controllers.add(new RetroGameObjectController((GameObject) object, model));
+			GameObject gameObject = (GameObject) object;
+			Model model = carrier(scenery, RetroDecorController.orientation(gameObject.getConfig()));
+			if (model == null)
+			{
+				return;
+			}
+			controllers.add(new RetroGameObjectController(gameObject, model));
 		}
 
 		placed.put(object, controllers);
@@ -346,8 +383,36 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	public Model substitute(Model vanilla)
 	{
-		RetroScenery scenery = vanilla == null ? null : carried.get(vanilla);
-		return scenery != null && active.contains(scenery) ? replacements.get(scenery) : null;
+		Carried carrier = vanilla == null ? null : carried.get(vanilla);
+		if (carrier == null || !active.contains(carrier.getScenery()))
+		{
+			return null;
+		}
+
+		RetroModel[] turned = replacements.get(carrier.getScenery());
+		return turned == null ? null : turned[carrier.getQuarterTurns()];
+	}
+
+	/**
+	 * The stand-ins drawn in an object's place, or an empty list when the object is drawn as it is.
+	 * For outlining: anything outlining the object itself traces the live model the renderer no
+	 * longer draws.
+	 */
+	public List<RuneLiteObjectController> getStandIns(TileObject object)
+	{
+		RetroScenery scenery = RetroScenery.forObject(object.getId());
+		List<RuneLiteObjectController> controllers = placed.get(object);
+		return controllers != null && active.contains(scenery) ? controllers : Collections.emptyList();
+	}
+
+	/**
+	 * The model a stand-in shows: the 2005 geometry swapped onto its carrier, or the carrier itself.
+	 */
+	public Model getDrawnModel(RuneLiteObjectController standIn)
+	{
+		Model carrier = standIn.getModel();
+		Model replacement = substitute(carrier);
+		return replacement != null ? replacement : carrier;
 	}
 
 	/**
@@ -518,23 +583,118 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
-	 * The live model a scenery's stand-ins carry - lit afresh, so the instance is this scenery's
-	 * alone and is told apart at draw time from every other model, its own live copy included.
+	 * Whether a scenery's 2005 model is to hand: from the bundle once it has loaded, or from the live
+	 * cache, where the carrier is the 2005 model itself.
 	 */
-	private Model carrier(RetroScenery scenery)
+	private boolean isReady(RetroScenery scenery)
 	{
-		Model carrier = carriers.get(scenery);
-		if (carrier == null)
+		return scenery.source == RetroScenery.Source.LIVE_CACHE || replacements.containsKey(scenery);
+	}
+
+	/**
+	 * The live model a scenery's stand-ins at one quarter turn carry - lit afresh, so the instance is
+	 * that scenery's at that turn alone and is told apart at draw time from every other model, its
+	 * own live copy included.
+	 *
+	 * <p>For a mesh the live cache still holds, this is the 2005 model, turned to the quarter turns
+	 * and then lit the way the 2005 definition lit it, as the client would. Nothing is swapped onto
+	 * it at draw time; it only needs recognizing.
+	 */
+	private Model carrier(RetroScenery scenery, int quarterTurns)
+	{
+		Model[] turned = carriers.computeIfAbsent(scenery, s -> new Model[QUARTER_TURNS]);
+		if (turned[quarterTurns] == null)
 		{
 			ModelData data = client.loadModelData(scenery.meshId);
-			carrier = data == null ? null : data.light();
+			Model carrier;
+			if (data == null)
+			{
+				carrier = null;
+			}
+			else if (scenery.source == RetroScenery.Source.LIVE_CACHE)
+			{
+				carrier = rotate(data.cloneVertices(), quarterTurns).light(
+					ModelData.DEFAULT_AMBIENT + scenery.ambient,
+					ModelData.DEFAULT_CONTRAST + scenery.contrast * CONTRAST_STEP,
+					ModelData.DEFAULT_X, ModelData.DEFAULT_Y, ModelData.DEFAULT_Z);
+			}
+			else
+			{
+				carrier = data.light();
+			}
 			if (carrier != null)
 			{
-				carriers.put(scenery, carrier);
-				carried.put(carrier, scenery);
+				turned[quarterTurns] = carrier;
+				carried.put(carrier, new Carried(scenery, quarterTurns));
 			}
 		}
-		return carrier;
+		return turned[quarterTurns];
+	}
+
+	/**
+	 * A mesh turned by whole quarter turns about its vertical axis, the way the client turns a
+	 * scenery model to its placement before lighting it. Shares everything but the turned vertex
+	 * positions with the mesh it came from.
+	 */
+	static RetroMesh rotate(RetroMesh mesh, int quarterTurns)
+	{
+		if (quarterTurns == 0)
+		{
+			return mesh;
+		}
+
+		int count = mesh.getVerticesCount();
+		float[] x = new float[count];
+		float[] z = new float[count];
+		for (int v = 0; v < count; v++)
+		{
+			float[] turned = rotate(mesh.getVerticesX()[v], mesh.getVerticesZ()[v], quarterTurns);
+			x[v] = turned[0];
+			z[v] = turned[1];
+		}
+
+		return new RetroMesh(mesh.getId(), mesh.getPriority(), x, mesh.getVerticesY(), z,
+			mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
+			mesh.getFaceColors(), mesh.getFaceRenderTypes(), mesh.getFaceTransparencies(),
+			mesh.getFaceRenderPriorities(), mesh.getFaceTextures(),
+			mesh.getTextureCoords(), mesh.getTexIndices1(), mesh.getTexIndices2(), mesh.getTexIndices3(),
+			mesh.getVertexGroups());
+	}
+
+	/**
+	 * Turns a live model's vertices in place by whole quarter turns, as {@link #rotate(RetroMesh, int)}
+	 * turns a bundled one. The caller hands over a copy with its own vertices.
+	 */
+	private static ModelData rotate(ModelData data, int quarterTurns)
+	{
+		float[] xs = data.getVerticesX();
+		float[] zs = data.getVerticesZ();
+		for (int v = 0; v < data.getVerticesCount(); v++)
+		{
+			float[] turned = rotate(xs[v], zs[v], quarterTurns);
+			xs[v] = turned[0];
+			zs[v] = turned[1];
+		}
+		return data;
+	}
+
+	/**
+	 * Turns a point by whole quarter turns, the way the renderer turns a model by its orientation:
+	 * {@code x' = z sin + x cos, z' = z cos - x sin}.
+	 */
+	static float[] rotate(float x, float z, int quarterTurns)
+	{
+		switch (quarterTurns & 3)
+		{
+			case 1:
+				return new float[]{z, -x};
+			case 2:
+				return new float[]{-x, -z};
+			case 3:
+				return new float[]{-z, x};
+			default:
+				return new float[]{x, z};
+		}
 	}
 
 	/**

@@ -385,11 +385,11 @@ public interface RetroNpcConfig extends Config
 		keyName = OVERRIDE_INTERACT_HIGHLIGHT,
 		name = "Fix Interact Highlight outlines",
 		description = "<html><body style='width:170px'>Draw the Interact Highlight plugin's NPC "
-			+ "outlines around the retro model instead of the modern one.<br><br>While this is on "
-			+ "and models are being swapped, Interact Highlight's own <b>NPCs: Show on hover</b> "
-			+ "and <b>Show on interact</b> are turned off and this plugin draws those outlines in "
-			+ "their place, using that plugin's own colors and border settings. Both are turned back "
-			+ "on when this plugin stops.</body></html>",
+			+ "and object outlines around the retro model instead of the modern one.<br><br>While "
+			+ "this is on and models are being swapped, Interact Highlight's own <b>Show on hover</b> "
+			+ "and <b>Show on interact</b> for NPCs and objects are turned off and this plugin draws "
+			+ "those outlines in their place, using that plugin's own colors and border settings. "
+			+ "They are turned back on when this plugin stops.</body></html>",
 		section = compatibilitySection,
 		position = 1
 	)
@@ -449,6 +449,42 @@ public interface RetroNpcConfig extends Config
 		position = 2
 	)
 	default boolean swapWells()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapWardrobes",
+		name = "Wardrobes",
+		description = "Restore the 2005 Draynor Manor wardrobes - closed, open, and with the skeleton inside.",
+		section = scenerySection,
+		position = 3
+	)
+	default boolean swapWardrobes()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapTrees",
+		name = "Trees",
+		description = "Restore the 2005 oak and magic trees.",
+		section = scenerySection,
+		position = 4
+	)
+	default boolean swapTrees()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapPicnicBenches",
+		name = "Picnic benches",
+		description = "Restore the 2005 picnic bench.",
+		section = scenerySection,
+		position = 5
+	)
+	default boolean swapPicnicBenches()
 	{
 		return true;
 	}

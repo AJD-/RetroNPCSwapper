@@ -54,6 +54,11 @@ public class RetroSceneryTest
 
 		for (RetroScenery scenery : RetroScenery.values())
 		{
+			if (scenery.source != RetroScenery.Source.BUNDLE)
+			{
+				continue;
+			}
+
 			RetroMesh mesh = bundle.getMesh(scenery.meshId);
 			assertNotNull(scenery + " mesh " + scenery.meshId + " is not in the bundle", mesh);
 			assertFalse(scenery + " mesh " + scenery.meshId + " is rigged", mesh.isRigged());

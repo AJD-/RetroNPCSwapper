@@ -36,7 +36,10 @@ import java.util.HashSet;
 import java.util.Set;
 import net.runelite.api.Constants;
 import net.runelite.api.DecorativeObject;
+import com.retronpcswapper.inject.RetroLighter;
+import com.retronpcswapper.inject.RetroMesh;
 import net.runelite.api.GameObject;
+import net.runelite.api.ModelData;
 import net.runelite.api.gameval.ObjectID;
 import org.junit.Test;
 
@@ -201,6 +204,78 @@ public class RetroScenerySwapperTest
 		assertFalse(RetroScenerySwapper.shouldHide(decoration(ObjectID.WELL, config(4, 0)), ALL));
 	}
 
+	/**
+	 * The Draynor Manor wardrobes, Fenkenstrain's broom cupboard - the same meshes in 2005 - and
+	 * their untinted copies all take a stand-in.
+	 */
+	@Test
+	public void testTheWardrobesAreHiddenWhileActive()
+	{
+		for (int id : new int[]{ObjectID.SPOOKYWARDROBE, ObjectID.SPOOKYWARDROBE_OPEN,
+			ObjectID.SPOOKYWARDROBE_OPEN_SKELETON, ObjectID.DRAGONSLAYER_SPOOKYWARDROBE,
+			ObjectID.DRAGONSLAYER_SPOOKYWARDROBE_OPEN, ObjectID.FENK_BROOMCUPBOARD,
+			ObjectID.FENK_BROOMCUPBOARD_OPEN, ObjectID.DEAL_BROOMCUPBOARD, ObjectID.DEAL_BROOMCUPBOARD_OPEN})
+		{
+			assertTrue("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
+	/** The recoloured wardrobes on the same live meshes are left alone, like the later wells. */
+	@Test
+	public void testRecolouredWardrobesAreLeftAlone()
+	{
+		for (int id : new int[]{ObjectID.DRAYNOR_WARDROBE, ObjectID.DRAYNOR_WARDROBE_OPEN,
+			ObjectID.DRAYNOR_WARDROBE_OPEN_SKELETON, ObjectID.SITHIKS_WARDROBE,
+			ObjectID.GRIM_WITCH_HOUSE_SPOOKYWARDROBE, ObjectID.KR_CAM_SPOOKYWARDROBE,
+			ObjectID.MISTMYST_BOSS_WARDROBE})
+		{
+			assertFalse("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
+	@Test
+	public void testTheTreesAreHiddenWhileActive()
+	{
+		for (int id : new int[]{ObjectID.OAKTREE, ObjectID.NEWBIEOAKTREE, ObjectID.TUT2_OAK,
+			ObjectID.TUT2_OAK_NOOP, ObjectID.TREE_OAK_DEFAULT01, ObjectID.OAKTREE_NOOP, ObjectID.GIM_OAKTREE,
+			ObjectID.MAGICTREE, ObjectID.CRAB_MAGICTREE, ObjectID.CRAB_MAGICTREE_NOOP})
+		{
+			assertTrue("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
+	/**
+	 * The rescaled and snowy oaks are left alone, and so is the farming patch's magic tree, whose
+	 * live mesh only one growth stage shares. Stumps keep their live model.
+	 */
+	@Test
+	public void testOtherTreesAreLeftAlone()
+	{
+		for (int id : new int[]{ObjectID.AVIUM_OAK_1, ObjectID.XMAS24_OAKTREE01_SNOW01, ObjectID.MAGIC_TREE_9,
+			ObjectID.OAKTREE_STUMP, ObjectID.MAGIC_TREE_STUMP})
+		{
+			assertFalse("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
+	@Test
+	public void testThePicnicBenchesAreHiddenWhileActive()
+	{
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.PICNICBENCH, config(10, 0)), ALL));
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.SARIM_PICNICBENCH, config(10, 0)), ALL));
+	}
+
+	/** The recoloured benches on the same live mesh are left alone, like the later wells. */
+	@Test
+	public void testRecolouredPicnicBenchesAreLeftAlone()
+	{
+		for (int id : new int[]{ObjectID.GARDEN_PICNICBENCH, ObjectID.PIRATETREASURE_PICNICBENCH,
+			ObjectID.FAI_FALADOR_PICNICBENCH, ObjectID.CLANWARS_TOURNAMENT_TABLE_SUPPLIES})
+		{
+			assertFalse("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
 	/** The later wells on the same live mesh never had a 2005 look and are not restored. */
 	@Test
 	public void testLaterWellsAreLeftAlone()
@@ -212,15 +287,61 @@ public class RetroScenerySwapperTest
 		}
 	}
 
+	/** The quarter turns are in the model; the renderer is left only a diagonal's eighth. */
 	@Test
 	public void testCentrepieceOrientation()
 	{
 		assertEquals(0, RetroGameObjectController.orientation(config(10, 0)));
-		assertEquals(512, RetroGameObjectController.orientation(config(10, 1)));
-		assertEquals(1536, RetroGameObjectController.orientation(config(10, 3)));
-		// A diagonal centrepiece is an ordinary one turned a further eighth
+		assertEquals(0, RetroGameObjectController.orientation(config(10, 1)));
+		assertEquals(0, RetroGameObjectController.orientation(config(10, 3)));
 		assertEquals(256, RetroGameObjectController.orientation(config(11, 0)));
-		assertEquals(1280, RetroGameObjectController.orientation(config(11, 2)));
+		assertEquals(256, RetroGameObjectController.orientation(config(11, 2)));
+	}
+
+	/** Turning a model's points matches turning the stand-in by the same quarter turns did. */
+	@Test
+	public void testModelTurnsMatchTheRenderers()
+	{
+		for (int quarters = 0; quarters < 4; quarters++)
+		{
+			int[] expected = RetroDecorController.rotate(30, -70, quarters);
+			float[] turned = RetroScenerySwapper.rotate(30, -70, quarters);
+			assertEquals(expected[0], turned[0], 0);
+			assertEquals(expected[1], turned[1], 0);
+		}
+	}
+
+	/**
+	 * The bookcase's books face +x, away from the client's light. Lit where it stands, a bookcase
+	 * turned half round must be lit as the client lights it - turned first, so the books face the
+	 * light - not lit facing away and then turned, which leaves them black.
+	 */
+	@Test
+	public void testAHalfTurnedModelIsLitAfterTurning()
+	{
+		// One square facing +x, in the yz plane, wound as the bookcase's books are
+		RetroMesh facingX = new RetroMesh(1, 0,
+			new float[]{0, 0, 0, 0}, new float[]{0, -100, -100, 0}, new float[]{0, 0, -100, -100},
+			new int[]{0, 0}, new int[]{1, 2}, new int[]{2, 3},
+			new short[]{127, 127}, new byte[]{1, 1}, null, null, null, null, null, null, null, null);
+
+		int facingAway = litLightness(facingX);
+		int turnedFirst = litLightness(RetroScenerySwapper.rotate(facingX, 2));
+
+		assertTrue("facing away from the light, it is dark: " + facingAway, facingAway < 20);
+		assertTrue("turned to face the light first, it is lit: " + turnedFirst, turnedFirst > 100);
+	}
+
+	private static int litLightness(RetroMesh mesh)
+	{
+		int[] colors = new int[mesh.getFaceCount()];
+		RetroLighter.light(mesh.getVerticesCount(), mesh.getVerticesX(), mesh.getVerticesY(), mesh.getVerticesZ(),
+			mesh.getFaceCount(), mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
+			mesh.getFaceColors(), mesh.getFaceRenderTypes(), mesh.getFaceTextures(),
+			ModelData.DEFAULT_AMBIENT, ModelData.DEFAULT_CONTRAST,
+			ModelData.DEFAULT_X, ModelData.DEFAULT_Y, ModelData.DEFAULT_Z,
+			colors, new int[colors.length], new int[colors.length]);
+		return colors[0] & 127;
 	}
 
 	/** The default radius for one tile, and as far again for each tile more. */

@@ -53,10 +53,14 @@ behind their surviving sequence IDs were re-authored for the modern skeletons. E
 geometry, the animation, or both have to come from the 2005 data instead of the live cache.
 </details>
 
-Under **Scenery**, each restored from the bundled 2005 set:
+Under **Scenery**, each restored to its 2005 model:
 
 - **Mystical wall charts** — the pre-2006 pentagram in place of the Magical symbol
 - **Wells** — the 2005 well, in place of the rebuilt one and Varrock's 2007 replacement
+- **Wardrobes** — the 2005 Draynor Manor wardrobe, closed, open and with the skeleton inside
+- **Trees** — the 2005 oak and magic trees. The magic tree's 2005 model is still in the live cache,
+  unused, and is drawn from there
+- **Picnic benches** — the 2005 picnic bench
 
 Scenery stand-ins draw over the live object, which stays in the scene: its clickbox and menu
 options are the live ones. Scenery is lit with its 2005 values, so it can read a shade darker than
@@ -76,16 +80,16 @@ the live objects around it. The Dairy Cow and Varrock retextures are not support
   draw callback runs, so interaction hitboxes stay exactly vanilla.
 - `Interact Highlight` plugin compatibility: the **Compatibility** section provides a `Fix Interact
   Highlight outlines` checkbox to resolve inconsistent outline draws on retro models. Because the
-  swap happens at draw time, anything outlining an NPC through the API outlines the modern mesh,
-  which no longer matches what is on screen. With the `Interact Highlight` plugin enabled, and the
-  compatibility checkbox enabled, this plugin _turns off_ that plugin's own NPC hover and interact
-  outlines and draws them around the retro model instead, using its colors and border settings; its
-  object, ground item and player highlights are untouched, and both settings are restored when this
-  plugin stops. Note: This means the highlight will trace the rendered model while the clickbox still
-  traces the vanilla model, so they can disagree at the edges. Turning either of those two settings
-  back on yourself in the `Interact Highlight` config while retro compatibility is enabled hands the
-  outlines straight back to the `Interact Highlight` plugin and unticks the compatibility checkbox in
-  this plugin.
+  swap happens at draw time, anything outlining an NPC or restored scenery through the API outlines
+  the modern mesh, which no longer matches what is on screen. With the `Interact Highlight` plugin
+  enabled, and the compatibility checkbox enabled, this plugin _turns off_ that plugin's own NPC and
+  object hover and interact outlines and draws them around the retro model instead, using its colors
+  and border settings; its ground item and player highlights are untouched, and all four settings
+  are restored when this plugin stops. Note: This means the highlight will trace the rendered model
+  while the clickbox still traces the vanilla model, so they can disagree at the edges. Turning any
+  of those settings back on yourself in the `Interact Highlight` config while retro compatibility is
+  enabled hands the outlines straight back to the `Interact Highlight` plugin and unticks the
+  compatibility checkbox in this plugin.
 - **Nothing is downloaded.** For the categories in the first list, the plugin ships only a table of
   numeric model and animation IDs, and every asset it displays already comes from the live game
   cache.
