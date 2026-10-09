@@ -25,10 +25,14 @@
 package com.retronpcswapper;
 
 import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroDecals;
 import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
+import com.retronpcswapper.inject.RetroMeshMerger;
 import com.retronpcswapper.inject.RetroModel;
+import com.retronpcswapper.inject.RetroRig;
+import com.retronpcswapper.inject.RetroSkinner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,10 +44,13 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Animation;
+import net.runelite.api.AnimationController;
 import net.runelite.api.Client;
 import net.runelite.api.Constants;
 import net.runelite.api.DecorativeObject;
@@ -78,6 +85,11 @@ import net.runelite.client.callback.RenderCallback;
  *       wall, a {@link RetroGameObjectController} on the ground - and the draw callback swaps the
  *       2005 geometry onto it at {@code drawTemp}.</li>
  * </ul>
+ * <p>
+ * An animated object - the dairy cow - is drawn every frame rather than uploaded, but the client
+ * asks {@link #drawObject} about it each time, so it is hidden the same way. Its stand-in keeps
+ * its own place in the 2005 animation, and the 2005 geometry is posed for that frame as it is
+ * swapped on.
  * <p>
  * Everything but {@link #drawObject} runs on the client thread.
  */
@@ -141,16 +153,39 @@ public class RetroScenerySwapper implements RenderCallback
 	/** The client models each scenery's stand-ins carry, one per quarter turn, loaded as needed. */
 	private final Map<RetroScenery, Model[]> carriers = new EnumMap<>(RetroScenery.class);
 
-	/** The same carriers the other way round, recognized at draw time by identity alone. */
+	/**
+	 * The same carriers the other way round, recognized at draw time by identity alone - and each
+	 * animated stand-in's own carrier, which is how a draw finds the frame that stand-in is on.
+	 */
 	private final Map<Model, Carried> carried = new IdentityHashMap<>();
 
-	/** Which scenery, at which quarter turn, a carrier stands for. */
+	/**
+	 * Which scenery, at which quarter turn, a carrier stands for, and for an animated one, the
+	 * stand-in's place in its animation.
+	 */
 	@Value
 	private static class Carried
 	{
 		RetroScenery scenery;
 		int quarterTurns;
+		AnimationController animation;
 	}
+
+	/**
+	 * What an animated scenery is posed from: its 2005 mesh unturned, since a clip's ops are in the
+	 * mesh's own space, and the clip and rig that move it.
+	 */
+	@Value
+	static class Posable
+	{
+		RetroMesh mesh;
+		RetroRig rig;
+		RetroClip clip;
+	}
+
+	private final Map<RetroScenery, Posable> posables = new EnumMap<>(RetroScenery.class);
+
+	private final RetroSkinner skinner = new RetroSkinner();
 
 	/**
 	 * Whether a scene object is one this hides: a restored object, placed the way its stand-in
@@ -178,6 +213,7 @@ public class RetroScenerySwapper implements RenderCallback
 	public void setBundle(RetroAssetBundle bundle)
 	{
 		replacements.clear();
+		posables.clear();
 		for (RetroScenery scenery : RetroScenery.values())
 		{
 			if (scenery.source != RetroScenery.Source.BUNDLE)
@@ -185,12 +221,24 @@ public class RetroScenerySwapper implements RenderCallback
 				continue;
 			}
 
-			RetroMesh mesh = bundle.getMesh(scenery.meshId);
+			RetroMesh mesh = mesh(bundle, scenery);
 			if (mesh == null)
 			{
-				log.debug("Bundle has no mesh {}; {} stays as it is", scenery.meshId, scenery);
 				continue;
 			}
+
+			if (scenery.isAnimated())
+			{
+				RetroClip clip = bundle.getClip(scenery.animationId);
+				RetroRig rig = clip == null ? null : bundle.getRig(clip.getRigId());
+				if (rig == null)
+				{
+					log.debug("Bundle has no clip {} to animate {}; it stays as it is", scenery.animationId, scenery);
+					continue;
+				}
+				posables.put(scenery, new Posable(mesh, rig, clip));
+			}
+
 			RetroModel[] turned = new RetroModel[QUARTER_TURNS];
 			for (int quarters = 0; quarters < QUARTER_TURNS; quarters++)
 			{
@@ -212,7 +260,7 @@ public class RetroScenerySwapper implements RenderCallback
 		Set<RetroScenery> next = EnumSet.noneOf(RetroScenery.class);
 		for (RetroScenery scenery : wanted)
 		{
-			if (isReady(scenery) && carrier(scenery, 0) != null)
+			if (isReady(scenery) && canCarry(scenery))
 			{
 				next.add(scenery);
 			}
@@ -299,12 +347,25 @@ public class RetroScenerySwapper implements RenderCallback
 		else
 		{
 			GameObject gameObject = (GameObject) object;
-			Model model = carrier(scenery, ObjectPlacement.orientation(gameObject.getConfig()));
-			if (model == null)
+			int quarterTurns = ObjectPlacement.orientation(gameObject.getConfig());
+			if (scenery.isAnimated())
 			{
-				return;
+				RetroGameObjectController controller = animatedStandIn(scenery, quarterTurns, gameObject);
+				if (controller == null)
+				{
+					return;
+				}
+				controllers.add(controller);
 			}
-			controllers.add(new RetroGameObjectController(gameObject, model));
+			else
+			{
+				Model model = carrier(scenery, quarterTurns);
+				if (model == null)
+				{
+					return;
+				}
+				controllers.add(new RetroGameObjectController(gameObject, model, null));
+			}
 		}
 
 		placed.put(object, new Placed(scenery, controllers));
@@ -322,10 +383,7 @@ public class RetroScenerySwapper implements RenderCallback
 		Placed removed = placed.remove(object);
 		if (removed != null)
 		{
-			for (RuneLiteObjectController controller : removed.getStandIns())
-			{
-				client.removeRuneLiteObject(controller);
-			}
+			remove(removed);
 		}
 	}
 
@@ -402,7 +460,37 @@ public class RetroScenerySwapper implements RenderCallback
 		}
 
 		RetroModel[] turned = replacements.get(carrier.getScenery());
-		return turned == null ? null : turned[carrier.getQuarterTurns()];
+		if (turned == null)
+		{
+			return null;
+		}
+
+		RetroModel model = turned[carrier.getQuarterTurns()];
+		Posable posable = posables.get(carrier.getScenery());
+		if (posable != null && carrier.getAnimation() != null)
+		{
+			pose(posable, carrier.getAnimation().getFrame(), carrier.getQuarterTurns(), model);
+		}
+		return model;
+	}
+
+	/**
+	 * Poses an animated scenery's 2005 mesh at one frame of its clip into a model of the same mesh,
+	 * then turns it to its placement. In that order: the clip moves the mesh in its own space, so
+	 * posing it already turned would send every translation and turn the wrong way.
+	 *
+	 * <p>Every stand-in of a scenery at one quarter turn shares the model it is posed into, which is
+	 * safe for the reason the NPCs' shared model is: each draw is uploaded before the next is posed.
+	 * The colours stay as lit at rest, as an NPC's do.
+	 */
+	void pose(Posable posable, int frame, int quarterTurns, RetroModel into)
+	{
+		RetroMesh mesh = posable.getMesh();
+		float[] x = into.getVerticesX();
+		float[] z = into.getVerticesZ();
+		skinner.pose(mesh, posable.getRig(), posable.getClip(), frame, x, into.getVerticesY(), z);
+		ObjectPlacement.turn(x, z, mesh.getVerticesCount(), quarterTurns);
+		into.calculateBoundsCylinder();
 	}
 
 	/**
@@ -516,6 +604,7 @@ public class RetroScenerySwapper implements RenderCallback
 		refresh(Collections.emptySet());
 		removeAll();
 		replacements.clear();
+		posables.clear();
 		carriers.clear();
 		carried.clear();
 	}
@@ -524,12 +613,25 @@ public class RetroScenerySwapper implements RenderCallback
 	{
 		for (Placed object : placed.values())
 		{
-			for (RuneLiteObjectController controller : object.getStandIns())
-			{
-				client.removeRuneLiteObject(controller);
-			}
+			remove(object);
 		}
 		placed.clear();
+	}
+
+	/**
+	 * Takes an object's stand-ins out of the scene, and forgets an animated one's carrier, which no
+	 * other stand-in shares.
+	 */
+	private void remove(Placed object)
+	{
+		for (RuneLiteObjectController controller : object.getStandIns())
+		{
+			client.removeRuneLiteObject(controller);
+			if (object.getScenery().isAnimated())
+			{
+				carried.remove(controller.getModel());
+			}
+		}
 	}
 
 	/**
@@ -605,6 +707,92 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
+	 * Whether a scenery's stand-ins will have a carrier. Asked of the model directly for an animated
+	 * one: each of its stand-ins loads its own, and a shared one made here would go unused.
+	 */
+	private boolean canCarry(RetroScenery scenery)
+	{
+		return scenery.isAnimated()
+			? client.loadModelData(scenery.meshId) != null
+			: carrier(scenery, 0) != null;
+	}
+
+	/**
+	 * A stand-in for one animated object, with a carrier of its own, so that drawing it finds this
+	 * object's frame. It starts at a random frame, as the client starts an animated object placed in
+	 * the map whose sequence loops - neighbouring cows do not chew in step.
+	 */
+	private RetroGameObjectController animatedStandIn(RetroScenery scenery, int quarterTurns, GameObject object)
+	{
+		ModelData data = client.loadModelData(scenery.meshId);
+		Animation sequence = client.loadAnimation(scenery.animationId);
+		if (data == null || sequence == null)
+		{
+			return null;
+		}
+
+		AnimationController animation = new AnimationController(client, sequence);
+		if (sequence.getFrameStep() != -1 && sequence.getNumFrames() > 0)
+		{
+			animation.setFrame(ThreadLocalRandom.current().nextInt(sequence.getNumFrames()));
+		}
+
+		Model carrier = data.light();
+		carried.put(carrier, new Carried(scenery, quarterTurns, animation));
+		return new RetroGameObjectController(object, carrier, animation);
+	}
+
+	/**
+	 * A scenery's 2005 mesh: its one part, or its parts merged the way the client merges a
+	 * definition's models, recoloured as its definition asks. Null when the bundle lacks a part.
+	 */
+	private static RetroMesh mesh(RetroAssetBundle bundle, RetroScenery scenery)
+	{
+		List<RetroMesh> parts = new ArrayList<>();
+		for (int meshId : scenery.getMeshIds())
+		{
+			RetroMesh part = bundle.getMesh(meshId);
+			if (part == null)
+			{
+				log.debug("Bundle has no mesh {}; {} stays as it is", meshId, scenery);
+				return null;
+			}
+			parts.add(part);
+		}
+		return recolor(RetroMeshMerger.merge(scenery.meshId, parts),
+			scenery.getRecolorFind(), scenery.getRecolorReplace());
+	}
+
+	/** A mesh with its face colours replaced pair by pair, sharing everything else with the original. */
+	static RetroMesh recolor(RetroMesh mesh, short[] find, short[] replace)
+	{
+		if (find.length == 0)
+		{
+			return mesh;
+		}
+
+		short[] colors = mesh.getFaceColors().clone();
+		for (int face = 0; face < colors.length; face++)
+		{
+			for (int pair = 0; pair < find.length; pair++)
+			{
+				if (colors[face] == find[pair])
+				{
+					colors[face] = replace[pair];
+					break;
+				}
+			}
+		}
+
+		return new RetroMesh(mesh.getId(), mesh.getPriority(), mesh.getVerticesX(), mesh.getVerticesY(),
+			mesh.getVerticesZ(), mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
+			colors, mesh.getFaceRenderTypes(), mesh.getFaceTransparencies(),
+			mesh.getFaceRenderPriorities(), mesh.getFaceTextures(),
+			mesh.getTextureCoords(), mesh.getTexIndices1(), mesh.getTexIndices2(), mesh.getTexIndices3(),
+			mesh.getVertexGroups());
+	}
+
+	/**
 	 * The live model a scenery's stand-ins at one quarter turn carry - lit afresh, so the instance is
 	 * that scenery's at that turn alone and is told apart at draw time from every other model, its
 	 * own live copy included.
@@ -638,7 +826,7 @@ public class RetroScenerySwapper implements RenderCallback
 			if (carrier != null)
 			{
 				turned[quarterTurns] = carrier;
-				carried.put(carrier, new Carried(scenery, quarterTurns));
+				carried.put(carrier, new Carried(scenery, quarterTurns, null));
 			}
 		}
 		return turned[quarterTurns];

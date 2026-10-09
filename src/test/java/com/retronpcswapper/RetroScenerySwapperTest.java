@@ -26,20 +26,39 @@ package com.retronpcswapper;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.google.inject.Guice;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import net.runelite.api.Animation;
+import net.runelite.api.Client;
 import net.runelite.api.Constants;
 import net.runelite.api.DecorativeObject;
+import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroAssetCodec;
+import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
+import com.retronpcswapper.inject.RetroMeshMerger;
+import com.retronpcswapper.inject.RetroModel;
+import com.retronpcswapper.inject.RetroRig;
+import com.retronpcswapper.inject.RetroSkinner;
 import net.runelite.api.GameObject;
+import net.runelite.api.Model;
 import net.runelite.api.ModelData;
+import net.runelite.api.RuneLiteObjectController;
+import net.runelite.api.WorldView;
 import net.runelite.api.gameval.ObjectID;
 import org.junit.Test;
 
@@ -282,6 +301,133 @@ public class RetroScenerySwapperTest
 		{
 			assertFalse("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
 		}
+	}
+
+	@Test
+	public void testTheDairyCowsAreHiddenWhileActive()
+	{
+		Set<RetroScenery> cows = EnumSet.of(RetroScenery.DAIRY_COW);
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.FAT_COW, config(10, 0)), cows));
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.FAT_COW, config(10, 3)), cows));
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.FAT_COW_FAWEST, config(10, 1)), cows));
+	}
+
+	/** Zanaris's cow is a toggle of its own scenery, so it goes with the dairy cows only when asked. */
+	@Test
+	public void testTheFairyDairyCowIsHiddenWhileActive()
+	{
+		assertTrue(RetroScenerySwapper.shouldHide(gameObject(ObjectID.FAIRY_FAT_COW, config(10, 0)),
+			EnumSet.of(RetroScenery.FAIRY_DAIRY_COW)));
+		assertFalse(RetroScenerySwapper.shouldHide(gameObject(ObjectID.FAIRY_FAT_COW, config(10, 0)),
+			EnumSet.of(RetroScenery.DAIRY_COW)));
+	}
+
+	/**
+	 * A clip moves a mesh in its own space, so an animated stand-in is posed and then turned to its
+	 * placement. Turned first, the chewing head would swing about the wrong axes.
+	 */
+	@Test
+	public void testAnAnimatedStandInIsPosedThenTurned() throws Exception
+	{
+		RetroAssetBundle bundle = shippedBundle();
+		RetroMesh cow = dairyCow(bundle);
+		RetroClip clip = bundle.getClip(RetroScenery.DAIRY_COW.animationId);
+		RetroRig rig = bundle.getRig(clip.getRigId());
+		RetroScenerySwapper.Posable posable = new RetroScenerySwapper.Posable(cow, rig, clip);
+
+		int quarterTurns = 1;
+		int frame = clip.getFrameCount() / 2;
+		RetroModel posed = RetroScenerySwapper.light(RetroScenerySwapper.rotate(cow, quarterTurns), RetroScenery.DAIRY_COW);
+		new RetroScenerySwapper().pose(posable, frame, quarterTurns, posed);
+
+		int n = cow.getVerticesCount();
+		float[] x = new float[n];
+		float[] y = new float[n];
+		float[] z = new float[n];
+		assertTrue(new RetroSkinner().pose(cow, rig, clip, frame, x, y, z));
+		ObjectPlacement.turn(x, z, n, quarterTurns);
+
+		RetroMesh turned = RetroScenerySwapper.rotate(cow, quarterTurns);
+		float[] wrongX = new float[n];
+		float[] wrongY = new float[n];
+		float[] wrongZ = new float[n];
+		new RetroSkinner().pose(turned, rig, clip, frame, wrongX, wrongY, wrongZ);
+
+		float fromRest = 0;
+		float fromWrong = 0;
+		for (int v = 0; v < n; v++)
+		{
+			assertEquals("x of vertex " + v, x[v], posed.getVerticesX()[v], 0.001f);
+			assertEquals("y of vertex " + v, y[v], posed.getVerticesY()[v], 0.001f);
+			assertEquals("z of vertex " + v, z[v], posed.getVerticesZ()[v], 0.001f);
+			fromRest = Math.max(fromRest, Math.abs(posed.getVerticesY()[v] - turned.getVerticesY()[v]));
+			fromWrong = Math.max(fromWrong, Math.abs(posed.getVerticesX()[v] - wrongX[v])
+				+ Math.abs(posed.getVerticesZ()[v] - wrongZ[v]));
+		}
+		assertTrue("frame " + frame + " moves nothing", fromRest > 1);
+		assertTrue("turning before posing made no difference", fromWrong > 1);
+	}
+
+	/**
+	 * Each dairy cow carries a model of its own, so that drawing it finds its own frame, and the
+	 * swapper forgets it once the cow is gone.
+	 */
+	@Test
+	public void testEachDairyCowHasItsOwnCarrier() throws Exception
+	{
+		Client client = mock(Client.class);
+		ModelData data = mock(ModelData.class);
+		when(data.light()).thenAnswer(invocation -> mock(Model.class));
+		when(client.loadModelData(RetroScenery.DAIRY_COW.meshId)).thenReturn(data);
+		Animation chewing = mock(Animation.class);
+		when(chewing.getNumFrames()).thenReturn(61);
+		when(chewing.getFrameStep()).thenReturn(61);
+		when(client.loadAnimation(RetroScenery.DAIRY_COW.animationId)).thenReturn(chewing);
+
+		RetroScenerySwapper swapper = Guice.createInjector(binder -> binder.bind(Client.class).toInstance(client))
+			.getInstance(RetroScenerySwapper.class);
+		swapper.setBundle(shippedBundle());
+		swapper.refresh(EnumSet.of(RetroScenery.DAIRY_COW));
+
+		WorldView worldView = mock(WorldView.class);
+		GameObject first = gameObject(ObjectID.FAT_COW, config(10, 0));
+		GameObject second = gameObject(ObjectID.FAT_COW, config(10, 0));
+		when(first.getWorldView()).thenReturn(worldView);
+		when(second.getWorldView()).thenReturn(worldView);
+		swapper.onSpawned(first);
+		swapper.onSpawned(second);
+
+		List<RuneLiteObjectController> firstStandIns = swapper.getStandIns(first);
+		List<RuneLiteObjectController> secondStandIns = swapper.getStandIns(second);
+		assertEquals(1, firstStandIns.size());
+		assertEquals(1, secondStandIns.size());
+		Model firstCarrier = firstStandIns.get(0).getModel();
+		Model secondCarrier = secondStandIns.get(0).getModel();
+		assertNotSame(firstCarrier, secondCarrier);
+
+		// Both draw the 2005 cow, posed into the one model their quarter turn shares
+		Model drawn = swapper.substitute(firstCarrier);
+		assertNotNull(drawn);
+		assertSame(drawn, swapper.substitute(secondCarrier));
+
+		swapper.onDespawned(first);
+		assertNull(swapper.substitute(firstCarrier));
+		assertNotNull(swapper.substitute(secondCarrier));
+	}
+
+	private static RetroAssetBundle shippedBundle() throws Exception
+	{
+		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))
+		{
+			return RetroAssetCodec.read(in);
+		}
+	}
+
+	private static RetroMesh dairyCow(RetroAssetBundle bundle)
+	{
+		return RetroScenerySwapper.recolor(
+			RetroMeshMerger.merge(8237, Arrays.asList(bundle.getMesh(8237), bundle.getMesh(8239))),
+			RetroScenery.DAIRY_COW.getRecolorFind(), RetroScenery.DAIRY_COW.getRecolorReplace());
 	}
 
 	/** The later wells on the same live mesh never had a 2005 look and are not restored. */

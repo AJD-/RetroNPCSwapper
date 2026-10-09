@@ -488,4 +488,16 @@ public interface RetroNpcConfig extends Config
 	{
 		return true;
 	}
+
+	@ConfigItem(
+		keyName = "swapDairyCows",
+		name = "Dairy cows",
+		description = "Restore the late-2005 dairy cow, chewing, with its stool and bucket. Early 2005 had none - cows were milked where they grazed.",
+		section = scenerySection,
+		position = 6
+	)
+	default boolean swapDairyCows()
+	{
+		return true;
+	}
 }

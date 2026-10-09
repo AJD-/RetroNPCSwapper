@@ -198,7 +198,7 @@ public class RetroFrameDecoderTest
 		return worst;
 	}
 
-	private static FrameDefinition loadLiveFrame(Store store, int packed) throws Exception
+	static FrameDefinition loadLiveFrame(Store store, int packed) throws Exception
 	{
 		byte[] frameData = RetroAssetGenerator.loadFile(store, IndexType.ANIMATIONS, packed >> 16, packed & 0xFFFF);
 		if (frameData == null || frameData.length < 2)
@@ -217,7 +217,7 @@ public class RetroFrameDecoderTest
 		return new FrameLoader().load(framemap, packed & 0xFFFF, frameData);
 	}
 
-	private static Map<Integer, RetroSeqDefinition> decode2005Sequences(RetroCacheReader retro)
+	static Map<Integer, RetroSeqDefinition> decode2005Sequences(RetroCacheReader retro)
 	{
 		Map<String, byte[]> config = retro.readArchive(retro.readFile(0, 2));
 		byte[] seqDat = config.get(String.valueOf(RetroCacheReader.hashFileName("seq.dat")));

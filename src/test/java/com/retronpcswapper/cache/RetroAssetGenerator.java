@@ -82,6 +82,14 @@ public class RetroAssetGenerator
 	private static final String RETRO_DIR_PROPERTY = "retronpcswapper.retroDir";
 	private static final String RETRO_CACHE_DIR = "retrocache/2005cache";
 
+	/**
+	 * The November 2005 cache (build 346), for what February 2005 never had. Only specs asking for
+	 * {@link Source#RETRO_NOV} read it: that build re-authored the human and cow rigs, so pointing
+	 * the whole run at it would change every other entry.
+	 */
+	private static final String RETRO_NOV_DIR_PROPERTY = "retronpcswapper.retroNovDir";
+	private static final String RETRO_NOV_CACHE_DIR = "retrocache/nov2005cache";
+
 	/** Index 1 of the RS2 cache holds models. */
 	private static final int RETRO_MODEL_INDEX = 1;
 
@@ -309,13 +317,22 @@ public class RetroAssetGenerator
 		new Spec("Oak tree", Source.RETRO, Source.RETRO, new int[]{1571}, new int[]{}),
 		// Scenery: the picnic bench, object 611. Model id 1453 now holds a rebuilt 160-vertex bench
 		// (4% vertex overlap); the 2005 one is nowhere else in the live cache. Texture 22 is unchanged
-		new Spec("Picnic bench", Source.RETRO, Source.RETRO, new int[]{1453}, new int[]{})
+		new Spec("Picnic bench", Source.RETRO, Source.RETRO, new int[]{1453}, new int[]{}),
+		// Scenery, and the first entry from the November 2005 cache: February 2005 has no dairy cow -
+		// its cows were milked as NPCs. Object 8689 there is the body 8237, gone from the live cache,
+		// and the stool and bucket 8239, unchanged live but taken from the same cache anyway, chewing
+		// on sequence 2303. The live 2303 is that clip: DairyCowFramesTest finds every frame's values
+		// identical, and the only part of the 2005 mesh the live rig moves differently is three body
+		// vertices it lifts by one unit
+		new Spec("Dairy cow", Source.RETRO_NOV, Source.LIVE, new int[]{8237, 8239}, new int[]{2303})
 	);
 
 	private enum Source
 	{
 		LIVE,
-		RETRO
+		RETRO,
+		/** The November 2005 cache. Meshes only, so far. */
+		RETRO_NOV
 	}
 
 	public static void main(String[] args) throws IOException
@@ -338,20 +355,32 @@ public class RetroAssetGenerator
 			return;
 		}
 
+		File retroNovDir = resolveRetroNovCacheDir();
+		RetroCacheReader retroNov = new RetroCacheReader(retroNovDir);
+		if (!retroNov.init())
+		{
+			retro.close();
+			System.err.println("Could not read the November 2005 cache at " + retroNovDir.getAbsolutePath()
+				+ " - extract the cache/ folder of the b346 OpenRS2 zip there, or pass one with -PretroNovDir=<path>.");
+			System.exit(1);
+			return;
+		}
+
 		try (Store store = new Store(liveDir))
 		{
 			store.load();
 
-			RetroAssetBundle bundle = build(store, retro);
+			RetroAssetBundle bundle = build(store, retro, retroNov);
 			write(bundle);
 		}
 		finally
 		{
 			retro.close();
+			retroNov.close();
 		}
 	}
 
-	static RetroAssetBundle build(Store store, RetroCacheReader retro) throws IOException
+	static RetroAssetBundle build(Store store, RetroCacheReader retro, RetroCacheReader retroNov) throws IOException
 	{
 		Map<Integer, RetroMesh> meshes = new LinkedHashMap<>();
 		Map<Integer, RetroRig> rigs = new LinkedHashMap<>();
@@ -393,9 +422,18 @@ public class RetroAssetGenerator
 					continue;
 				}
 
-				ModelDefinition part = spec.source == Source.RETRO
-					? decodeRetroModel(retro, modelId)
-					: decodeLiveModel(store, modelId);
+				ModelDefinition part;
+				switch (spec.source)
+				{
+					case RETRO:
+						part = decodeRetroModel(retro, modelId);
+						break;
+					case RETRO_NOV:
+						part = decodeRetroModel(retroNov, modelId);
+						break;
+					default:
+						part = decodeLiveModel(store, modelId);
+				}
 
 				if (part == null)
 				{
@@ -1290,6 +1328,14 @@ public class RetroAssetGenerator
 		String configured = System.getProperty(RETRO_DIR_PROPERTY);
 		return configured == null || configured.isEmpty()
 			? new File(RETRO_CACHE_DIR)
+			: new File(configured);
+	}
+
+	private static File resolveRetroNovCacheDir()
+	{
+		String configured = System.getProperty(RETRO_NOV_DIR_PROPERTY);
+		return configured == null || configured.isEmpty()
+			? new File(RETRO_NOV_CACHE_DIR)
 			: new File(configured);
 	}
 
