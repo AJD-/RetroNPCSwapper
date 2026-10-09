@@ -140,6 +140,10 @@ public class RetroClipReachTest
 		{58, 3341, 3342}, {59, 3341, 3342}, {60, 3341, 3342},
 		{61, 3341, 3342}, {62, 3341, 3342},
 		{58, 5237}, {59, 5237}, {60, 5237}, {61, 5237}, {62, 5237},
+		// The November 2005 dairy cow, body and stool, on the live chewing clip that is still its
+		// own (DairyCowFramesTest). It reaches 95%: the 90 ops that miss are the ones the live rig
+		// added after 2005, on groups 41-44, which the 2005 mesh never had
+		{2303, 8237, 8239},
 		// The large scorpion, keyed by the modern SCORPION_UPDATE sequences its 2005 frames
 		// (244-248) were bundled under
 		{6252, 2967}, {6253, 2967}, {6254, 2967}, {6255, 2967}, {6256, 2967},

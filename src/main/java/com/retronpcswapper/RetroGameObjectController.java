@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper;
 
+import net.runelite.api.AnimationController;
 import net.runelite.api.GameObject;
 import net.runelite.api.Model;
 import net.runelite.api.RuneLiteObjectController;
@@ -42,13 +43,19 @@ class RetroGameObjectController extends RuneLiteObjectController
 
 	private final Model carrier;
 
+	/** Where an animated object's stand-in is in its 2005 animation; null for one that stands still. */
+	private final AnimationController animation;
+
 	/**
-	 * @param carrier the carrier for the object's quarter turns - the model comes already turned, as
-	 *                the client turns it before lighting it
+	 * @param carrier   the carrier for the object's quarter turns - the model comes already turned, as
+	 *                  the client turns it before lighting it
+	 * @param animation for an animated object, its place in the animation, which only advances here:
+	 *                  the 2005 geometry is posed for its frame where it is swapped onto the carrier
 	 */
-	RetroGameObjectController(GameObject object, Model carrier)
+	RetroGameObjectController(GameObject object, Model carrier, AnimationController animation)
 	{
 		this.carrier = carrier;
+		this.animation = animation;
 
 		// The object's own coordinates are the center of its footprint, where the client draws it
 		setLocation(new LocalPoint(object.getX(), object.getY(), object.getWorldView()), object.getPlane());
@@ -61,6 +68,15 @@ class RetroGameObjectController extends RuneLiteObjectController
 	public Model getModel()
 	{
 		return carrier;
+	}
+
+	@Override
+	public void tick(int ticksSinceLastFrame)
+	{
+		if (animation != null)
+		{
+			animation.tick(ticksSinceLastFrame);
+		}
 	}
 
 	/**

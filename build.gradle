@@ -218,7 +218,8 @@ tasks.register('verifyRetroRigs', JavaExec) {
 
 // Builds the shipped asset bundle: injected geometry plus the rigs and clips that animate it.
 // Meshes and clips each come from whichever cache still holds a usable copy - see SPECS in
-// RetroAssetGenerator. Only the skeleton and the giant family stay on live clips.
+// RetroAssetGenerator. Only the skeleton and the giant family stay on live clips. The dairy cow
+// comes from the November 2005 cache, extracted to retrocache/nov2005cache (or -PretroNovDir).
 //   ./gradlew generateRetroAssets
 tasks.register('generateRetroAssets', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
@@ -230,6 +231,9 @@ tasks.register('generateRetroAssets', JavaExec) {
 	}
 	if (project.hasProperty('retroDir')) {
 		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
+	}
+	if (project.hasProperty('retroNovDir')) {
+		systemProperty 'retronpcswapper.retroNovDir', project.property('retroNovDir')
 	}
 }
 

@@ -29,6 +29,7 @@ import java.util.Map;
 import net.runelite.api.DecorativeObject;
 import net.runelite.api.GameObject;
 import net.runelite.api.TileObject;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.ObjectID;
 
 /**
@@ -100,10 +101,23 @@ enum RetroScenery
 
 	/**
 	 * 2005 def 611, mesh 1453. The live id holds a rebuilt bench (4% vertex overlap). Port
-	 * Sarim's untinted copy follows; the recoloured garden, Pirate's Treasure, Falador and Clan
+	 * Sarim's untinted copy follows; the recolored garden, Pirate's Treasure, Falador and Clan
 	 * Wars copies are left alone, as the later wells are.
 	 */
-	PICNIC_BENCH(Placement.GAME_OBJECT, 1453, 0, 0, ObjectID.PICNICBENCH, ObjectID.SARIM_PICNICBENCH);
+	PICNIC_BENCH(Placement.GAME_OBJECT, 1453, 0, 0, ObjectID.PICNICBENCH, ObjectID.SARIM_PICNICBENCH),
+
+	/**
+	 * The November 2005 cache's def 8689: body 8237 and the stool and bucket 8239
+	 */
+	DAIRY_COW(Source.BUNDLE, Placement.GAME_OBJECT, new int[]{8237, 8239}, 20, 20, AnimationID.COW_CHEWS_GRASS,
+		new short[]{26, 30}, new short[]{142, 142}, ObjectID.FAT_COW, ObjectID.FAT_COW_FAWEST),
+
+	/**
+	 * Zanaris's dairy cow, which came after 2005 and is {@link #DAIRY_COW} wearing a recolor of its
+	 * own.
+	 */
+	FAIRY_DAIRY_COW(Source.BUNDLE, Placement.GAME_OBJECT, new int[]{8237, 8239}, 20, 20, AnimationID.COW_CHEWS_GRASS,
+		new short[]{26, 30, 7566}, new short[]{142, 142, 142}, ObjectID.FAIRY_FAT_COW);
 
 	/** Where the 2005 mesh comes from. */
 	enum Source
@@ -144,12 +158,25 @@ enum RetroScenery
 	final Source source;
 	final Placement placement;
 
-	/** The 2005 model id, which the bundle or the live cache - as {@link #source} says - holds the mesh under. */
+	/**
+	 * The 2005 model id, which the bundle or the live cache - as {@link #source} says - holds the mesh
+	 * under. For a scenery of several parts, the first, which the stand-in's carrier is loaded at.
+	 */
 	final int meshId;
+
+	/** Every part of the 2005 model, merged into one in this order. */
+	private final int[] meshIds;
 
 	/** The 2005 definition's lighting adjustments, on top of the client's base. */
 	final int ambient;
 	final int contrast;
+
+	/** The sequence the 2005 definition loops (opcode 24), or -1 for a scenery that stands still. */
+	final int animationId;
+
+	/** The 2005 definition's recolour pairs (opcode 40), as parallel arrays, applied before lighting. */
+	private final short[] recolorFind;
+	private final short[] recolorReplace;
 
 	private final int[] objectIds;
 
@@ -160,12 +187,56 @@ enum RetroScenery
 
 	RetroScenery(Source source, Placement placement, int meshId, int ambient, int contrast, int... objectIds)
 	{
+		this(source, placement, new int[]{meshId}, ambient, contrast, -1, new short[0], new short[0], objectIds);
+	}
+
+	RetroScenery(Source source, Placement placement, int[] meshIds, int ambient, int contrast, int animationId,
+		short[] recolorFind, short[] recolorReplace, int... objectIds)
+	{
+		if (source == Source.LIVE_CACHE && meshIds.length != 1)
+		{
+			throw new IllegalArgumentException("A live cache scenery is drawn from one model");
+		}
+		if (animationId != -1 && placement != Placement.GAME_OBJECT)
+		{
+			throw new IllegalArgumentException("Only a game object's stand-in animates");
+		}
+		if (recolorFind.length != recolorReplace.length)
+		{
+			throw new IllegalArgumentException(recolorFind.length + " colours to find for " + recolorReplace.length + " replacements");
+		}
+
 		this.source = source;
 		this.placement = placement;
-		this.meshId = meshId;
+		this.meshId = meshIds[0];
+		this.meshIds = meshIds;
 		this.ambient = ambient;
 		this.contrast = contrast;
+		this.animationId = animationId;
+		this.recolorFind = recolorFind;
+		this.recolorReplace = recolorReplace;
 		this.objectIds = objectIds;
+	}
+
+	/** Whether the stand-in plays {@link #animationId}, posed on every draw. */
+	boolean isAnimated()
+	{
+		return animationId != -1;
+	}
+
+	int[] getMeshIds()
+	{
+		return meshIds.clone();
+	}
+
+	short[] getRecolorFind()
+	{
+		return recolorFind.clone();
+	}
+
+	short[] getRecolorReplace()
+	{
+		return recolorReplace.clone();
 	}
 
 	/**

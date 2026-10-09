@@ -943,6 +943,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			wanted.add(RetroScenery.PICNIC_BENCH);
 		}
+		if (config.swapDairyCows())
+		{
+			wanted.add(RetroScenery.DAIRY_COW);
+			wanted.add(RetroScenery.FAIRY_DAIRY_COW);
+		}
 		return wanted;
 	}
 

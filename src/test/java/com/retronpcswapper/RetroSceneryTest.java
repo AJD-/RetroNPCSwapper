@@ -25,15 +25,17 @@
 package com.retronpcswapper;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroAssetCodec;
+import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroMesh;
+import com.retronpcswapper.inject.RetroMeshMerger;
 import com.retronpcswapper.inject.RetroModel;
 import java.io.InputStream;
+import java.util.Arrays;
 import net.runelite.api.gameval.ObjectID;
 import org.junit.Test;
 
@@ -41,17 +43,14 @@ public class RetroSceneryTest
 {
 	/**
 	 * A scenery whose mesh is missing from the bundle stays live in silence, so the shipped bundle
-	 * is checked for every one - and for the mesh being static, since a stand-in never animates.
+	 * is checked for every part of every one. A static scenery's parts must be unrigged, so nothing
+	 * could ever move them; an animated one's must be rigged, and its clip and the rig the clip
+	 * names carried with it.
 	 */
 	@Test
 	public void testTheShippedBundleCarriesEveryScenerysMesh() throws Exception
 	{
-		RetroAssetBundle bundle;
-		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))
-		{
-			assertNotNull("retro-assets.dat is missing - run ./gradlew generateRetroAssets", in);
-			bundle = RetroAssetCodec.read(in);
-		}
+		RetroAssetBundle bundle = shippedBundle();
 
 		for (RetroScenery scenery : RetroScenery.values())
 		{
@@ -60,9 +59,79 @@ public class RetroSceneryTest
 				continue;
 			}
 
-			RetroMesh mesh = bundle.getMesh(scenery.meshId);
-			assertNotNull(scenery + " mesh " + scenery.meshId + " is not in the bundle", mesh);
-			assertFalse(scenery + " mesh " + scenery.meshId + " is rigged", mesh.isRigged());
+			for (int meshId : scenery.getMeshIds())
+			{
+				RetroMesh mesh = bundle.getMesh(meshId);
+				assertNotNull(scenery + " mesh " + meshId + " is not in the bundle", mesh);
+				assertEquals(scenery + " mesh " + meshId + " rigged", scenery.isAnimated(), mesh.isRigged());
+			}
+
+			if (scenery.isAnimated())
+			{
+				RetroClip clip = bundle.getClip(scenery.animationId);
+				assertNotNull(scenery + " clip " + scenery.animationId + " is not in the bundle", clip);
+				assertNotNull(scenery + " rig " + clip.getRigId() + " is not in the bundle", bundle.getRig(clip.getRigId()));
+			}
+		}
+	}
+
+	/**
+	 * The November 2005 dairy cow: body and stool joined as the client joins a definition's models,
+	 * welded where they touch, and its two dark greys recoloured as the definition asks - so neither
+	 * is left anywhere on it.
+	 */
+	@Test
+	public void testTheDairyCowIsTheNovember2005Mesh() throws Exception
+	{
+		RetroAssetBundle bundle = shippedBundle();
+		RetroMesh body = bundle.getMesh(8237);
+		RetroMesh stool = bundle.getMesh(8239);
+		assertEquals(243, body.getVerticesCount());
+		assertEquals(450, body.getFaceCount());
+		assertEquals(42, stool.getVerticesCount());
+		assertEquals(54, stool.getFaceCount());
+
+		RetroMesh cow = RetroScenerySwapper.recolor(
+			RetroMeshMerger.merge(8237, Arrays.asList(body, stool)),
+			RetroScenery.DAIRY_COW.getRecolorFind(), RetroScenery.DAIRY_COW.getRecolorReplace());
+		assertEquals(504, cow.getFaceCount());
+
+		int recoloured = 0;
+		for (short color : cow.getFaceColors())
+		{
+			assertTrue("colour " + color + " survived the recolour", color != 26 && color != 30);
+			if (color == 142)
+			{
+				recoloured++;
+			}
+		}
+		assertTrue("nothing was recoloured", recoloured > 0);
+
+		// Zanaris's cow carries its own pairs over too, of which only the feet's brown lands
+		RetroMesh fairy = RetroScenerySwapper.recolor(
+			RetroMeshMerger.merge(8237, Arrays.asList(body, stool)),
+			RetroScenery.FAIRY_DAIRY_COW.getRecolorFind(), RetroScenery.FAIRY_DAIRY_COW.getRecolorReplace());
+		int changed = 0;
+		for (int face = 0; face < cow.getFaceCount(); face++)
+		{
+			short plain = cow.getFaceColors()[face];
+			short dark = fairy.getFaceColors()[face];
+			if (plain != dark)
+			{
+				assertEquals("only the brown changes", 7566, plain);
+				assertEquals(142, dark);
+				changed++;
+			}
+		}
+		assertEquals("the feet's faces", 40, changed);
+	}
+
+	private static RetroAssetBundle shippedBundle() throws Exception
+	{
+		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))
+		{
+			assertNotNull("retro-assets.dat is missing - run ./gradlew generateRetroAssets", in);
+			return RetroAssetCodec.read(in);
 		}
 	}
 

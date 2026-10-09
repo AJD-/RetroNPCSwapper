@@ -36,12 +36,12 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 
 Under **Scenery**, each restored to its 2005 model:
 
-- **Mystical wall charts** — the pre-2006 pentagram in place of the Magical symbol
-- **Wells** — the 2005 well, in place of the rebuilt one and Varrock's 2007 replacement
-- **Wardrobes** — the 2005 Draynor Manor wardrobe, closed, open and with the skeleton inside
-- **Trees** — the 2005 oak and magic trees. The magic tree's 2005 model is still in the live cache,
-  unused, and is drawn from there
-- **Picnic benches** — the 2005 picnic bench
+- **Mystical wall charts**
+- **Wells**
+- **Wardrobes**
+- **Trees** — oak and magic trees
+- **Picnic benches**
+- **Dairy cows**
 
 ![config](img/retronpcswapperconfig.png)
 
@@ -64,7 +64,7 @@ geometry, the animation, or both have to come from the 2005 data instead of the 
 
 Scenery stand-ins draw over the live object, which stays in the scene: its clickbox and menu
 options are the live ones. Scenery is lit with its 2005 values, so it can read a shade darker than
-the live objects around it. The Dairy Cow and Varrock retextures are not supported.
+the live objects around it. The Varrock retextures are not supported.
 
 <details>
 <summary>How it works</summary>
@@ -96,7 +96,8 @@ the live objects around it. The Dairy Cow and Varrock retextures are not support
 - **The injected categories ship their assets.** Dragons, demons, imps, guards, elves, cows,
   scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
   live cache, so `retro-assets.dat` (~100 KB) is bundled in the jar and carries their meshes, rigs and animation
-  clips, extracted from the February 2005 cache. This is the one thing the plugin distributes rather
+  clips, extracted from the February 2005 cache (the dairy cow, which that cache lacks, from a
+  November 2005 one). This is the one thing the plugin distributes rather
   than reads from your own installation, which is why the NPCs are all gated behind a single toggle
   you can switch off. Parts are stored individually and joined at spawn, so the body the whole giant
   family shares is carried once. The scenery meshes come from the same bundle and are switched by
@@ -104,7 +105,8 @@ the live objects around it. The Dairy Cow and Varrock retextures are not support
 - **Scenery is drawn by a stand-in.** Static scenery is baked into the renderer's geometry when the
   scene loads and never passes through a per-frame draw, so the plugin asks the renderer to leave
   the live object out and places a stand-in object in its spot, which the draw callback dresses in
-  the 2005 model.
+  the 2005 model. The dairy cow animates, so its stand-in also keeps its own frame of the 2005
+  animation and the 2005 model is posed for it on every draw.
 - Safety settings (on by default) disable all swapping on PvP worlds and in the Wilderness.
 
 There is currently no sanctioned RuneLite API for overriding NPC models, which is why the plugin
@@ -149,7 +151,12 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
 - `./gradlew generateRetroAssets` rebuilds `retro-assets.dat` from the local 2005 cache. It
   bundles the meshes the live cache no longer has, the rigs those meshes are skinned to, and the
   2005 animation clips, resampled onto the live sequences' frame counts so the frame index the
-  client drives still lines up.
+  client drives still lines up. It needs the [Feburary 2005 cache](https://archive.openrs2.org/caches/runescape/2572)
+  and the [November 2005 cache]( https://archive.openrs2.org/caches/runescape/2672) (build 346),
+  which the dairy cow comes from: extract the `cache/` folder of its zip to
+  `retrocache/nov2005cache`, or point `-PretroNovDir=<path>` at it. Only the entries that ask for
+  it read it — that build re-authored the human and cow rigs, so don't point `-PretroDir` at it to
+  regenerate everything else.
 - `./gradlew verifyRetroRigs` measures *reach* — the share of a clip's transform ops that land on
   vertex groups the mesh actually has. A rig authored for a different mesh scores 47-68%, against
   96-100% for a mesh animated by its own rig. This is what separates "the sequence ID survived" from
