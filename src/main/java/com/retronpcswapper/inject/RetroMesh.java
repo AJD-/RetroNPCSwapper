@@ -96,8 +96,8 @@ public final class RetroMesh
 	/**
 	 * Vertex indices per transform group, the unpacked form of the model's per-vertex labels. An
 	 * empty slot is a group nothing is bound to.
-	 *
-	 * <p>The accessor hands back the whole table, for callers building a derived mesh. Shared by
+	 * <p>
+	 * The accessor hands back the whole table, for callers building a derived mesh. Shared by
 	 * reference - a derived mesh rigs identically to the one it came from.
 	 */
 	private final int[][] vertexGroups;

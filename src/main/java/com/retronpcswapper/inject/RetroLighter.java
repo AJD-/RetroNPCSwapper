@@ -28,8 +28,8 @@ import net.runelite.api.ModelData;
 
 /**
  * Turns unlit HSL face colors into the per-corner lit colors the renderer draws.
- *
- * <p>Needed because {@link ModelData#light()} only works on a model the client itself decoded, and
+ * <p>
+ * Needed because {@link ModelData#light()} only works on a model the client itself decoded, and
  * injected geometry by definition is not one. Lighting is baked once, at rest pose, exactly as the
  * client does it - animation moves vertices afterward and the colors are not recomputed.
  *

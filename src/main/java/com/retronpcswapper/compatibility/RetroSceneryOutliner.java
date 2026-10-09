@@ -38,14 +38,14 @@ import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 
 /**
  * Outlines the 2005 scenery drawn in a live object's place.
- *
- * <p>{@link ModelOutlineRenderer}'s {@code TileObject} overload reads the object's own renderable,
+ * <p>
+ * {@link ModelOutlineRenderer}'s {@code TileObject} overload reads the object's own renderable,
  * which for restored scenery is the live model the renderer has been told to leave out. The object
  * is drawn by a stand-in instead, so the outline is drawn around that: the stand-in's position and
  * turn, carrying the model it shows, through the {@link RuneLiteObject} overload - the same door
  * {@link RetroNpcOutliner} uses.
- *
- * <p>The scratch object is never activated. It is a model carrier handed straight to the outline
+ * <p>
+ * The scratch object is never activated. It is a model carrier handed straight to the outline
  * renderer, never registered with the client, so it adds nothing to the scene.
  */
 @Singleton

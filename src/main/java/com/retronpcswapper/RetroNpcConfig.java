@@ -432,7 +432,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "swapMysticalWallCharts",
 		name = "Mystical wall charts",
-		description = "Restore the pre-2006 pentagram wall charts in place of the Magical symbols that replaced them.",
+		description = "Restore the pre-2006 pentagram wall charts in place of Magical symbols.",
 		section = scenerySection,
 		position = 1
 	)
@@ -444,7 +444,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "swapWells",
 		name = "Wells",
-		description = "Restore the 2005 well in place of the rebuilt one that replaced it.",
+		description = "Restore the 2005 wells.",
 		section = scenerySection,
 		position = 2
 	)
@@ -456,7 +456,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "swapWardrobes",
 		name = "Wardrobes",
-		description = "Restore the 2005 Draynor Manor wardrobes - closed, open, and with the skeleton inside.",
+		description = "Restore the 2005 Draynor Manor wardrobes.",
 		section = scenerySection,
 		position = 3
 	)
@@ -492,7 +492,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "swapDairyCows",
 		name = "Dairy cows",
-		description = "Restore the late-2005 dairy cow, chewing, with its stool and bucket. Early 2005 had none - cows were milked where they grazed.",
+		description = "Restore the 2005 dairy cow.",
 		section = scenerySection,
 		position = 6
 	)

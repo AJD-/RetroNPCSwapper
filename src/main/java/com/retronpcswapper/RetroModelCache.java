@@ -83,13 +83,13 @@ public class RetroModelCache
 
 	/**
 	 * Whether to build and draw NPCs from the bundle rather than from the live cache.
-	 *
-	 * <p>Load-bearing rather than diagnostic. {@link #ensureBuilt} consults this before taking the
+	 * <p>
+	 * Load-bearing rather than diagnostic. {@link #ensureBuilt} consults this before taking the
 	 * injected path at all, so the categories with no usable asset left at their live model ids -
 	 * see {@link RetroNpcMapping#requiresInjectedGeometry} - do not render with it off.
 	 * That is what the user-facing "Use Converted 2005 Assets" toggle drives.
-	 *
-	 * <p>It also routes cache-backed geometry through {@link RetroModel} on the way to the
+	 * <p>
+	 * It also routes cache-backed geometry through {@link RetroModel} on the way to the
 	 * renderer, which is a faithful copy and so a no-op on screen. That half started as the
 	 * diagnostic that separated "can the renderer accept geometry we own" from "is our geometry
 	 * correct"; it is kept because the copy is what proves the first of those still holds.

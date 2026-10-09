@@ -51,14 +51,14 @@ import net.runelite.client.util.ColorUtil;
  * Draws Interact Highlight's NPC and object outlines, so that a swapped NPC or restored piece of
  * scenery is outlined around the retro model on screen rather than the vanilla one the API still
  * reports.
- *
- * <p>Registered only while {@link InteractHighlightCompat} has that plugin's own NPC and object
+ * <p>
+ * Registered only while {@link InteractHighlightCompat} has that plugin's own NPC and object
  * outlines suppressed, so the two never draw at once. Every color, border width and feather value is
  * read from {@link InteractHighlightConfig}, so the result is that plugin's appearance and settings,
  * not a second set of them. NPCs and objects this plugin does not swap take the ordinary path and
  * look unchanged.
- *
- * <p>The hover and target logic is Interact Highlight's, reproduced because its own is package
+ * <p>
+ * The hover and target logic is Interact Highlight's, reproduced because its own is package
  * private. Only the NPC and object halves are here; that plugin still draws ground items and
  * players.
  */

@@ -31,8 +31,8 @@ import java.util.Map;
 /**
  * Everything needed to draw and animate injected geometry: meshes, the rigs they are bound to, and
  * the clips that drive them.
- *
- * <p>Keyed by the ids the source caches use - model id, framemap id, sequence id - so a bundle can
+ * <p>
+ * Keyed by the ids the source caches use - model id, framemap id, sequence id - so a bundle can
  * be read against the same identifiers the rest of the plugin already speaks, and regenerating it
  * produces stable keys.
  */

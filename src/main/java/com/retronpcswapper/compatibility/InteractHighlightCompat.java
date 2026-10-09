@@ -38,16 +38,16 @@ import net.runelite.client.plugins.interacthighlight.InteractHighlightPlugin;
 
 /**
  * Turns off Interact Highlight's own NPC and object outlines while this plugin draws them instead.
- *
- * <p>An outline has to be suppressed rather than painted over: the outline renderer writes straight
+ * <p>
+ * An outline has to be suppressed rather than painted over: the outline renderer writes straight
  * into the frame buffer, so a second overlay drawing later only adds a second outline. Interact
  * Highlight's overlay is package private and cannot be filtered or subclassed, but its config
  * interface is public, and it reads that config on every frame - so clearing the NPC and object
  * keys stops it drawing those on the next frame while it goes on drawing ground items and players
  * with its own code. Objects are taken over for the scenery this plugin restores, which Interact
  * Highlight would otherwise outline around the live model it no longer draws.
- *
- * <p>The previous values are stashed in this plugin's own config group, not held in memory, so a
+ * <p>
+ * The previous values are stashed in this plugin's own config group, not held in memory, so a
  * client that dies while suppressing is repaired on the next startup rather than leaving the user's
  * Interact Highlight settings off for good.
  */
@@ -291,8 +291,8 @@ public class InteractHighlightCompat
 
 	/**
 	 * Drops the in-memory suppression state without writing anything.
-	 *
-	 * <p>For a profile switch: the config that was suppressed belongs to the profile we just left
+	 * <p>
+	 * For a profile switch: the config that was suppressed belongs to the profile we just left
 	 * and is no longer addressable, so writing a restore now would push the old profile's values
 	 * into the new one. The stash left behind there is repaired by {@link #restoreStaleStash()} the
 	 * next time that profile is active.

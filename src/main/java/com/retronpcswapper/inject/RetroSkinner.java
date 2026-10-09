@@ -28,13 +28,13 @@ import net.runelite.api.Perspective;
 
 /**
  * Poses a {@link RetroMesh} for one animation frame.
- *
- * <p>Exists because {@code Client#applyTransformations} casts to the client's own concrete model
+ * <p>
+ * Exists because {@code Client#applyTransformations} casts to the client's own concrete model
  * class, so injected geometry can never be animated by the client. That is the single constraint
  * that makes a skinner necessary - and, usefully, it is also what makes a custom rig format
  * possible at all.
- *
- * <p>A port of {@code ModelDefinition.animate} from the cache library, with one deliberate change:
+ * <p>
+ * A port of {@code ModelDefinition.animate} from the cache library, with one deliberate change:
  * vertices are floats here, as they are in the modern client, so the fixed-point shifts of the
  * original become float divisions. Everything else - the op types, the rotation encoding, the order
  * the axes are applied in - is kept as-is.
@@ -92,8 +92,8 @@ public final class RetroSkinner
 
 	/**
 	 * Applies a second frame on top of an already-posed buffer.
-	 *
-	 * <p>The client plays a movement pose and an action at the same time, so a walking NPC that is
+	 * <p>
+	 * The client plays a movement pose and an action at the same time, so a walking NPC that is
 	 * also attacking needs both. Layering them in order is a simplification of what the client does
 	 * with a sequence's interleave mask, which selects per transform which of the two clips wins;
 	 * without that, the later clip overwrites shared transforms wholesale.
@@ -161,8 +161,8 @@ public final class RetroSkinner
 	/**
 	 * Sets the origin that following rotate and scale ops work about, as the mean of the affected
 	 * vertices offset by the op's own delta.
-	 *
-	 * <p>Note it reads the working buffer rather than the rest pose, so a pivot reflects transforms
+	 * <p>
+	 * Note it reads the working buffer rather than the rest pose, so a pivot reflects transforms
 	 * already applied this frame - which is how a limb ends up rotating about its parent's current
 	 * position rather than its resting one.
 	 */

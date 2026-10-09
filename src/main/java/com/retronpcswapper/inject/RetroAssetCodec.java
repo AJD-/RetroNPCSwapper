@@ -198,14 +198,14 @@ public final class RetroAssetCodec
 
 	/**
 	 * Refuses a mesh whose geometry blocks disagree with each other.
-	 *
-	 * <p>Every column of a mesh is written as its own length-prefixed block, so nothing in the
+	 * <p>
+	 * Every column of a mesh is written as its own length-prefixed block, so nothing in the
 	 * format pairs them and nothing downstream re-checks them either: {@link RetroMesh} takes its
 	 * vertex count from {@code verticesX} alone and its face count from {@code faceIndices1} alone,
 	 * and every consumer indexes the rest by those. A short column reads cleanly here and throws
 	 * somewhere far away instead.
-	 *
-	 * <p>Worth being strict about because of where those throws land. A face index past the end of
+	 * <p>
+	 * Worth being strict about because of where those throws land. A face index past the end of
 	 * the vertex arrays reaches {@code RetroLighter.computeNormals} by way of
 	 * {@code RetroModelCache.ensureBuilt}, which only remembers an NPC id as unbuildable when the
 	 * build <em>returns</em> null - a throw skips that, so every spawn of that id retries it. A

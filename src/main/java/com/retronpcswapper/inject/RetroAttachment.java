@@ -27,16 +27,11 @@ package com.retronpcswapper.inject;
 /**
  * Recovers where the client has put a rigid part of an animated model, so another part can be put
  * in exactly the same place.
- *
- * <p>Every vertex of a part bound to a single vertex group goes through the same chain of
+ * <p>
+ * Every vertex of a part bound to a single vertex group goes through the same chain of
  * translations, rotations and scales as the model is posed, so the whole part moves by one affine
  * map. Find the part's block of vertices in the posed model, fit that map from its rest vertices
  * to its posed ones, and the map can be applied to any other part bound to the same group.
- *
- * <p>Taking the map from the client's own pose is the point. Posing a lone part with the client's
- * animation system puts it in the wrong place, because the pivots an animation turns about are
- * worked out from the vertices of the whole model - a part posed by itself turns about its own
- * middle instead of the shoulder.
  */
 public final class RetroAttachment
 {

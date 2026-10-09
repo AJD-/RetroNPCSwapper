@@ -44,24 +44,24 @@ import net.runelite.api.hooks.DrawCallbacks;
  * Decorates the renderer currently holding {@code Client.setDrawCallbacks} (the bundled GPU plugin,
  * or 117 HD's zone renderer) so retro geometry can be substituted for an NPC, a player or a placed
  * carrier at draw time.
- *
- * <p>Only {@link #drawTemp} and {@link #drawDynamic} do anything other than forward. Temporary
+ * <p>
+ * Only {@link #drawTemp} and {@link #drawDynamic} do anything other than forward. Temporary
  * entities (NPCs, players, projectiles, spotanims) are drawn through the first, and dynamic objects
  * (animated scenery, ground items) through the second. Either way the {@code Model} arrives as a
  * parameter, so handing the delegate a different one is enough to change what is rendered. The
  * delegate keeps doing all the actual upload work.
- *
- * <p>Every other method forwards verbatim. This is deliberate and load bearing: the methods on
+ * <p>
+ * Every other method forwards verbatim. This is deliberate and load bearing: the methods on
  * {@link DrawCallbacks} are {@code default} no-ops, so any method left un-overridden here would
  * silently drop that part of rendering rather than fail loudly - omitting
  * {@link #drawScenePaint} alone would make terrain disappear.
- *
- * <p>Note the clickbox is unaffected by substitution. Under the ZBUF path the client resolves the
+ * <p>
+ * Note the clickbox is unaffected by substitution. Under the ZBUF path the client resolves the
  * model, culls clickboxes and registers the hit target before invoking these callbacks, so the
  * clickbox continues to describe the original model. That addresses the "modifying, moving, or
  * resizing the clickboxes of in-game elements is strictly prohibited" rule.
- *
- * <p>The same split is why anything that outlines an NPC through the API - {@code Actor#getModel()}
+ * <p>
+ * The same split is why anything that outlines an NPC through the API - {@code Actor#getModel()}
  * is read-only and never routes through here - traces the original silhouette rather than the one
  * on screen. {@link com.retronpcswapper.compatibility.RetroInteractHighlightOverlay} redraws
  * those outlines around the substituted geometry, so the highlight follows what is rendered while

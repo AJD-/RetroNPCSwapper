@@ -53,13 +53,13 @@ import net.runelite.api.widgets.WidgetUtil;
 /**
  * Tracks which actor or object the local player is interacting with, so an outline can be drawn
  * around it.
- *
- * <p>This mirrors the actor and object halves of RuneLite's Interact Highlight plugin, whose own
+ * <p>
+ * This mirrors the actor and object halves of RuneLite's Interact Highlight plugin, whose own
  * state is package private and cannot be read from here. Ground items are not reproduced: while
  * this plugin draws NPC and object outlines, that plugin is still the one drawing ground items and
  * players, with its own code and its own state.
- *
- * <p>Events are forwarded from {@link RetroNpcSwapperPlugin} rather than subscribed to here - the
+ * <p>
+ * Events are forwarded from {@link RetroNpcSwapperPlugin} rather than subscribed to here - the
  * event bus registers the plugin, not the objects it injects.
  */
 @Singleton
