@@ -58,6 +58,7 @@ import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
 import net.runelite.api.ModelData;
+import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.RuneLiteObjectController;
 import net.runelite.api.Scene;
@@ -97,7 +98,7 @@ import net.runelite.client.callback.RenderCallback;
 @Singleton
 public class RetroScenerySwapper implements RenderCallback
 {
-	/** Scene tiles per renderer zone, as a shift. */
+	/** Scene tiles per renderer zone - {@link Constants#CHUNK_SIZE} - as a shift. */
 	private static final int ZONE_SHIFT = 3;
 
 	/** Tiles between the extended scene's edge and the scene's first tile. */
@@ -105,9 +106,6 @@ public class RetroScenerySwapper implements RenderCallback
 
 	/** Zone index of the scene's first tile - zones are counted from the extended scene's edge. */
 	private static final int ZONE_OFFSET = SCENE_OFFSET >> ZONE_SHIFT;
-
-	/** Local units per tile, as a shift. */
-	private static final int TILE_SHIFT = 7;
 
 	/** The quarter turns a scenery object can be placed at. */
 	private static final int QUARTER_TURNS = 4;
@@ -528,8 +526,8 @@ public class RetroScenerySwapper implements RenderCallback
 		}
 
 		int offset = scene.getWorldViewId() == WorldView.TOPLEVEL ? SCENE_OFFSET : 0;
-		int x = (gameObject.getX() >> TILE_SHIFT) + offset;
-		int y = (gameObject.getY() >> TILE_SHIFT) + offset;
+		int x = (gameObject.getX() >> Perspective.LOCAL_COORD_BITS) + offset;
+		int y = (gameObject.getY() >> Perspective.LOCAL_COORD_BITS) + offset;
 		int level = gameObject.getPlane();
 
 		byte[][][] settings = scene.getExtendedTileSettings();
@@ -570,7 +568,7 @@ public class RetroScenerySwapper implements RenderCallback
 			mapLevel++;
 		}
 
-		boolean visibleBelow = mapLevel <= 3 && (settings[mapLevel][x][y] & Constants.TILE_FLAG_VIS_BELOW) != 0;
+		boolean visibleBelow = mapLevel < Constants.MAX_Z && (settings[mapLevel][x][y] & Constants.TILE_FLAG_VIS_BELOW) != 0;
 		if (visibleBelow || mapLevel == 0)
 		{
 			return 0;

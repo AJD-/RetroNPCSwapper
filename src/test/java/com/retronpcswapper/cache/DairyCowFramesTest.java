@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.cache.definitions.FrameDefinition;
 import net.runelite.cache.definitions.ModelDefinition;
 import net.runelite.cache.definitions.SequenceDefinition;
@@ -55,7 +56,7 @@ public class DairyCowFramesTest
 {
 	private static final File NOV_CACHE_DIR = new File("retrocache/nov2005cache");
 
-	private static final int CHEWS_GRASS = 2303;
+	private static final int CHEWS_GRASS = AnimationID.COW_CHEWS_GRASS;
 	private static final int[] DAIRY_COW_MESHES = {8237, 8239};
 
 	/** The transform types: an origin, then the ops that move vertices relative to it. */

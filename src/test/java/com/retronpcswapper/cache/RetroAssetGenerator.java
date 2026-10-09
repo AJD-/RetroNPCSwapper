@@ -324,7 +324,8 @@ public class RetroAssetGenerator
 		// on sequence 2303. The live 2303 is that clip: DairyCowFramesTest finds every frame's values
 		// identical, and the only part of the 2005 mesh the live rig moves differently is three body
 		// vertices it lifts by one unit
-		new Spec("Dairy cow", Source.RETRO_NOV, Source.LIVE, new int[]{8237, 8239}, new int[]{2303})
+		new Spec("Dairy cow", Source.RETRO_NOV, Source.LIVE, new int[]{8237, 8239},
+			new int[]{AnimationID.COW_CHEWS_GRASS})
 	);
 
 	private enum Source

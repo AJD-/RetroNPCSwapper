@@ -27,6 +27,7 @@ package com.retronpcswapper;
 import net.runelite.api.AnimationController;
 import net.runelite.api.GameObject;
 import net.runelite.api.Model;
+import net.runelite.api.Perspective;
 import net.runelite.api.RuneLiteObjectController;
 import net.runelite.api.coords.LocalPoint;
 
@@ -38,7 +39,7 @@ import net.runelite.api.coords.LocalPoint;
 class RetroGameObjectController extends RuneLiteObjectController
 {
 	/** Half a tile, less the margin the controller's default radius of 60 leaves a one-tile model. */
-	private static final int RADIUS_PER_TILE = 64;
+	private static final int RADIUS_PER_TILE = Perspective.LOCAL_HALF_TILE_SIZE;
 	private static final int RADIUS_MARGIN = 4;
 
 	private final Model carrier;
