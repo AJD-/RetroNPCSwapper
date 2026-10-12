@@ -34,7 +34,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Elves** — (Attackable only)
 - **Kalphites** — KQ, Guardians, Soldiers, Workers, Larvae
 
-Under **Scenery**, each restored to its 2005 model:
+Under **Scenery**:
 
 - **Mystical wall charts**
 - **Wells**
