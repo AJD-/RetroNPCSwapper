@@ -1202,6 +1202,35 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
+	 * With "Increase Chicken Size" off, each bird takes the size the 2005 definition asked for -
+	 * 128 for the hen and the undead chicken, 172 for def 1018's rooster - and nothing but the size
+	 * changes. 274 does not divide back to 172 evenly, so this also pins the rounding.
+	 */
+	@Test
+	public void testChickensAt2005SizeUseTheirDefinitionScale()
+	{
+		RetroNpcData hen = RetroNpcMapping.at2005Size(RetroNpcMapping.get(0, "Chicken"));
+		assertEquals(128, hen.getScaleXZ());
+		assertEquals(128, hen.getScaleY());
+
+		RetroNpcData undead = RetroNpcMapping.at2005Size(
+			RetroNpcMapping.get(NpcID.AHOY_UNDEAD_CHICKEN, "Undead chicken"));
+		assertEquals(128, undead.getScaleXZ());
+		assertEquals(128, undead.getScaleY());
+
+		RetroNpcData enlarged = RetroNpcMapping.get(NpcID.FARM_ROOSTER, "Rooster");
+		RetroNpcData rooster = RetroNpcMapping.at2005Size(enlarged);
+		assertEquals(172, rooster.getScaleXZ());
+		assertEquals(172, rooster.getScaleY());
+		assertEquals("only the size may change",
+			enlarged.withScale(172, 172), rooster);
+
+		RetroNpcData greaterDemon = RetroNpcMapping.get(NpcID.GREATER_DEMON, "Greater demon");
+		assertSame("anything but a chicken is left alone",
+			greaterDemon, RetroNpcMapping.at2005Size(greaterDemon));
+	}
+
+	/**
 	 * The same graft must reach every NPC id registered against the archetype, not just the name
 	 * lookup - both maps hold the same instance, so replacing one and not the other would leave
 	 * most black demons uncolored.

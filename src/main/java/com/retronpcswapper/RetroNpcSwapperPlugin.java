@@ -875,6 +875,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Cheap and idempotent, and this runs on every path that could have changed the setting -
 		// startup, config change, world change, a landed bundle, and attach
 		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
+		modelCache.setIncreaseChickenSize(config.increaseChickenSize());
 
 		// Ahead of the login check: the icon is drawn on the login-free paths too, and the same
 		// triggers - config, safety, attach - decide these swaps as decide the NPCs
