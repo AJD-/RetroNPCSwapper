@@ -53,6 +53,8 @@ public interface RetroNpcConfig extends Config
 
 	String USE_INJECTION_PIPELINE = "useInjectionPipeline";
 
+	String INCREASE_CHICKEN_SIZE = "increaseChickenSize";
+
 	/**
 	 * Read-only notice for users, not a setting.
 	 */
@@ -375,7 +377,7 @@ public interface RetroNpcConfig extends Config
 
 	@ConfigSection(
 		name = "Compatibility",
-		description = "Settings for working alongside other plugins",
+		description = "Settings for working alongside other plugins and accessibility",
 		position = 4,
 		closedByDefault = true
 	)
@@ -396,6 +398,20 @@ public interface RetroNpcConfig extends Config
 	default boolean overrideInteractHighlight()
 	{
 		return false;
+	}
+
+	@ConfigItem(
+		keyName = INCREASE_CHICKEN_SIZE,
+		name = "Increase Chicken Size",
+		description = "<html><body style='width:170px'>Enlarge the retro chickens to match the size "
+			+ "of the modern ones.<br><br>Turn this off to draw chickens and roosters at their "
+			+ "original 2005 size, which is noticeably smaller.</body></html>",
+		section = compatibilitySection,
+		position = 2
+	)
+	default boolean increaseChickenSize()
+	{
+		return true;
 	}
 
 	@ConfigSection(

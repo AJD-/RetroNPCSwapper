@@ -96,6 +96,12 @@ public class RetroModelCache
 	 */
 	private boolean useInjectionPipeline;
 
+	/**
+	 * Whether chickens are enlarged to match modern OSRS model/hitbox. Off draws them at the size
+	 * their 2005 definitions asked for - see {@link RetroNpcMapping#at2005Size}.
+	 */
+	private boolean increaseChickenSize = true;
+
 	/** One-shot guard for the lighting comparison; it only needs to run over one mesh. */
 	private boolean lightingVerified;
 
@@ -171,6 +177,12 @@ public class RetroModelCache
 		if (baseModels.containsKey(npcId) || injectedModels.containsKey(npcId))
 		{
 			return true;
+		}
+
+		// Ahead of both paths, since each reads the resize from the data it is handed
+		if (!increaseChickenSize)
+		{
+			data = RetroNpcMapping.at2005Size(data);
 		}
 
 		// Injected geometry first, when the pipeline is on: for the categories this exists for, the
@@ -665,6 +677,27 @@ public class RetroModelCache
 
 		// Which path a model was built down is decided at build time, so already-built models have
 		// to go for the toggle to take effect on NPCs that are already on screen
+		baseModels.clear();
+		injectedModels.clear();
+		meshIds.clear();
+		unbuildable.clear();
+	}
+
+	/**
+	 * Turns the chicken enlargement on or off. Client thread only.
+	 */
+	public void setIncreaseChickenSize(boolean increaseChickenSize)
+	{
+		if (this.increaseChickenSize == increaseChickenSize)
+		{
+			return;
+		}
+
+		this.increaseChickenSize = increaseChickenSize;
+		log.debug("Retro chicken enlargement {}", increaseChickenSize ? "enabled" : "disabled");
+
+		// The resize is baked in at build time, as with the injection toggle, so chickens already on
+		// screen keep their old size until what was built for them goes
 		baseModels.clear();
 		injectedModels.clear();
 		meshIds.clear();

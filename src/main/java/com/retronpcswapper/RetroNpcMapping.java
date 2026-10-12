@@ -836,11 +836,33 @@ public class RetroNpcMapping
 	// composition's own scale is 80, so neither source gets us to a bird the size of the live one.
 	private static final int CHICKEN_SCALE = 204;
 
+	// What the 2005 chicken definition itself asked for
+	private static final int CHICKEN_2005_SCALE = 128;
+
+	/**
+	 * The chicken family at the size it was in 2005.
+	 * <p>
+	 * Every scale in the family is the definition's own times {@link #CHICKEN_SCALE}/128 - see
+	 * chicken(...) - so dividing that factor back out recovers the definition: 128 for the hen and
+	 * the undead chicken, 172 for the rooster. Rounded, because 274 does not divide back evenly.
+	 */
+	public static RetroNpcData at2005Size(RetroNpcData data)
+	{
+		if (data == null || data.getCategory() != RetroNpcCategory.CHICKENS)
+		{
+			return data;
+		}
+
+		return data.withScale(
+			Math.round(data.getScaleXZ() * (float) CHICKEN_2005_SCALE / CHICKEN_SCALE),
+			Math.round(data.getScaleY() * (float) CHICKEN_2005_SCALE / CHICKEN_SCALE));
+	}
+
 	/**
 	 * A 2005 chicken variant: the shared mesh, the 2005 chicken sequences, and the opcode 40 pairs
 	 * that are the only thing telling one bird from another.
-	 *
-	 * <p>Scale is a parameter rather than a constant because this family spans two sizes.
+	 * <p>
+	 * Scale is a parameter rather than a constant because this family spans two sizes.
 	 * {@link #CHICKEN_SCALE} is the only one that was measured against the live game; every other is
 	 * that number times the ratio the definitions themselves ask for (and seem to be correct)
 	 */
