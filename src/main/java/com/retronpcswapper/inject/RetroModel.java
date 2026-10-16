@@ -65,8 +65,10 @@ import net.runelite.api.Node;
  * a render flag return null, and that is safe rather than lazy. {@code GpuPlugin.setupGpuFlags}
  * sets only {@code GPU | ZBUF | RENDER_THREADS}, never {@code HILLSKEW}, {@code NORMALS} or
  * {@code UNLIT_FACE_COLORS}, so there the gated accessors are never called. 117 HD's zone renderer
- * does set {@code NORMALS}, and {@code UNLIT_FACE_COLORS} under some shading modes, but null-checks
- * both: missing normals fall back to flat face normals, and missing unlit colors to the lit ones.
+ * does set {@code NORMALS}, so a copied model carries the client's vertex normals: without them it
+ * lights every face flat and leaves the client's baked shading showing. Its "None" and
+ * "Experimental" shading modes also set {@code UNLIT_FACE_COLORS}, and those are carried the same
+ * way. Geometry posed here from a mesh has neither, and the renderer null-checks for both.
  * {@code drawFrustum} and {@code drawOrtho} belong to the software rasterizer, which neither uses.
  * <p>
  * <b>Maintenance cost, deliberately accepted:</b> {@code Model} has no default methods, so a
@@ -115,6 +117,25 @@ public class RetroModel implements Model
 	private int[] texIndices3;
 
 	/**
+	 * Per-vertex normals, in the client's convention, or null for none. 117 HD's zone renderer asks
+	 * the client for them and undoes the client's baked shading by them; handed none, it falls back
+	 * to each face's flat normal, which leaves most of that shading in and lights over it again. Each
+	 * column is its buffer below or null, the same way the per-face columns are.
+	 */
+	private int[] vertexNormalsX;
+	private int[] vertexNormalsY;
+	private int[] vertexNormalsZ;
+	private int[] normalBufferX = new int[0];
+	private int[] normalBufferY = new int[0];
+	private int[] normalBufferZ = new int[0];
+
+	/**
+	 * The per-face colors before lighting, or null for none. 117 HD asks the client for them in the
+	 * shading modes that light from scratch, and without them draws from the lit colors instead.
+	 */
+	private short[] unlitFaceColors;
+
+	/**
 	 * The buffers behind those columns while they hold a copy - see {@link ByteColumn}. The texture
 	 * triangles are cloned instead: nearly every model has none, and their length is their count.
 	 */
@@ -122,6 +143,7 @@ public class RetroModel implements Model
 	private final ByteColumn transparencyColumn = new ByteColumn();
 	private final ByteColumn biasColumn = new ByteColumn();
 	private final ShortColumn textureColumn = new ShortColumn();
+	private final ShortColumn unlitColumn = new ShortColumn();
 	private final ByteColumn textureFaceColumn = new ByteColumn();
 
 	private byte transparency;
@@ -192,6 +214,9 @@ public class RetroModel implements Model
 		texIndices2 = mesh.getTexIndices2();
 		texIndices3 = mesh.getTexIndices3();
 		faceBias = null;
+		// Posing a mesh would have to turn its normals bone by bone, which the skinner does not do
+		clearVertexNormals();
+		unlitFaceColors = null;
 
 		transparency = 0;
 		overrideAmount = 0;
@@ -270,6 +295,22 @@ public class RetroModel implements Model
 		texIndices1 = copyOrNull(source.getTexIndices1());
 		texIndices2 = copyOrNull(source.getTexIndices2());
 		texIndices3 = copyOrNull(source.getTexIndices3());
+
+		int[] sourceNX = source.getVertexNormalsX();
+		int[] sourceNY = source.getVertexNormalsY();
+		int[] sourceNZ = source.getVertexNormalsZ();
+		if (hasNormals(sourceNX, sourceNY, sourceNZ, verticesCount))
+		{
+			setVertexNormals(sourceNX, sourceNY, sourceNZ);
+		}
+		else
+		{
+			clearVertexNormals();
+		}
+
+		short[] sourceUnlit = source.getUnlitFaceColors();
+		unlitFaceColors = sourceUnlit != null && sourceUnlit.length >= faceCount
+			? unlitColumn.copy(sourceUnlit, faceCount) : null;
 
 		transparency = source.getTransparency();
 		overrideAmount = source.getOverrideAmount();
@@ -353,6 +394,30 @@ public class RetroModel implements Model
 		faceTextures = textureColumn.append(faceTextures, baseFaces, source.getFaceTextures(), addedFaces, (short) -1);
 
 		appendTextureMapping(source, baseFaces, addedFaces, baseVertices);
+
+		// Directions, not indices, so nothing to offset. Half a model with normals would be lit half
+		// smooth and half flat, so with either side lacking them the whole goes without.
+		int[] sourceNX = source.getVertexNormalsX();
+		int[] sourceNY = source.getVertexNormalsY();
+		int[] sourceNZ = source.getVertexNormalsZ();
+		if (vertexNormalsX != null && hasNormals(sourceNX, sourceNY, sourceNZ, addedVertices))
+		{
+			normalBufferX = appendIndices(normalBufferX, baseVertices, sourceNX, addedVertices, 0);
+			normalBufferY = appendIndices(normalBufferY, baseVertices, sourceNY, addedVertices, 0);
+			normalBufferZ = appendIndices(normalBufferZ, baseVertices, sourceNZ, addedVertices, 0);
+			vertexNormalsX = normalBufferX;
+			vertexNormalsY = normalBufferY;
+			vertexNormalsZ = normalBufferZ;
+		}
+		else
+		{
+			clearVertexNormals();
+		}
+
+		// The same rule: a face with no unlit colour would be drawn from a lit one beside unlit ones
+		short[] sourceUnlit = source.getUnlitFaceColors();
+		unlitFaceColors = unlitFaceColors != null && sourceUnlit != null && sourceUnlit.length >= addedFaces
+			? unlitColumn.append(unlitFaceColors, baseFaces, sourceUnlit, addedFaces, (short) 0) : null;
 
 		verticesCount = vertices;
 		faceCount = faces;
@@ -715,6 +780,48 @@ public class RetroModel implements Model
 		return source == null ? null : source.clone();
 	}
 
+	/** Whether all three normal arrays are there, with one entry for each of {@code count} vertices. */
+	private static boolean hasNormals(int[] x, int[] y, int[] z, int count)
+	{
+		return x != null && y != null && z != null
+			&& Math.min(x.length, Math.min(y.length, z.length)) >= count;
+	}
+
+	/**
+	 * Copies the first {@link #getVerticesCount()} vertex normals into this model's own buffers -
+	 * for geometry whose normals are worked out rather than copied with it, like the 2005 shield's.
+	 */
+	public void setVertexNormals(int[] x, int[] y, int[] z)
+	{
+		if (!hasNormals(x, y, z, verticesCount))
+		{
+			clearVertexNormals();
+			return;
+		}
+		normalBufferX = copy(x, normalBufferX, verticesCount);
+		normalBufferY = copy(y, normalBufferY, verticesCount);
+		normalBufferZ = copy(z, normalBufferZ, verticesCount);
+		vertexNormalsX = normalBufferX;
+		vertexNormalsY = normalBufferY;
+		vertexNormalsZ = normalBufferZ;
+	}
+
+	/**
+	 * Copies the first {@link #getFaceCount()} unlit face colours into this model's own buffer, or
+	 * clears them if there are too few - for geometry lit here rather than copied with them.
+	 */
+	public void setUnlitFaceColors(short[] colors)
+	{
+		unlitFaceColors = colors != null && colors.length >= faceCount ? unlitColumn.copy(colors, faceCount) : null;
+	}
+
+	private void clearVertexNormals()
+	{
+		vertexNormalsX = null;
+		vertexNormalsY = null;
+		vertexNormalsZ = null;
+	}
+
 	// --- Mesh: the geometry the uploader reads -------------------------------------------------
 
 	@Override
@@ -973,32 +1080,33 @@ public class RetroModel implements Model
 
 	// --- Gated behind render flags ---------------------------------------------------------------
 	// Never reached under the GPU plugin, whose setupGpuFlags never sets NORMALS or
-	// UNLIT_FACE_COLORS. 117 HD's zone renderer does reach them and null-checks each one, falling
-	// back to flat face normals and the lit colours. Returning null rather than throwing keeps a
-	// future renderer change from taking the scene down with it.
+	// UNLIT_FACE_COLORS. 117 HD sets NORMALS always and UNLIT_FACE_COLORS in its "None" and
+	// "Experimental" shading modes, so the client fills them in on the models copied here, and they
+	// are carried. It null-checks each one, falling back to flat face normals and the lit colours,
+	// so null is safe wherever there is nothing to give.
 
 	@Override
 	public short[] getUnlitFaceColors()
 	{
-		return null;
+		return unlitFaceColors;
 	}
 
 	@Override
 	public int[] getVertexNormalsX()
 	{
-		return null;
+		return vertexNormalsX;
 	}
 
 	@Override
 	public int[] getVertexNormalsY()
 	{
-		return null;
+		return vertexNormalsY;
 	}
 
 	@Override
 	public int[] getVertexNormalsZ()
 	{
-		return null;
+		return vertexNormalsZ;
 	}
 
 	// --- Answered from the bounding cylinder ---------------------------------------------------

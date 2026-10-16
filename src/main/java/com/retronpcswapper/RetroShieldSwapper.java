@@ -26,6 +26,7 @@ package com.retronpcswapper;
 
 import com.retronpcswapper.inject.RetroAttachment;
 import com.retronpcswapper.inject.RetroDecals;
+import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroModel;
 import java.util.Arrays;
 import javax.inject.Inject;
@@ -74,6 +75,11 @@ import net.runelite.api.kit.KitType;
  * higher render priority, which a depth-buffered renderer ignores. {@link RetroDecals} brings that
  * detail back to the front wherever the model is drawn in the scene. The icon needs nothing: it is
  * drawn by the client's software renderer, which honors priority.
+ * <p>
+ * 117 HD asks the client for vertex normals, and in some shading modes for unlit colors, and
+ * without them leaves the client's baked shading on a model - the whole player, since the whole
+ * player is copied here. So the copy keeps both, and the 2005 shield brings its own, its normals
+ * turned with it.
  * <p>
  * Everything here runs on the client thread, except {@link #substituteGroundItem}.
  */
@@ -266,6 +272,14 @@ public class RetroShieldSwapper
 		RetroAttachment.transform(placement.map, shieldRest.getVerticesX(), shieldRest.getVerticesY(),
 			shieldRest.getVerticesZ(), shieldRest.getVerticesCount(),
 			composed.getVerticesX(), composed.getVerticesY(), composed.getVerticesZ(), shieldStart);
+		// Only there when the renderer asked the client for normals - 117 HD does, the GPU plugin not
+		if (composed.getVertexNormalsX() != null)
+		{
+			RetroAttachment.transformNormals(placement.map, shieldRest.getVertexNormalsX(),
+				shieldRest.getVertexNormalsY(), shieldRest.getVertexNormalsZ(), shieldRest.getVerticesCount(),
+				composed.getVertexNormalsX(), composed.getVertexNormalsY(), composed.getVertexNormalsZ(),
+				shieldStart);
+		}
 		composed.calculateBoundsCylinder();
 
 		return composed;
@@ -378,8 +392,33 @@ public class RetroShieldSwapper
 		// Once, here, rather than on every player drawn: the shield is placed by an affine map, which
 		// keeps a lifted decal on the near side of the surface behind it
 		RetroDecals.lift(rest, 0);
+		// Worked out here rather than taken from the lit model, which has them only if the client
+		// was asked for normals when it was built - and this one outlives a switch of renderer
+		int[][] normals = restNormals(rest);
+		rest.setVertexNormals(normals[0], normals[1], normals[2]);
+		// The same for the colours before lighting, which the model data still holds
+		rest.setUnlitFaceColors(retro.getFaceColors());
 		shieldRest = rest;
 		return true;
+	}
+
+	/**
+	 * The vertex normals the client would give a lit model. {@code ModelData} has no getter for the
+	 * face render types they depend on, but lighting left them in {@code faceColors3}: -1 for a flat
+	 * or unshaded face and -2 for a hidden one, none of which adds to its corners' normals.
+	 */
+	static int[][] restNormals(RetroModel lit)
+	{
+		int faceCount = lit.getFaceCount();
+		int[] colors3 = lit.getFaceColors3();
+		byte[] renderTypes = new byte[faceCount];
+		for (int f = 0; f < faceCount; f++)
+		{
+			renderTypes[f] = (byte) (colors3[f] < 0 ? 1 : 0);
+		}
+		return RetroLighter.vertexNormals(lit.getVerticesCount(),
+			lit.getVerticesX(), lit.getVerticesY(), lit.getVerticesZ(),
+			faceCount, lit.getFaceIndices1(), lit.getFaceIndices2(), lit.getFaceIndices3(), renderTypes);
 	}
 
 	/**
