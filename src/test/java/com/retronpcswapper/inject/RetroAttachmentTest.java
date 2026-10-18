@@ -235,4 +235,60 @@ public class RetroAttachmentTest
 			assertEquals(alone[v], x[offset + v], 0f);
 		}
 	}
+
+	/**
+	 * A normal turns with the part but does not move with it: a quarter turn about Y takes +X to -Z,
+	 * whatever the map's translation.
+	 */
+	@Test
+	public void testNormalsTurnWithTheMapAndIgnoreItsMove()
+	{
+		double[] map = {0, 0, 1, 40, 0, 1, 0, -15, -1, 0, 0, 90};
+		int[] x = new int[1];
+		int[] y = new int[1];
+		int[] z = new int[1];
+
+		RetroAttachment.transformNormals(map, new int[]{256}, new int[]{0}, new int[]{0}, 1, x, y, z, 0);
+
+		assertEquals(0, x[0]);
+		assertEquals(0, y[0]);
+		assertEquals(-256, z[0]);
+	}
+
+	/**
+	 * The fit is a general affine map, so it may stretch. A normal stays perpendicular to its
+	 * surface only if it takes the inverse-transpose: stretched by the map itself, it would lean.
+	 */
+	@Test
+	public void testNormalsStayPerpendicularUnderAStretch()
+	{
+		double[] map = {2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0};
+		int[] x = new int[1];
+		int[] y = new int[1];
+		int[] z = new int[1];
+
+		// The plane x + y = 0, whose surface runs along (1, -1, 0) and (0, 0, 1)
+		RetroAttachment.transformNormals(map, new int[]{256}, new int[]{256}, new int[]{0}, 1, x, y, z, 0);
+
+		// Its stretched surface runs along (2, -1, 0)
+		assertEquals(0, x[0] * 2 - y[0], 1);
+		assertEquals(0, z[0]);
+		assertEquals(2, (double) y[0] / x[0], 0.02);
+	}
+
+	/** Written from the offset on, like {@link RetroAttachment#transform}, and nothing before it. */
+	@Test
+	public void testTransformNormalsWritesFromTheOffset()
+	{
+		double[] map = {1, 0, 0, 5, 0, 1, 0, 5, 0, 0, 1, 5};
+		int[] x = {-999, -999, 0};
+		int[] y = new int[3];
+		int[] z = new int[3];
+
+		RetroAttachment.transformNormals(map, new int[]{77}, new int[]{0}, new int[]{0}, 1, x, y, z, 2);
+
+		assertEquals(-999, x[0]);
+		assertEquals(-999, x[1]);
+		assertEquals(77, x[2]);
+	}
 }

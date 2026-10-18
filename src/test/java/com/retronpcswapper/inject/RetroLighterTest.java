@@ -139,4 +139,37 @@ public class RetroLighterTest
 		assertEquals("lighting must replace luminance only",
 			color & 0xFF80, out[0][0] & 0xFF80);
 	}
+
+	/**
+	 * Vertex normals in the client's convention: each face's unit normal scaled to 256 and summed
+	 * into its corners. Y is negative upward, so a face lying flat faces -Y.
+	 */
+	@Test
+	public void testVertexNormalsSumTheFacesThatShareEachVertex()
+	{
+		int[][] normals = RetroLighter.vertexNormals(X.length, X, Y, Z, I1.length, I1, I2, I3, null);
+
+		// Vertices 0 and 2 are on both faces, 1 and 3 on one each
+		assertEquals(-512, normals[1][0]);
+		assertEquals(-256, normals[1][1]);
+		assertEquals(-512, normals[1][2]);
+		assertEquals(-256, normals[1][3]);
+		for (int v = 0; v < X.length; v++)
+		{
+			assertEquals(0, normals[0][v]);
+			assertEquals(0, normals[2][v]);
+		}
+	}
+
+	/** A flat face is lit by its own normal, so it adds nothing to its corners'. */
+	@Test
+	public void testFlatFacesDoNotContributeToVertexNormals()
+	{
+		int[][] normals = RetroLighter.vertexNormals(X.length, X, Y, Z, I1.length, I1, I2, I3,
+			new byte[]{0, 1});
+
+		assertEquals(-256, normals[1][0]);
+		assertEquals(-256, normals[1][1]);
+		assertEquals(0, normals[1][3]);
+	}
 }

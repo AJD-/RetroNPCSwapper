@@ -139,6 +139,23 @@ public final class RetroLighter
 	}
 
 	/**
+	 * The per-vertex normals the client would hand a renderer that asks for them: each gouraud face's
+	 * normal, scaled to 256, summed into its three corners. Flat faces add nothing.
+	 *
+	 * @param faceRenderTypes per-face shading type, or null to treat every face as gouraud
+	 * @return {@code {x, y, z}}, one entry per vertex
+	 */
+	public static int[][] vertexNormals(
+		int verticesCount, float[] verticesX, float[] verticesY, float[] verticesZ,
+		int faceCount, int[] faceIndices1, int[] faceIndices2, int[] faceIndices3,
+		byte[] faceRenderTypes)
+	{
+		VertexNormals normals = computeNormals(verticesCount, verticesX, verticesY, verticesZ,
+			faceCount, faceIndices1, faceIndices2, faceIndices3, faceRenderTypes);
+		return new int[][]{normals.x, normals.y, normals.z};
+	}
+
+	/**
 	 * Applies a light level to a packed HSL color, keeping hue and saturation and replacing
 	 * luminance.
 	 *

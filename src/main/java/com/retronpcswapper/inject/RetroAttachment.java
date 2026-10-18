@@ -295,6 +295,41 @@ public final class RetroAttachment
 		}
 	}
 
+	/**
+	 * Turns {@code count} vertex normals from rest by a map from {@link #fit}, writing from
+	 * {@code outOffset} on. A normal ignores the map's translation, and takes the inverse-transpose
+	 * of the rest: the fit is a general affine map, and under a stretch a normal moved like a vertex
+	 * would no longer stand square to its surface.
+	 */
+	public static void transformNormals(double[] map, int[] restX, int[] restY, int[] restZ, int count,
+		int[] outX, int[] outY, int[] outZ, int outOffset)
+	{
+		double[][] inverse = invert(new double[][]{
+			{map[0], map[1], map[2]},
+			{map[4], map[5], map[6]},
+			{map[8], map[9], map[10]},
+		});
+		if (inverse == null)
+		{
+			// Cannot happen for a map fit accepted, which places every vertex
+			System.arraycopy(restX, 0, outX, outOffset, count);
+			System.arraycopy(restY, 0, outY, outOffset, count);
+			System.arraycopy(restZ, 0, outZ, outOffset, count);
+			return;
+		}
+
+		for (int v = 0; v < count; v++)
+		{
+			double nx = restX[v];
+			double ny = restY[v];
+			double nz = restZ[v];
+			// Row i of the inverse-transpose is column i of the inverse
+			outX[outOffset + v] = (int) Math.round(inverse[0][0] * nx + inverse[1][0] * ny + inverse[2][0] * nz);
+			outY[outOffset + v] = (int) Math.round(inverse[0][1] * nx + inverse[1][1] * ny + inverse[2][1] * nz);
+			outZ[outOffset + v] = (int) Math.round(inverse[0][2] * nx + inverse[1][2] * ny + inverse[2][2] * nz);
+		}
+	}
+
 	private static double apply(double[] map, int row, double x, double y, double z)
 	{
 		return map[row] * x + map[row + 1] * y + map[row + 2] * z + map[row + 3];

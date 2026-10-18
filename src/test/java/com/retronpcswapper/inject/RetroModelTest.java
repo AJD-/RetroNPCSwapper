@@ -464,9 +464,232 @@ public class RetroModelTest
 		assertEquals(0, transparencies[2]);
 	}
 
+	/** Gives a source a normal per vertex, each the vertex's index along X, Y and Z scaled apart. */
+	private static void withNormals(Source src)
+	{
+		src.nx = new int[src.verticesCount];
+		src.ny = new int[src.verticesCount];
+		src.nz = new int[src.verticesCount];
+		for (int v = 0; v < src.verticesCount; v++)
+		{
+			src.nx[v] = v;
+			src.ny[v] = v * 10;
+			src.nz[v] = v * 100;
+		}
+	}
+
+	/**
+	 * 117 HD's zone renderer reads vertex normals and, without them, lights every face flat - which
+	 * leaves the client's baked shading on the whole player. The copy has to carry them.
+	 */
+	@Test
+	public void testCopiesVertexNormals()
+	{
+		Source src = triangle(0);
+		withNormals(src);
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(src);
+
+		assertEquals(2, model.getVertexNormalsX()[2]);
+		assertEquals(20, model.getVertexNormalsY()[2]);
+		assertEquals(200, model.getVertexNormalsZ()[2]);
+		assertNotSame(src.nx, model.getVertexNormalsX());
+	}
+
+	@Test
+	public void testNormalsTheNextSourceLacksAreNullAgain()
+	{
+		Source with = triangle(0);
+		withNormals(with);
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(with);
+		model.copyFrom(triangle(0));
+
+		assertNull(model.getVertexNormalsX());
+		assertNull(model.getVertexNormalsY());
+		assertNull(model.getVertexNormalsZ());
+	}
+
+	/** Normals shorter than the vertices are no normals: the renderer reads one per vertex. */
+	@Test
+	public void testShortNormalsAreDropped()
+	{
+		Source src = triangle(0);
+		withNormals(src);
+		src.nz = new int[2];
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(src);
+
+		assertNull(model.getVertexNormalsX());
+	}
+
+	/** Normals are directions, not indices: appending moves them along, unchanged. */
+	@Test
+	public void testAppendConcatenatesNormalsWithoutOffsettingThem()
+	{
+		Source base = triangle(0);
+		withNormals(base);
+		Source added = quad();
+		withNormals(added);
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(base);
+		model.appendFrom(added);
+
+		int[] x = model.getVertexNormalsX();
+		assertTrue(x.length >= 7);
+		assertEquals(2, x[2]);
+		assertEquals(0, x[3]);
+		assertEquals(3, x[6]);
+		assertEquals(300, model.getVertexNormalsZ()[6]);
+	}
+
+	/**
+	 * Half a model with normals would light half of it smooth and half flat; with one side lacking
+	 * them, none is the honest answer - and what the GPU plugin, which never asks, gets anyway.
+	 */
+	@Test
+	public void testAppendDropsNormalsEitherSideLacks()
+	{
+		Source base = triangle(0);
+		withNormals(base);
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(base);
+		model.appendFrom(quad());
+		assertNull(model.getVertexNormalsX());
+
+		Source added = quad();
+		withNormals(added);
+		model.copyFrom(triangle(0));
+		model.appendFrom(added);
+		assertNull(model.getVertexNormalsX());
+	}
+
+	/** The shield's normals are computed rather than copied, and set straight onto its rest model. */
+	@Test
+	public void testSetNormalsAreAppended()
+	{
+		RetroModel rest = new RetroModel();
+		rest.copyFrom(quad());
+		rest.setVertexNormals(new int[]{1, 2, 3, 4}, new int[]{5, 6, 7, 8}, new int[]{9, 10, 11, 12});
+
+		Source base = triangle(0);
+		withNormals(base);
+		RetroModel model = new RetroModel();
+		model.copyFrom(base);
+		model.appendFrom(rest);
+
+		assertEquals(4, model.getVertexNormalsX()[6]);
+		assertEquals(12, model.getVertexNormalsZ()[6]);
+	}
+
+	/**
+	 * 117 HD's "None" and "Experimental" shading modes ask the client for unlit colours and draw
+	 * from them; without them they fall back to the lit ones, baked shading and all.
+	 */
+	@Test
+	public void testCopiesUnlitFaceColors()
+	{
+		Source src = quad();
+		src.unlit = new short[]{300, 301};
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(src);
+
+		assertEquals(301, model.getUnlitFaceColors()[1]);
+		assertNotSame(src.unlit, model.getUnlitFaceColors());
+
+		model.copyFrom(quad());
+		assertNull(model.getUnlitFaceColors());
+	}
+
+	@Test
+	public void testAppendConcatenatesUnlitFaceColorsOnlyWhenBothHaveThem()
+	{
+		Source base = triangle(0);
+		base.unlit = new short[]{300};
+		Source added = quad();
+		added.unlit = new short[]{400, 401};
+
+		RetroModel model = new RetroModel();
+		model.copyFrom(base);
+		model.appendFrom(added);
+		short[] unlit = model.getUnlitFaceColors();
+		assertEquals(300, unlit[0]);
+		assertEquals(400, unlit[1]);
+		assertEquals(401, unlit[2]);
+
+		model.copyFrom(base);
+		model.appendFrom(quad());
+		assertNull(model.getUnlitFaceColors());
+	}
+
+	/** The shield's unlit colours come from its {@code ModelData}, set straight onto its rest model. */
+	@Test
+	public void testSetUnlitFaceColorsAreAppended()
+	{
+		RetroModel rest = new RetroModel();
+		rest.copyFrom(quad());
+		rest.setUnlitFaceColors(new short[]{500, 501});
+
+		Source base = triangle(0);
+		base.unlit = new short[]{300};
+		RetroModel model = new RetroModel();
+		model.copyFrom(base);
+		model.appendFrom(rest);
+
+		assertEquals(501, model.getUnlitFaceColors()[2]);
+	}
+
+	/** Too few normals for the vertices is no normals, as it is for a copied source. */
+	@Test
+	public void testSettingShortNormalsClearsThem()
+	{
+		RetroModel model = new RetroModel();
+		model.copyFrom(quad());
+		model.setVertexNormals(new int[4], new int[4], new int[4]);
+		model.setVertexNormals(new int[2], new int[4], new int[4]);
+
+		assertNull(model.getVertexNormalsX());
+	}
+
 	/** Minimal stand-in for a posed client model. */
 	private static final class Source extends RetroModel
 	{
+		private short[] unlit;
+
+		@Override
+		public short[] getUnlitFaceColors()
+		{
+			return unlit;
+		}
+
+		private int[] nx;
+		private int[] ny;
+		private int[] nz;
+
+		@Override
+		public int[] getVertexNormalsX()
+		{
+			return nx;
+		}
+
+		@Override
+		public int[] getVertexNormalsY()
+		{
+			return ny;
+		}
+
+		@Override
+		public int[] getVertexNormalsZ()
+		{
+			return nz;
+		}
+
 		private int verticesCount;
 		private int faceCount;
 		private float[] x;

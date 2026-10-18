@@ -24,8 +24,10 @@
  */
 package com.retronpcswapper;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import com.retronpcswapper.inject.RetroModel;
 import net.runelite.api.PlayerComposition;
 import net.runelite.api.gameval.ItemID;
 import org.junit.Test;
@@ -77,5 +79,94 @@ public class RetroShieldSwapperTest
 		// Under the old 512 offset this was a shield; under the real one it is a kit
 		assertFalse(RetroShieldSwapper.isShieldEquipment(ItemID.ANTIDRAGONBREATHSHIELD + 512));
 		assertFalse(RetroShieldSwapper.isShieldEquipment(-1));
+	}
+
+	/**
+	 * Two triangles flat in the XZ plane, sharing the edge 0-2, lit with {@code colors3}. Y is
+	 * negative upward, so both face -Y.
+	 */
+	private static RetroModel litPair(int colors3OfSecond)
+	{
+		return new RetroModel()
+		{
+			@Override
+			public int getVerticesCount()
+			{
+				return 4;
+			}
+
+			@Override
+			public float[] getVerticesX()
+			{
+				return new float[]{0, 100, 100, 0};
+			}
+
+			@Override
+			public float[] getVerticesY()
+			{
+				return new float[4];
+			}
+
+			@Override
+			public float[] getVerticesZ()
+			{
+				return new float[]{0, 0, 100, 100};
+			}
+
+			@Override
+			public int getFaceCount()
+			{
+				return 2;
+			}
+
+			@Override
+			public int[] getFaceIndices1()
+			{
+				return new int[]{0, 0};
+			}
+
+			@Override
+			public int[] getFaceIndices2()
+			{
+				return new int[]{1, 2};
+			}
+
+			@Override
+			public int[] getFaceIndices3()
+			{
+				return new int[]{2, 3};
+			}
+
+			@Override
+			public int[] getFaceColors3()
+			{
+				return new int[]{500, colors3OfSecond};
+			}
+		};
+	}
+
+	@Test
+	public void testRestNormalsSumTheSmoothFaces()
+	{
+		int[][] normals = RetroShieldSwapper.restNormals(litPair(600));
+
+		assertEquals(-512, normals[1][0]);
+		assertEquals(-256, normals[1][3]);
+	}
+
+	/**
+	 * Lighting leaves a face's render type in {@code faceColors3}: flat and unshaded faces read -1,
+	 * hidden ones -2, and the client adds none of them to its corners' normals.
+	 */
+	@Test
+	public void testRestNormalsLeaveOutFlatAndHiddenFaces()
+	{
+		for (int sentinel : new int[]{-1, -2})
+		{
+			int[][] normals = RetroShieldSwapper.restNormals(litPair(sentinel));
+
+			assertEquals(-256, normals[1][0]);
+			assertEquals(0, normals[1][3]);
+		}
 	}
 }
