@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper;
 
+import com.retronpcswapper.inject.RetroAssetBundle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -814,6 +815,225 @@ public class RetroNpcMapping
 	public static final RetroNpcData ELUNED_DEFAULT = elf(ELUNED_PARTS, AnimationID.HUMAN_READY)
 		.recolors(ELUNED_RECOLOR_FIND, ELUNED_RECOLOR_REPLACE)
 		.build();
+
+	/**
+	 * A Lletya elf from the Nov-2005 cache. That build re-authored the human rig, so these meshes and
+	 * the clips that animate them are stored apart from the Feb-2005 kit above, at
+	 * {@link RetroAssetBundle#NOV_HUMAN_KEY_BASE}. Every Nov elf stands in 808 and walks in 819 - the
+	 * warriors included, where their Feb counterparts stood in 813 - and like the Feb elves, combat
+	 * ids pass straight through to the clips the bundle carries under that base.
+	 * <p>
+	 * Parts, recolor pairs and resize are each definition's own, in npc.dat order.
+	 */
+	private static RetroNpcData.Builder novElf(int[] parts, short[] find, short[] replace, int scaleXZ,
+		int scaleY)
+	{
+		return elf(parts, AnimationID.HUMAN_READY)
+			.assetKeyBase(RetroAssetBundle.NOV_HUMAN_KEY_BASE)
+			.recolors(find, replace)
+			.scaleXZ(scaleXZ)
+			.scaleY(scaleY);
+	}
+
+	/** Nov-2005 definition 2359, the Elf warrior with the pike and the old Iorwerth head 4020. */
+	public static final RetroNpcData NOV_ELF_WARRIOR = novElf(new int[]{4020, 4025, 4016, 4033, 4023},
+		new short[]{9152, 6449, 25886}, new short[]{8912, 7646, 7646}, 127, 120)
+		.attackAnimationId(AnimationID.HUMAN_SCYTHE_SWEEP)
+		.defendAnimationId(AnimationID.HUMAN_SPEAR_BLOCK)
+		.build();
+
+	/** Nov-2005 definition 2360, the second pike warrior, on the Lletya head 8266. */
+	public static final RetroNpcData NOV_ELF_WARRIOR2 = novElf(new int[]{8266, 4025, 4016, 4033, 4023},
+		new short[]{9137, 6449, 4550}, new short[]{9112, 7646, 6829}, 127, 120)
+		.attackAnimationId(AnimationID.HUMAN_SCYTHE_SWEEP)
+		.defendAnimationId(AnimationID.HUMAN_SPEAR_BLOCK)
+		.build();
+
+	/** Nov-2005 definition 2361, the Elf warrior with the bow. */
+	public static final RetroNpcData NOV_ELF_ARCHER = novElf(new int[]{8266, 4025, 4016, 4044, 4023},
+		new short[]{9152, 9137, 25886}, new short[]{8910, 5429, 7646}, 127, 120)
+		.attackAnimationId(AnimationID.HUMAN_BOW)
+		.defendAnimationId(AnimationID.HUMAN_UNARMEDBLOCK)
+		.build();
+
+	/** Nov-2005 definition 2362, the second bow warrior, on the head 8263. */
+	public static final RetroNpcData NOV_ELF_ARCHER2 = novElf(new int[]{8263, 4025, 4016, 4044, 4023},
+		new short[]{9152, 9137, 4550}, new short[]{8910, 5429, 6699}, 128, 125)
+		.attackAnimationId(AnimationID.HUMAN_BOW)
+		.defendAnimationId(AnimationID.HUMAN_UNARMEDBLOCK)
+		.build();
+
+	/** Nov-2005 definition 1777. */
+	public static final RetroNpcData ILFEEN = novElf(new int[]{4029, 4030, 4032, 3194, 4028, 4031},
+		new short[]{17864, 14517, 9327}, new short[]{7845, 8753, 6478}, 128, 128).build();
+
+	/** Nov-2005 definition 2352, the general store. */
+	public static final RetroNpcData EUDAV = novElf(new int[]{8264, 8268, 6975, 8267},
+		new short[]{7595, 8792}, new short[]{6587, 7634}, 127, 120).build();
+
+	/** Nov-2005 definition 2353, the seamstress. */
+	public static final RetroNpcData ORONWEN = novElf(new int[]{4030, 6981, 480, 6978, 8270},
+		new short[]{7595, 8792}, new short[]{6587, 16706}, 128, 129).build();
+
+	/** Nov-2005 definition 2354. */
+	public static final RetroNpcData LLETYA_BANKER_MALE = novElf(new int[]{8266, 8269, 6975, 6976},
+		new short[]{107, 7595, 8792, 8652}, new short[]{7390, 7376, 7479, 5400}, 128, 128).build();
+
+	/** Nov-2005 definition 2355. */
+	public static final RetroNpcData LLETYA_BANKER_FEMALE = novElf(new int[]{4030, 6980, 480, 6978, 6979},
+		new short[]{107, 7595, 8792, 9137, 14517, 8652}, new short[]{7390, 7376, 7479, 4502, 7479, 6439},
+		135, 130).build();
+
+	/** Nov-2005 definition 2356, the bow seller. */
+	public static final RetroNpcData DALLDAV = novElf(new int[]{4021, 6977, 6975, 8267},
+		new short[]{8792, 7595, 8741}, new short[]{7634, 13867, 13867}, 127, 120).build();
+
+	/** Nov-2005 definition 2357, the cook. */
+	public static final RetroNpcData GETHIN = novElf(new int[]{8357, 8263, 8268, 6975, 6976},
+		new short[]{107, 7595, 8792}, new short[]{7390, 6480, 6583}, 128, 128).build();
+
+	/** Nov-2005 definition 2363. */
+	public static final RetroNpcData GOREU = novElf(new int[]{8266, 6977, 6975, 4023},
+		new short[]{16701, 9137, 25886}, new short[]{7613, 5429, 7646}, 127, 113).build();
+
+	/** Nov-2005 definition 2364. */
+	public static final RetroNpcData YSGAWYN = novElf(new int[]{4020, 8269, 6975, 8267},
+		new short[]{16701, 9137, 25886, 8792, 9152}, new short[]{7613, 5429, 7646, 13762, 8101},
+		132, 131).build();
+
+	/** Nov-2005 definition 2365. */
+	public static final RetroNpcData ARVEL = novElf(new int[]{4030, 6981, 480, 6978, 6979},
+		new short[]{16701, 9137, 25886, 8792, 8652, 14517}, new short[]{7613, 8109, 7646, 13762, 7595, 7595},
+		128, 128).build();
+
+	/** Nov-2005 definition 2366. */
+	public static final RetroNpcData MAWRTH = novElf(new int[]{4030, 6980, 480, 6978, 6979},
+		new short[]{14517}, new short[]{7595}, 123, 110).build();
+
+	/** Nov-2005 definition 2367. */
+	public static final RetroNpcData KELYN = novElf(new int[]{4030, 6981, 6978, 6979},
+		new short[]{16701, 9137, 25886}, new short[]{7613, 5429, 7646}, 128, 128).build();
+
+	/** Nov-2005 definition 2368, an elven child. */
+	public static final RetroNpcData EOIN = novElf(new int[]{8264, 8269, 6975, 6976},
+		new short[]{9137, 8792}, new short[]{8117, 11592}, 100, 79).build();
+
+	/** Nov-2005 definition 2369, an elven child. */
+	public static final RetroNpcData IONA = novElf(new int[]{4021, 6977, 6975, 8267},
+		new short[]{9137, 8792}, new short[]{8117, 11592}, 106, 87).build();
+
+	/**
+	 * The hair and cloth colors of the Nov Lletya kits, which a Prifddinas citizen's own colors
+	 * replace. Measured on the meshes: 9137 and 9152 are hair, one per head; 8792 is the main garment
+	 * and 16701 the tunic on the older parts; 8652 the secondary cloth; 7595 trim, belts and boots.
+	 */
+	private static final short[] CITIZEN_RECOLOR_FIND = {9137, 9152, 8792, 16701, 8652, 7595};
+
+	/**
+	 * The Lletya outfits a citizen can wear, by body. Gethin's chef's hat and the children are left
+	 * out, and the female banker is Mawrth's outfit at another size. Each keeps its own resize.
+	 */
+	private static final RetroNpcData[] CITIZEN_MALE_KITS = {GOREU, YSGAWYN, EUDAV, DALLDAV, LLETYA_BANKER_MALE};
+
+	private static final RetroNpcData[] CITIZEN_FEMALE_KITS = {ARVEL, MAWRTH, KELYN, ORONWEN};
+
+	/**
+	 * A Prifddinas citizen, who has no 2005 definition: a Lletya outfit for the same body, chosen by
+	 * id so a crowd is not all one elf, worn in the citizen's own live colors. Every citizen recolors
+	 * the same six live indices - three shades of hair, then three of clothing - and the clothing is
+	 * what tells the eight clans apart, so carrying the live values over is what makes a Hefin
+	 * citizen crimson and an Iorwerth one near-black, the odd mixed outfit included.
+	 * <p>
+	 * The lightest hair shade goes to the head, and the clothing shades go lightest to darkest onto
+	 * the main garment, the secondary cloth and the trim.
+	 */
+	static RetroNpcData citizen(int npcId, boolean female, int hair, int cloth, int clothShade, int clothDark)
+	{
+		RetroNpcData[] kits = female ? CITIZEN_FEMALE_KITS : CITIZEN_MALE_KITS;
+		return dressed(kits[npcId % kits.length], hair, cloth, clothShade, clothDark);
+	}
+
+	/** A Lletya outfit chosen by hand, in the given hair and clothing colors. */
+	static RetroNpcData dressed(RetroNpcData kit, int hair, int cloth, int clothShade, int clothDark)
+	{
+		return kit.withRecolors(CITIZEN_RECOLOR_FIND, new short[]{
+			(short) hair, (short) hair, (short) cloth, (short) cloth, (short) clothShade, (short) clothDark});
+	}
+
+	/**
+	 * Registers a citizen under its own id and any others that are the same character, which share
+	 * the outfit the first id picks rather than each picking their own.
+	 */
+	private static void registerCitizen(int npcId, boolean female, int hair, int cloth, int clothShade,
+		int clothDark, int... sameNpcIds)
+	{
+		RetroNpcData data = citizen(npcId, female, hair, cloth, clothShade, clothDark);
+		registerMapping(data, npcId);
+		registerMapping(data, sameNpcIds);
+	}
+
+	private static void registerDressed(RetroNpcData kit, int hair, int cloth, int clothShade, int clothDark,
+		int... npcIds)
+	{
+		registerMapping(dressed(kit, hair, cloth, clothShade, clothDark), npcIds);
+	}
+
+	/**
+	 * Prifddinas's halberd guards, who are the Mourning's End warriors again: the pike warrior's
+	 * kit from definition 2359, keeping its pike colors, in the guard's own hair and leathers. Nov
+	 * has no female warrior, so the women wear the Lletya women's head 4030 on the same body.
+	 */
+	private static final int[] PRIF_GUARD_PARTS = {4020, 4025, 4016, 4033, 4023};
+
+	private static final int[] PRIF_GUARD_FEMALE_PARTS = {4030, 4025, 4016, 4033, 4023};
+
+	private static final short[] PRIF_GUARD_RECOLOR_FIND = {9137, 9152, 8792, 16701, 8652, 7595, 6449, 25886};
+
+	static RetroNpcData prifGuard(boolean female, int hair, int cloth, int clothShade, int clothDark)
+	{
+		return NOV_ELF_WARRIOR.withModelIds(female ? PRIF_GUARD_FEMALE_PARTS : PRIF_GUARD_PARTS)
+			.withRecolors(PRIF_GUARD_RECOLOR_FIND, new short[]{(short) hair, (short) hair, (short) cloth,
+				(short) cloth, (short) clothShade, (short) clothDark, 7646, 7646});
+	}
+
+	private static void registerPrifGuard(int npcId, boolean female, int hair, int cloth, int clothShade,
+		int clothDark)
+	{
+		registerMapping(prifGuard(female, hair, cloth, clothShade, clothDark), npcId);
+	}
+
+	/**
+	 * Elena is a human, but her story runs through the elves' - Plague City to Lletya to
+	 * Prifddinas - so she rides the Elves toggle. Plain Feb-2005 human kit on the guards' rig and
+	 * clips, so no key base. Several of her colors are past 32767 and are stored as the signed shorts
+	 * the palette uses.
+	 */
+	private static RetroNpcData.Builder elena(int[] parts, short[] find, short[] replace)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.ELVES)
+			.retroModelIds(parts)
+			.idleAnimationId(AnimationID.HUMAN_READY)
+			.walkAnimationId(AnimationID.HUMAN_WALK_F)
+			.deathAnimationId(AnimationID.HUMAN_DEATH)
+			.recolors(find, replace);
+	}
+
+	/**
+	 * Feb-2005 definition 335, "She looks concerned.", in the Plague City block of definitions -
+	 * the prisoner.
+	 */
+	public static final RetroNpcData ELENA_PRISONER = elena(new int[]{390, 456, 332, 353, 440, 445},
+		new short[]{8741, 25238, 6798, (short) 43072, 41},
+		new short[]{(short) 32962, 21838, 4502, 4550, (short) 59350}).build();
+
+	/**
+	 * Feb-2005 definition 715, "She doesn't look too happy.", in the Biohazard block - Elena once
+	 * she is free, which is every later appearance.
+	 */
+	public static final RetroNpcData ELENA_DEFAULT = elena(new int[]{390, 474, 347, 353, 438, 358},
+		new short[]{8741, 25238, 6798, (short) 43072},
+		new short[]{(short) 32962, 21838, 4502, 4550}).build();
 
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
@@ -1823,13 +2043,10 @@ public class RetroNpcMapping
 		// Deliberately left out: DEADMAN_GUARD_ARDOUGNE_VIS, DEADMAN_GUARD_YANILLE_VIS and their
 		// _RANGE_VIS siblings
 
-		// Elves, by id only. Every live id carrying one of the eleven names, including the Song of
-		// the Elves and Prifddinas copies.
-		//
-		// The Mourning's End Elf Archer and Elf Warrior postdate the Feb-2005 cache, so they wear the
-		// Iorwerth bow and pike kits, matched by level and weapon.
+		// Elves, by id only. Every live id carrying one of the names, including the Song of the
+		// Elves and Prifddinas copies. Only named multiloc children are registered - the client
+		// reports the transformed id, so a parent never reaches a lookup.
 		registerMapping(ELF_ARCHER,
-			NpcID.MOURNING_GUARD_RANGE, NpcID.MOURNING_GUARD_RANGE2,
 			NpcID.REGICIDE_DARKELF, NpcID.REGICIDE_DARKELF4,
 			NpcID.SOTE_CAVE_WARRIOR_2, NpcID.SOTE_IORWERTH_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_2,
 			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_1, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_2,
@@ -1837,7 +2054,6 @@ public class RetroNpcMapping
 			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_9, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_10
 		);
 		registerMapping(ELF_WARRIOR,
-			NpcID.MOURNING_GUARD_MELEE, NpcID.MOURNING_GUARD_MELEE2,
 			NpcID.REGICIDE_DARKELF2, NpcID.REGICIDE_DARKELF3,
 			NpcID.SOTE_CAVE_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_3, NpcID.SOTE_IORWERTH_WARRIOR_4,
 			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_3, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_4,
@@ -1865,10 +2081,213 @@ public class RetroNpcMapping
 			NpcID.ROVING_FEMALE_WOODELF_2OP, NpcID.SOTE_ELUNED_UPASS, NpcID.SOTE_ELUNED_CUTSCENE,
 			NpcID.ELUNED_PRIF
 		);
-		// Deliberately left out: the Lletya townsfolk Goreu (MOURNING_TOWN_ELF_1), Mawrth
-		// (MOURNING_TOWN_ELF_4, SOTE_MAWRTH, SOTE_MAWRTH_CUTSCENE), Arvel (MOURNING_TOWN_ELF_3) and
-		// Kelyn (MOURNING_TOWN_ELF_5_VIS, SOTE_LADY_ITHELL_NORMAL). They postdate the Feb-2005 cache,
-		// and no 2005 elf is close enough to stand in for them
+
+		// Lletya, from the Nov-2005 cache, which has every one of them as a definition of its own.
+		//
+		// The Mourning's End warriors are two live pairs, since remodelled as a man and a woman, and
+		// two Nov pairs that differ by head and color. Neither side carries anything that ties one
+		// to the other, so they pair in id order.
+		registerMapping(NOV_ELF_WARRIOR, NpcID.MOURNING_GUARD_MELEE);
+		registerMapping(NOV_ELF_WARRIOR2, NpcID.MOURNING_GUARD_MELEE2);
+		registerMapping(NOV_ELF_ARCHER, NpcID.MOURNING_GUARD_RANGE);
+		registerMapping(NOV_ELF_ARCHER2, NpcID.MOURNING_GUARD_RANGE2);
+		registerMapping(ILFEEN,
+			NpcID.ROVING_ILFEEN_1OP, NpcID.ROVING_ILFEEN_2OPS, NpcID.SOTE_ILFEEN_VIS,
+			NpcID.SOTE_ILFEEN_CUTSCENE
+		);
+		registerMapping(EUDAV, NpcID.MOURNING_STORES_MAN);
+		registerMapping(ORONWEN, NpcID.MOURNING_SEAMSTRESS);
+		registerMapping(LLETYA_BANKER_MALE, NpcID.MOURNING_ELF_BANKERM);
+		registerMapping(LLETYA_BANKER_FEMALE, NpcID.MOURNING_ELF_BANKERF);
+		registerMapping(DALLDAV, NpcID.MOURNING_BOW_SELLER);
+		registerMapping(GETHIN, NpcID.MOURNING_ELVEN_COOK);
+		registerMapping(GOREU, NpcID.MOURNING_TOWN_ELF_1);
+		registerMapping(ARVEL, NpcID.MOURNING_TOWN_ELF_3);
+		registerMapping(MAWRTH, NpcID.MOURNING_TOWN_ELF_4, NpcID.SOTE_MAWRTH, NpcID.SOTE_MAWRTH_CUTSCENE);
+		// Kelyn; as Lady Kelyn Ithell she is registered with the other clan lords and ladies below
+		registerMapping(KELYN, NpcID.MOURNING_TOWN_ELF_5_VIS, NpcID.SOTE_LADY_ITHELL_NORMAL);
+		registerMapping(EOIN, NpcID.MOURNING_ELF_KID_1, NpcID.SOTE_EOIN, NpcID.SOTE_EOIN_CUTSCENE);
+		registerMapping(IONA, NpcID.MOURNING_ELF_KID_2, NpcID.SOTE_IONA);
+		// SOTE_YSGAWYN_CUTSCENE and _CUTSCENE_RUN carry a bow the Nov definition has no part for
+		registerMapping(YSGAWYN, NpcID.SOTE_YSGAWYN_VIS);
+
+		// Song of the Elves rebels are the Mourning's End warriors again - the same live models and
+		// the same colors, pair for pair - so they wear the same Nov definitions. The one exception
+		// is SOTE_ELF_REBEL_CUTSCENE_3, the second warrior's body carrying a bow, which takes the bow
+		// warrior's whole kit rather than an outfit no 2005 definition had
+		registerMapping(NOV_ELF_ARCHER,
+			NpcID.SOTE_ELF_REBEL_CUTSCENE_1, NpcID.SOTE_ELF_REBEL_1, NpcID.SOTE_ELF_REBEL_1_UPASS,
+			NpcID.SOTE_UPASS_REBEL_WARRIOR_1, NpcID.SOTE_ELF_REBEL_CUTSCENE_3
+		);
+		registerMapping(NOV_ELF_ARCHER2,
+			NpcID.SOTE_ELF_REBEL_CUTSCENE_2, NpcID.SOTE_ELF_REBEL_2, NpcID.SOTE_ELF_REBEL_2_UPASS,
+			NpcID.SOTE_UPASS_REBEL_WARRIOR_2
+		);
+		registerMapping(NOV_ELF_WARRIOR,
+			NpcID.SOTE_ELF_REBEL_CUTSCENE_4, NpcID.SOTE_ELF_REBEL_3, NpcID.SOTE_ELF_REBEL_3_UPASS,
+			NpcID.SOTE_UPASS_REBEL_WARRIOR_3
+		);
+		registerMapping(NOV_ELF_WARRIOR2,
+			NpcID.SOTE_ELF_REBEL_CUTSCENE_5, NpcID.SOTE_ELF_REBEL_4, NpcID.SOTE_ELF_REBEL_4_UPASS,
+			NpcID.SOTE_UPASS_REBEL_WARRIOR_4
+		);
+
+		// Prifddinas citizens and the arena spectators, generated from their live definitions: body,
+		// then the lightest hair shade and the three clothing shades. The clan each set belongs to is
+		// proven by the same colors on that clan's lord or lady (Amlodd navy, Cadarn olive, Ithell
+		// white, Iorwerth near-black, Meilyr teal, Hefin crimson) or on a named member (Trahaearn pink
+		// on Reese, Crwys yellow on Oswallt).
+		registerCitizen(NpcID.PRIF_CITIZEN_AMROD, false, 3738, 796, 920, 918); // Amrod, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_MIRIEL, true, 8394, 796, 920, 918); // Miriel, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_CURUFIN, false, 28, 796, 920, 918); // Curufin, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_ENERDHIL, false, 12, -27116, -26864, -26740); // Enerdhil, Amlodd
+		registerCitizen(NpcID.PRIF_CITIZEN_TATIE, true, 12, -27116, -26864, -26740); // Tatie, Amlodd
+		registerCitizen(NpcID.PRIF_CITIZEN_FINDUILAS, true, 10341, -27116, -26864, -26740); // Finduilas, Amlodd
+		registerCitizen(NpcID.PRIF_CITIZEN_GELMIR, false, 3881, -27558, -32686, -32700); // Gelmir, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_MITHRELLAS, true, -22250, -27558, -32686, -32700); // Mithrellas, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_ERESTOR, false, 7467, -27558, -32686, -32700); // Erestor, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_LINDIR, false, -26428, -27558, -32686, -32700); // Lindir, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_IDRIL, true, 4750, -27558, -32686, -32700); // Idril, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_INGWION, false, 28, -32750, -32626, -32630); // Ingwion, Iorwerth
+		registerCitizen(NpcID.PRIF_CITIZEN_THINGOL, false, 8394, -32750, -32626, -32630); // Thingol, Iorwerth
+		registerCitizen(NpcID.PRIF_CITIZEN_ELENWE, true, 138, -32750, -32626, -32630); // Elenwe, Iorwerth
+		registerCitizen(NpcID.PRIF_CITIZEN_OROPHIN, false, 5667, -32750, -32626, -32630); // Orophin, Iorwerth
+		registerCitizen(NpcID.PRIF_CITIZEN_VAIRE, true, 8394, -14014, -14019, -14023); // Vaire, Trahaearn
+		registerCitizen(NpcID.PRIF_CITIZEN_ELLADAN, false, 8394, -14014, -14019, -14023); // Elladan, Trahaearn
+		registerCitizen(NpcID.PRIF_CITIZEN_GUILIN, false, 12, -14014, -14019, -14023); // Guilin, Trahaearn
+		registerCitizen(NpcID.PRIF_CITIZEN_INGWE, false, 536, -14014, -14019, -14023); // Ingwe, Trahaearn
+		registerCitizen(NpcID.PRIF_CITIZEN_CIRDAN, false, -22250, -14014, -14019, -14023); // Cirdan, Trahaearn
+		registerCitizen(NpcID.PRIF_CITIZEN_GLORFINDEL, false, 536, -14014, -14019, -14023); // Glorfindel, Trahaearn
+		registerCitizen(NpcID.PRIF_CITIZEN_AREDHEL, true, 3881, -14014, -24384, -14023); // Aredhel, Trahaearn
+		registerCitizen(NpcID.PRIF_CITIZEN_CELEGORM, false, 3881, 13854, 13978, 14102); // Celegorm, Cadarn
+		registerCitizen(NpcID.PRIF_CITIZEN_ANAIRE, true, 3738, 13854, 13978, 14102); // Anaire, Cadarn
+		registerCitizen(NpcID.PRIF_CITIZEN_MAEGLIN, false, 5667, 13854, 13978, 14102); // Maeglin, Cadarn
+		registerCitizen(NpcID.PRIF_CITIZEN_EDRAHIL, false, 536, 9127, 9125, 9121); // Edrahil, Crwys
+		registerCitizen(NpcID.PRIF_CITIZEN_FINGON, false, 536, 9127, 9125, 9121); // Fingon, Crwys
+		registerCitizen(NpcID.PRIF_CITIZEN_SALGANT, false, -26428, 32185, 32307, 32429); // Salgant, Meilyr
+		registerCitizen(NpcID.PRIF_CITIZEN_CELEBRIAN, true, 7467, 32185, 32307, 32429); // Celebrian, Meilyr
+		registerCitizen(NpcID.PRIF_CITIZEN_IMIN, false, 3881, 32185, 32307, 32429); // Imin, Meilyr
+		registerCitizen(NpcID.PRIF_CITIZEN_OROPHER, false, -22250, 32185, 32307, 32429); // Oropher, Meilyr
+		registerCitizen(NpcID.PRIF_CITIZEN_FINGOLFIN, false, 12, 796, 920, 918); // Fingolfin, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_MAHTAN, false, 8394, -27558, -32686, 914); // Mahtan, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_INDIS, true, 4750, 13854, 13978, 14102); // Indis, Cadarn
+		registerCitizen(NpcID.PRIF_CITIZEN_IMINYE, true, 138, -27558, -32686, -32700); // Iminye, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_FEANOR, false, 3738, -27116, -26864, -26740); // Feanor, Amlodd
+		registerCitizen(NpcID.PRIF_CITIZEN_SAEROS, false, 138, 796, 920, 918); // Saeros, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_NELLAS, true, 138, -14014, -14019, -14023); // Nellas, Trahaearn
+		registerCitizen(NpcID.PRIF_SPECTATOR1, false, 7467, 13854, 13978, 14102); // Rhyfel, Cadarn
+		registerCitizen(NpcID.PRIF_SPECTATOR2, false, 138, -27558, -32686, -32700); // Gwyl, Ithell
+		registerCitizen(NpcID.PRIF_SPECTATOR3, true, 138, -27116, -26864, -26740); // Enilly, Amlodd
+		registerCitizen(NpcID.PRIF_SPECTATOR4, true, 28, 796, 920, 918); // Ffoni, Hefin
+		registerCitizen(NpcID.PRIF_SPECTATOR5, false, 7467, -32750, -32626, -32630); // Ymladd, Iorwerth
+		registerCitizen(NpcID.PRIF_SPECTATOR6, false, -26428, -32750, -32626, -32630); // Sadwrn, Iorwerth
+		registerCitizen(NpcID.PRIF_SPECTATOR7, true, 5667, -32750, -32626, -32630); // Diol, Iorwerth
+		registerCitizen(NpcID.PRIF_SPECTATOR8, true, 3881, -32750, -32626, -32630); // Ysbeid, Iorwerth
+		registerCitizen(NpcID.PRIF_SPECTATOR9, false, 138, -32750, -32626, -32630); // Cleddyf, Iorwerth
+		registerCitizen(NpcID.PRIF_SPECTATOR10, true, 28, -32750, -32626, -32630); // Saeth, Iorwerth
+		registerCitizen(NpcID.PRIF_CITIZEN_NIMRODEL, true, 28, 9127, 9125, 9121); // Nimrodel, Crwys
+		registerCitizen(NpcID.PRIF_CITIZEN_MAEDHROS, false, -22493, -27116, -26864, -26740); // Maedhros, Amlodd
+		registerCitizen(NpcID.PRIF_CITIZEN_FINARFIN, false, -26428, 796, 920, 918); // Finarfin, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_GWINDOR, false, 4750, 796, 920, 918); // Gwindor, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_ELDALOTE, true, 5667, -27558, -32686, -32700); // Eldalote, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_ENELYE, true, 3738, -27558, -32686, -32700); // Enelye, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_NERDANEL, true, 138, -32750, -32626, -32630); // Nerdanel, Iorwerth
+		registerCitizen(NpcID.PRIF_CITIZEN_NIMLOTH, true, 4750, 32185, 32307, 32429); // Nimloth, Meilyr
+		registerCitizen(NpcID.PRIF_CITIZEN_FINDIS, true, 5667, -27116, -26864, -26740); // Findis, Amlodd
+		registerCitizen(NpcID.PRIF_CITIZEN_EARWEN, true, 3881, -24380, -24384, -24389); // Earwen, Trahaearn (slate)
+		registerCitizen(NpcID.PRIF_CITIZEN_CARANTHIR, false, 28, 13854, 13978, 14102); // Caranthir, Cadarn
+		registerCitizen(NpcID.PRIF_CITIZEN_ENEL, false, 7467, 9127, 9125, 9121); // Enel, Crwys
+		registerCitizen(NpcID.PRIF_CITIZEN_HENDOR, false, 10341, 796, 920, 918); // Hendor, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_GALATHIL, false, -26428, 796, 920, 918); // Galathil, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_TURGON, false, 10341, -27558, -32686, -32700); // Turgon, Ithell
+		registerCitizen(NpcID.PRIF_CITIZEN_LENWE, false, 7467, -27116, -26864, -26740); // Lenwe, Amlodd
+		registerCitizen(NpcID.PRIF_CITIZEN_ARANWE, false, 4750, 13854, 13978, 14102); // Aranwe, Cadarn
+
+		// The city's shopkeepers and instructors, the same way - every NPC in the cache wearing the
+		// citizens' six live recolors, bar the Gwenith villagers and the Deadman guards. Oswallt's
+		// trowel, Elgan's staff and Iwan's mace have no part in any Lletya outfit and are left behind
+		registerCitizen(NpcID.PRIF_ARMOURSTORE, false, 3881, -32750, -32626, -32630); // Aneirin, Iorwerth
+		registerCitizen(NpcID.PRIF_WEAPONSTORE, false, 28, -32750, -32626, -32630); // Celyn, Iorwerth
+		registerCitizen(NpcID.PRIF_FARMINGSTORE, true, 12, 9127, 9125, 9121); // Branwen, Crwys
+		registerCitizen(NpcID.PRIF_GARDENER, false, 4750, 9127, 9125, 9121); // Oswallt, Crwys
+		registerCitizen(NpcID.PRIF_HERBSTORE, true, 138, 32185, 32307, 32429); // Llio, Meilyr
+		registerCitizen(NpcID.PRIF_ACORN_TRADER_NOT_SPOKEN, false, 536, 9127, 9125, 9121, NpcID.PRIF_ACORN_TRADER_SPOKEN); // Pennant, Crwys
+		registerCitizen(NpcID.PRIF_AGILITY, true, 3881, 796, 920, 918); // Ystwyth, Hefin
+		registerCitizen(NpcID.PRIF_BARTENDER, true, 28, 796, 920, 918); // Eira, Hefin
+		registerCitizen(NpcID.PRIF_RUNESTORE, true, 7467, -27116, -26864, -26740); // Efa, Amlodd
+		registerCitizen(NpcID.GAUNTLET_INSTRUCTOR, false, 5667, -27116, -26864, -26740); // Bryn, Amlodd
+		registerCitizen(NpcID.PRIF_STAFFSTORE, false, 10341, -27116, -26864, -26740); // Elgan, Amlodd
+		registerCitizen(NpcID.PRIF_SEAMSTRESS, true, 3738, -27558, -32686, -32700); // Nia, Ithell
+		registerCitizen(NpcID.PRIF_ESTATE_AGENT, false, 7467, -27558, -32686, -32700); // Alwyn, Ithell
+		registerCitizen(NpcID.PRIF_DYESTORE, true, 3738, -27558, -32686, -32700); // Guinevere, Ithell
+		registerCitizen(NpcID.PRIF_MININGSTORE, false, -22250, -14014, -14019, -14023); // Gwyn, Trahaearn
+		registerCitizen(NpcID.PRIF_SINGER1, true, 138, -14014, -14019, -14023, NpcID.PRIF_SINGER1_LEARNT); // Reese, Trahaearn
+		registerCitizen(NpcID.ZALCANO_INSTRUCTOR, true, 3881, -14014, -14019, -14023); // Rhiannon, Trahaearn
+		registerCitizen(NpcID.PRIF_LLIANN, true, 3738, -27558, -32686, -32700); // Lliann, Ithell
+		registerCitizen(NpcID.PRIF_SINGER2, true, 5667, -27558, -32686, -32700, NpcID.PRIF_SINGER2_LEARNT); // Conwenna, Ithell
+		registerCitizen(NpcID.PRIF_GENERALSTORE, false, 7467, 13854, 13978, 14102); // Gwallter, Cadarn
+		registerCitizen(NpcID.PRIF_RANGESTORE, true, 8394, 13854, 13978, 14102); // Sian, Cadarn
+		registerCitizen(NpcID.PRIF_SAWMILL_OPERATOR, false, 7467, 9127, 9125, 9121); // Sawmill Operator, Crwys
+		registerCitizen(NpcID.PRIF_MACESTORE, false, 28, 796, 920, 918); // Iwan, Hefin
+		registerCitizen(NpcID.PRIF_LIBRARIAN, true, 5667, -22473, -22477, -22481); // Lilifang, bank grey
+		registerCitizen(NpcID.PRIF_PRIEST, false, 28, 796, 920, 918); // Crefydd, Hefin
+		registerCitizen(NpcID.PRIF_FOODSTORE, false, 3738, 32185, 32307, 32429); // Derwen, Meilyr
+		registerCitizen(NpcID.PRIF_SILVER, false, 10341, 32185, 32307, 32429); // Osian, Meilyr
+		registerCitizen(NpcID.PRIF_SPICE, false, 10341, 32185, 32307, 32429); // Caerwyn, Meilyr
+		registerCitizen(NpcID.PRIF_SILK, true, 8394, 32185, 32307, 32429); // Anwen, Meilyr
+		registerCitizen(NpcID.PRIF_GEM, true, 8394, 32185, 32307, 32429); // Glenda, Meilyr
+
+		// The bankers wear the Lletya bankers' own outfits, in the Prifddinas bank's grey
+		registerDressed(LLETYA_BANKER_MALE, 5667, -22473, -22477, -22481,
+			NpcID.PRIF_BANKERM1, NpcID.PRIF_BANKERM2, NpcID.PRIF_BANKERM3, NpcID.PRIF_BANKERM4);
+		registerDressed(LLETYA_BANKER_FEMALE, 5667, -22473, -22477, -22481,
+			NpcID.PRIF_BANKERF1, NpcID.PRIF_BANKERF2);
+
+		// The clan lords and ladies: one outfit each, chosen by hand so every form of a character
+		// matches, in the clan's colors and the hair measured off the top of their live model. Lady
+		// Kelyn Ithell is Kelyn - live draws both from the same model - so she wears Kelyn's own
+		// definition. Lord Baxtorian Cadarn is Baxtorian of the Waterfall Quest and is not here
+		registerDressed(EUDAV, 6348, -27116, -26864, -26740,
+			NpcID.SOTE_LORD_AMLODD_VIS, NpcID.SOTE_LORD_AMLODD_UPASS, NpcID.LORD_AMLODD);
+		registerDressed(DALLDAV, 156, 9127, 9125, 9121,
+			NpcID.SOTE_LORD_CRWYS_VIS, NpcID.SOTE_LORD_CRWYS_UPASS, NpcID.LORD_CRWYS);
+		registerDressed(YSGAWYN, -22248, -32750, -32626, -32630, NpcID.LORD_IORWERTH_NEW);
+		registerDressed(ARVEL, 103, 32185, 32307, 32429,
+			NpcID.SOTE_LADY_MEILYR_VIS, NpcID.SOTE_LADY_MEILYR_UPASS, NpcID.LADY_MEILYR);
+		registerDressed(MAWRTH, 2357, 796, 920, 918,
+			NpcID.SOTE_LADY_HEFIN_VIS, NpcID.SOTE_LADY_HEFIN_UPASS, NpcID.LADY_HEFIN);
+		registerDressed(ORONWEN, 92, -14014, -14019, -14023,
+			NpcID.SOTE_LADY_TRAHAEARN_VIS, NpcID.SOTE_LADY_TRAHAEARN_UPASS, NpcID.LADY_TRAHAEARN);
+		registerMapping(KELYN, NpcID.SOTE_LADY_ITHELL_VIS, NpcID.SOTE_LADY_ITHELL_UPASS, NpcID.LADY_ITHELL);
+
+		// The city guards, in their own hair and leathers. PRIF_CITY_GUARD_EVIL carries no recolor
+		// at all - it is the Mourning's End warrior's own model - so it is that warrior
+		registerPrifGuard(NpcID.PRIF_GUARD0, false, -22250, 4533, 4529, 4525);
+		registerPrifGuard(NpcID.PRIF_GUARD1, false, -26428, 3738, 3734, 5008);
+		registerPrifGuard(NpcID.PRIF_GUARD2, false, 12, 4533, 4529, 4525);
+		registerPrifGuard(NpcID.PRIF_GUARD3, false, 7467, 4316, 4308, 4304);
+		registerPrifGuard(NpcID.PRIF_GUARD4, true, -26428, 4316, 4308, 4304);
+		registerPrifGuard(NpcID.PRIF_GUARD5, true, 3881, 3738, 3734, 5008);
+		registerPrifGuard(NpcID.PRIF_GUARD6, true, 12, 4316, 4308, 4304);
+		registerPrifGuard(NpcID.PRIF_GUARD7, true, -26428, 4316, 4308, 4304);
+		registerPrifGuard(NpcID.PRIF_CITY_GUARD, true, -26428, 4316, 4308, 4304);
+		registerMapping(NOV_ELF_WARRIOR, NpcID.PRIF_CITY_GUARD_EVIL);
+		// The arena's gladiators are the city guard in the arena: the same model, leathers and halberd
+		registerPrifGuard(NpcID.PRIF_GLADIATOR1, false, -22493, 4533, 4529, 4525);
+		registerPrifGuard(NpcID.PRIF_GLADIATOR2, false, -22493, 4533, 4529, 4525);
+		// Deliberately left out: DEADMAN_GUARD_PRIF_VIS and DEADMAN_GUARD_PRIF_RANGE_VIS, like the other
+		// Deadman guards
+
+		// Elena. The prisoner model live keeps for her captivity in both Plague City and Song of the
+		// Elves is SOTE_ELENA_PRISON, which the ELENA_PRISON parent resolves to as well. Deliberately
+		// left out: SOTE_ELENA_HURT and SOTE_ELENA_CUTSCENE_HURT, which stand in a modern wounded pose
+		// 808 would overwrite
+		registerMapping(ELENA_PRISONER, NpcID.SOTE_ELENA_PRISON);
+		registerMapping(ELENA_DEFAULT,
+			NpcID.ELENA2_VIS, NpcID.ELENAP_VIS, NpcID.SOTE_ELENA, NpcID.SOTE_ELENA_CUTSCENE,
+			NpcID.SOTE_ELENA_CUTSCENE_NOMOVE, NpcID.SOTE_ELENA_CUTSCENE_RUN, NpcID.SOTE_RESISTANCE_ELENA,
+			NpcID.ELENA_PRIF
+		);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.

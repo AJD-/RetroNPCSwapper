@@ -50,8 +50,8 @@ import net.runelite.api.NPC;
 
 /**
  * Holds the retro replacement geometry, built once per NPC id and reused every frame.
- *
- * <p>The draw callback runs per entity per frame, so it must do a map lookup and nothing else.
+ * <p>
+ * The draw callback runs per entity per frame, so it must do a map lookup and nothing else.
  * Everything expensive - decoding model data, merging and lighting - happens here, driven from
  * NPC spawn and transform events rather than from the render path.
  */
@@ -344,10 +344,14 @@ public class RetroModelCache
 			return null;
 		}
 
+		// Zero for everything but Nov-2005 kit, whose meshes sit in their own key range - see
+		// RetroAssetBundle.NOV_HUMAN_KEY_BASE
+		int keyBase = data.getAssetKeyBase();
+
 		List<RetroMesh> parts = new ArrayList<>(modelIds.length);
 		for (int modelId : modelIds)
 		{
-			RetroMesh part = bundle.getMesh(modelId);
+			RetroMesh part = bundle.getMesh(keyBase + modelId);
 			if (part != null)
 			{
 				parts.add(part);
@@ -372,7 +376,7 @@ public class RetroModelCache
 			return null;
 		}
 
-		RetroMesh mesh = RetroMeshMerger.merge(modelIds[0], parts);
+		RetroMesh mesh = RetroMeshMerger.merge(keyBase + modelIds[0], parts);
 
 		// Recolor before lighting, not after: lit colors are baked once and never recomputed, so
 		// a recolor applied afterward would have nothing left to bite on. Retro dragon meshes are
@@ -410,7 +414,7 @@ public class RetroModelCache
 			ModelData.DEFAULT_X, ModelData.DEFAULT_Y, ModelData.DEFAULT_Z,
 			colors1, colors2, colors3);
 
-		InjectedModel injectedModel = new InjectedModel(mesh);
+		InjectedModel injectedModel = new InjectedModel(mesh, keyBase);
 		injectedModel.model.bind(mesh, colors1, colors2, colors3);
 		return injectedModel;
 	}
@@ -468,8 +472,13 @@ public class RetroModelCache
 		RetroMesh mesh = injectedModel.mesh;
 		RetroModel model = injectedModel.model;
 
+		// Both lookups stay inside the NPC's own key range. A Nov-2005 elf must never fall through to
+		// the Feb clip stored under the plain id: that clip is bound to a different rig, and would
+		// drive the right vertices off the wrong bones. Missing there, it drops to the rest pose.
+		int keyBase = injectedModel.keyBase;
+
 		int action = npc.getAnimation();
-		RetroClip clip = bundle.getClip(action);
+		RetroClip clip = action == -1 ? null : bundle.getClip(keyBase + action);
 		int frame = npc.getAnimationFrame();
 
 		if (action != -1)
@@ -479,7 +488,8 @@ public class RetroModelCache
 
 		if (clip == null || !clip.hasFrame(frame))
 		{
-			clip = bundle.getClip(npc.getPoseAnimation());
+			int pose = npc.getPoseAnimation();
+			clip = pose == -1 ? null : bundle.getClip(keyBase + pose);
 			frame = npc.getPoseAnimationFrame();
 		}
 
@@ -538,21 +548,25 @@ public class RetroModelCache
 		 */
 		private final RetroModel model = new RetroModel();
 
-		private InjectedModel(RetroMesh mesh)
+		/** What every mesh and clip lookup for this NPC is offset by; see RetroNpcData.getAssetKeyBase. */
+		private final int keyBase;
+
+		private InjectedModel(RetroMesh mesh, int keyBase)
 		{
 			this.mesh = mesh;
+			this.keyBase = keyBase;
 		}
 	}
 
 	/**
 	 * Checks {@link RetroSkinner} against the client's own animation for the same mesh and frame.
-	 *
-	 * <p>The skeleton is the only mesh that can settle this: it exists in the live cache, so the
+	 * <p>
+	 * The skeleton is the only mesh that can settle this: it exists in the live cache, so the
 	 * client will animate it, and it is also in the bundle, so we can animate it ourselves. Meshes
 	 * that only exist in the bundle - which is the point of the exercise - have nothing to compare
 	 * against by definition.
-	 *
-	 * <p>Only runs while no action animation is playing. The client layers a pose and an action
+	 * <p>
+	 * Only runs while no action animation is playing. The client layers a pose and an action
 	 * using the sequence's interleave mask to decide which wins per transform, and the skinner does
 	 * not implement that yet, so comparing mid-attack would measure the gap rather than the port.
 	 */

@@ -35,9 +35,21 @@ import java.util.Map;
  * Keyed by the ids the source caches use - model id, framemap id, sequence id - so a bundle can
  * be read against the same identifiers the rest of the plugin already speaks, and regenerating it
  * produces stable keys.
+ * <p>
+ * The exception is a second copy of an id from another source cache. The November 2005 build
+ * re-authored the human rig, so its elf meshes and the clips that animate them differ from the
+ * February ones stored under the same model and sequence ids. They are stored at
+ * {@link #NOV_HUMAN_KEY_BASE} plus the cache id, and an NPC built from them carries that base
+ * (see {@code RetroNpcData.getAssetKeyBase}) so every lookup it makes stays inside the namespace.
  */
 public final class RetroAssetBundle
 {
+	/**
+	 * Key offset for Nov-2005 human kit: meshes at base + model id, clips at base + sequence id.
+	 * Live model ids sit below 70k and sequence ids below 15k, so nothing shares this range.
+	 */
+	public static final int NOV_HUMAN_KEY_BASE = 1_000_000;
+
 	private final Map<Integer, RetroMesh> meshes;
 	private final Map<Integer, RetroRig> rigs;
 	private final Map<Integer, RetroClip> clips;

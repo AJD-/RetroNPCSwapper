@@ -84,6 +84,13 @@ public class RetroFrameDecoder
 	 */
 	public static final int RETRO_RIG_ID_BASE = 100_000;
 
+	/**
+	 * The Nov-2005 (b346) cache numbers its frame files the same way, but re-authored the human
+	 * framemap behind the same file ids. Its rigs need ids of their own, or a Nov clip would be bound
+	 * to whichever Feb rig claimed the shared id first.
+	 */
+	public static final int RETRO_NOV_RIG_ID_BASE = 200_000;
+
 	private static final int TRAILER_BYTES = 8;
 
 	public static int rigId(int fileId)
@@ -97,6 +104,12 @@ public class RetroFrameDecoder
 	 * there is nothing to gain by being lazy.
 	 */
 	public static RetroFrameIndex decodeAll(RetroCacheReader retro)
+	{
+		return decodeAll(retro, RETRO_RIG_ID_BASE);
+	}
+
+	/** As {@link #decodeAll(RetroCacheReader)}, synthesizing rig ids from {@code rigIdBase}. */
+	public static RetroFrameIndex decodeAll(RetroCacheReader retro, int rigIdBase)
 	{
 		Map<Integer, RetroFrameGroup> groups = new LinkedHashMap<>();
 		Map<Integer, Integer> frameToFile = new HashMap<>();
@@ -112,7 +125,7 @@ public class RetroFrameDecoder
 			RetroFrameGroup group;
 			try
 			{
-				group = decode(fileId, gunzipIfNeeded(raw));
+				group = decode(fileId, gunzipIfNeeded(raw), rigIdBase);
 			}
 			catch (RuntimeException e)
 			{
@@ -139,6 +152,12 @@ public class RetroFrameDecoder
 
 	/** Decodes one inflated index 2 file. */
 	public static RetroFrameGroup decode(int fileId, byte[] data)
+	{
+		return decode(fileId, data, RETRO_RIG_ID_BASE);
+	}
+
+	/** As {@link #decode(int, byte[])}, synthesizing the rig id from {@code rigIdBase}. */
+	public static RetroFrameGroup decode(int fileId, byte[] data, int rigIdBase)
 	{
 		if (data == null || data.length < TRAILER_BYTES + 2)
 		{
@@ -183,7 +202,7 @@ public class RetroFrameDecoder
 		int durationsOffset = valuesOffset + valuesLength;
 		int framemapOffset = durationsOffset + frameCount;
 
-		RetroFramemapDefinition framemap = decodeFramemap(fileId, data, framemapOffset, trailerOffset);
+		RetroFramemapDefinition framemap = decodeFramemap(fileId, data, framemapOffset, trailerOffset, rigIdBase);
 
 		Buffer masks = new Buffer(data);
 		masks.setOffset(masksOffset);
@@ -208,7 +227,8 @@ public class RetroFrameDecoder
 		return new RetroFrameGroup(fileId, framemap, frames);
 	}
 
-	private static RetroFramemapDefinition decodeFramemap(int fileId, byte[] data, int offset, int end)
+	private static RetroFramemapDefinition decodeFramemap(int fileId, byte[] data, int offset, int end,
+		int rigIdBase)
 	{
 		Buffer buffer = new Buffer(data);
 		buffer.setOffset(offset);
@@ -236,7 +256,7 @@ public class RetroFrameDecoder
 				+ buffer.getOffset() + ", expected " + end);
 		}
 
-		return new RetroFramemapDefinition(rigId(fileId), types, groups);
+		return new RetroFramemapDefinition(rigIdBase + fileId, types, groups);
 	}
 
 	/**

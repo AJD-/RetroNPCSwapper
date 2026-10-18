@@ -408,6 +408,61 @@ public class RetroAssetGeneratorTest
 	}
 
 	@Test
+	public void testAKeyedSpecTakesMeshesAndClipsFromOneRetroCache()
+	{
+		int base = RetroAssetBundle.NOV_HUMAN_KEY_BASE;
+		RetroAssetGenerator.Spec.keyed("ok", base, RetroAssetGenerator.Source.RETRO_NOV,
+			RetroAssetGenerator.Source.RETRO_NOV, new int[]{4014}, new int[]{808});
+
+		// A Nov mesh on a clip from any other cache is the rig mismatch the namespace keeps out
+		assertRejects(IllegalArgumentException.class, () -> RetroAssetGenerator.Spec.keyed("mixed", base,
+			RetroAssetGenerator.Source.RETRO_NOV, RetroAssetGenerator.Source.RETRO,
+			new int[]{4014}, new int[]{808}));
+		assertRejects(IllegalArgumentException.class, () -> RetroAssetGenerator.Spec.keyed("live", base,
+			RetroAssetGenerator.Source.LIVE, RetroAssetGenerator.Source.LIVE,
+			new int[]{4014}, new int[]{808}));
+		// An id past the base would land in the next range up
+		assertRejects(IllegalArgumentException.class, () -> RetroAssetGenerator.Spec.keyed("overflow", base,
+			RetroAssetGenerator.Source.RETRO_NOV, RetroAssetGenerator.Source.RETRO_NOV,
+			new int[]{base + 1}, new int[]{808}));
+	}
+
+	@Test
+	public void testTwoDifferentRigsCannotShareAnId() throws Exception
+	{
+		Map<Integer, RetroRig> rigs = new HashMap<>();
+		RetroRig feb = new RetroRig(100_083, new int[]{0, 1}, new int[][]{{0}, {1, 2}});
+		RetroAssetGenerator.registerRig(rigs, feb);
+
+		// The same skeleton again is harmless - two files can hold it
+		RetroAssetGenerator.registerRig(rigs, new RetroRig(100_083, new int[]{0, 1}, new int[][]{{0}, {1, 2}}));
+		assertSame(feb, rigs.get(100_083));
+
+		// A re-authored one at the same id is what a silent first-wins used to hide
+		assertRejects(java.io.IOException.class, () -> RetroAssetGenerator.registerRig(rigs,
+			new RetroRig(100_083, new int[]{0, 1}, new int[][]{{0}, {1, 7}})));
+	}
+
+	private interface Attempt
+	{
+		void run() throws Exception;
+	}
+
+	private static void assertRejects(Class<? extends Exception> expected, Attempt attempt)
+	{
+		try
+		{
+			attempt.run();
+		}
+		catch (Exception e)
+		{
+			assertTrue("expected " + expected.getSimpleName() + ", got " + e, expected.isInstance(e));
+			return;
+		}
+		fail("expected " + expected.getSimpleName());
+	}
+
+	@Test
 	public void testResampleIsIdentityWhenTheCountsMatch()
 	{
 		int[] lengths = {4, 2, 2, 6};

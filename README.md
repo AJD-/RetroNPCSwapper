@@ -31,7 +31,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Guards**
 - **Cows**
 - **Scorpions**
-- **Elves** — (Attackable only)
+- **Elves**
 - **Kalphites** — KQ, Guardians, Soldiers, Workers, Larvae
 
 Under **Scenery**:
@@ -95,18 +95,12 @@ the live objects around it. The Varrock retextures are not supported.
   cache.
 - **The injected categories ship their assets.** Dragons, demons, imps, guards, elves, cows,
   scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
-  live cache, so `retro-assets.dat` (~100 KB) is bundled in the jar and carries their meshes, rigs and animation
-  clips, extracted from the February 2005 cache (the dairy cow, which that cache lacks, from a
-  November 2005 one). This is the one thing the plugin distributes rather
-  than reads from your own installation, which is why the NPCs are all gated behind a single toggle
-  you can switch off. Parts are stored individually and joined at spawn, so the body the whole giant
-  family shares is carried once. The scenery meshes come from the same bundle and are switched by
-  their own toggles.
+  live cache, so `retro-assets.dat` (~170 KB) is bundled in the jar and carries their meshes, rigs and animation
+  clips, extracted from the February 2005 & November 2005 caches.
 - **Scenery is drawn by a stand-in.** Static scenery is baked into the renderer's geometry when the
   scene loads and never passes through a per-frame draw, so the plugin asks the renderer to leave
   the live object out and places a stand-in object in its spot, which the draw callback dresses in
-  the 2005 model. The dairy cow animates, so its stand-in also keeps its own frame of the 2005
-  animation and the 2005 model is posed for it on every draw.
+  the 2005 model.
 - Safety settings (on by default) disable all swapping on PvP worlds and in the Wilderness.
 
 There is currently no sanctioned RuneLite API for overriding NPC models, which is why the plugin
@@ -153,10 +147,11 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
   2005 animation clips, resampled onto the live sequences' frame counts so the frame index the
   client drives still lines up. It needs the [Feburary 2005 cache](https://archive.openrs2.org/caches/runescape/2572)
   and the [November 2005 cache]( https://archive.openrs2.org/caches/runescape/2672) (build 346),
-  which the dairy cow comes from: extract the `cache/` folder of its zip to
+  which the dairy cow and the Lletya elves come from: extract the `cache/` folder of its zip to
   `retrocache/nov2005cache`, or point `-PretroNovDir=<path>` at it. Only the entries that ask for
   it read it — that build re-authored the human and cow rigs, so don't point `-PretroDir` at it to
-  regenerate everything else.
+  regenerate everything else. The Nov elves' meshes, clips and rigs are stored under keys of their
+  own, apart from the February human kit that shares their ids.
 - `./gradlew verifyRetroRigs` measures *reach* — the share of a clip's transform ops that land on
   vertex groups the mesh actually has. A rig authored for a different mesh scores 47-68%, against
   96-100% for a mesh animated by its own rig. This is what separates "the sequence ID survived" from
