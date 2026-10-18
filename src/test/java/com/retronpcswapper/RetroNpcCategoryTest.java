@@ -26,10 +26,12 @@ package com.retronpcswapper;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.retronpcswapper.inject.RetroAssetBundle;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -505,13 +507,16 @@ public class RetroNpcCategoryTest
 		// wears this kit, so the category resolves by registered id and the name alone buys
 		// nothing. Trolls, dwarves, elves, goblins and archers were all being swapped before.
 		int[] notTownGuards = {
-			NpcID.TROLL_SGUARD1, NpcID.DWARF_CITY_BLACK_GUARD1, NpcID.PRIF_GUARD1,
+			NpcID.TROLL_SGUARD1, NpcID.DWARF_CITY_BLACK_GUARD1,
 			NpcID.DORGESH_GUARD1, NpcID.LATHASTRAINER2, NpcID.DEADMAN_GUARD_FALADOR_RANGE_VIS};
 		for (int id : notTownGuards)
 		{
 			assertNull("NPC " + id + " is named Guard but is not a town guard",
 				RetroNpcMapping.get(id, "Guard"));
 		}
+		// Prifddinas's guards are elves, and swap as elves
+		assertEquals(RetroNpcCategory.ELVES,
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_GUARD1, "Guard")).getCategory());
 
 		// The Ratcatchers guards do wear the kit and were only ever reached by name, so they are
 		// registered by id now rather than lost
@@ -541,11 +546,33 @@ public class RetroNpcCategoryTest
 		}
 	}
 
+	/**
+	 * A Lletya elf, pinned to its Nov-2005 definition: parts, opcode 40 pairs and resize as they
+	 * appear there, every lookup in the Nov key range, and the 808/819 the definition stands in.
+	 */
+	private static void assertNovElf(String name, int novDef, int[] parts, short[] find, short[] replace,
+		int scaleXZ, int scaleY, int... ids)
+	{
+		assertElves(name, parts, ids);
+		for (int id : ids)
+		{
+			RetroNpcData elf = Objects.requireNonNull(RetroNpcMapping.get(id, name));
+			String label = name + " " + id + " (Nov definition " + novDef + ")";
+			assertEquals(label, RetroAssetBundle.NOV_HUMAN_KEY_BASE, elf.getAssetKeyBase());
+			assertArrayEquals(label, find, elf.getOriginalColors());
+			assertArrayEquals(label, replace, elf.getReplacementColors());
+			assertEquals(label, scaleXZ, elf.getScaleXZ());
+			assertEquals(label, scaleY, elf.getScaleY());
+			assertEquals(label, AnimationID.HUMAN_READY, elf.getIdleAnimationId());
+			assertEquals(label, AnimationID.HUMAN_WALK_F, elf.getWalkAnimationId());
+			assertEquals(label, AnimationID.HUMAN_DEATH, elf.getDeathAnimationId());
+		}
+	}
+
 	@Test
 	public void testElvesCategory()
 	{
-		// Definition 1183 (bow) and 1184 (pike), the Regicide elves. The Mourning's End Elf
-		// Archer/Warrior postdate the Feb-2005 cache and take the same kits by level and weapon.
+		// Definition 1183 (bow) and 1184 (pike), the Regicide elves
 		int[] archerParts = {4014, 4018, 4022, 4024, 4044};
 		int[] warriorParts = {4014, 4018, 4022, 4024, 4033};
 		assertElves("Iorwerth Archer", archerParts,
@@ -554,7 +581,6 @@ public class RetroNpcCategoryTest
 			NpcID.SOTE_UPASS_IORWERTH_WARRIOR_1, NpcID.SOTE_UPASS_IORWERTH_WARRIOR_2,
 			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_2, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_4,
 			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_9, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_10);
-		assertElves("Elf Archer", archerParts, NpcID.MOURNING_GUARD_RANGE, NpcID.MOURNING_GUARD_RANGE2);
 		assertElves("Iorwerth Warrior", warriorParts,
 			NpcID.REGICIDE_DARKELF2, NpcID.REGICIDE_DARKELF3,
 			NpcID.SOTE_CAVE_WARRIOR_1, NpcID.SOTE_IORWERTH_WARRIOR_3, NpcID.SOTE_IORWERTH_WARRIOR_4,
@@ -563,7 +589,6 @@ public class RetroNpcCategoryTest
 			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_1, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_3,
 			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_5, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_6,
 			NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_7, NpcID.SOTE_IORWERTH_WARRIOR_CUTSCENE_8);
-		assertElves("Elf Warrior", warriorParts, NpcID.MOURNING_GUARD_MELEE, NpcID.MOURNING_GUARD_MELEE2);
 
 		// The named elves, each with a Song of the Elves bow form carrying 4044
 		assertElves("Arianwyn", new int[]{4015, 4021, 4023, 4025, 4027},
@@ -582,20 +607,102 @@ public class RetroNpcCategoryTest
 			NpcID.ROVING_FEMALE_WOODELF_2OP, NpcID.SOTE_ELUNED_UPASS, NpcID.SOTE_ELUNED_CUTSCENE,
 			NpcID.ELUNED_PRIF);
 
-		// The Lletya townsfolk postdate the Feb-2005 cache and stay modern
-		assertNull(RetroNpcMapping.get(NpcID.MOURNING_TOWN_ELF_1, "Goreu"));
-		for (int mawrth : new int[]{NpcID.MOURNING_TOWN_ELF_4, NpcID.SOTE_MAWRTH, NpcID.SOTE_MAWRTH_CUTSCENE})
-		{
-			assertNull("Mawrth " + mawrth + " must not be swapped", RetroNpcMapping.get(mawrth, "Mawrth"));
-		}
-		assertNull(RetroNpcMapping.get(NpcID.MOURNING_TOWN_ELF_3, "Arvel"));
-		for (int kelyn : new int[]{NpcID.MOURNING_TOWN_ELF_5_VIS, NpcID.SOTE_LADY_ITHELL_NORMAL})
-		{
-			assertNull("Kelyn " + kelyn + " must not be swapped", RetroNpcMapping.get(kelyn, "Kelyn"));
-		}
+		// Lletya, from the Nov-2005 cache: each definition's own parts, pairs and resize, all in
+		// the Nov key range. The Mourning's End warriors pair with definitions 2359-2362 in id order.
+		assertNovElf("Elf Warrior", 2359, new int[]{4020, 4025, 4016, 4033, 4023},
+			new short[]{9152, 6449, 25886}, new short[]{8912, 7646, 7646}, 127, 120, NpcID.MOURNING_GUARD_MELEE);
+		assertNovElf("Elf Warrior", 2360, new int[]{8266, 4025, 4016, 4033, 4023},
+			new short[]{9137, 6449, 4550}, new short[]{9112, 7646, 6829}, 127, 120, NpcID.MOURNING_GUARD_MELEE2);
+		assertNovElf("Elf Archer", 2361, new int[]{8266, 4025, 4016, 4044, 4023},
+			new short[]{9152, 9137, 25886}, new short[]{8910, 5429, 7646}, 127, 120, NpcID.MOURNING_GUARD_RANGE);
+		assertNovElf("Elf Archer", 2362, new int[]{8263, 4025, 4016, 4044, 4023},
+			new short[]{9152, 9137, 4550}, new short[]{8910, 5429, 6699}, 128, 125, NpcID.MOURNING_GUARD_RANGE2);
+		assertNovElf("Ilfeen", 1777, new int[]{4029, 4030, 4032, 3194, 4028, 4031},
+			new short[]{17864, 14517, 9327}, new short[]{7845, 8753, 6478}, 128, 128,
+			NpcID.ROVING_ILFEEN_1OP, NpcID.ROVING_ILFEEN_2OPS, NpcID.SOTE_ILFEEN_VIS, NpcID.SOTE_ILFEEN_CUTSCENE);
+		assertNovElf("Eudav", 2352, new int[]{8264, 8268, 6975, 8267},
+			new short[]{7595, 8792}, new short[]{6587, 7634}, 127, 120, NpcID.MOURNING_STORES_MAN);
+		assertNovElf("Oronwen", 2353, new int[]{4030, 6981, 480, 6978, 8270},
+			new short[]{7595, 8792}, new short[]{6587, 16706}, 128, 129, NpcID.MOURNING_SEAMSTRESS);
+		assertNovElf("Banker", 2354, new int[]{8266, 8269, 6975, 6976},
+			new short[]{107, 7595, 8792, 8652}, new short[]{7390, 7376, 7479, 5400}, 128, 128,
+			NpcID.MOURNING_ELF_BANKERM);
+		assertNovElf("Banker", 2355, new int[]{4030, 6980, 480, 6978, 6979},
+			new short[]{107, 7595, 8792, 9137, 14517, 8652}, new short[]{7390, 7376, 7479, 4502, 7479, 6439},
+			135, 130, NpcID.MOURNING_ELF_BANKERF);
+		assertNovElf("Dalldav", 2356, new int[]{4021, 6977, 6975, 8267},
+			new short[]{8792, 7595, 8741}, new short[]{7634, 13867, 13867}, 127, 120, NpcID.MOURNING_BOW_SELLER);
+		assertNovElf("Gethin", 2357, new int[]{8357, 8263, 8268, 6975, 6976},
+			new short[]{107, 7595, 8792}, new short[]{7390, 6480, 6583}, 128, 128, NpcID.MOURNING_ELVEN_COOK);
+		assertNovElf("Goreu", 2363, new int[]{8266, 6977, 6975, 4023},
+			new short[]{16701, 9137, 25886}, new short[]{7613, 5429, 7646}, 127, 113, NpcID.MOURNING_TOWN_ELF_1);
+		assertNovElf("Ysgawyn", 2364, new int[]{4020, 8269, 6975, 8267},
+			new short[]{16701, 9137, 25886, 8792, 9152}, new short[]{7613, 5429, 7646, 13762, 8101}, 132, 131,
+			NpcID.SOTE_YSGAWYN_VIS);
+		assertNovElf("Arvel", 2365, new int[]{4030, 6981, 480, 6978, 6979},
+			new short[]{16701, 9137, 25886, 8792, 8652, 14517}, new short[]{7613, 8109, 7646, 13762, 7595, 7595},
+			128, 128, NpcID.MOURNING_TOWN_ELF_3);
+		assertNovElf("Mawrth", 2366, new int[]{4030, 6980, 480, 6978, 6979},
+			new short[]{14517}, new short[]{7595}, 123, 110,
+			NpcID.MOURNING_TOWN_ELF_4, NpcID.SOTE_MAWRTH, NpcID.SOTE_MAWRTH_CUTSCENE);
+		assertNovElf("Kelyn", 2367, new int[]{4030, 6981, 6978, 6979},
+			new short[]{16701, 9137, 25886}, new short[]{7613, 5429, 7646}, 128, 128,
+			NpcID.MOURNING_TOWN_ELF_5_VIS, NpcID.SOTE_LADY_ITHELL_NORMAL);
+		assertNovElf("Eoin", 2368, new int[]{8264, 8269, 6975, 6976},
+			new short[]{9137, 8792}, new short[]{8117, 11592}, 100, 79,
+			NpcID.MOURNING_ELF_KID_1, NpcID.SOTE_EOIN, NpcID.SOTE_EOIN_CUTSCENE);
+		assertNovElf("Iona", 2369, new int[]{4021, 6977, 6975, 8267},
+			new short[]{9137, 8792}, new short[]{8117, 11592}, 106, 87,
+			NpcID.MOURNING_ELF_KID_2, NpcID.SOTE_IONA);
 
-		// Both 2005 warriors stand in 813, the bow elf included
+		// The Nov warriors fight like their Feb counterparts, but stand where their definitions do
+		RetroNpcData novWarrior = Objects.requireNonNull(RetroNpcMapping.get(NpcID.MOURNING_GUARD_MELEE, "Elf Warrior"));
+		assertEquals(AnimationID.HUMAN_SCYTHE_SWEEP, novWarrior.getAttackAnimationId());
+		assertEquals(AnimationID.HUMAN_SPEAR_BLOCK, novWarrior.getDefendAnimationId());
+		RetroNpcData novArcher = Objects.requireNonNull(RetroNpcMapping.get(NpcID.MOURNING_GUARD_RANGE, "Elf Archer"));
+		assertEquals(AnimationID.HUMAN_BOW, novArcher.getAttackAnimationId());
+		assertEquals(AnimationID.HUMAN_UNARMEDBLOCK, novArcher.getDefendAnimationId());
+
+		// Elena, Feb-2005 human kit at no key base: 335 the prisoner, 715 everywhere else. Several
+		// colors are past 32767 and stored as the signed shorts the palette uses
+		RetroNpcData prisoner = Objects.requireNonNull(RetroNpcMapping.get(NpcID.SOTE_ELENA_PRISON, "Elena"));
+		assertEquals(RetroNpcCategory.ELVES, prisoner.getCategory());
+		assertArrayEquals(new int[]{390, 456, 332, 353, 440, 445}, prisoner.getRetroModelIds());
+		assertArrayEquals(new short[]{8741, 25238, 6798, (short) 43072, 41}, prisoner.getOriginalColors());
+		assertArrayEquals(new short[]{(short) 32962, 21838, 4502, 4550, (short) 59350},
+			prisoner.getReplacementColors());
+		assertEquals(0, prisoner.getAssetKeyBase());
+		for (int id : new int[]{NpcID.ELENA2_VIS, NpcID.ELENAP_VIS, NpcID.SOTE_ELENA, NpcID.SOTE_ELENA_CUTSCENE,
+			NpcID.SOTE_ELENA_CUTSCENE_NOMOVE, NpcID.SOTE_ELENA_CUTSCENE_RUN, NpcID.SOTE_RESISTANCE_ELENA,
+			NpcID.ELENA_PRIF})
+		{
+			RetroNpcData elena = RetroNpcMapping.get(id, "Elena");
+			assertNotNull("Elena " + id + " must be swapped", elena);
+			assertArrayEquals(new int[]{390, 474, 347, 353, 438, 358}, elena.getRetroModelIds());
+			assertArrayEquals(new short[]{8741, 25238, 6798, (short) 43072}, elena.getOriginalColors());
+			assertArrayEquals(new short[]{(short) 32962, 21838, 4502, 4550}, elena.getReplacementColors());
+			assertEquals(AnimationID.HUMAN_READY, elena.getIdleAnimationId());
+			assertEquals(AnimationID.HUMAN_WALK_F, elena.getWalkAnimationId());
+			assertEquals(0, elena.getAssetKeyBase());
+		}
+		// The wounded Elena stands in a modern pose 808 would overwrite
+		assertNull(RetroNpcMapping.get(NpcID.SOTE_ELENA_HURT, "Elena"));
+		assertNull(RetroNpcMapping.get(NpcID.SOTE_ELENA_CUTSCENE_HURT, "Elena"));
+		// Ysgawyn's cutscene forms carry a bow his definition has no part for
+		assertNull(RetroNpcMapping.get(NpcID.SOTE_YSGAWYN_CUTSCENE, "Ysgawyn"));
+		assertNull(RetroNpcMapping.get(NpcID.SOTE_YSGAWYN_CUTSCENE_RUN, "Ysgawyn"));
+
+		// Song of the Elves rebels wear the Mourning's End warriors' Nov definitions, pair for pair
+		// by their live colors; the bow-carrying second body takes the bow warrior's kit
+		assertSame(RetroNpcMapping.NOV_ELF_ARCHER, RetroNpcMapping.get(NpcID.SOTE_ELF_REBEL_1, "Rebel Archer"));
+		assertSame(RetroNpcMapping.NOV_ELF_ARCHER, RetroNpcMapping.get(NpcID.SOTE_ELF_REBEL_CUTSCENE_3, "Rebel Archer"));
+		assertSame(RetroNpcMapping.NOV_ELF_ARCHER2, RetroNpcMapping.get(NpcID.SOTE_UPASS_REBEL_WARRIOR_2, "Rebel Archer"));
+		assertSame(RetroNpcMapping.NOV_ELF_WARRIOR, RetroNpcMapping.get(NpcID.SOTE_ELF_REBEL_3_UPASS, "Rebel Warrior"));
+		assertSame(RetroNpcMapping.NOV_ELF_WARRIOR2, RetroNpcMapping.get(NpcID.SOTE_ELF_REBEL_CUTSCENE_5, "Rebel Warrior"));
+
+		// Both Feb-2005 warriors stand in 813, the bow elf included, and use the plain keys
 		RetroNpcData archer = Objects.requireNonNull(RetroNpcMapping.get(NpcID.REGICIDE_DARKELF, "Iorwerth Archer"));
+		assertEquals(0, archer.getAssetKeyBase());
 		assertEquals(AnimationID.HUMAN_STAFFREADY, archer.getIdleAnimationId());
 		assertEquals(AnimationID.HUMAN_WALK_F, archer.getWalkAnimationId());
 		assertEquals(AnimationID.HUMAN_BOW, archer.getAttackAnimationId());
@@ -620,7 +727,7 @@ public class RetroNpcCategoryTest
 
 		// Every combat id an elf is expected to play predates Feb 2005 and ships as a clip under its
 		// own id, so it must pass straight through - the same rule as the guards' 1156
-		for (RetroNpcData elf : new RetroNpcData[]{archer, warrior})
+		for (RetroNpcData elf : new RetroNpcData[]{archer, warrior, novArcher, novWarrior})
 		{
 			for (int anim : new int[]{AnimationID.HUMAN_BOW, AnimationID.HUMAN_SPEAR_SPIKE,
 				AnimationID.HUMAN_SPEAR_BLOCK, AnimationID.HUMAN_SCYTHE_SWEEP,
@@ -662,13 +769,163 @@ public class RetroNpcCategoryTest
 			NpcID.MOURNING_ARIANWYN, NpcID.SOTE_ISLWYN, NpcID.SOTE_ISLWYN_LLETYA,
 			NpcID.SOTE_ISLWYN_UPASS_PRE, NpcID.SOTE_ELUNED_LLETYA, NpcID.SOTE_ARIANWYN_WATERFALL,
 			NpcID.SOTE_ARIANWYN_WATERFALL_BAXTORIAN, NpcID.ROVING_FEMALE_WOODELF,
-			NpcID.ROVING_FEMALE_WOODELF_TEMP})
+			NpcID.ROVING_FEMALE_WOODELF_TEMP,
+			NpcID.MOURNING_TOWN_ELF_2, NpcID.SOTE_YSGAWYN, NpcID.SOTE_YSGAWYN_FOREST, NpcID.SOTE_ILFEEN,
+			NpcID.SOTE_ILFEEN_LLETYA, NpcID.SOTE_ILFEEN_UPASS, NpcID.ILFEEN_PRIF,
+			NpcID.SOTE_LADY_ITHELL_UPASS_PRE, NpcID.ELENA_PRISON, NpcID.ELENA_BASEMENT, NpcID.ELENA2,
+			NpcID.ELENA_LLETYA, NpcID.ELENA_LLETYA_HQ, NpcID.ELENAP, NpcID.SOTE_ELENA_UPASS})
 		{
 			assertNull("multiloc parent " + id + " must not be swapped", RetroNpcMapping.get(id, null));
 		}
-		assertNull(RetroNpcMapping.get(NpcID.SOTE_LADY_ITHELL_VIS, "Lady Kelyn Ithell"));
-		assertNull(RetroNpcMapping.get(NpcID.SOTE_LADY_ITHELL_UPASS, "Lady Kelyn Ithell"));
+		// Lady Kelyn Ithell is Kelyn - live draws both from one model - so she wears Kelyn's definition
+		for (int id : new int[]{NpcID.SOTE_LADY_ITHELL_VIS, NpcID.SOTE_LADY_ITHELL_UPASS, NpcID.LADY_ITHELL})
+		{
+			assertSame(RetroNpcMapping.KELYN, RetroNpcMapping.get(id, "Lady Kelyn Ithell"));
+		}
+		// 8770 is Ilfeen's id family but named "Elven Scout"
+		assertNull(RetroNpcMapping.get(NpcID.ROVING_ILFEEN_SCOUT, "Elven Scout"));
 		assertNull(RetroNpcMapping.get(NpcID.NZONE_SOTE_ARIANWYN_HARD, "Arianwyn (hard)"));
+	}
+
+	@Test
+	public void testPrifddinasCitizensWearTheirClanColors()
+	{
+		short[] find = {9137, 9152, 8792, 16701, 8652, 7595};
+		int[] maleHeads = {8266, 4020, 8264, 4021};
+
+		// Every citizen and spectator is swapped, onto a Lletya outfit for its body, in the Nov range
+		for (int id = NpcID.PRIF_CITIZEN_AMROD; id <= NpcID.PRIF_CITIZEN_ARANWE; id++)
+		{
+			RetroNpcData citizen = RetroNpcMapping.get(id, null);
+			assertNotNull("citizen " + id + " must be swapped", citizen);
+			assertEquals(RetroNpcCategory.ELVES, citizen.getCategory());
+			assertEquals(RetroAssetBundle.NOV_HUMAN_KEY_BASE, citizen.getAssetKeyBase());
+			assertArrayEquals(find, citizen.getOriginalColors());
+			assertEquals(AnimationID.HUMAN_READY, citizen.getIdleAnimationId());
+			int head = citizen.getRetroModelIds()[0];
+			assertTrue("citizen " + id + " wears head " + head,
+				head == 4030 || Arrays.stream(maleHeads).anyMatch(h -> h == head));
+		}
+
+		// One citizen per clan, carrying that clan's clothing onto the main garment, the secondary
+		// cloth and the trim
+		assertClan(NpcID.PRIF_CITIZEN_AMROD, false, 3738, 796, 920, 918);           // Hefin, crimson
+		assertClan(NpcID.PRIF_CITIZEN_TATIE, true, 12, -27116, -26864, -26740);     // Amlodd, navy
+		assertClan(NpcID.PRIF_CITIZEN_GELMIR, false, 3881, -27558, -32686, -32700); // Ithell, white
+		assertClan(NpcID.PRIF_CITIZEN_ELENWE, true, 138, -32750, -32626, -32630);   // Iorwerth, near-black
+		assertClan(NpcID.PRIF_CITIZEN_VAIRE, true, 8394, -14014, -14019, -14023);   // Trahaearn, pink
+		assertClan(NpcID.PRIF_CITIZEN_ANAIRE, true, 3738, 13854, 13978, 14102);     // Cadarn, olive
+		assertClan(NpcID.PRIF_CITIZEN_FINGON, false, 536, 9127, 9125, 9121);        // Crwys, yellow
+		assertClan(NpcID.PRIF_CITIZEN_SALGANT, false, -26428, 32185, 32307, 32429); // Meilyr, teal
+	}
+
+	@Test
+	public void testPrifddinasShopsBanksLordsAndGuards()
+	{
+		short[] find = {9137, 9152, 8792, 16701, 8652, 7595};
+
+		// Shopkeepers and instructors are citizens like any other; a character with two ids keeps
+		// one outfit across both
+		assertClan(NpcID.PRIF_ARMOURSTORE, false, 3881, -32750, -32626, -32630); // Aneirin, Iorwerth
+		assertClan(NpcID.PRIF_GARDENER, false, 4750, 9127, 9125, 9121);          // Oswallt, Crwys
+		assertClan(NpcID.PRIF_SINGER1, true, 138, -14014, -14019, -14023);       // Reese, Trahaearn
+		assertClan(NpcID.ZALCANO_INSTRUCTOR, true, 3881, -14014, -14019, -14023); // Rhiannon
+		assertClan(NpcID.GAUNTLET_INSTRUCTOR, false, 5667, -27116, -26864, -26740); // Bryn
+		assertSame(RetroNpcMapping.get(NpcID.PRIF_SINGER1, "Reese"),
+			RetroNpcMapping.get(NpcID.PRIF_SINGER1_LEARNT, "Reese"));
+		assertSame(RetroNpcMapping.get(NpcID.PRIF_ACORN_TRADER_NOT_SPOKEN, "Pennant"),
+			RetroNpcMapping.get(NpcID.PRIF_ACORN_TRADER_SPOKEN, "Pennant"));
+		assertSame(RetroNpcMapping.get(NpcID.PRIF_SINGER2, "Conwenna"),
+			RetroNpcMapping.get(NpcID.PRIF_SINGER2_LEARNT, "Conwenna"));
+		assertClan(NpcID.PRIF_LLIANN, true, 3738, -27558, -32686, -32700);       // Lliann, Ithell
+		assertClan(NpcID.PRIF_SAWMILL_OPERATOR, false, 7467, 9127, 9125, 9121);  // Crwys
+		assertClan(NpcID.PRIF_GEM, true, 8394, 32185, 32307, 32429);              // Glenda, Meilyr
+		// The arena's gladiators are the city guard again
+		assertArrayEquals(new int[]{4020, 4025, 4016, 4033, 4023},
+			Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_GLADIATOR1, "Gladiator")).getRetroModelIds());
+
+		// The bankers wear the Lletya bankers' own outfits, in the bank's grey
+		RetroNpcData bankerM = Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_BANKERM1, "Banker"));
+		assertArrayEquals(RetroNpcMapping.LLETYA_BANKER_MALE.getRetroModelIds(), bankerM.getRetroModelIds());
+		assertArrayEquals(find, bankerM.getOriginalColors());
+		RetroNpcData bankerF = Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_BANKERF2, "Banker"));
+		assertArrayEquals(RetroNpcMapping.LLETYA_BANKER_FEMALE.getRetroModelIds(), bankerF.getRetroModelIds());
+		assertEquals(135, bankerF.getScaleXZ());
+
+		// Lords and ladies: one outfit per character across every form, in the clan's clothing
+		for (int[] lord : new int[][]{
+			{NpcID.SOTE_LORD_AMLODD_VIS, NpcID.SOTE_LORD_AMLODD_UPASS, NpcID.LORD_AMLODD, -27116},
+			{NpcID.SOTE_LORD_CRWYS_VIS, NpcID.SOTE_LORD_CRWYS_UPASS, NpcID.LORD_CRWYS, 9127},
+			{NpcID.LORD_IORWERTH_NEW, NpcID.LORD_IORWERTH_NEW, NpcID.LORD_IORWERTH_NEW, -32750},
+			{NpcID.SOTE_LADY_MEILYR_VIS, NpcID.SOTE_LADY_MEILYR_UPASS, NpcID.LADY_MEILYR, 32185},
+			{NpcID.SOTE_LADY_HEFIN_VIS, NpcID.SOTE_LADY_HEFIN_UPASS, NpcID.LADY_HEFIN, 796},
+			{NpcID.SOTE_LADY_TRAHAEARN_VIS, NpcID.SOTE_LADY_TRAHAEARN_UPASS, NpcID.LADY_TRAHAEARN, -14014}})
+		{
+			RetroNpcData first = Objects.requireNonNull(RetroNpcMapping.get(lord[0], null));
+			assertEquals(RetroAssetBundle.NOV_HUMAN_KEY_BASE, first.getAssetKeyBase());
+			assertEquals((short) lord[3], first.getReplacementColors()[2]);
+			assertSame(first, RetroNpcMapping.get(lord[1], null));
+			assertSame(first, RetroNpcMapping.get(lord[2], null));
+		}
+		// Lord Baxtorian Cadarn is Baxtorian of the Waterfall Quest, and was not asked for
+		assertNull(RetroNpcMapping.get(NpcID.LORD_CADARN, "Lord Baxtorian Cadarn"));
+
+		// The city guards: the pike warrior's kit, the women on the Lletya women's head, in their
+		// own leathers with the pike's colors kept; the corrupted guard is the warrior unchanged
+		RetroNpcData guard = Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_GUARD0, "Guard"));
+		assertArrayEquals(new int[]{4020, 4025, 4016, 4033, 4023}, guard.getRetroModelIds());
+		assertArrayEquals(new short[]{9137, 9152, 8792, 16701, 8652, 7595, 6449, 25886}, guard.getOriginalColors());
+		assertArrayEquals(new short[]{-22250, -22250, 4533, 4533, 4529, 4525, 7646, 7646}, guard.getReplacementColors());
+		assertEquals(AnimationID.HUMAN_SCYTHE_SWEEP, guard.getAttackAnimationId());
+		assertEquals(RetroAssetBundle.NOV_HUMAN_KEY_BASE, guard.getAssetKeyBase());
+		for (int id = NpcID.PRIF_GUARD4; id <= NpcID.PRIF_CITY_GUARD; id++)
+		{
+			RetroNpcData female = Objects.requireNonNull(RetroNpcMapping.get(id, "Guard"));
+			assertArrayEquals(new int[]{4030, 4025, 4016, 4033, 4023}, female.getRetroModelIds());
+		}
+		assertSame(RetroNpcMapping.NOV_ELF_WARRIOR, RetroNpcMapping.get(NpcID.PRIF_CITY_GUARD_EVIL, "Guard"));
+		assertNull(RetroNpcMapping.get(NpcID.PRIF_CITY_GUARD_MULTI, null));
+	}
+
+	/**
+	 * Every live NPC carrying the citizens' six recolors - three hair shades, three clothing - found by
+	 * sweeping the whole live cache on 2026-10-16. All of them are Prifddinas or Lletya elves, so all
+	 * of them must swap. The exceptions are the Gwenith villagers (9178-9180), who are not a clan, and
+	 * the Deadman Prifddinas guards (6595, 11211), left out with every other Deadman guard.
+	 */
+	private static final int[] CITIZEN_RECOLOR_WEARERS = {
+			1479, 1480, 9020, 9052, 9053, 9054, 9055, 9056, 9057, 9058, 9059, 9060, 9061, 9062, 9063, 9064,
+			9065, 9066, 9067, 9068, 9069, 9070, 9071, 9072, 9073, 9074, 9075, 9076, 9077, 9078, 9079, 9080,
+			9081, 9082, 9083, 9084, 9085, 9086, 9087, 9088, 9089, 9090, 9091, 9092, 9093, 9094, 9095, 9096,
+			9097, 9098, 9099, 9100, 9101, 9102, 9103, 9104, 9105, 9106, 9107, 9108, 9109, 9110, 9111, 9112,
+			9113, 9114, 9115, 9116, 9117, 9127, 9128, 9129, 9130, 9131, 9132, 9133, 9134, 9135, 9136, 9137,
+			9138, 9139, 9140, 9141, 9142, 9143, 9144, 9150, 9151, 9152, 9153, 9154, 9155, 9156, 9157, 9158,
+			9159, 9160, 9161, 9162, 9163, 9164, 9165, 9166, 9167, 9168, 9169, 9170, 9182, 9183, 9184, 9185,
+			9186, 9187, 9188, 9189, 9190
+	};
+
+	@Test
+	public void testEveryElfInTheCitizensColorsIsSwapped()
+	{
+		for (int id : CITIZEN_RECOLOR_WEARERS)
+		{
+			RetroNpcData elf = RetroNpcMapping.get(id, null);
+			assertNotNull("NPC " + id + " wears the citizens' colors but is not swapped", elf);
+			assertEquals(RetroNpcCategory.ELVES, elf.getCategory());
+		}
+		for (int id : new int[]{NpcID.GWENITH_ELF_4, NpcID.GWENITH_ELF_5, NpcID.GWENITH_ELF_6,
+			NpcID.DEADMAN_GUARD_PRIF_VIS, NpcID.DEADMAN_GUARD_PRIF_RANGE_VIS})
+		{
+			assertNull("NPC " + id + " must stay live", RetroNpcMapping.get(id, null));
+		}
+	}
+
+	private static void assertClan(int id, boolean female, int hair, int cloth, int clothShade, int clothDark)
+	{
+		RetroNpcData citizen = Objects.requireNonNull(RetroNpcMapping.get(id, null));
+		assertArrayEquals("citizen " + id, new short[]{(short) hair, (short) hair, (short) cloth, (short) cloth,
+			(short) clothShade, (short) clothDark}, citizen.getReplacementColors());
+		assertEquals("citizen " + id + " wears the wrong body", female, citizen.getRetroModelIds()[0] == 4030);
 	}
 
 	@Test

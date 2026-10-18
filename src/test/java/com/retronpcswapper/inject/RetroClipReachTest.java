@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import com.retronpcswapper.RetroNpcData;
+import com.retronpcswapper.RetroNpcMapping;
 import com.retronpcswapper.RetroNpcSwapperPlugin;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -71,8 +73,19 @@ public class RetroClipReachTest
 	 * its interleave list: it rides the shared 100082 rig and covers 60-67% of each kit's groups, level
 	 * with the stance and the blocks. Arianwyn's cloak 4027 and Eluned's 4031 bind groups out to 88
 	 * and 90, well past the guards' [0..36], and the player rig still addresses every one of them.
+	 *
+	 * <p>Elena is two more Feb kits on the guards' clips: 808 79-88%, 819 65-79%, 836 70-82%.
+	 *
+	 * <p>The Lletya elves are the Nov-2005 kit on the Nov human rig, 200082/200083, which that build
+	 * re-authored: 808 72-78%, 836 64-73%, the combat families 66-75%, all in the same band as the
+	 * Feb kits on the Feb rig. Walk 819 is again the thinnest, 59-74%, and lowest on the female kits
+	 * built around head 4030 - Oronwen, Arvel, Kelyn, Mawrth and the female banker - which is where
+	 * Eluned's Feb kit sits on the Feb walk too.
 	 */
 	private static final Map<Integer, Integer> CLIP_FLOORS = new HashMap<>();
+
+	/** Where the Nov-2005 human kit sits in the bundle, see {@link RetroAssetBundle#NOV_HUMAN_KEY_BASE}. */
+	private static final int NOV = RetroAssetBundle.NOV_HUMAN_KEY_BASE;
 
 	static
 	{
@@ -91,6 +104,15 @@ public class RetroClipReachTest
 		{
 			CLIP_FLOORS.put(humanClip, 60);
 		}
+		// The Nov-2005 copies of the human clips the Lletya elves play, held to the same floor. The
+		// walk alone gets 55: on the female kits built around head 4030 it lands at 59%, the same
+		// thin margin Eluned's Feb kit has on the Feb walk
+		for (int humanClip : new int[]{808, 819, 836, 424, 425, 426, 428, 429, 430, 431,
+			435, 436, 437, 438, 439, 440})
+		{
+			CLIP_FLOORS.put(NOV + humanClip, 60);
+		}
+		CLIP_FLOORS.put(NOV + 819, 55);
 	}
 
 	/**
@@ -269,7 +291,105 @@ public class RetroClipReachTest
 		{808, 4030, 4032, 4028, 4031, 4029},
 		{819, 4030, 4032, 4028, 4031, 4029},
 		{836, 4030, 4032, 4028, 4031, 4029},
-		{424, 4030, 4032, 4028, 4031, 4029}
+		{424, 4030, 4032, 4028, 4031, 4029},
+		// Elena: two Feb-2005 kits of the same human rig, on the guards' own clips
+		{808, 390, 456, 332, 353, 440, 445},
+		{819, 390, 456, 332, 353, 440, 445},
+		{836, 390, 456, 332, 353, 440, 445},
+		{808, 390, 474, 347, 353, 438, 358},
+		{819, 390, 474, 347, 353, 438, 358},
+		{836, 390, 474, 347, 353, 438, 358},
+		// The Lletya elves: Nov-2005 kit, every mesh and clip read at the Nov key base. These are
+		// the only rows on the re-authored Nov human rig, 200082/200083, so they are what would
+		// notice a Feb clip or rig leaking into the namespace.
+		// Definition 2359, the pike warrior, with both polearm families it could be sent
+		{NOV + 808, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 819, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 836, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 424, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 425, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 428, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 429, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 430, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 431, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 435, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 436, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 437, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 438, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 439, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 440, NOV + 4020, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		// Prifddinas's women guards: the pike warrior's body under the Lletya women's head 4030
+		{NOV + 808, NOV + 4030, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 819, NOV + 4030, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 836, NOV + 4030, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 430, NOV + 4030, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 440, NOV + 4030, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		// 2360, the second pike warrior on the Lletya head
+		{NOV + 808, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 819, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 836, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 430, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		{NOV + 440, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4033, NOV + 4023},
+		// 2361, the bow warrior
+		{NOV + 808, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		{NOV + 819, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		{NOV + 836, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		{NOV + 424, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		{NOV + 425, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		{NOV + 426, NOV + 8266, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		// 2362, the second bow warrior
+		{NOV + 808, NOV + 8263, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		{NOV + 819, NOV + 8263, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		{NOV + 836, NOV + 8263, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		{NOV + 426, NOV + 8263, NOV + 4025, NOV + 4016, NOV + 4044, NOV + 4023},
+		// 1777 Ilfeen
+		{NOV + 808, NOV + 4029, NOV + 4030, NOV + 4032, NOV + 3194, NOV + 4028, NOV + 4031},
+		{NOV + 819, NOV + 4029, NOV + 4030, NOV + 4032, NOV + 3194, NOV + 4028, NOV + 4031},
+		{NOV + 836, NOV + 4029, NOV + 4030, NOV + 4032, NOV + 3194, NOV + 4028, NOV + 4031},
+		// 2352 Eudav
+		{NOV + 808, NOV + 8264, NOV + 8268, NOV + 6975, NOV + 8267},
+		{NOV + 819, NOV + 8264, NOV + 8268, NOV + 6975, NOV + 8267},
+		{NOV + 836, NOV + 8264, NOV + 8268, NOV + 6975, NOV + 8267},
+		// 2353 Oronwen
+		{NOV + 808, NOV + 4030, NOV + 6981, NOV + 480, NOV + 6978, NOV + 8270},
+		{NOV + 819, NOV + 4030, NOV + 6981, NOV + 480, NOV + 6978, NOV + 8270},
+		{NOV + 836, NOV + 4030, NOV + 6981, NOV + 480, NOV + 6978, NOV + 8270},
+		// 2354 the banker; 2355 the female banker is Mawrth's kit, below
+		{NOV + 808, NOV + 8266, NOV + 8269, NOV + 6975, NOV + 6976},
+		{NOV + 819, NOV + 8266, NOV + 8269, NOV + 6975, NOV + 6976},
+		{NOV + 836, NOV + 8266, NOV + 8269, NOV + 6975, NOV + 6976},
+		// 2356 Dalldav, whose kit Iona shares
+		{NOV + 808, NOV + 4021, NOV + 6977, NOV + 6975, NOV + 8267},
+		{NOV + 819, NOV + 4021, NOV + 6977, NOV + 6975, NOV + 8267},
+		{NOV + 836, NOV + 4021, NOV + 6977, NOV + 6975, NOV + 8267},
+		// 2357 Gethin
+		{NOV + 808, NOV + 8357, NOV + 8263, NOV + 8268, NOV + 6975, NOV + 6976},
+		{NOV + 819, NOV + 8357, NOV + 8263, NOV + 8268, NOV + 6975, NOV + 6976},
+		{NOV + 836, NOV + 8357, NOV + 8263, NOV + 8268, NOV + 6975, NOV + 6976},
+		// 2363 Goreu
+		{NOV + 808, NOV + 8266, NOV + 6977, NOV + 6975, NOV + 4023},
+		{NOV + 819, NOV + 8266, NOV + 6977, NOV + 6975, NOV + 4023},
+		{NOV + 836, NOV + 8266, NOV + 6977, NOV + 6975, NOV + 4023},
+		// 2364 Ysgawyn
+		{NOV + 808, NOV + 4020, NOV + 8269, NOV + 6975, NOV + 8267},
+		{NOV + 819, NOV + 4020, NOV + 8269, NOV + 6975, NOV + 8267},
+		{NOV + 836, NOV + 4020, NOV + 8269, NOV + 6975, NOV + 8267},
+		// 2365 Arvel
+		{NOV + 808, NOV + 4030, NOV + 6981, NOV + 480, NOV + 6978, NOV + 6979},
+		{NOV + 819, NOV + 4030, NOV + 6981, NOV + 480, NOV + 6978, NOV + 6979},
+		{NOV + 836, NOV + 4030, NOV + 6981, NOV + 480, NOV + 6978, NOV + 6979},
+		// 2366 Mawrth and 2355 the female banker
+		{NOV + 808, NOV + 4030, NOV + 6980, NOV + 480, NOV + 6978, NOV + 6979},
+		{NOV + 819, NOV + 4030, NOV + 6980, NOV + 480, NOV + 6978, NOV + 6979},
+		{NOV + 836, NOV + 4030, NOV + 6980, NOV + 480, NOV + 6978, NOV + 6979},
+		// 2367 Kelyn, the thinnest kit at four parts
+		{NOV + 808, NOV + 4030, NOV + 6981, NOV + 6978, NOV + 6979},
+		{NOV + 819, NOV + 4030, NOV + 6981, NOV + 6978, NOV + 6979},
+		{NOV + 836, NOV + 4030, NOV + 6981, NOV + 6978, NOV + 6979},
+		// 2368 Eoin
+		{NOV + 808, NOV + 8264, NOV + 8269, NOV + 6975, NOV + 6976},
+		{NOV + 819, NOV + 8264, NOV + 8269, NOV + 6975, NOV + 6976},
+		{NOV + 836, NOV + 8264, NOV + 8269, NOV + 6975, NOV + 6976}
 	};
 
 	@Test
@@ -483,6 +603,70 @@ public class RetroClipReachTest
 			}
 		}
 		return used;
+	}
+
+	/**
+	 * The two copies of the human kit must never meet. A Nov-2005 elf looks up only keys at
+	 * {@link RetroAssetBundle#NOV_HUMAN_KEY_BASE}, so every clip there has to be bound to a Nov rig, and
+	 * every clip below it to anything else - a Nov clip on a Feb rig, or the reverse, is the right
+	 * vertices driven off the wrong bones, and reach alone would not say so.
+	 */
+	@Test
+	public void testNovKitStaysInItsNamespace() throws Exception
+	{
+		RetroAssetBundle bundle = loadBundle();
+		int novRigBase = 200_000;
+
+		for (Map.Entry<Integer, RetroClip> entry : bundle.getClips().entrySet())
+		{
+			int key = entry.getKey();
+			int rigId = entry.getValue().getRigId();
+			assertEquals("clip " + key + " is keyed apart from the rig it is bound to (" + rigId + ")",
+				key >= NOV, rigId >= novRigBase);
+		}
+
+		// Every mesh and the idle, walk and death clip of every Nov elf resolve inside the namespace,
+		// and every Feb elf and Elena outside it
+		RetroNpcData[] novElves = {
+			RetroNpcMapping.NOV_ELF_WARRIOR, RetroNpcMapping.NOV_ELF_WARRIOR2,
+			RetroNpcMapping.NOV_ELF_ARCHER, RetroNpcMapping.NOV_ELF_ARCHER2,
+			RetroNpcMapping.ILFEEN, RetroNpcMapping.EUDAV, RetroNpcMapping.ORONWEN,
+			RetroNpcMapping.LLETYA_BANKER_MALE, RetroNpcMapping.LLETYA_BANKER_FEMALE,
+			RetroNpcMapping.DALLDAV, RetroNpcMapping.GETHIN, RetroNpcMapping.GOREU,
+			RetroNpcMapping.YSGAWYN, RetroNpcMapping.ARVEL, RetroNpcMapping.MAWRTH,
+			RetroNpcMapping.KELYN, RetroNpcMapping.EOIN, RetroNpcMapping.IONA};
+		RetroNpcData[] febKit = {
+			RetroNpcMapping.ELF_ARCHER, RetroNpcMapping.ELF_WARRIOR, RetroNpcMapping.ARIANWYN_DEFAULT,
+			RetroNpcMapping.ARIANWYN_BOW, RetroNpcMapping.ISLWYN_DEFAULT, RetroNpcMapping.ISLWYN_BOW,
+			RetroNpcMapping.ELUNED_DEFAULT, RetroNpcMapping.ELENA_PRISONER, RetroNpcMapping.ELENA_DEFAULT};
+
+		for (RetroNpcData elf : novElves)
+		{
+			assertEquals(NOV, elf.getAssetKeyBase());
+			assertResolves(bundle, elf, true);
+		}
+		for (RetroNpcData elf : febKit)
+		{
+			assertEquals(0, elf.getAssetKeyBase());
+			assertResolves(bundle, elf, false);
+		}
+	}
+
+	private static void assertResolves(RetroAssetBundle bundle, RetroNpcData data, boolean nov)
+	{
+		int base = data.getAssetKeyBase();
+		for (int part : data.getInjectedModelIds())
+		{
+			assertNotNull("mesh " + (base + part) + " is missing from the bundle", bundle.getMesh(base + part));
+		}
+
+		for (int anim : new int[]{data.getIdleAnimationId(), data.getWalkAnimationId(), data.getDeathAnimationId()})
+		{
+			RetroClip clip = bundle.getClip(base + anim);
+			assertNotNull("clip " + (base + anim) + " is missing from the bundle", clip);
+			assertEquals("clip " + (base + anim) + " is on rig " + clip.getRigId(),
+				nov, clip.getRigId() >= 200_000);
+		}
 	}
 
 	private static RetroAssetBundle loadBundle() throws Exception

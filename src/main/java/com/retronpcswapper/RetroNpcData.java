@@ -182,6 +182,18 @@ public class RetroNpcData
 	 */
 	private final Map<Integer, Integer> modernAttackOverrides;
 
+	/**
+	 * Added to every bundle lookup the injected path makes for this NPC: each part's mesh, and the
+	 * clip for whatever animation it plays. Zero for everything but Nov-2005 human kit, which the
+	 * bundle stores at {@link com.retronpcswapper.inject.RetroAssetBundle#NOV_HUMAN_KEY_BASE} because
+	 * the same model and sequence ids already hold the Feb-2005 copies, bound to a different rig.
+	 * <p>
+	 * The part lists and animation ids stay as cache ids; only the lookup is offset. The server
+	 * still sends 808, so nothing upstream of the draw has to know which copy is in use.
+	 */
+	@Getter
+	private final int assetKeyBase;
+
 	public RetroNpcData(
 		RetroNpcCategory category,
 		int[] retroModelIds,
@@ -204,7 +216,7 @@ public class RetroNpcData
 		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
 			defendAnimationId, deathAnimationId, miscAnimationId, scaleXZ, scaleY, originalColors,
 			replacementColors, modernAttackAnims, modernDefendAnims, modernDeathAnims, modernMiscAnims,
-			null, false);
+			null, false, 0);
 	}
 
 	public RetroNpcData(
@@ -226,7 +238,8 @@ public class RetroNpcData
 		Set<Integer> modernDeathAnims,
 		Set<Integer> modernMiscAnims,
 		Map<Integer, Integer> modernAttackOverrides,
-		boolean staticIdle
+		boolean staticIdle,
+		int assetKeyBase
 	)
 	{
 		this.category = category;
@@ -262,6 +275,7 @@ public class RetroNpcData
 		this.modernAttackOverrides = modernAttackOverrides != null
 			? Collections.unmodifiableMap(new HashMap<>(modernAttackOverrides))
 			: Collections.emptyMap();
+		this.assetKeyBase = assetKeyBase;
 	}
 
 	public boolean hasStaticIdle()
@@ -377,7 +391,8 @@ public class RetroNpcData
 			modernDeathAnims,
 			modernMiscAnims,
 			modernAttackOverrides,
-			staticIdle);
+			staticIdle,
+			assetKeyBase);
 	}
 
 	/**
@@ -408,7 +423,8 @@ public class RetroNpcData
 			modernDeathAnims,
 			modernMiscAnims,
 			modernAttackOverrides,
-			staticIdle);
+			staticIdle,
+			assetKeyBase);
 	}
 
 	/**
@@ -446,7 +462,8 @@ public class RetroNpcData
 			modernDeathAnims,
 			modernMiscAnims,
 			modernAttackOverrides,
-			staticIdle);
+			staticIdle,
+			assetKeyBase);
 	}
 
 	@Override
@@ -464,6 +481,7 @@ public class RetroNpcData
 			miscAnimationId == that.miscAnimationId &&
 			scaleXZ == that.scaleXZ &&
 			scaleY == that.scaleY &&
+			assetKeyBase == that.assetKeyBase &&
 			category == that.category &&
 			Arrays.equals(retroModelIds, that.retroModelIds) &&
 			Arrays.equals(injectedModelIds, that.injectedModelIds) &&
@@ -491,6 +509,7 @@ public class RetroNpcData
 		result = 31 * result + miscAnimationId;
 		result = 31 * result + scaleXZ;
 		result = 31 * result + scaleY;
+		result = 31 * result + assetKeyBase;
 		result = 31 * result + Arrays.hashCode(originalColors);
 		result = 31 * result + Arrays.hashCode(replacementColors);
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
@@ -522,6 +541,7 @@ public class RetroNpcData
 		private final Set<Integer> modernDeathAnims = new HashSet<>();
 		private final Set<Integer> modernMiscAnims = new HashSet<>();
 		private final Map<Integer, Integer> modernAttackOverrides = new HashMap<>();
+		private int assetKeyBase;
 
 		public Builder category(RetroNpcCategory category)
 		{
@@ -721,6 +741,13 @@ public class RetroNpcData
 			return this;
 		}
 
+		/** See {@link RetroNpcData#assetKeyBase}. */
+		public Builder assetKeyBase(int assetKeyBase)
+		{
+			this.assetKeyBase = assetKeyBase;
+			return this;
+		}
+
 		public RetroNpcData build()
 		{
 			return new RetroNpcData(
@@ -742,7 +769,8 @@ public class RetroNpcData
 				modernDeathAnims,
 				modernMiscAnims,
 				modernAttackOverrides,
-				staticIdle
+				staticIdle,
+				assetKeyBase
 			);
 		}
 	}

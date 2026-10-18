@@ -308,7 +308,7 @@ public interface RetroNpcConfig extends Config
 		name = "Elves",
 		description = "<html><body style='width:170px'>Swap modern Elf models and animations to their "
 			+ "2004/2005 retro variants.<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by "
-			+ "default.</body></html>",
+			+ "default. </body></html>",
 		section = npcTogglesSection,
 		position = 17
 	)

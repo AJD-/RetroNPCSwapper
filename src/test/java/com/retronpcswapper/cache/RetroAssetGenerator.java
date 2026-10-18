@@ -203,9 +203,8 @@ public class RetroAssetGenerator
 				422, 423, 424}),
 		// Elves are 2005 human kit, the same case as the guards: ten of the seventeen parts survive in
 		// the live cache vertex for vertex but were re-bound (4014: [1..33] -> [17..28]), and 4020,
-		// 4022, 4023, 4027, 4028, 4030 and 4031 were edited in live as well. Everything comes from
-		// the Feb-2005 cache. The Nov-2005 build has the Mourning's End elves too, but it re-authored
-		// the human rig, so its meshes would need clips of their own under the ids the guards own.
+		// 4022, 4023, 4027, 4028, 4030 and 4031 were edited in live as well. Everything here comes
+		// from the Feb-2005 cache; the Lletya elves Feb never had follow in their own spec below.
 		new Spec("Elves", Source.RETRO, Source.RETRO,
 			// Definitions 1183 (bow) and 1184 (pike) share the first four; 1202
 			// Arianwyn, 1679 Eluned and 1680 Islwyn make up the rest. 4044 is the bow, bound to the
@@ -217,14 +216,34 @@ public class RetroAssetGenerator
 			// through, so each weapon brings its whole family:
 			//
 			//   426      bow
-			//   428-431  spear spike, lunge, block, defence - the pike
-			//   435-440  scythe block, defence, slash, lunge, spin, sweep - the halberd family the
+			//   428-431  spear spike, lunge, block, defense - the pike
+			//   435-440  scythe block, defense, slash, lunge, spin, sweep - the halberd family the
 			//            live polearm elves are built around
 			//   424-425  unarmed block, for everyone who is not holding a pike
 			new int[]{808, 813, 819, 836, 424, 425,
 				426,
 				428, 429, 430, 431,
 				435, 436, 437, 438, 439, 440}),
+		// The Lletya elves - townsfolk, bankers, shopkeepers, children and the Mourning's End elf
+		// warriors 2359-2362 - exist only in the Nov-2005 cache. That build re-authored the human
+		// rig
+		// Parts are the union of Nov definitions 1777 Ilfeen, 2352-2357 (Eudav, Oronwen, the two
+		// bankers, Dalldav, Gethin), 2359-2362 (the warriors) and 2363-2369 (Goreu, Ysgawyn, Arvel,
+		// Mawrth, Kelyn, Eoin, Iona). Every one of them stands in 808 and walks in 819; 813 is
+		// absent because no Nov elf stands in it. The combat families are the Feb elves' own.
+		Spec.keyed("Elves (Nov 2005)", RetroAssetBundle.NOV_HUMAN_KEY_BASE,
+			Source.RETRO_NOV, Source.RETRO_NOV,
+			new int[]{480, 3194, 4016, 4020, 4021, 4023, 4025, 4028, 4029, 4030, 4031, 4032, 4033, 4044,
+				6975, 6976, 6977, 6978, 6979, 6980, 6981,
+				8263, 8264, 8266, 8267, 8268, 8269, 8270, 8357},
+			new int[]{808, 819, 836, 424, 425,
+				426,
+				428, 429, 430, 431,
+				435, 436, 437, 438, 439, 440}),
+		// Elena is plain Feb-2005 human kit: definition 335 and 715
+		new Spec("Elena", Source.RETRO, Source.RETRO,
+			new int[]{390, 456, 332, 353, 440, 445, 474, 347, 438, 358},
+			new int[]{808, 819, 836}),
 		// The large scorpion's 2005 mesh 2967 is gone from the live cache (0% vertex overlap). Its
 		// 2005 sequences 244-248 (frame file 44) have been overwritten as well
 		new Spec("Scorpions", Source.RETRO, Source.RETRO, new int[]{2967},
@@ -328,11 +347,14 @@ public class RetroAssetGenerator
 			new int[]{AnimationID.COW_CHEWS_GRASS})
 	);
 
-	private enum Source
+	enum Source
 	{
 		LIVE,
 		RETRO,
-		/** The November 2005 cache. Meshes only, so far. */
+		/**
+		 * The November 2005 cache. Its clips are decoded onto rig ids of their own, see
+		 * {@link RetroFrameDecoder#RETRO_NOV_RIG_ID_BASE}.
+		 */
 		RETRO_NOV
 	}
 
@@ -397,6 +419,16 @@ public class RetroAssetGenerator
 				+ retroFrames.getGroups().size() + " groups, " + retroSequences.size() + " sequences");
 		}
 
+		RetroFrameIndex novFrames = null;
+		Map<Integer, RetroSeqDefinition> novSequences = null;
+		if (SPECS.stream().anyMatch(spec -> spec.clipSource == Source.RETRO_NOV))
+		{
+			novFrames = RetroFrameDecoder.decodeAll(retroNov, RetroFrameDecoder.RETRO_NOV_RIG_ID_BASE);
+			novSequences = decodeRetroSequences(retroNov);
+			System.out.println("Nov-2005 animations: " + novFrames.getFrameCount() + " frames in "
+				+ novFrames.getGroups().size() + " groups, " + novSequences.size() + " sequences");
+		}
+
 		// Which spec first claimed a shared id, so a second spec asking for it from the other cache
 		// is caught here rather than silently taking whichever was written last
 		Map<Integer, Spec> meshOwners = new LinkedHashMap<>();
@@ -409,17 +441,19 @@ public class RetroAssetGenerator
 
 			for (int modelId : spec.modelIds)
 			{
-				Spec owner = meshOwners.get(modelId);
+				// The bundle key; the cache is still read at the model id itself
+				int key = spec.keyBase + modelId;
+				Spec owner = meshOwners.get(key);
 				if (owner != null)
 				{
 					if (owner.source != spec.source)
 					{
-						System.err.println("  model " + modelId + " is claimed by " + owner.label
+						System.err.println("  model " + key + " is claimed by " + owner.label
 							+ " from the " + owner.source + " cache and by " + spec.label
 							+ " from the " + spec.source + " cache");
 						complete = false;
 					}
-					System.out.println("  mesh " + modelId + "  (shared with " + owner.label + ")");
+					System.out.println("  mesh " + key + "  (shared with " + owner.label + ")");
 					continue;
 				}
 
@@ -443,11 +477,11 @@ public class RetroAssetGenerator
 					continue;
 				}
 
-				RetroMesh mesh = toMesh(modelId, part);
-				meshes.put(modelId, mesh);
-				meshOwners.put(modelId, spec);
+				RetroMesh mesh = toMesh(key, part);
+				meshes.put(key, mesh);
+				meshOwners.put(key, spec);
 
-				System.out.println("  mesh " + modelId
+				System.out.println("  mesh " + key
 					+ "  verts=" + mesh.getVerticesCount()
 					+ " faces=" + mesh.getFaceCount()
 					+ " rigged=" + mesh.isRigged());
@@ -460,7 +494,7 @@ public class RetroAssetGenerator
 			int triangles = 0;
 			for (int modelId : spec.modelIds)
 			{
-				RetroMesh mesh = meshes.get(modelId);
+				RetroMesh mesh = meshes.get(spec.keyBase + modelId);
 				triangles += mesh == null ? 0 : mesh.getTextureTriangleCount();
 			}
 			if (triangles >= 0xFF)
@@ -478,12 +512,13 @@ public class RetroAssetGenerator
 			{
 				int sequenceId = spec.sequenceIds[seq];
 				int retroSequenceId = spec.retroSequenceIds[seq];
-				Spec owner = clipOwners.get(sequenceId);
+				int key = spec.keyBase + sequenceId;
+				Spec owner = clipOwners.get(key);
 				if (owner != null)
 				{
 					if (owner.clipSource != spec.clipSource)
 					{
-						System.err.println("  sequence " + sequenceId + " is claimed by " + owner.label
+						System.err.println("  sequence " + key + " is claimed by " + owner.label
 							+ " from the " + owner.clipSource + " cache and by " + spec.label
 							+ " from the " + spec.clipSource + " cache");
 						complete = false;
@@ -491,24 +526,45 @@ public class RetroAssetGenerator
 					continue;
 				}
 
-				RetroClip clip = spec.clipSource == Source.RETRO
-					? buildRetroClip(store, sequenceId, retroSequenceId, retroFrames, retroSequences, rigs)
-					: buildClip(store, sequenceId, rigs);
+				// Spelled out per source: a Nov clip that quietly took the live path would animate the
+				// Nov mesh off the live rig, which is exactly the mismatch the Nov spec exists to avoid
+				Map<Integer, RetroSeqDefinition> sourceSequences;
+				RetroClip clip;
+				switch (spec.clipSource)
+				{
+					case RETRO:
+						sourceSequences = retroSequences;
+						clip = buildRetroClip(store, sequenceId, retroSequenceId, key,
+							retroFrames, retroSequences, rigs);
+						break;
+					case RETRO_NOV:
+						sourceSequences = novSequences;
+						clip = buildRetroClip(store, sequenceId, retroSequenceId, key,
+							novFrames, novSequences, rigs);
+						break;
+					case LIVE:
+						sourceSequences = null;
+						clip = buildClip(store, sequenceId, rigs);
+						break;
+					default:
+						throw new IllegalStateException(spec.label + ": no clip path for " + spec.clipSource);
+				}
 
 				if (clip == null)
 				{
-					System.err.println("  sequence " + sequenceId + " could not be decoded");
+					System.err.println("  sequence " + key + " could not be decoded");
 					complete = false;
 					continue;
 				}
 
-				clips.put(sequenceId, clip);
-				clipOwners.put(sequenceId, spec);
-				System.out.println("  clip " + sequenceId + "  frames=" + clip.getFrameCount()
+				clips.put(key, clip);
+				clipOwners.put(key, spec);
+				System.out.println("  clip " + key + "  frames=" + clip.getFrameCount()
 					+ " rig=" + clip.getRigId()
-					+ (spec.clipSource == Source.RETRO
-						? "  (2005" + (retroSequenceId != sequenceId ? " sequence " + retroSequenceId : "")
-							+ ", from " + retroSequences.get(retroSequenceId).getFrameIds().length
+					+ (sourceSequences != null
+						? "  (" + spec.clipSource
+							+ (retroSequenceId != sequenceId ? " sequence " + retroSequenceId : "")
+							+ ", from " + sourceSequences.get(retroSequenceId).getFrameIds().length
 							+ " source frames)"
 						: ""));
 			}
@@ -972,6 +1028,18 @@ public class RetroAssetGenerator
 		RetroFrameIndex frames, Map<Integer, RetroSeqDefinition> sequences, Map<Integer, RetroRig> rigs)
 		throws IOException
 	{
+		return buildRetroClip(store, sequenceId, retroSequenceId, sequenceId, frames, sequences, rigs);
+	}
+
+	/**
+	 * As above, but stored under {@code clipKey} rather than the live id. The resample still reads
+	 * live sequence {@code sequenceId} - that is what the client plays - while the key puts the clip
+	 * in a namespace of its own, see {@link RetroAssetBundle#NOV_HUMAN_KEY_BASE}.
+	 */
+	static RetroClip buildRetroClip(Store store, int sequenceId, int retroSequenceId, int clipKey,
+		RetroFrameIndex frames, Map<Integer, RetroSeqDefinition> sequences, Map<Integer, RetroRig> rigs)
+		throws IOException
+	{
 		RetroSeqDefinition retroSeq = sequences.get(retroSequenceId);
 		if (retroSeq == null || retroSeq.getFrameIds() == null || retroSeq.getFrameIds().length == 0)
 		{
@@ -1013,7 +1081,7 @@ public class RetroAssetGenerator
 			}
 		}
 
-		rigs.putIfAbsent(rigId, new RetroRig(rigId, rig.getTypes(), rig.getGroups()));
+		registerRig(rigs, new RetroRig(rigId, rig.getTypes(), rig.getGroups()));
 
 		int[] mapping = resample(
 			liveSequence == null ? null : liveSequence.frameLengths,
@@ -1035,7 +1103,45 @@ public class RetroAssetGenerator
 			dz[i] = frame.getTranslatorZ();
 		}
 
-		return new RetroClip(sequenceId, rigId, transforms, dx, dy, dz);
+		return new RetroClip(clipKey, rigId, transforms, dx, dy, dz);
+	}
+
+	/**
+	 * Adds a rig, refusing a different one already registered at the same id. Two caches can number
+	 * their framemaps the same way, and a silent first-wins here would bind a clip to the other
+	 * cache's skeleton - which is what keeps the Nov-2005 rigs off 100_000 + file id.
+	 */
+	static void registerRig(Map<Integer, RetroRig> rigs, RetroRig rig) throws IOException
+	{
+		RetroRig existing = rigs.get(rig.getId());
+		if (existing == null)
+		{
+			rigs.put(rig.getId(), rig);
+			return;
+		}
+
+		if (!sameRig(existing, rig))
+		{
+			throw new IOException("Two different rigs claim id " + rig.getId());
+		}
+	}
+
+	private static boolean sameRig(RetroRig a, RetroRig b)
+	{
+		if (a.getTransformCount() != b.getTransformCount())
+		{
+			return false;
+		}
+
+		for (int transform = 0; transform < a.getTransformCount(); transform++)
+		{
+			if (a.getType(transform) != b.getType(transform)
+				|| !Arrays.equals(a.getGroups(transform), b.getGroups(transform)))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static boolean sameRig(RetroFramemapDefinition a, RetroFramemapDefinition b)
@@ -1354,7 +1460,7 @@ public class RetroAssetGenerator
 	}
 
 	/** One bundled entry: where its geometry comes from, and which sequences drive it. */
-	private static final class Spec
+	static final class Spec
 	{
 		private final String label;
 		private final Source source;
@@ -1366,13 +1472,25 @@ public class RetroAssetGenerator
 		/** Where each clip's 2005 frames come from, parallel to {@link #sequenceIds}. */
 		private final int[] retroSequenceIds;
 
-		private Spec(String label, Source source, Source clipSource, int[] modelIds, int[] sequenceIds)
+		/**
+		 * Added to every model and sequence id to make its bundle key. Zero except for kit that
+		 * shares ids with another cache's copy, see {@link RetroAssetBundle#NOV_HUMAN_KEY_BASE}.
+		 */
+		private final int keyBase;
+
+		Spec(String label, Source source, Source clipSource, int[] modelIds, int[] sequenceIds)
 		{
 			this(label, source, clipSource, modelIds, sequenceIds, sequenceIds);
 		}
 
-		private Spec(String label, Source source, Source clipSource, int[] modelIds, int[] sequenceIds,
+		Spec(String label, Source source, Source clipSource, int[] modelIds, int[] sequenceIds,
 			int[] retroSequenceIds)
+		{
+			this(label, 0, source, clipSource, modelIds, sequenceIds, retroSequenceIds);
+		}
+
+		private Spec(String label, int keyBase, Source source, Source clipSource, int[] modelIds,
+			int[] sequenceIds, int[] retroSequenceIds)
 		{
 			if (sequenceIds.length != retroSequenceIds.length)
 			{
@@ -1380,12 +1498,48 @@ public class RetroAssetGenerator
 					+ retroSequenceIds.length + " 2005 sequences");
 			}
 
+			if (keyBase != 0)
+			{
+				// A namespaced NPC never looks outside its range, so meshes and clips have to come
+				// from the same retro cache - a Nov mesh on a clip from anywhere else is the rig
+				// mismatch the namespace exists to keep out
+				if (source != clipSource || clipSource == Source.LIVE)
+				{
+					throw new IllegalArgumentException(label + ": a keyed spec takes meshes and clips "
+						+ "from one retro cache, not " + source + " and " + clipSource);
+				}
+
+				for (int id : concat(modelIds, sequenceIds))
+				{
+					if (id < 0 || id >= keyBase)
+					{
+						throw new IllegalArgumentException(label + ": id " + id
+							+ " would leave the range keyed at " + keyBase);
+					}
+				}
+			}
+
+			this.keyBase = keyBase;
 			this.label = label;
 			this.source = source;
 			this.clipSource = clipSource;
 			this.modelIds = modelIds;
 			this.sequenceIds = sequenceIds;
 			this.retroSequenceIds = retroSequenceIds;
+		}
+
+		/** A spec whose meshes and clips are stored at {@code keyBase} plus their cache id. */
+		static Spec keyed(String label, int keyBase, Source source, Source clipSource, int[] modelIds,
+			int[] sequenceIds)
+		{
+			return new Spec(label, keyBase, source, clipSource, modelIds, sequenceIds, sequenceIds);
+		}
+
+		private static int[] concat(int[] a, int[] b)
+		{
+			int[] both = Arrays.copyOf(a, a.length + b.length);
+			System.arraycopy(b, 0, both, a.length, b.length);
+			return both;
 		}
 	}
 }
