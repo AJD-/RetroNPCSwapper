@@ -249,15 +249,19 @@ public class RetroNpcCategoryTest
 
 	/**
 	 * The metal dragons are the same category on a different 2005 mesh set: three parts rather
-	 * than two, and three opcode 40 pairs rather than one, because bronze, iron and steel are one
-	 * greyscale mesh told apart entirely by colour. They resolve by name like the chromatics -
-	 * ADULT_DRAGONS is not an id-only category and no static archetype shadows these rows.
+	 * than two, and three opcode 40 pairs rather than one, because every metal is one greyscale
+	 * mesh told apart entirely by colour. They resolve by name like the chromatics - ADULT_DRAGONS
+	 * is not an id-only category. Bronze, iron and steel come off their generated rows; mithril,
+	 * adamant and rune postdate the 2005 cache, so they are static archetypes on the same mesh, slots
+	 * and sequences, with colours taken from the live dragons.
 	 */
 	@Test
 	public void testMetalDragonsCategory()
 	{
-		int[] ids = {NpcID.BRONZE_DRAGON, NpcID.IRON_DRAGON, NpcID.STEEL_DRAGON};
-		String[] names = {"Bronze dragon", "Iron dragon", "Steel dragon"};
+		int[] ids = {NpcID.BRONZE_DRAGON, NpcID.IRON_DRAGON, NpcID.STEEL_DRAGON,
+			NpcID.BRUT_MITHRIL_DRAGON, NpcID.ADAMANT_DRAGON, NpcID.RUNE_DRAGON};
+		String[] names = {"Bronze dragon", "Iron dragon", "Steel dragon",
+			"Mithril dragon", "Adamant dragon", "Rune dragon"};
 
 		Set<List<Short>> palettes = new HashSet<>();
 		for (int i = 0; i < ids.length; i++)
@@ -300,6 +304,45 @@ public class RetroNpcCategoryTest
 				dragon.isDefendAnimation(AnimationID.DRAGON_BLOCK));
 			assertEquals(-1, dragon.getDeathAnimationId());
 		}
+	}
+
+	/**
+	 * The live mithril dragon is bronze's mesh family at widthScale 110; the live adamant and rune
+	 * meshes span the same extent as bronze and steel, so they keep full size despite their
+	 * 5-tile footprint.
+	 */
+	@Test
+	public void testLaterMetalDragonsScaleAndVariants()
+	{
+		RetroNpcData mithril = RetroNpcMapping.get(NpcID.BRUT_MITHRIL_DRAGON, "Mithril dragon");
+		assertEquals(110, mithril.getScaleXZ());
+		assertEquals(110, mithril.getScaleY());
+
+		// Its magic and ranged attacks are the brutal dragons' cast, a post-2005 sequence, and play
+		// the fire breath adamant and rune use for theirs
+		assertTrue(mithril.isAttackAnimation(AnimationID.BRUT_DRAGON_CASTING));
+		assertEquals(AnimationID.DRAGON_FIREBREATH_ALL_ATTACK,
+			mithril.getAttackAnimationFor(AnimationID.BRUT_DRAGON_CASTING));
+		// The fire breath itself is 2005-native and still plays through, as does the melee attack
+		assertFalse(mithril.isAttackAnimation(AnimationID.DRAGON_FIREBREATH_ALL_ATTACK));
+		assertEquals(AnimationID.DRAGON_ATTACK, mithril.getAttackAnimationFor(AnimationID.DRAGON_RANGED_ATTACKS));
+
+		for (String name : new String[]{"Adamant dragon", "Rune dragon"})
+		{
+			RetroNpcData dragon = RetroNpcMapping.get(-1, name);
+			assertEquals(name + " keeps full size", 128, dragon.getScaleXZ());
+			assertEquals(name + " keeps full size", 128, dragon.getScaleY());
+		}
+
+		// The Dragon Slayer II and Lithkren variants share the names, so they take the same data
+		assertSame(mithril, RetroNpcMapping.get(NpcID.DS2_MITHRIL_DRAGON, "Mithril dragon"));
+		assertSame(RetroNpcMapping.get(NpcID.ADAMANT_DRAGON, "Adamant dragon"),
+			RetroNpcMapping.get(NpcID.DS2_ADAMANT_DRAGON, "Adamant dragon"));
+		assertSame(RetroNpcMapping.get(NpcID.RUNE_DRAGON, "Rune dragon"),
+			RetroNpcMapping.get(NpcID.DS2_RUNE_DRAGON, "Rune dragon"));
+
+		// The rune dragon's electrovortex is a separate, unnamed NPC on a different mesh
+		assertNull(RetroNpcMapping.get(NpcID.RUNE_DRAGON_ELECTOVORTEX, null));
 	}
 
 	/**

@@ -499,6 +499,47 @@ public class RetroNpcMapping
 	public static final RetroNpcData BABY_GREEN_DRAGON = babyDragon(DRAGON_GREEN);
 	public static final RetroNpcData BABY_BLACK_DRAGON = babyDragon(DRAGON_BLACK);
 
+	// Mithril, adamant and rune dragons postdate the 2005 cache, so they have no definition and no
+	// generated row. They wear the bronze/iron/steel mesh set, which is one greyscale ramp told apart
+	// by three opcode 40 pairs on these slots - the same slots every 2005 metal dragon recolors.
+	private static final short[] METAL_DRAGON_COLOR_SLOTS = {61, 33, 41};
+
+	// The colors follow the live dragons, since 2005 has none to give. Each takes the face-weighted
+	// dominant hue and saturation of its live mesh with its recolors applied, and the brightness
+	// ladder of the 2005 metal whose live palette is nearest in brightness:
+	//   mithril  live hue 42 sat 2, brightness 16-53 -> iron's 43/30/35
+	//   adamant  live hue 24 sat 1, brightness 16-76 -> bronze's 43/39/45
+	//   rune     live hue 38 sat 1, brightness 30-80 -> steel's 51/39/43
+	private static final short[] MITHRIL_DRAGON_COLORS = {-22229, -22242, -22237};
+	private static final short[] ADAMANT_DRAGON_COLORS = {24747, 24743, 24749};
+	private static final short[] RUNE_DRAGON_COLORS = {-26445, -26457, -26453};
+
+	// Mirrors the ADULT_DRAGONS branch of createMappingData, which is what the bronze, iron and steel
+	// rows go through, so all six metals play the same sequences
+	private static RetroNpcData metalDragon(short[] colors, int scale)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.ADULT_DRAGONS)
+			.retroModelIds(new int[]{4986, 5022, 4987})
+			.idleAnimationId(AnimationID.DRAGON_READY)
+			.walkAnimationId(AnimationID.DRAGON_WALK)
+			.attackAnimationId(AnimationID.DRAGON_ATTACK)
+			.defendAnimationId(AnimationID.DRAGON_BLOCK)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.recolors(METAL_DRAGON_COLOR_SLOTS, colors)
+			.modernAttackAnims(DRAGON_MODERN_ATTACKS)
+			.modernDefendAnims(DRAGON_MODERN_DEFENDS)
+			.modernDeathAnims(DRAGON_MODERN_DEATHS)
+			.attackAnimationOverride(AnimationID.DRAGON_FIREBREATH_ALL_ATTACK, AnimationID.BRUT_DRAGON_CASTING)
+			.build();
+	}
+
+	// Mith dragons are a bit smaller than Addy/Rune Dragons
+	public static final RetroNpcData MITHRIL_DRAGON = metalDragon(MITHRIL_DRAGON_COLORS, 110);
+	public static final RetroNpcData ADAMANT_DRAGON = metalDragon(ADAMANT_DRAGON_COLORS, 128);
+	public static final RetroNpcData RUNE_DRAGON = metalDragon(RUNE_DRAGON_COLORS, 128);
+
 	public static final RetroNpcData IMP_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.IMPS)
 		.retroModelIds(new int[]{2887})
@@ -1686,6 +1727,11 @@ public class RetroNpcMapping
 			NpcID.CHICKENQUEST_BABY_BLACK_DRAGON, NpcID.BABY_BLACK_DRAGON_STRONGHOLDCAVE,
 			NpcID.BABY_BLACK_DRAGON_NOHUNT
 		);
+
+		// The metals past steel, by name the way bronze, iron and steel resolve
+		NAME_MAPPINGS.put("mithril dragon", MITHRIL_DRAGON);
+		NAME_MAPPINGS.put("adamant dragon", ADAMANT_DRAGON);
+		NAME_MAPPINGS.put("rune dragon", RUNE_DRAGON);
 
 		NAME_MAPPINGS.put("skeleton", SKELETON_UNARMED);
 		registerMapping(SKELETON_UNARMED,
