@@ -134,9 +134,22 @@ public class RetroNpcData
 	private final int scaleY;
 
 	/**
+	 * Model-space shift along Z applied after the resize, in live model units. Zero for every NPC
+	 * whose live model is centred on its footprint, which is nearly all of them.
+	 * <p>
+	 * Exists because the live client has no placement of its own to borrow: where an NPC stands
+	 * within its footprint is baked into its model's vertices. The live lair Kalphite Soldier's
+	 * model is its POH twin moved 71 units back, so it stands half a tile off center, and a centred
+	 * 2005 mesh drawn there looks misplaced beside it. Being model-space, the shift turns with the
+	 * NPC, exactly as the baked one does.
+	 */
+	@Getter
+	private final int offsetZ;
+
+	/**
 	 * Recolor pairs applied to the retro mesh, parallel arrays of palette values.
-	 *
-	 * <p>The 2005 client colored same-mesh NPC variants here rather than with separate models -
+	 * <p>
+	 * The 2005 client colored same-mesh NPC variants here rather than with separate models -
 	 * every dragon shares one mesh and recolors palette index 61 to its own color - so without
 	 * these a baby blue dragon and a baby red dragon would render identically.
 	 */
@@ -216,7 +229,7 @@ public class RetroNpcData
 		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
 			defendAnimationId, deathAnimationId, miscAnimationId, scaleXZ, scaleY, originalColors,
 			replacementColors, modernAttackAnims, modernDefendAnims, modernDeathAnims, modernMiscAnims,
-			null, false, 0);
+			null, false, 0, 0);
 	}
 
 	public RetroNpcData(
@@ -239,7 +252,8 @@ public class RetroNpcData
 		Set<Integer> modernMiscAnims,
 		Map<Integer, Integer> modernAttackOverrides,
 		boolean staticIdle,
-		int assetKeyBase
+		int assetKeyBase,
+		int offsetZ
 	)
 	{
 		this.category = category;
@@ -261,21 +275,22 @@ public class RetroNpcData
 		this.originalColors = recolorUsable ? originalColors.clone() : new short[0];
 		this.replacementColors = recolorUsable ? replacementColors.clone() : new short[0];
 		this.modernAttackAnims = modernAttackAnims != null
-			? Collections.unmodifiableSet(new HashSet<>(modernAttackAnims))
+			? Set.copyOf(modernAttackAnims)
 			: Collections.emptySet();
 		this.modernDefendAnims = modernDefendAnims != null
-			? Collections.unmodifiableSet(new HashSet<>(modernDefendAnims))
+			? Set.copyOf(modernDefendAnims)
 			: Collections.emptySet();
 		this.modernDeathAnims = modernDeathAnims != null
-			? Collections.unmodifiableSet(new HashSet<>(modernDeathAnims))
+			? Set.copyOf(modernDeathAnims)
 			: Collections.emptySet();
 		this.modernMiscAnims = modernMiscAnims != null
-			? Collections.unmodifiableSet(new HashSet<>(modernMiscAnims))
+			? Set.copyOf(modernMiscAnims)
 			: Collections.emptySet();
 		this.modernAttackOverrides = modernAttackOverrides != null
-			? Collections.unmodifiableMap(new HashMap<>(modernAttackOverrides))
+			? Map.copyOf(modernAttackOverrides)
 			: Collections.emptyMap();
 		this.assetKeyBase = assetKeyBase;
+		this.offsetZ = offsetZ;
 	}
 
 	public boolean hasStaticIdle()
@@ -392,7 +407,8 @@ public class RetroNpcData
 			modernMiscAnims,
 			modernAttackOverrides,
 			staticIdle,
-			assetKeyBase);
+			assetKeyBase,
+			offsetZ);
 	}
 
 	/**
@@ -424,7 +440,8 @@ public class RetroNpcData
 			modernMiscAnims,
 			modernAttackOverrides,
 			staticIdle,
-			assetKeyBase);
+			assetKeyBase,
+			offsetZ);
 	}
 
 	/**
@@ -463,7 +480,8 @@ public class RetroNpcData
 			modernMiscAnims,
 			modernAttackOverrides,
 			staticIdle,
-			assetKeyBase);
+			assetKeyBase,
+			offsetZ);
 	}
 
 	@Override
@@ -482,6 +500,7 @@ public class RetroNpcData
 			scaleXZ == that.scaleXZ &&
 			scaleY == that.scaleY &&
 			assetKeyBase == that.assetKeyBase &&
+			offsetZ == that.offsetZ &&
 			category == that.category &&
 			Arrays.equals(retroModelIds, that.retroModelIds) &&
 			Arrays.equals(injectedModelIds, that.injectedModelIds) &&
@@ -510,6 +529,7 @@ public class RetroNpcData
 		result = 31 * result + scaleXZ;
 		result = 31 * result + scaleY;
 		result = 31 * result + assetKeyBase;
+		result = 31 * result + offsetZ;
 		result = 31 * result + Arrays.hashCode(originalColors);
 		result = 31 * result + Arrays.hashCode(replacementColors);
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
@@ -542,6 +562,7 @@ public class RetroNpcData
 		private final Set<Integer> modernMiscAnims = new HashSet<>();
 		private final Map<Integer, Integer> modernAttackOverrides = new HashMap<>();
 		private int assetKeyBase;
+		private int offsetZ;
 
 		public Builder category(RetroNpcCategory category)
 		{
@@ -748,6 +769,13 @@ public class RetroNpcData
 			return this;
 		}
 
+		/** See {@link RetroNpcData#offsetZ}. */
+		public Builder offsetZ(int offsetZ)
+		{
+			this.offsetZ = offsetZ;
+			return this;
+		}
+
 		public RetroNpcData build()
 		{
 			return new RetroNpcData(
@@ -770,7 +798,8 @@ public class RetroNpcData
 				modernMiscAnims,
 				modernAttackOverrides,
 				staticIdle,
-				assetKeyBase
+				assetKeyBase,
+				offsetZ
 			);
 		}
 	}

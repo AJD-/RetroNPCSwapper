@@ -399,7 +399,7 @@ public class RetroModelCache
 			}
 		}
 
-		mesh = scaled(mesh, colors, data.getScaleXZ(), data.getScaleY());
+		mesh = scaled(mesh, colors, data.getScaleXZ(), data.getScaleY(), data.getOffsetZ());
 
 		int faceCount = mesh.getFaceCount();
 		int[] colors1 = new int[faceCount];
@@ -421,20 +421,22 @@ public class RetroModelCache
 
 	/**
 	 * Returns the mesh with the recolored palette, resized when the retro mesh is not the size the
-	 * modern NPC expects.
-	 *
-	 * <p>Substituted geometry gets no resize from the client, so it has to be applied here - the
-	 * same reason the cache-backed path scales its {@code ModelData}.
+	 * modern NPC expects and shifted when the live model stands off its footprint's center.
+	 * <p>
+	 * Substituted geometry gets no resize from the client, so it has to be applied here - the
+	 * same reason the cache-backed path scales its {@code ModelData}. The shift comes after the
+	 * resize because it is measured in live model units, not in the retro mesh's own.
 	 */
-	private static RetroMesh scaled(RetroMesh mesh, short[] colors, int scaleXZ, int scaleY)
+	static RetroMesh scaled(RetroMesh mesh, short[] colors, int scaleXZ, int scaleY, int offsetZ)
 	{
 		boolean resize = scaleXZ != 128 || scaleY != 128;
+		boolean shift = offsetZ != 0;
 
 		float[] vx = mesh.getVerticesX();
 		float[] vy = mesh.getVerticesY();
 		float[] vz = mesh.getVerticesZ();
 
-		if (resize)
+		if (resize || shift)
 		{
 			vx = vx.clone();
 			vy = vy.clone();
@@ -443,7 +445,7 @@ public class RetroModelCache
 			{
 				vx[v] = vx[v] * scaleXZ / 128f;
 				vy[v] = vy[v] * scaleY / 128f;
-				vz[v] = vz[v] * scaleXZ / 128f;
+				vz[v] = vz[v] * scaleXZ / 128f + offsetZ;
 			}
 		}
 
@@ -785,6 +787,15 @@ public class RetroModelCache
 			// cloneVertices first - loadModelData hands back the client's shared arrays, and
 			// scaling in place would resize the cached model for everything else using it
 			merged = merged.cloneVertices().scale(scaleXZ, scaleY, scaleXZ);
+		}
+
+		int offsetZ = data.getOffsetZ();
+		if (offsetZ != 0)
+		{
+			// After the resize, as the injected path does - the shift is in live model units. The
+			// clone is the same guard as above, and a resized model is already a copy of its own
+			merged = (scaleXZ != 128 || scaleY != 128 ? merged : merged.cloneVertices())
+				.translate(0, 0, offsetZ);
 		}
 
 		Model lit = merged.light();
