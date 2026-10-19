@@ -46,8 +46,8 @@ public class RetroNpcMapping
 
 	/**
 	 * NPCs that must never be swapped, whatever the name and id tables say.
-	 *
-	 * <p>Matching is mostly by name, which is what lets a 2005 name keep working across every
+	 * <p>
+	 * Matching is mostly by name, which is what lets a 2005 name keep working across every
 	 * modern variant of an NPC - but a name is not always a costume. Several NPCs called "Guard"
 	 * carry a bow, and handing them the 2005 sword-and-shield kit takes the bow away.
 	 */
@@ -1629,8 +1629,19 @@ public class RetroNpcMapping
 		.recolors(new short[]{KALPHITE_SHELL, KALPHITE_UNDERSIDE}, new short[]{20364, 11160})
 		.build();
 
-	// Def 1154
+	// Def 1154. The live lair Soldier's model 24595 is the POH Soldier's 24593 moved 71 back, so
+	// it stands half a tile off its footprint's centre; the 2005 mesh is centred and follows it
 	public static final RetroNpcData KALPHITE_SOLDIER = groundKalphite(3851, 172,
+		AnimationID.KALPHITE_UPDATE_READY, AnimationID.KALPHITE_UPDATE_WALK,
+		AnimationID.KALPHITE_UPDATE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_DEFEND,
+		AnimationID.KALPHITE_UPDATE_DEATH)
+		.recolors(new short[]{KALPHITE_SHELL, KALPHITE_UNDERSIDE}, new short[]{26506, 10894})
+		.offsetZ(-71)
+		.build();
+
+	// The POH composition draws the centred 24593 at 172, a third bigger than the lair Soldier, so
+	// the 2005 mesh takes that 172 on top of its own: 172 * 172 / 128
+	public static final RetroNpcData KALPHITE_SOLDIER_POH = groundKalphite(3851, 231,
 		AnimationID.KALPHITE_UPDATE_READY, AnimationID.KALPHITE_UPDATE_WALK,
 		AnimationID.KALPHITE_UPDATE_JAWS_ATTACK, AnimationID.KALPHITE_UPDATE_DEFEND,
 		AnimationID.KALPHITE_UPDATE_DEATH)
@@ -2526,8 +2537,8 @@ public class RetroNpcMapping
 		// that shares the names
 		registerMapping(KALPHITE_WORKER,
 			NpcID.KALPHITE_WORKER, NpcID.KALPHITE_WORKER_STRONGHOLDCAVE, NpcID.KALPHITE_WORKER_CHAMBER);
-		registerMapping(KALPHITE_SOLDIER,
-			NpcID.KALPHITE_SOLDIER, NpcID.KALPHITE_SOLDIER_STRONGHOLDCAVE, NpcID.POH_KALPHITE_SOLDIER);
+		registerMapping(KALPHITE_SOLDIER, NpcID.KALPHITE_SOLDIER, NpcID.KALPHITE_SOLDIER_STRONGHOLDCAVE);
+		registerMapping(KALPHITE_SOLDIER_POH, NpcID.POH_KALPHITE_SOLDIER);
 		registerMapping(KALPHITE_GUARDIAN,
 			NpcID.KALPHITE_LORD, NpcID.KALPHITE_LORD_STRONGHOLDCAVE, NpcID.KALPHITE_LORD_CHAMBER);
 		registerMapping(KALPHITE_LARVA, NpcID.KALPHITE_LARVA);

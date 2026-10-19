@@ -3108,7 +3108,8 @@ public class RetroNpcCategoryTest
 				new short[]{shell, underside}, soldierReplace, worker},
 			{NpcID.KALPHITE_SOLDIER_STRONGHOLDCAVE, "Kalphite Soldier", 3851, 172,
 				new short[]{shell, underside}, soldierReplace, worker},
-			{NpcID.POH_KALPHITE_SOLDIER, "Kalphite Soldier", 3851, 172,
+			// The POH composition draws the lair Soldier's mesh at 172, a third bigger than the lair
+			{NpcID.POH_KALPHITE_SOLDIER, "Kalphite Soldier", 3851, 231,
 				new short[]{shell, underside}, soldierReplace, worker},
 			{NpcID.KALPHITE_LORD, "Kalphite Guardian", 3849, 256,
 				new short[]{shell}, new short[]{27528}, guardian},
@@ -3150,6 +3151,10 @@ public class RetroNpcCategoryTest
 			assertEquals(anims[3], kalphite.getDefendAnimationId());
 			assertEquals(anims[4], kalphite.getDeathAnimationId());
 			assertEquals(anims[0], kalphite.getMiscAnimationId());
+
+			// Only the lair Soldier's live model stands off its footprint's centre
+			boolean lairSoldier = id == NpcID.KALPHITE_SOLDIER || id == NpcID.KALPHITE_SOLDIER_STRONGHOLDCAVE;
+			assertEquals("Kalphite " + id + " Z offset", lairSoldier ? -71 : 0, kalphite.getOffsetZ());
 		}
 
 		// Each attack plays its own clip. Collapsing two onto one would change what a boss shows
@@ -3162,7 +3167,8 @@ public class RetroNpcCategoryTest
 			AnimationID.KALPHITE_ATTACK_CLAWS, AnimationID.KALPHITE_LIGHTNING, AnimationID.KALPHITE_LIGHTNING_DUPE
 		};
 		for (RetroNpcData ground : new RetroNpcData[]{RetroNpcMapping.KALPHITE_WORKER,
-			RetroNpcMapping.KALPHITE_SOLDIER, RetroNpcMapping.KALPHITE_GUARDIAN,
+			RetroNpcMapping.KALPHITE_SOLDIER, RetroNpcMapping.KALPHITE_SOLDIER_POH,
+			RetroNpcMapping.KALPHITE_GUARDIAN,
 			RetroNpcMapping.KALPHITE_LARVA, RetroNpcMapping.KALPHITE_QUEEN_CRAWLING})
 		{
 			for (int attack : groundAttacks)
