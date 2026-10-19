@@ -97,6 +97,33 @@ public class RetroAssetGenerator
 		Paths.get("src/main/resources/com/retronpcswapper/retro-assets.dat");
 
 	/**
+	 * The dialogue emotes a human chathead plays, keyed as the client sends them to the head widget.
+	 * Ids 554-617 less the four in that run that are not emotes (566, 579, 604, 609), the goblin set
+	 * 580-583, which belongs to a different head rig, and the skull set 558-561: its rig (100167)
+	 * moves only groups 0-2, a talking skull's jaw, so on a human head it would tear the 19-47 faces
+	 * that join the jaw to the rest of the face. They were the same ids in 2005, so each clip's frames
+	 * come from the sequence of the same id in the spec's own cache.
+	 */
+	static final int[] HUMAN_CHAT_EMOTES = {
+		AnimationID.CHATQUIZ1, AnimationID.CHATQUIZ2, AnimationID.CHATQUIZ3, AnimationID.CHATQUIZ4,
+		AnimationID.CHATBORED1, AnimationID.CHATBORED2, AnimationID.CHATBORED3, AnimationID.CHATBORED4,
+		AnimationID.CHATHAP1, AnimationID.CHATHAP2, AnimationID.CHATHAP3, AnimationID.CHATHAP4,
+		AnimationID.CHATSHOCK1, AnimationID.CHATSHOCK2, AnimationID.CHATSHOCK3, AnimationID.CHATSHOCK4,
+		AnimationID.CHATCON1, AnimationID.CHATCON2, AnimationID.CHATCON3, AnimationID.CHATCON4,
+		AnimationID.CHATENT1, AnimationID.CHATENT2, AnimationID.CHATENT3, AnimationID.CHATENT4,
+		AnimationID.CHATNEU1, AnimationID.CHATNEU2, AnimationID.CHATNEU3, AnimationID.CHATNEU4,
+		AnimationID.CHATSHIFTY1, AnimationID.CHATSHIFTY2, AnimationID.CHATSHIFTY3, AnimationID.CHATSHIFTY4,
+		AnimationID.CHATSCARED1, AnimationID.CHATSCARED2, AnimationID.CHATSCARED3, AnimationID.CHATSCARED4,
+		AnimationID.CHATDRUNK1, AnimationID.CHATDRUNK2, AnimationID.CHATDRUNK3, AnimationID.CHATDRUNK4,
+		AnimationID.CHATLAUGH1, AnimationID.CHATLAUGH2, AnimationID.CHATLAUGH3, AnimationID.CHATLAUGH4,
+		AnimationID.CHATSAD1, AnimationID.CHATSAD2, AnimationID.CHATSAD3, AnimationID.CHATSAD4,
+		AnimationID.CHATANG1, AnimationID.CHATANG2, AnimationID.CHATANG3, AnimationID.CHATANG4};
+
+	/** The goblin chathead's own four emotes. */
+	static final int[] GOBLIN_CHAT_EMOTES = {
+		AnimationID.CHATGOBLIN1, AnimationID.CHATGOBLIN2, AnimationID.CHATGOBLIN3, AnimationID.CHATGOBLIN4};
+
+	/**
 	 * What to bundle. Each model id becomes its own bundle mesh; an NPC built from parts has them
 	 * merged at runtime. A body mesh named by several specs is decoded and stored once.
 	 */
@@ -344,7 +371,26 @@ public class RetroAssetGenerator
 		// identical, and the only part of the 2005 mesh the live rig moves differently is three body
 		// vertices it lifts by one unit
 		new Spec("Dairy cow", Source.RETRO_NOV, Source.LIVE, new int[]{8237, 8239},
-			new int[]{AnimationID.COW_CHEWS_GRASS})
+			new int[]{AnimationID.COW_CHEWS_GRASS}),
+		// The dialogue heads, npc.dat opcode 60, of every swapped NPC whose 2005 definition had one:
+		// the Feb elves 1680 Islwyn (4011), 1202 Arianwyn (4012) and 1679 Eluned (4013), Elena (113),
+		// the Carnillean guard 887 (60), and the ghosts - 491 the plain Ghost (10), the Restless
+		// ghost (28, 78), the Gardener ghost (5179) and the Port Phasmatys townsfolk (5202-5205).
+		// Drawn by the chathead overlay, posed by the human emotes from the same cache
+		new Spec("Chatheads", Source.RETRO, Source.RETRO,
+			new int[]{4011, 4012, 4013, 113, 60, 10, 28, 78, 5179, 5202, 5203, 5204, 5205},
+			HUMAN_CHAT_EMOTES),
+		// The Lletya elves' heads. Nov re-authored the human rig, heads included, so these and their
+		// emotes sit in the Nov namespace beside the bodies. 41 is Gethin's chef's hat, the second
+		// part of his head
+		Spec.keyed("Chatheads (Nov 2005)", RetroAssetBundle.NOV_HUMAN_KEY_BASE,
+			Source.RETRO_NOV, Source.RETRO_NOV,
+			new int[]{4011, 4012, 4013, 8257, 8258, 8259, 8260, 8261, 41},
+			HUMAN_CHAT_EMOTES),
+		// The armoured goblins' heads, 298 green (142) and 299 red (144), which the Goblin guard 489
+		// shares. Their own rig and emotes, so a namespace of their own
+		Spec.keyed("Goblin chatheads", RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE,
+			Source.RETRO, Source.RETRO, new int[]{142, 144}, GOBLIN_CHAT_EMOTES)
 	);
 
 	enum Source
@@ -521,6 +567,15 @@ public class RetroAssetGenerator
 						System.err.println("  sequence " + key + " is claimed by " + owner.label
 							+ " from the " + owner.clipSource + " cache and by " + spec.label
 							+ " from the " + spec.clipSource + " cache");
+						complete = false;
+					}
+					else if (owner.retroSequenceFor(sequenceId) != retroSequenceId)
+					{
+						// The same cache, but different frames under one key - one spec would silently
+						// play the other's animation
+						System.err.println("  sequence " + key + " is claimed by " + owner.label
+							+ " from sequence " + owner.retroSequenceFor(sequenceId) + " and by " + spec.label
+							+ " from sequence " + retroSequenceId);
 						complete = false;
 					}
 					continue;
@@ -1533,6 +1588,19 @@ public class RetroAssetGenerator
 			int[] sequenceIds)
 		{
 			return new Spec(label, keyBase, source, clipSource, modelIds, sequenceIds, sequenceIds);
+		}
+
+		/** The source sequence whose frames fill the clip keyed by this live sequence. */
+		int retroSequenceFor(int sequenceId)
+		{
+			for (int seq = 0; seq < sequenceIds.length; seq++)
+			{
+				if (sequenceIds[seq] == sequenceId)
+				{
+					return retroSequenceIds[seq];
+				}
+			}
+			throw new IllegalArgumentException(label + " has no sequence " + sequenceId);
 		}
 
 		private static int[] concat(int[] a, int[] b)

@@ -343,6 +343,21 @@ public interface RetroNpcConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "swapChatheads",
+		name = "Chatheads",
+		description = "<html><body style='width:170px'>Show a swapped NPC's 2004/2005 dialogue head in "
+			+ "place of its modern one, where its 2005 definition had one: Elves, Elena, Goblin Village "
+			+ "goblins, guards, and others.<br><br>Follows each NPC's own toggle, and needs <b>Use "
+			+ "Converted 2005 Assets</b>, which is on by default.</body></html>",
+		section = npcTogglesSection,
+		position = 20
+	)
+	default boolean swapChatheads()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Safety",
 		description = "Safety settings to disable NPC swapping in dangerous areas or worlds",

@@ -52,13 +52,17 @@ public class RetroNpcMappingEntry
 	private short[] originalColors;
 	private short[] replacementColors;
 
+	// Chathead parts from npc.dat opcode 60, absent when the definition had no dialogue head. The
+	// row's own definition's, or failing that another definition of the same name and body's.
+	private int[] chatheadModelIds;
+
 	// No-arg constructor for Gson
 	public RetroNpcMappingEntry()
 	{
 	}
 
 	public RetroNpcMappingEntry(String name, RetroNpcCategory category, int[] modelIds, int idleAnim, int walkAnim,
-		int scaleXZ, int scaleY, short[] originalColors, short[] replacementColors)
+		int scaleXZ, int scaleY, short[] originalColors, short[] replacementColors, int[] chatheadModelIds)
 	{
 		this.name = name;
 		this.category = category;
@@ -69,6 +73,7 @@ public class RetroNpcMappingEntry
 		this.scaleY = scaleY;
 		this.originalColors = originalColors;
 		this.replacementColors = replacementColors;
+		this.chatheadModelIds = chatheadModelIds;
 	}
 
 }

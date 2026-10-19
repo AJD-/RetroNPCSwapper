@@ -40,6 +40,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import javax.inject.Inject;
 
+import com.retronpcswapper.chathead.ChatheadOverlay;
+import com.retronpcswapper.chathead.ChatheadSwapper;
+import com.retronpcswapper.chathead.RetroHead;
 import com.retronpcswapper.inject.ClasspathAssetSource;
 import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroAssetSource;
@@ -55,12 +58,14 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
 import net.runelite.api.NPC;
+import net.runelite.api.NPCComposition;
 import net.runelite.api.Player;
 import net.runelite.api.Renderable;
 import net.runelite.api.TileItem;
 import net.runelite.api.WorldType;
 import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
+import net.runelite.api.events.BeforeRender;
 import net.runelite.api.events.DecorativeObjectDespawned;
 import net.runelite.api.events.DecorativeObjectSpawned;
 import net.runelite.api.events.GameObjectDespawned;
@@ -152,6 +157,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Inject
 	private RenderCallbackManager renderCallbackManager;
 
+	@Inject
+	private ChatheadSwapper chatheadSwapper;
+
+	@Inject
+	private ChatheadOverlay chatheadOverlay;
+
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
 
@@ -198,6 +209,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 		loadMappings();
 		loadAssetBundle();
 		renderCallbackManager.register(scenerySwapper);
+		chatheadSwapper.start(this::chatheadFor);
+		overlayManager.add(chatheadOverlay);
 		clientThread.invoke(() ->
 		{
 			// A session that died while suppressing left Interact Highlight's NPC outlines off.
@@ -272,6 +285,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// off-and-on would let this run after the next startUp registered, and unregister that.
 		// Once it is gone nothing hides the symbols, so the zone rebuild below puts them back.
 		renderCallbackManager.unregister(scenerySwapper);
+		overlayManager.remove(chatheadOverlay);
 
 		clientThread.invoke(() ->
 		{
@@ -281,6 +295,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 			detach();
 			resetAllModifiedNpcs();
 			shieldSwapper.shutDown();
+			// Ahead of the clear, so the dialogue head is put back before the heads it drew go
+			chatheadSwapper.stop();
 			modelCache.clear();
 		});
 	}
@@ -353,6 +369,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 			recheckLoadedNpcs();
 			syncInteractHighlight();
 		});
+	}
+
+	@Subscribe
+	public void onBeforeRender(BeforeRender event)
+	{
+		chatheadSwapper.onBeforeRender();
 	}
 
 	@Subscribe
@@ -623,9 +645,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Animation overrides are gated on substitution being live. Without the wrapper the
 		// model stays vanilla, and a modern-rigged model playing a 2005 sequence - which is
 		// keyed to 2005 framemaps - renders distorted rather than retro.
-		//
-		// Verify if category toggle is enabled in configuration
-		if (wrapper == null || isSafetyDisabled() || data == null || !isCategoryEnabled(data.getCategory()))
+		if (!isSwapLive(data))
 		{
 			modelCache.clearSubstituted(npc.getId());
 			resetNpc(npc);
@@ -647,6 +667,40 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		modelCache.setSubstituted(npc.getId());
 		applyRetroSwap(npc, data);
+	}
+
+	/**
+	 * Whether an NPC with this mapping is drawn retro right now: the wrapper attached, no safety
+	 * setting stepping in, and its category toggled on.
+	 */
+	private boolean isSwapLive(RetroNpcData data)
+	{
+		return wrapper != null && !isSafetyDisabled() && data != null && isCategoryEnabled(data.getCategory());
+	}
+
+	/**
+	 * The 2005 chathead to draw in dialogue for an NPC id, or null to leave its modern one.
+	 * <p>
+	 * Only for an NPC whose body is swapped too, so a 2005 head never talks for a modern body - with
+	 * no GPU or 117 HD renderer wrapped, a toggle off, or a safety setting stepping in. The heads are
+	 * converted 2005 assets for every category, the cache-backed goblins and ghosts included, so the
+	 * assets toggle gates them as well. Client thread only: called by the swapper every frame a
+	 * dialogue head shows.
+	 */
+	private RetroHead chatheadFor(int npcId)
+	{
+		if (!active || !config.swapChatheads() || !injectionEnabled())
+		{
+			return null;
+		}
+
+		NPCComposition composition = client.getNpcDefinition(npcId);
+		RetroNpcData data = RetroNpcMapping.get(npcId, composition == null ? null : composition.getName());
+		if (!isSwapLive(data) || !data.hasChathead())
+		{
+			return null;
+		}
+		return modelCache.headFor(npcId, data);
 	}
 
 	/**

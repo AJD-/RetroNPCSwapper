@@ -34,6 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -147,10 +148,43 @@ public class NpcMappingGenerator
 			byName.putIfAbsent(nameLower, new RetroNpcMappingEntry(
 				nameLower, category, def.getModels(), def.getStanceAnimation(), def.getWalkAnimation(),
 				def.getScaleXZ(), def.getScaleY(),
-				def.getOriginalColors(), def.getReplacementColors()));
+				def.getOriginalColors(), def.getReplacementColors(), chatheadFor(def, defs)));
 		}
 
 		return new ArrayList<>(new TreeMap<>(byName).values());
+	}
+
+	/**
+	 * A definition's opcode 60 head, or failing that the head of the lowest-id definition with the
+	 * same name and the same body, or null when neither has one.
+	 * <p>
+	 * The fallback is for the row that wins on lowest id being a variant that could not talk: the
+	 * plain Ghost is def 103, while def 491 - the same three meshes - is the one with Talk-to and
+	 * head 10. The body has to match exactly, so a head is never borrowed across costumes: the plain
+	 * goblin (def 100) shares its name with the armoured 298, but not its parts, and stays headless.
+	 */
+	static int[] chatheadFor(RetroNpcDefinition def, Map<Integer, RetroNpcDefinition> defs)
+	{
+		if (hasChathead(def))
+		{
+			return def.getAdditionalModels();
+		}
+
+		for (int defId : new TreeSet<>(defs.keySet()))
+		{
+			RetroNpcDefinition other = defs.get(defId);
+			if (other != null && hasChathead(other) && def.getName().equalsIgnoreCase(other.getName())
+				&& Arrays.equals(def.getModels(), other.getModels()))
+			{
+				return other.getAdditionalModels();
+			}
+		}
+		return null;
+	}
+
+	private static boolean hasChathead(RetroNpcDefinition def)
+	{
+		return def.getAdditionalModels() != null && def.getAdditionalModels().length > 0;
 	}
 
 	/**

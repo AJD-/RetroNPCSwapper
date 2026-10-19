@@ -33,6 +33,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Scorpions**
 - **Elves**
 - **Kalphites** — KQ, Guardians, Soldiers, Workers, Larvae
+- **Chatheads** — Swaps chatheads for NPCs with dialogue. Follows each NPC's own toggle.
 
 Under **Scenery**:
 

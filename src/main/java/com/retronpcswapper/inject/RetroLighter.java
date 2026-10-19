@@ -62,9 +62,9 @@ public final class RetroLighter
 	private static final int RENDER_TYPE_UNSHADED = 3;
 
 	/** {@code faceColors3} sentinel: flat shaded. */
-	static final int FLAT_SHADED = -1;
+	public static final int FLAT_SHADED = -1;
 	/** {@code faceColors3} sentinel: face not drawn. */
-	static final int HIDDEN = -2;
+	public static final int HIDDEN = -2;
 
 	/**
 	 * Cross products are accumulated in ints, so they are halved until they fit rather than
