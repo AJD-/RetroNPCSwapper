@@ -980,26 +980,33 @@ public class RetroNpcMapping
 
 	/**
 	 * Prifddinas's halberd guards, who are the Mourning's End warriors again: the pike warrior's
-	 * kit from definition 2359, keeping its pike colors, in the guard's own hair and leathers. Nov
-	 * has no female warrior, so the women wear the Lletya women's head 4030 on the same body.
+	 * kit from definition 2359, keeping its pike colors.
 	 */
 	private static final int[] PRIF_GUARD_PARTS = {4020, 4025, 4016, 4033, 4023};
 
 	private static final int[] PRIF_GUARD_FEMALE_PARTS = {4030, 4025, 4016, 4033, 4023};
 
-	private static final short[] PRIF_GUARD_RECOLOR_FIND = {9137, 9152, 8792, 16701, 8652, 7595, 6449, 25886};
+	private static final short[] PRIF_GUARD_RECOLOR_FIND = {9137, 9152, 16701, 7595, 12469, 6449, 25886};
 
-	static RetroNpcData prifGuard(boolean female, int hair, int cloth, int clothShade, int clothDark)
+	/**
+	 * Prif Crystal armor & undersuit/boot colors
+	 */
+	private static final short PRIF_CRYSTAL = 32200;
+
+	private static final short PRIF_UNDERSUIT = -30054;
+
+	private static final short PRIF_BOOTS = 3604;
+
+	static RetroNpcData prifGuard(boolean female, int hair)
 	{
 		return NOV_ELF_WARRIOR.withModelIds(female ? PRIF_GUARD_FEMALE_PARTS : PRIF_GUARD_PARTS)
-			.withRecolors(PRIF_GUARD_RECOLOR_FIND, new short[]{(short) hair, (short) hair, (short) cloth,
-				(short) cloth, (short) clothShade, (short) clothDark, 7646, 7646});
+			.withRecolors(PRIF_GUARD_RECOLOR_FIND, new short[]{(short) hair, (short) hair, PRIF_CRYSTAL,
+				PRIF_BOOTS, PRIF_UNDERSUIT, 7646, 7646});
 	}
 
-	private static void registerPrifGuard(int npcId, boolean female, int hair, int cloth, int clothShade,
-		int clothDark)
+	private static void registerPrifGuard(int npcId, boolean female, int hair)
 	{
-		registerMapping(prifGuard(female, hair, cloth, clothShade, clothDark), npcId);
+		registerMapping(prifGuard(female, hair), npcId);
 	}
 
 	/**
@@ -2271,21 +2278,20 @@ public class RetroNpcMapping
 			NpcID.SOTE_LADY_TRAHAEARN_VIS, NpcID.SOTE_LADY_TRAHAEARN_UPASS, NpcID.LADY_TRAHAEARN);
 		registerMapping(KELYN, NpcID.SOTE_LADY_ITHELL_VIS, NpcID.SOTE_LADY_ITHELL_UPASS, NpcID.LADY_ITHELL);
 
-		// The city guards, in their own hair and leathers. PRIF_CITY_GUARD_EVIL carries no recolor
-		// at all - it is the Mourning's End warrior's own model - so it is that warrior
-		registerPrifGuard(NpcID.PRIF_GUARD0, false, -22250, 4533, 4529, 4525);
-		registerPrifGuard(NpcID.PRIF_GUARD1, false, -26428, 3738, 3734, 5008);
-		registerPrifGuard(NpcID.PRIF_GUARD2, false, 12, 4533, 4529, 4525);
-		registerPrifGuard(NpcID.PRIF_GUARD3, false, 7467, 4316, 4308, 4304);
-		registerPrifGuard(NpcID.PRIF_GUARD4, true, -26428, 4316, 4308, 4304);
-		registerPrifGuard(NpcID.PRIF_GUARD5, true, 3881, 3738, 3734, 5008);
-		registerPrifGuard(NpcID.PRIF_GUARD6, true, 12, 4316, 4308, 4304);
-		registerPrifGuard(NpcID.PRIF_GUARD7, true, -26428, 4316, 4308, 4304);
-		registerPrifGuard(NpcID.PRIF_CITY_GUARD, true, -26428, 4316, 4308, 4304);
+		// The city guards, in crystal armor and brown boots with their own hair.
+		registerPrifGuard(NpcID.PRIF_GUARD0, false, -22250);
+		registerPrifGuard(NpcID.PRIF_GUARD1, false, -26428);
+		registerPrifGuard(NpcID.PRIF_GUARD2, false, 12);
+		registerPrifGuard(NpcID.PRIF_GUARD3, false, 7467);
+		registerPrifGuard(NpcID.PRIF_GUARD4, true, -26428);
+		registerPrifGuard(NpcID.PRIF_GUARD5, true, 3881);
+		registerPrifGuard(NpcID.PRIF_GUARD6, true, 12);
+		registerPrifGuard(NpcID.PRIF_GUARD7, true, -26428);
+		registerPrifGuard(NpcID.PRIF_CITY_GUARD, true, -26428);
 		registerMapping(NOV_ELF_WARRIOR, NpcID.PRIF_CITY_GUARD_EVIL);
-		// The arena's gladiators are the city guard in the arena: the same model, leathers and halberd
-		registerPrifGuard(NpcID.PRIF_GLADIATOR1, false, -22493, 4533, 4529, 4525);
-		registerPrifGuard(NpcID.PRIF_GLADIATOR2, false, -22493, 4533, 4529, 4525);
+		// The arena's gladiators are the city guard in the arena: the same model, armor and halberd
+		registerPrifGuard(NpcID.PRIF_GLADIATOR1, false, -22493);
+		registerPrifGuard(NpcID.PRIF_GLADIATOR2, false, -22493);
 		// Deliberately left out: DEADMAN_GUARD_PRIF_VIS and DEADMAN_GUARD_PRIF_RANGE_VIS, like the other
 		// Deadman guards
 
