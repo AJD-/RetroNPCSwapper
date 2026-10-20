@@ -913,12 +913,13 @@ public class RetroNpcCategoryTest
 		// Lord Baxtorian Cadarn is Baxtorian of the Waterfall Quest, and was not asked for
 		assertNull(RetroNpcMapping.get(NpcID.LORD_CADARN, "Lord Baxtorian Cadarn"));
 
-		// The city guards: the pike warrior's kit, the women on the Lletya women's head, in their
-		// own leathers with the pike's colors kept; the corrupted guard is the warrior unchanged
+		// The city guards: the pike warrior's kit, the women on the Lletya women's head, in
+		// the live crystal armor and brown boots rather than tan leathers that read as skin,
+		// and the pike's colors kept; the corrupted guard is the warrior unchanged
 		RetroNpcData guard = Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_GUARD0, "Guard"));
 		assertArrayEquals(new int[]{4020, 4025, 4016, 4033, 4023}, guard.getRetroModelIds());
-		assertArrayEquals(new short[]{9137, 9152, 8792, 16701, 8652, 7595, 6449, 25886}, guard.getOriginalColors());
-		assertArrayEquals(new short[]{-22250, -22250, 4533, 4533, 4529, 4525, 7646, 7646}, guard.getReplacementColors());
+		assertArrayEquals(new short[]{9137, 9152, 16701, 7595, 12469, 6449, 25886}, guard.getOriginalColors());
+		assertArrayEquals(new short[]{-22250, -22250, 32200, 3604, -30054, 7646, 7646}, guard.getReplacementColors());
 		assertEquals(AnimationID.HUMAN_SCYTHE_SWEEP, guard.getAttackAnimationId());
 		assertEquals(RetroAssetBundle.NOV_HUMAN_KEY_BASE, guard.getAssetKeyBase());
 		for (int id = NpcID.PRIF_GUARD4; id <= NpcID.PRIF_CITY_GUARD; id++)
