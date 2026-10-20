@@ -922,12 +922,34 @@ public class RetroNpcMapping
 	public static final RetroNpcData IONA = novElf(new int[]{4021, 6977, 6975, 8267},
 		new short[]{9137, 8792}, new short[]{8117, 11592}, 106, 87).build();
 
-	/**
-	 * The hair and cloth colors of the Nov Lletya kits, which a Prifddinas citizen's own colors
-	 * replace. Measured on the meshes: 9137 and 9152 are hair, one per head; 8792 is the main garment
-	 * and 16701 the tunic on the older parts; 8652 the secondary cloth; 7595 trim, belts and boots.
+	/*
+	 * The colors painted on the Nov Lletya kits' meshes, by what they cover - measured on the meshes
+	 * themselves, so these are the slots a recolor aims at, not colors anyone sees. Packed HSL, like
+	 * every color here.
 	 */
-	private static final short[] CITIZEN_RECOLOR_FIND = {9137, 9152, 8792, 16701, 8652, 7595};
+	/** Hair on the Lletya heads. */
+	private static final short KIT_HAIR = 9137;
+	/** Hair on the old Iorwerth head 4020. */
+	private static final short KIT_HAIR_OLD_HEAD = 9152;
+	/** The main garment. */
+	private static final short KIT_GARMENT = 8792;
+	/** The tunic on the older parts, the warriors' included. */
+	private static final short KIT_TUNIC = 16701;
+	/** The secondary cloth. */
+	private static final short KIT_SECONDARY = 8652;
+	/** Trim, belts and boots. */
+	private static final short KIT_TRIM = 7595;
+	/** The low band on the warrior's body 4016. */
+	private static final short KIT_WARRIOR_BAND = 12469;
+	/** The two colors of the pike 4033 that definition 2359 paints wood. */
+	private static final short KIT_PIKE_SHAFT = 6449;
+	private static final short KIT_PIKE_BAND = 25886;
+	/** The wood definition 2359 paints the pike. */
+	private static final short PIKE_WOOD = 7646;
+
+	/** The hair and cloth slots of the Nov Lletya kits, which a Prifddinas citizen's own colors replace. */
+	private static final short[] CITIZEN_RECOLOR_FIND = {
+		KIT_HAIR, KIT_HAIR_OLD_HEAD, KIT_GARMENT, KIT_TUNIC, KIT_SECONDARY, KIT_TRIM};
 
 	/**
 	 * The Lletya outfits a citizen can wear, by body. Gethin's chef's hat and the children are left
@@ -964,6 +986,13 @@ public class RetroNpcMapping
 	 * Registers a citizen under its own id and any others that are the same character, which share
 	 * the outfit the first id picks rather than each picking their own.
 	 */
+	private static void registerCitizen(int npcId, boolean female, int hair, PrifClothing clothing,
+		int... sameNpcIds)
+	{
+		registerCitizen(npcId, female, hair, clothing.cloth, clothing.clothShade, clothing.clothDark, sameNpcIds);
+	}
+
+	/** A citizen whose live clothing mixes shades from more than one set. */
 	private static void registerCitizen(int npcId, boolean female, int hair, int cloth, int clothShade,
 		int clothDark, int... sameNpcIds)
 	{
@@ -972,10 +1001,9 @@ public class RetroNpcMapping
 		registerMapping(data, sameNpcIds);
 	}
 
-	private static void registerDressed(RetroNpcData kit, int hair, int cloth, int clothShade, int clothDark,
-		int... npcIds)
+	private static void registerDressed(RetroNpcData kit, int hair, PrifClothing clothing, int... npcIds)
 	{
-		registerMapping(dressed(kit, hair, cloth, clothShade, clothDark), npcIds);
+		registerMapping(dressed(kit, hair, clothing.cloth, clothing.clothShade, clothing.clothDark), npcIds);
 	}
 
 	/**
@@ -986,7 +1014,8 @@ public class RetroNpcMapping
 
 	private static final int[] PRIF_GUARD_FEMALE_PARTS = {4030, 4025, 4016, 4033, 4023};
 
-	private static final short[] PRIF_GUARD_RECOLOR_FIND = {9137, 9152, 16701, 7595, 12469, 6449, 25886};
+	private static final short[] PRIF_GUARD_RECOLOR_FIND = {
+		KIT_HAIR, KIT_HAIR_OLD_HEAD, KIT_TUNIC, KIT_TRIM, KIT_WARRIOR_BAND, KIT_PIKE_SHAFT, KIT_PIKE_BAND};
 
 	/**
 	 * Prif Crystal armor & undersuit/boot colors
@@ -1001,7 +1030,7 @@ public class RetroNpcMapping
 	{
 		return NOV_ELF_WARRIOR.withModelIds(female ? PRIF_GUARD_FEMALE_PARTS : PRIF_GUARD_PARTS)
 			.withRecolors(PRIF_GUARD_RECOLOR_FIND, new short[]{(short) hair, (short) hair, PRIF_CRYSTAL,
-				PRIF_BOOTS, PRIF_UNDERSUIT, 7646, 7646});
+				PRIF_BOOTS, PRIF_UNDERSUIT, PIKE_WOOD, PIKE_WOOD});
 	}
 
 	private static void registerPrifGuard(int npcId, boolean female, int hair)
@@ -2151,134 +2180,132 @@ public class RetroNpcMapping
 		);
 
 		// Prifddinas citizens and the arena spectators, generated from their live definitions: body,
-		// then the lightest hair shade and the three clothing shades. The clan each set belongs to is
-		// proven by the same colors on that clan's lord or lady (Amlodd navy, Cadarn olive, Ithell
-		// white, Iorwerth near-black, Meilyr teal, Hefin crimson) or on a named member (Trahaearn pink
-		// on Reese, Crwys yellow on Oswallt).
-		registerCitizen(NpcID.PRIF_CITIZEN_AMROD, false, 3738, 796, 920, 918); // Amrod, Hefin
-		registerCitizen(NpcID.PRIF_CITIZEN_MIRIEL, true, 8394, 796, 920, 918); // Miriel, Hefin
-		registerCitizen(NpcID.PRIF_CITIZEN_CURUFIN, false, 28, 796, 920, 918); // Curufin, Hefin
-		registerCitizen(NpcID.PRIF_CITIZEN_ENERDHIL, false, 12, -27116, -26864, -26740); // Enerdhil, Amlodd
-		registerCitizen(NpcID.PRIF_CITIZEN_TATIE, true, 12, -27116, -26864, -26740); // Tatie, Amlodd
-		registerCitizen(NpcID.PRIF_CITIZEN_FINDUILAS, true, 10341, -27116, -26864, -26740); // Finduilas, Amlodd
-		registerCitizen(NpcID.PRIF_CITIZEN_GELMIR, false, 3881, -27558, -32686, -32700); // Gelmir, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_MITHRELLAS, true, -22250, -27558, -32686, -32700); // Mithrellas, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_ERESTOR, false, 7467, -27558, -32686, -32700); // Erestor, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_LINDIR, false, -26428, -27558, -32686, -32700); // Lindir, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_IDRIL, true, 4750, -27558, -32686, -32700); // Idril, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_INGWION, false, 28, -32750, -32626, -32630); // Ingwion, Iorwerth
-		registerCitizen(NpcID.PRIF_CITIZEN_THINGOL, false, 8394, -32750, -32626, -32630); // Thingol, Iorwerth
-		registerCitizen(NpcID.PRIF_CITIZEN_ELENWE, true, 138, -32750, -32626, -32630); // Elenwe, Iorwerth
-		registerCitizen(NpcID.PRIF_CITIZEN_OROPHIN, false, 5667, -32750, -32626, -32630); // Orophin, Iorwerth
-		registerCitizen(NpcID.PRIF_CITIZEN_VAIRE, true, 8394, -14014, -14019, -14023); // Vaire, Trahaearn
-		registerCitizen(NpcID.PRIF_CITIZEN_ELLADAN, false, 8394, -14014, -14019, -14023); // Elladan, Trahaearn
-		registerCitizen(NpcID.PRIF_CITIZEN_GUILIN, false, 12, -14014, -14019, -14023); // Guilin, Trahaearn
-		registerCitizen(NpcID.PRIF_CITIZEN_INGWE, false, 536, -14014, -14019, -14023); // Ingwe, Trahaearn
-		registerCitizen(NpcID.PRIF_CITIZEN_CIRDAN, false, -22250, -14014, -14019, -14023); // Cirdan, Trahaearn
-		registerCitizen(NpcID.PRIF_CITIZEN_GLORFINDEL, false, 536, -14014, -14019, -14023); // Glorfindel, Trahaearn
+		// then the lightest hair shade and the clan's clothing. The odd citizen whose live clothing
+		// mixes sets keeps its three shades as they are
+		registerCitizen(NpcID.PRIF_CITIZEN_AMROD, false, 3738, PrifClothing.HEFIN); // Amrod
+		registerCitizen(NpcID.PRIF_CITIZEN_MIRIEL, true, 8394, PrifClothing.HEFIN); // Miriel
+		registerCitizen(NpcID.PRIF_CITIZEN_CURUFIN, false, 28, PrifClothing.HEFIN); // Curufin
+		registerCitizen(NpcID.PRIF_CITIZEN_ENERDHIL, false, 12, PrifClothing.AMLODD); // Enerdhil
+		registerCitizen(NpcID.PRIF_CITIZEN_TATIE, true, 12, PrifClothing.AMLODD); // Tatie
+		registerCitizen(NpcID.PRIF_CITIZEN_FINDUILAS, true, 10341, PrifClothing.AMLODD); // Finduilas
+		registerCitizen(NpcID.PRIF_CITIZEN_GELMIR, false, 3881, PrifClothing.ITHELL); // Gelmir
+		registerCitizen(NpcID.PRIF_CITIZEN_MITHRELLAS, true, -22250, PrifClothing.ITHELL); // Mithrellas
+		registerCitizen(NpcID.PRIF_CITIZEN_ERESTOR, false, 7467, PrifClothing.ITHELL); // Erestor
+		registerCitizen(NpcID.PRIF_CITIZEN_LINDIR, false, -26428, PrifClothing.ITHELL); // Lindir
+		registerCitizen(NpcID.PRIF_CITIZEN_IDRIL, true, 4750, PrifClothing.ITHELL); // Idril
+		registerCitizen(NpcID.PRIF_CITIZEN_INGWION, false, 28, PrifClothing.IORWERTH); // Ingwion
+		registerCitizen(NpcID.PRIF_CITIZEN_THINGOL, false, 8394, PrifClothing.IORWERTH); // Thingol
+		registerCitizen(NpcID.PRIF_CITIZEN_ELENWE, true, 138, PrifClothing.IORWERTH); // Elenwe
+		registerCitizen(NpcID.PRIF_CITIZEN_OROPHIN, false, 5667, PrifClothing.IORWERTH); // Orophin
+		registerCitizen(NpcID.PRIF_CITIZEN_VAIRE, true, 8394, PrifClothing.TRAHAEARN); // Vaire
+		registerCitizen(NpcID.PRIF_CITIZEN_ELLADAN, false, 8394, PrifClothing.TRAHAEARN); // Elladan
+		registerCitizen(NpcID.PRIF_CITIZEN_GUILIN, false, 12, PrifClothing.TRAHAEARN); // Guilin
+		registerCitizen(NpcID.PRIF_CITIZEN_INGWE, false, 536, PrifClothing.TRAHAEARN); // Ingwe
+		registerCitizen(NpcID.PRIF_CITIZEN_CIRDAN, false, -22250, PrifClothing.TRAHAEARN); // Cirdan
+		registerCitizen(NpcID.PRIF_CITIZEN_GLORFINDEL, false, 536, PrifClothing.TRAHAEARN); // Glorfindel
 		registerCitizen(NpcID.PRIF_CITIZEN_AREDHEL, true, 3881, -14014, -24384, -14023); // Aredhel, Trahaearn
-		registerCitizen(NpcID.PRIF_CITIZEN_CELEGORM, false, 3881, 13854, 13978, 14102); // Celegorm, Cadarn
-		registerCitizen(NpcID.PRIF_CITIZEN_ANAIRE, true, 3738, 13854, 13978, 14102); // Anaire, Cadarn
-		registerCitizen(NpcID.PRIF_CITIZEN_MAEGLIN, false, 5667, 13854, 13978, 14102); // Maeglin, Cadarn
-		registerCitizen(NpcID.PRIF_CITIZEN_EDRAHIL, false, 536, 9127, 9125, 9121); // Edrahil, Crwys
-		registerCitizen(NpcID.PRIF_CITIZEN_FINGON, false, 536, 9127, 9125, 9121); // Fingon, Crwys
-		registerCitizen(NpcID.PRIF_CITIZEN_SALGANT, false, -26428, 32185, 32307, 32429); // Salgant, Meilyr
-		registerCitizen(NpcID.PRIF_CITIZEN_CELEBRIAN, true, 7467, 32185, 32307, 32429); // Celebrian, Meilyr
-		registerCitizen(NpcID.PRIF_CITIZEN_IMIN, false, 3881, 32185, 32307, 32429); // Imin, Meilyr
-		registerCitizen(NpcID.PRIF_CITIZEN_OROPHER, false, -22250, 32185, 32307, 32429); // Oropher, Meilyr
-		registerCitizen(NpcID.PRIF_CITIZEN_FINGOLFIN, false, 12, 796, 920, 918); // Fingolfin, Hefin
+		registerCitizen(NpcID.PRIF_CITIZEN_CELEGORM, false, 3881, PrifClothing.CADARN); // Celegorm
+		registerCitizen(NpcID.PRIF_CITIZEN_ANAIRE, true, 3738, PrifClothing.CADARN); // Anaire
+		registerCitizen(NpcID.PRIF_CITIZEN_MAEGLIN, false, 5667, PrifClothing.CADARN); // Maeglin
+		registerCitizen(NpcID.PRIF_CITIZEN_EDRAHIL, false, 536, PrifClothing.CRWYS); // Edrahil
+		registerCitizen(NpcID.PRIF_CITIZEN_FINGON, false, 536, PrifClothing.CRWYS); // Fingon
+		registerCitizen(NpcID.PRIF_CITIZEN_SALGANT, false, -26428, PrifClothing.MEILYR); // Salgant
+		registerCitizen(NpcID.PRIF_CITIZEN_CELEBRIAN, true, 7467, PrifClothing.MEILYR); // Celebrian
+		registerCitizen(NpcID.PRIF_CITIZEN_IMIN, false, 3881, PrifClothing.MEILYR); // Imin
+		registerCitizen(NpcID.PRIF_CITIZEN_OROPHER, false, -22250, PrifClothing.MEILYR); // Oropher
+		registerCitizen(NpcID.PRIF_CITIZEN_FINGOLFIN, false, 12, PrifClothing.HEFIN); // Fingolfin
 		registerCitizen(NpcID.PRIF_CITIZEN_MAHTAN, false, 8394, -27558, -32686, 914); // Mahtan, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_INDIS, true, 4750, 13854, 13978, 14102); // Indis, Cadarn
-		registerCitizen(NpcID.PRIF_CITIZEN_IMINYE, true, 138, -27558, -32686, -32700); // Iminye, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_FEANOR, false, 3738, -27116, -26864, -26740); // Feanor, Amlodd
-		registerCitizen(NpcID.PRIF_CITIZEN_SAEROS, false, 138, 796, 920, 918); // Saeros, Hefin
-		registerCitizen(NpcID.PRIF_CITIZEN_NELLAS, true, 138, -14014, -14019, -14023); // Nellas, Trahaearn
-		registerCitizen(NpcID.PRIF_SPECTATOR1, false, 7467, 13854, 13978, 14102); // Rhyfel, Cadarn
-		registerCitizen(NpcID.PRIF_SPECTATOR2, false, 138, -27558, -32686, -32700); // Gwyl, Ithell
-		registerCitizen(NpcID.PRIF_SPECTATOR3, true, 138, -27116, -26864, -26740); // Enilly, Amlodd
-		registerCitizen(NpcID.PRIF_SPECTATOR4, true, 28, 796, 920, 918); // Ffoni, Hefin
-		registerCitizen(NpcID.PRIF_SPECTATOR5, false, 7467, -32750, -32626, -32630); // Ymladd, Iorwerth
-		registerCitizen(NpcID.PRIF_SPECTATOR6, false, -26428, -32750, -32626, -32630); // Sadwrn, Iorwerth
-		registerCitizen(NpcID.PRIF_SPECTATOR7, true, 5667, -32750, -32626, -32630); // Diol, Iorwerth
-		registerCitizen(NpcID.PRIF_SPECTATOR8, true, 3881, -32750, -32626, -32630); // Ysbeid, Iorwerth
-		registerCitizen(NpcID.PRIF_SPECTATOR9, false, 138, -32750, -32626, -32630); // Cleddyf, Iorwerth
-		registerCitizen(NpcID.PRIF_SPECTATOR10, true, 28, -32750, -32626, -32630); // Saeth, Iorwerth
-		registerCitizen(NpcID.PRIF_CITIZEN_NIMRODEL, true, 28, 9127, 9125, 9121); // Nimrodel, Crwys
-		registerCitizen(NpcID.PRIF_CITIZEN_MAEDHROS, false, -22493, -27116, -26864, -26740); // Maedhros, Amlodd
-		registerCitizen(NpcID.PRIF_CITIZEN_FINARFIN, false, -26428, 796, 920, 918); // Finarfin, Hefin
-		registerCitizen(NpcID.PRIF_CITIZEN_GWINDOR, false, 4750, 796, 920, 918); // Gwindor, Hefin
-		registerCitizen(NpcID.PRIF_CITIZEN_ELDALOTE, true, 5667, -27558, -32686, -32700); // Eldalote, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_ENELYE, true, 3738, -27558, -32686, -32700); // Enelye, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_NERDANEL, true, 138, -32750, -32626, -32630); // Nerdanel, Iorwerth
-		registerCitizen(NpcID.PRIF_CITIZEN_NIMLOTH, true, 4750, 32185, 32307, 32429); // Nimloth, Meilyr
-		registerCitizen(NpcID.PRIF_CITIZEN_FINDIS, true, 5667, -27116, -26864, -26740); // Findis, Amlodd
+		registerCitizen(NpcID.PRIF_CITIZEN_INDIS, true, 4750, PrifClothing.CADARN); // Indis
+		registerCitizen(NpcID.PRIF_CITIZEN_IMINYE, true, 138, PrifClothing.ITHELL); // Iminye
+		registerCitizen(NpcID.PRIF_CITIZEN_FEANOR, false, 3738, PrifClothing.AMLODD); // Feanor
+		registerCitizen(NpcID.PRIF_CITIZEN_SAEROS, false, 138, PrifClothing.HEFIN); // Saeros
+		registerCitizen(NpcID.PRIF_CITIZEN_NELLAS, true, 138, PrifClothing.TRAHAEARN); // Nellas
+		registerCitizen(NpcID.PRIF_SPECTATOR1, false, 7467, PrifClothing.CADARN); // Rhyfel
+		registerCitizen(NpcID.PRIF_SPECTATOR2, false, 138, PrifClothing.ITHELL); // Gwyl
+		registerCitizen(NpcID.PRIF_SPECTATOR3, true, 138, PrifClothing.AMLODD); // Enilly
+		registerCitizen(NpcID.PRIF_SPECTATOR4, true, 28, PrifClothing.HEFIN); // Ffoni
+		registerCitizen(NpcID.PRIF_SPECTATOR5, false, 7467, PrifClothing.IORWERTH); // Ymladd
+		registerCitizen(NpcID.PRIF_SPECTATOR6, false, -26428, PrifClothing.IORWERTH); // Sadwrn
+		registerCitizen(NpcID.PRIF_SPECTATOR7, true, 5667, PrifClothing.IORWERTH); // Diol
+		registerCitizen(NpcID.PRIF_SPECTATOR8, true, 3881, PrifClothing.IORWERTH); // Ysbeid
+		registerCitizen(NpcID.PRIF_SPECTATOR9, false, 138, PrifClothing.IORWERTH); // Cleddyf
+		registerCitizen(NpcID.PRIF_SPECTATOR10, true, 28, PrifClothing.IORWERTH); // Saeth
+		registerCitizen(NpcID.PRIF_CITIZEN_NIMRODEL, true, 28, PrifClothing.CRWYS); // Nimrodel
+		registerCitizen(NpcID.PRIF_CITIZEN_MAEDHROS, false, -22493, PrifClothing.AMLODD); // Maedhros
+		registerCitizen(NpcID.PRIF_CITIZEN_FINARFIN, false, -26428, PrifClothing.HEFIN); // Finarfin
+		registerCitizen(NpcID.PRIF_CITIZEN_GWINDOR, false, 4750, PrifClothing.HEFIN); // Gwindor
+		registerCitizen(NpcID.PRIF_CITIZEN_ELDALOTE, true, 5667, PrifClothing.ITHELL); // Eldalote
+		registerCitizen(NpcID.PRIF_CITIZEN_ENELYE, true, 3738, PrifClothing.ITHELL); // Enelye
+		registerCitizen(NpcID.PRIF_CITIZEN_NERDANEL, true, 138, PrifClothing.IORWERTH); // Nerdanel
+		registerCitizen(NpcID.PRIF_CITIZEN_NIMLOTH, true, 4750, PrifClothing.MEILYR); // Nimloth
+		registerCitizen(NpcID.PRIF_CITIZEN_FINDIS, true, 5667, PrifClothing.AMLODD); // Findis
 		registerCitizen(NpcID.PRIF_CITIZEN_EARWEN, true, 3881, -24380, -24384, -24389); // Earwen, Trahaearn (slate)
-		registerCitizen(NpcID.PRIF_CITIZEN_CARANTHIR, false, 28, 13854, 13978, 14102); // Caranthir, Cadarn
-		registerCitizen(NpcID.PRIF_CITIZEN_ENEL, false, 7467, 9127, 9125, 9121); // Enel, Crwys
-		registerCitizen(NpcID.PRIF_CITIZEN_HENDOR, false, 10341, 796, 920, 918); // Hendor, Hefin
-		registerCitizen(NpcID.PRIF_CITIZEN_GALATHIL, false, -26428, 796, 920, 918); // Galathil, Hefin
-		registerCitizen(NpcID.PRIF_CITIZEN_TURGON, false, 10341, -27558, -32686, -32700); // Turgon, Ithell
-		registerCitizen(NpcID.PRIF_CITIZEN_LENWE, false, 7467, -27116, -26864, -26740); // Lenwe, Amlodd
-		registerCitizen(NpcID.PRIF_CITIZEN_ARANWE, false, 4750, 13854, 13978, 14102); // Aranwe, Cadarn
+		registerCitizen(NpcID.PRIF_CITIZEN_CARANTHIR, false, 28, PrifClothing.CADARN); // Caranthir
+		registerCitizen(NpcID.PRIF_CITIZEN_ENEL, false, 7467, PrifClothing.CRWYS); // Enel
+		registerCitizen(NpcID.PRIF_CITIZEN_HENDOR, false, 10341, PrifClothing.HEFIN); // Hendor
+		registerCitizen(NpcID.PRIF_CITIZEN_GALATHIL, false, -26428, PrifClothing.HEFIN); // Galathil
+		registerCitizen(NpcID.PRIF_CITIZEN_TURGON, false, 10341, PrifClothing.ITHELL); // Turgon
+		registerCitizen(NpcID.PRIF_CITIZEN_LENWE, false, 7467, PrifClothing.AMLODD); // Lenwe
+		registerCitizen(NpcID.PRIF_CITIZEN_ARANWE, false, 4750, PrifClothing.CADARN); // Aranwe
 
 		// The city's shopkeepers and instructors, the same way - every NPC in the cache wearing the
 		// citizens' six live recolors, bar the Gwenith villagers and the Deadman guards. Oswallt's
 		// trowel, Elgan's staff and Iwan's mace have no part in any Lletya outfit and are left behind
-		registerCitizen(NpcID.PRIF_ARMOURSTORE, false, 3881, -32750, -32626, -32630); // Aneirin, Iorwerth
-		registerCitizen(NpcID.PRIF_WEAPONSTORE, false, 28, -32750, -32626, -32630); // Celyn, Iorwerth
-		registerCitizen(NpcID.PRIF_FARMINGSTORE, true, 12, 9127, 9125, 9121); // Branwen, Crwys
-		registerCitizen(NpcID.PRIF_GARDENER, false, 4750, 9127, 9125, 9121); // Oswallt, Crwys
-		registerCitizen(NpcID.PRIF_HERBSTORE, true, 138, 32185, 32307, 32429); // Llio, Meilyr
-		registerCitizen(NpcID.PRIF_ACORN_TRADER_NOT_SPOKEN, false, 536, 9127, 9125, 9121, NpcID.PRIF_ACORN_TRADER_SPOKEN); // Pennant, Crwys
-		registerCitizen(NpcID.PRIF_AGILITY, true, 3881, 796, 920, 918); // Ystwyth, Hefin
-		registerCitizen(NpcID.PRIF_BARTENDER, true, 28, 796, 920, 918); // Eira, Hefin
-		registerCitizen(NpcID.PRIF_RUNESTORE, true, 7467, -27116, -26864, -26740); // Efa, Amlodd
-		registerCitizen(NpcID.GAUNTLET_INSTRUCTOR, false, 5667, -27116, -26864, -26740); // Bryn, Amlodd
-		registerCitizen(NpcID.PRIF_STAFFSTORE, false, 10341, -27116, -26864, -26740); // Elgan, Amlodd
-		registerCitizen(NpcID.PRIF_SEAMSTRESS, true, 3738, -27558, -32686, -32700); // Nia, Ithell
-		registerCitizen(NpcID.PRIF_ESTATE_AGENT, false, 7467, -27558, -32686, -32700); // Alwyn, Ithell
-		registerCitizen(NpcID.PRIF_DYESTORE, true, 3738, -27558, -32686, -32700); // Guinevere, Ithell
-		registerCitizen(NpcID.PRIF_MININGSTORE, false, -22250, -14014, -14019, -14023); // Gwyn, Trahaearn
-		registerCitizen(NpcID.PRIF_SINGER1, true, 138, -14014, -14019, -14023, NpcID.PRIF_SINGER1_LEARNT); // Reese, Trahaearn
-		registerCitizen(NpcID.ZALCANO_INSTRUCTOR, true, 3881, -14014, -14019, -14023); // Rhiannon, Trahaearn
-		registerCitizen(NpcID.PRIF_LLIANN, true, 3738, -27558, -32686, -32700); // Lliann, Ithell
-		registerCitizen(NpcID.PRIF_SINGER2, true, 5667, -27558, -32686, -32700, NpcID.PRIF_SINGER2_LEARNT); // Conwenna, Ithell
-		registerCitizen(NpcID.PRIF_GENERALSTORE, false, 7467, 13854, 13978, 14102); // Gwallter, Cadarn
-		registerCitizen(NpcID.PRIF_RANGESTORE, true, 8394, 13854, 13978, 14102); // Sian, Cadarn
-		registerCitizen(NpcID.PRIF_SAWMILL_OPERATOR, false, 7467, 9127, 9125, 9121); // Sawmill Operator, Crwys
-		registerCitizen(NpcID.PRIF_MACESTORE, false, 28, 796, 920, 918); // Iwan, Hefin
-		registerCitizen(NpcID.PRIF_LIBRARIAN, true, 5667, -22473, -22477, -22481); // Lilifang, bank grey
-		registerCitizen(NpcID.PRIF_PRIEST, false, 28, 796, 920, 918); // Crefydd, Hefin
-		registerCitizen(NpcID.PRIF_FOODSTORE, false, 3738, 32185, 32307, 32429); // Derwen, Meilyr
-		registerCitizen(NpcID.PRIF_SILVER, false, 10341, 32185, 32307, 32429); // Osian, Meilyr
-		registerCitizen(NpcID.PRIF_SPICE, false, 10341, 32185, 32307, 32429); // Caerwyn, Meilyr
-		registerCitizen(NpcID.PRIF_SILK, true, 8394, 32185, 32307, 32429); // Anwen, Meilyr
-		registerCitizen(NpcID.PRIF_GEM, true, 8394, 32185, 32307, 32429); // Glenda, Meilyr
+		registerCitizen(NpcID.PRIF_ARMOURSTORE, false, 3881, PrifClothing.IORWERTH); // Aneirin
+		registerCitizen(NpcID.PRIF_WEAPONSTORE, false, 28, PrifClothing.IORWERTH); // Celyn
+		registerCitizen(NpcID.PRIF_FARMINGSTORE, true, 12, PrifClothing.CRWYS); // Branwen
+		registerCitizen(NpcID.PRIF_GARDENER, false, 4750, PrifClothing.CRWYS); // Oswallt
+		registerCitizen(NpcID.PRIF_HERBSTORE, true, 138, PrifClothing.MEILYR); // Llio
+		registerCitizen(NpcID.PRIF_ACORN_TRADER_NOT_SPOKEN, false, 536, PrifClothing.CRWYS, NpcID.PRIF_ACORN_TRADER_SPOKEN); // Pennant
+		registerCitizen(NpcID.PRIF_AGILITY, true, 3881, PrifClothing.HEFIN); // Ystwyth
+		registerCitizen(NpcID.PRIF_BARTENDER, true, 28, PrifClothing.HEFIN); // Eira
+		registerCitizen(NpcID.PRIF_RUNESTORE, true, 7467, PrifClothing.AMLODD); // Efa
+		registerCitizen(NpcID.GAUNTLET_INSTRUCTOR, false, 5667, PrifClothing.AMLODD); // Bryn
+		registerCitizen(NpcID.PRIF_STAFFSTORE, false, 10341, PrifClothing.AMLODD); // Elgan
+		registerCitizen(NpcID.PRIF_SEAMSTRESS, true, 3738, PrifClothing.ITHELL); // Nia
+		registerCitizen(NpcID.PRIF_ESTATE_AGENT, false, 7467, PrifClothing.ITHELL); // Alwyn
+		registerCitizen(NpcID.PRIF_DYESTORE, true, 3738, PrifClothing.ITHELL); // Guinevere
+		registerCitizen(NpcID.PRIF_MININGSTORE, false, -22250, PrifClothing.TRAHAEARN); // Gwyn
+		registerCitizen(NpcID.PRIF_SINGER1, true, 138, PrifClothing.TRAHAEARN, NpcID.PRIF_SINGER1_LEARNT); // Reese
+		registerCitizen(NpcID.ZALCANO_INSTRUCTOR, true, 3881, PrifClothing.TRAHAEARN); // Rhiannon
+		registerCitizen(NpcID.PRIF_LLIANN, true, 3738, PrifClothing.ITHELL); // Lliann
+		registerCitizen(NpcID.PRIF_SINGER2, true, 5667, PrifClothing.ITHELL, NpcID.PRIF_SINGER2_LEARNT); // Conwenna
+		registerCitizen(NpcID.PRIF_GENERALSTORE, false, 7467, PrifClothing.CADARN); // Gwallter
+		registerCitizen(NpcID.PRIF_RANGESTORE, true, 8394, PrifClothing.CADARN); // Sian
+		registerCitizen(NpcID.PRIF_SAWMILL_OPERATOR, false, 7467, PrifClothing.CRWYS); // Sawmill Operator
+		registerCitizen(NpcID.PRIF_MACESTORE, false, 28, PrifClothing.HEFIN); // Iwan
+		registerCitizen(NpcID.PRIF_LIBRARIAN, true, 5667, PrifClothing.BANK_GREY); // Lilifang
+		registerCitizen(NpcID.PRIF_PRIEST, false, 28, PrifClothing.HEFIN); // Crefydd
+		registerCitizen(NpcID.PRIF_FOODSTORE, false, 3738, PrifClothing.MEILYR); // Derwen
+		registerCitizen(NpcID.PRIF_SILVER, false, 10341, PrifClothing.MEILYR); // Osian
+		registerCitizen(NpcID.PRIF_SPICE, false, 10341, PrifClothing.MEILYR); // Caerwyn
+		registerCitizen(NpcID.PRIF_SILK, true, 8394, PrifClothing.MEILYR); // Anwen
+		registerCitizen(NpcID.PRIF_GEM, true, 8394, PrifClothing.MEILYR); // Glenda
 
 		// The bankers wear the Lletya bankers' own outfits, in the Prifddinas bank's grey
-		registerDressed(LLETYA_BANKER_MALE, 5667, -22473, -22477, -22481,
+		registerDressed(LLETYA_BANKER_MALE, 5667, PrifClothing.BANK_GREY,
 			NpcID.PRIF_BANKERM1, NpcID.PRIF_BANKERM2, NpcID.PRIF_BANKERM3, NpcID.PRIF_BANKERM4);
-		registerDressed(LLETYA_BANKER_FEMALE, 5667, -22473, -22477, -22481,
+		registerDressed(LLETYA_BANKER_FEMALE, 5667, PrifClothing.BANK_GREY,
 			NpcID.PRIF_BANKERF1, NpcID.PRIF_BANKERF2);
 
 		// The clan lords and ladies: one outfit each, chosen by hand so every form of a character
 		// matches, in the clan's colors and the hair measured off the top of their live model. Lady
 		// Kelyn Ithell is Kelyn - live draws both from the same model - so she wears Kelyn's own
 		// definition. Lord Baxtorian Cadarn is Baxtorian of the Waterfall Quest and is not here
-		registerDressed(EUDAV, 6348, -27116, -26864, -26740,
+		registerDressed(EUDAV, 6348, PrifClothing.AMLODD,
 			NpcID.SOTE_LORD_AMLODD_VIS, NpcID.SOTE_LORD_AMLODD_UPASS, NpcID.LORD_AMLODD);
-		registerDressed(DALLDAV, 156, 9127, 9125, 9121,
+		registerDressed(DALLDAV, 156, PrifClothing.CRWYS,
 			NpcID.SOTE_LORD_CRWYS_VIS, NpcID.SOTE_LORD_CRWYS_UPASS, NpcID.LORD_CRWYS);
-		registerDressed(YSGAWYN, -22248, -32750, -32626, -32630, NpcID.LORD_IORWERTH_NEW);
-		registerDressed(ARVEL, 103, 32185, 32307, 32429,
+		registerDressed(YSGAWYN, -22248, PrifClothing.IORWERTH, NpcID.LORD_IORWERTH_NEW);
+		registerDressed(ARVEL, 103, PrifClothing.MEILYR,
 			NpcID.SOTE_LADY_MEILYR_VIS, NpcID.SOTE_LADY_MEILYR_UPASS, NpcID.LADY_MEILYR);
-		registerDressed(MAWRTH, 2357, 796, 920, 918,
+		registerDressed(MAWRTH, 2357, PrifClothing.HEFIN,
 			NpcID.SOTE_LADY_HEFIN_VIS, NpcID.SOTE_LADY_HEFIN_UPASS, NpcID.LADY_HEFIN);
-		registerDressed(ORONWEN, 92, -14014, -14019, -14023,
+		registerDressed(ORONWEN, 92, PrifClothing.TRAHAEARN,
 			NpcID.SOTE_LADY_TRAHAEARN_VIS, NpcID.SOTE_LADY_TRAHAEARN_UPASS, NpcID.LADY_TRAHAEARN);
 		registerMapping(KELYN, NpcID.SOTE_LADY_ITHELL_VIS, NpcID.SOTE_LADY_ITHELL_UPASS, NpcID.LADY_ITHELL);
 
-		// The city guards, in crystal armor and brown boots with their own hair.
+		// The city guards, in crystal armor, brown boots, and unique hair colors.
 		registerPrifGuard(NpcID.PRIF_GUARD0, false, -22250);
 		registerPrifGuard(NpcID.PRIF_GUARD1, false, -26428);
 		registerPrifGuard(NpcID.PRIF_GUARD2, false, 12);
