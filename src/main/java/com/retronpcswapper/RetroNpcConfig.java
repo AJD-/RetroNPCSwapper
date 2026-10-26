@@ -347,9 +347,8 @@ public interface RetroNpcConfig extends Config
 		keyName = "swapRoundTable",
 		name = "Knights of the Round Table",
 		description = "<html><body style='width:170px'>Swap King Arthur and his knights, Merlin, Morgan "
-			+ "Le Faye, the Lady of the Lake, the Holy Grail knights and the squire to their 2004/2005 "
-			+ "retro models and animations.<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by "
-			+ "default.</body></html>",
+			+ "Le Faye, and other Camelot-related NPCs to their 2004/2005 retro models and animations."
+			+  "<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
 		section = npcTogglesSection,
 		position = 20
 	)

@@ -845,6 +845,7 @@ public class RetroNpcCategoryTest
 			{RetroNpcMapping.SIR_LUCAN, new int[]{NpcID.SIR_LUCAN, NpcID.SIR_LUCAN_CUTSCENE}},
 			{RetroNpcMapping.SIR_PALOMEDES, new int[]{NpcID.SIR_PALOMEDES, NpcID.SIR_PALOMEDES_CUTSCENE}},
 			{RetroNpcMapping.SIR_MORDRED, new int[]{NpcID.SIR_MORDRED}},
+			{RetroNpcMapping.RENEGADE_KNIGHT, new int[]{NpcID.RENEGADE_KNIGHT, NpcID.KR_KEEP_KNIGHT}},
 			{RetroNpcMapping.SIR_PERCIVAL, new int[]{NpcID.SIR_PERCIVAL}},
 			{RetroNpcMapping.KING_PERCIVAL, new int[]{NpcID.KING_PERCIVAL}},
 			{RetroNpcMapping.BROTHER_GALAHAD, new int[]{NpcID.BROTHER_GALAHAD}},
@@ -887,9 +888,22 @@ public class RetroNpcCategoryTest
 			assertNull("npc " + id + " must not be swapped", RetroNpcMapping.get(id, null));
 		}
 
-		// Mordred is the one fighter: sword and shield
-		assertEquals(AnimationID.HUMAN_SWORD_SLASH, RetroNpcMapping.SIR_MORDRED.getAttackAnimationId());
-		assertEquals(AnimationID.HUMAN_SHIELD_DEFENCE, RetroNpcMapping.SIR_MORDRED.getDefendAnimationId());
+		// Mordred fights with sword and shield, in place of the Varrock guard's set he uses live
+		RetroNpcData mordred = RetroNpcMapping.SIR_MORDRED;
+		assertEquals(AnimationID.HUMAN_SWORD_SLASH, mordred.getAttackAnimationFor(AnimationID.FAI_VARROCK_GUARD_ATTACK));
+		assertTrue(mordred.isDefendAnimation(AnimationID.FAI_VARROCK_GUARD_DEFEND));
+		assertEquals(AnimationID.HUMAN_SHIELD_DEFENCE, mordred.getDefendAnimationId());
+		assertTrue(mordred.isDeathAnimation(AnimationID.FAI_VARROCK_GUARD_DEATH));
+		assertEquals(AnimationID.HUMAN_DEATH, mordred.getDeathAnimationId());
+
+		// The renegade knights carry a sword and no shield. Live they attack and die in the Varrock
+		// guard's set (logged in a fight) and block in the Keep Le Faye guard's
+		RetroNpcData renegade = RetroNpcMapping.RENEGADE_KNIGHT;
+		assertEquals(AnimationID.HUMAN_SWORD_SLASH, renegade.getAttackAnimationFor(AnimationID.FAI_VARROCK_GUARD_ATTACK));
+		assertTrue(renegade.isDefendAnimation(AnimationID.KR_KEEP_LE_FAYE_GUARD_DEFEND));
+		assertEquals(AnimationID.HUMAN_SWORD_BLOCK, renegade.getDefendAnimationId());
+		assertTrue(renegade.isDeathAnimation(AnimationID.FAI_VARROCK_GUARD_DEATH));
+		assertEquals(AnimationID.HUMAN_DEATH, renegade.getDeathAnimationId());
 	}
 
 	@Test
@@ -3336,6 +3350,7 @@ public class RetroNpcCategoryTest
 		assertChathead(NpcID.GUARD_CARNILLEAN_VIS, null, 0, 60);
 		assertChathead(NpcID.KING_ARTHUR, null, 0, 53, 84, 43);
 		assertChathead(NpcID.SIR_KAY_CUTSCENE, null, 0, 60);
+		assertChathead(NpcID.KR_KEEP_KNIGHT, null, 0, 65);
 		assertChathead(NpcID.MERLIN2, null, 0, 52, 82, 44);
 		assertChathead(NpcID.LADYOFTHELAKE, null, 0, 113);
 		assertChathead(NpcID.SQUIRE, null, 0, 55, 85, 34);

@@ -1143,11 +1143,10 @@ public class RetroNpcMapping
 	public static final RetroNpcData KING_PERCIVAL = knight(AnimationID.HUMAN_READY, 8,
 		new int[]{232, 306, 164, 179, 268, 185, 246, 318, 192, 323}).chathead(65, 35).build();
 
-	// Empty until a fight logs Mordred's live combat ids: his live stance is modern (6487), so his
-	// attacks likely are too
-	public static final Set<Integer> MORDRED_MODERN_ATTACKS = Set.of();
-	public static final Set<Integer> MORDRED_MODERN_DEFENDS = Set.of();
-	public static final Set<Integer> MORDRED_MODERN_DEATHS = Set.of();
+	// Mordred stands in the Varrock guard's animation set live, so he fights in it too
+	public static final Set<Integer> MORDRED_MODERN_ATTACKS = Set.of(AnimationID.FAI_VARROCK_GUARD_ATTACK);
+	public static final Set<Integer> MORDRED_MODERN_DEFENDS = Set.of(AnimationID.FAI_VARROCK_GUARD_DEFEND);
+	public static final Set<Integer> MORDRED_MODERN_DEATHS = Set.of(AnimationID.FAI_VARROCK_GUARD_DEATH);
 
 	/** Feb-2005 definition 247. Sword 513 and shield 541. */
 	public static final RetroNpcData SIR_MORDRED = roundTable(
@@ -1161,17 +1160,35 @@ public class RetroNpcMapping
 		.modernDeathAnims(MORDRED_MODERN_DEATHS)
 		.chathead(60).build();
 
+	// Live, the Keep Le Faye guard uses the varrock guard's death animation
+	public static final Set<Integer> RENEGADE_KNIGHT_MODERN_ATTACKS = Set.of(AnimationID.FAI_VARROCK_GUARD_ATTACK);
+	public static final Set<Integer> RENEGADE_KNIGHT_MODERN_DEFENDS = Set.of(AnimationID.KR_KEEP_LE_FAYE_GUARD_DEFEND);
+	public static final Set<Integer> RENEGADE_KNIGHT_MODERN_DEATHS = Set.of(AnimationID.FAI_VARROCK_GUARD_DEATH);
+
+	/** Feb-2005 definition 237. Sword 518, no shield. */
+	public static final RetroNpcData RENEGADE_KNIGHT = roundTable(
+		new int[]{232, 306, 164, 179, 268, 185, 518, 246}, AnimationID.HUMAN_READY,
+		new short[]{6798, 10128, 41, 61, 57},
+		new short[]{926, 10508, 10508, 24, 24})
+		.attackAnimationId(AnimationID.HUMAN_SWORD_SLASH)
+		.defendAnimationId(AnimationID.HUMAN_SWORD_BLOCK)
+		.modernAttackAnims(RENEGADE_KNIGHT_MODERN_ATTACKS)
+		.modernDefendAnims(RENEGADE_KNIGHT_MODERN_DEFENDS)
+		.modernDeathAnims(RENEGADE_KNIGHT_MODERN_DEATHS)
+		.chathead(65).build();
+
 	/** Feb-2005 definition 218, "Galahad". */
 	public static final RetroNpcData BROTHER_GALAHAD = roundTable(
 		new int[]{223, 295, 162, 176, 265, 185, 284, 249}, AnimationID.HUMAN_READY,
 		new short[]{8090, 25238, 6798, 8741, 8090},
 		new short[]{7070, 7070, 6057, 7070, 7070}).chathead(59, 81).build();
 
-	/** Feb-2005 definition 249; 213 is identical. */
+	/** Feb-2005 definition 249; 213 is identical. Hat 202 over his hair, panel 324 over his robe. */
 	public static final RetroNpcData MERLIN = roundTable(
 		new int[]{214, 292, 170, 176, 265, 183, 250, 553, 567, 202, 324}, AnimationID.HUMAN_STAFFREADY,
 		new short[]{6798, 8090, 25238, 4626, -22464, 8741},
-		new short[]{103, -26722, -26722, -26722, 4550, -26722}).chathead(52, 82, 44).build();
+		new short[]{103, -26722, -26722, -26722, 4550, -26722}).chathead(52, 82, 44)
+		.paintedOver(214, 202).paintedOver(292, 324).build();
 
 	/** Feb-2005 definition 248. */
 	public static final RetroNpcData MORGAN_LE_FAYE = roundTable(
@@ -2467,24 +2484,26 @@ public class RetroNpcMapping
 		// Arthur's court. Deliberately left out: the Knight Waves knights (KR_CAM_* and KR_KNIGHT1-8),
 		// the jail copies, DS2_MEETING_KING_ARTHUR and KR_ARTHUR_RESTORATION (partial models),
 		// KR_ARTHUR_DISGUISE (a different costume), the KR_MULTI_* parents, the other Morgan
-		// (MORGAN_PRE/POST) and WHITE_KNIGHT_CRYPT_SQUIRE
-		registerMapping(KING_ARTHUR, NpcID.KING_ARTHUR, NpcID.KING_ARTHUR_CUTSCENE);
-		registerMapping(SIR_LANCELOT, NpcID.SIR_LANCELOT, NpcID.SIR_LANCELOT_CUTSCENE);
-		registerMapping(SIR_GAWAIN, NpcID.SIR_GAWAIN, NpcID.SIR_GAWAIN_CUTSCENE);
-		registerMapping(SIR_KAY, NpcID.SIR_KAY, NpcID.SIR_KAY_CUTSCENE);
-		registerMapping(SIR_BEDIVERE, NpcID.SIR_BEDIVERE, NpcID.SIR_BEDIVERE_CUTSCENE);
-		registerMapping(SIR_TRISTRAM, NpcID.SIR_TRISTRAM, NpcID.SIR_TRISTRAM_CUTSCENE);
-		registerMapping(SIR_PELLEAS, NpcID.SIR_PELLEAS, NpcID.SIR_PELLEAS_CUTSCENE);
-		registerMapping(SIR_LUCAN, NpcID.SIR_LUCAN, NpcID.SIR_LUCAN_CUTSCENE);
-		registerMapping(SIR_PALOMEDES, NpcID.SIR_PALOMEDES, NpcID.SIR_PALOMEDES_CUTSCENE);
+		// (MORGAN_PRE/POST)
+		registerMapping(KING_ARTHUR, NpcID.KING_ARTHUR);
+		registerMapping(SIR_LANCELOT, NpcID.SIR_LANCELOT);
+		registerMapping(SIR_GAWAIN, NpcID.SIR_GAWAIN);
+		registerMapping(SIR_KAY, NpcID.SIR_KAY);
+		registerMapping(SIR_BEDIVERE, NpcID.SIR_BEDIVERE);
+		registerMapping(SIR_TRISTRAM, NpcID.SIR_TRISTRAM);
+		registerMapping(SIR_PELLEAS, NpcID.SIR_PELLEAS);
+		registerMapping(SIR_LUCAN, NpcID.SIR_LUCAN);
+		registerMapping(SIR_PALOMEDES, NpcID.SIR_PALOMEDES);
 		registerMapping(SIR_MORDRED, NpcID.SIR_MORDRED);
+		// Keep Le Faye's, and King's Ransom's copy of them on the same model
+		registerMapping(RENEGADE_KNIGHT, NpcID.RENEGADE_KNIGHT, NpcID.KR_KEEP_KNIGHT);
 		registerMapping(SIR_PERCIVAL, NpcID.SIR_PERCIVAL);
 		registerMapping(KING_PERCIVAL, NpcID.KING_PERCIVAL);
 		registerMapping(BROTHER_GALAHAD, NpcID.BROTHER_GALAHAD);
 		registerMapping(MERLIN, NpcID.MERLIN, NpcID.MERLIN2);
 		registerMapping(MORGAN_LE_FAYE, NpcID.MORGAN_LE_FAYE, NpcID.KR_MORGAN_CUTSCENE);
 		registerMapping(LADY_OF_THE_LAKE, NpcID.LADYOFTHELAKE);
-		// SQUIRE is Squire Asrol in Falador; King's Ransom's squire wears the same live model
+		// SQUIRE is the Falador squire; King's Ransom's squire wears the same model
 		registerMapping(SQUIRE, NpcID.SQUIRE, NpcID.KR_SQUIRE);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the

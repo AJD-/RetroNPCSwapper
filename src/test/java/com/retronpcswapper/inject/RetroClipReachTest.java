@@ -300,7 +300,8 @@ public class RetroClipReachTest
 		{819, 390, 474, 347, 353, 438, 358},
 		{836, 390, 474, 347, 353, 438, 358},
 		// Arthur's court, Feb-2005 kit on the same clips: Arthur, Kay (813), Bedivere, Mordred with
-		// his sword and shield, Galahad, Merlin (813), Morgan (813), the Lady of the Lake and the squire
+		// his sword and shield, a renegade knight with his sword, Galahad, Merlin (813), Morgan (813),
+		// the Lady of the Lake and the squire
 		{808, 215, 306, 164, 179, 268, 185, 501, 526, 252, 318, 201},
 		{819, 215, 306, 164, 179, 268, 185, 501, 526, 252, 318, 201},
 		{836, 215, 306, 164, 179, 268, 185, 501, 526, 252, 318, 201},
@@ -309,6 +310,9 @@ public class RetroClipReachTest
 		{808, 225, 306, 164, 179, 268, 185, 513, 246, 541, 240},
 		{390, 225, 306, 164, 179, 268, 185, 513, 246, 541, 240},
 		{1156, 225, 306, 164, 179, 268, 185, 513, 246, 541, 240},
+		{808, 232, 306, 164, 179, 268, 185, 518, 246},
+		{390, 232, 306, 164, 179, 268, 185, 518, 246},
+		{387, 232, 306, 164, 179, 268, 185, 518, 246},
 		{808, 223, 295, 162, 176, 265, 185, 284, 249},
 		{813, 214, 292, 170, 176, 265, 183, 250, 553, 567, 202, 324},
 		{819, 214, 292, 170, 176, 265, 183, 250, 553, 567, 202, 324},
@@ -664,7 +668,7 @@ public class RetroClipReachTest
 			RetroNpcMapping.LADY_OF_THE_LAKE, RetroNpcMapping.SQUIRE, RetroNpcMapping.SIR_LANCELOT,
 			RetroNpcMapping.SIR_GAWAIN, RetroNpcMapping.SIR_BEDIVERE, RetroNpcMapping.SIR_TRISTRAM,
 			RetroNpcMapping.SIR_PELLEAS, RetroNpcMapping.SIR_LUCAN, RetroNpcMapping.SIR_PALOMEDES,
-			RetroNpcMapping.SIR_PERCIVAL, RetroNpcMapping.KING_PERCIVAL};
+			RetroNpcMapping.SIR_PERCIVAL, RetroNpcMapping.KING_PERCIVAL, RetroNpcMapping.RENEGADE_KNIGHT};
 
 		for (RetroNpcData elf : novElves)
 		{

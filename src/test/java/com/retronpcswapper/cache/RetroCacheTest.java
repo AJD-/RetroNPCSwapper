@@ -174,7 +174,7 @@ public class RetroCacheTest
 		{251, RetroNpcMapping.KING_ARTHUR}, {239, RetroNpcMapping.SIR_LANCELOT}, {240, RetroNpcMapping.SIR_GAWAIN},
 		{241, RetroNpcMapping.SIR_KAY}, {242, RetroNpcMapping.SIR_BEDIVERE}, {243, RetroNpcMapping.SIR_TRISTRAM},
 		{244, RetroNpcMapping.SIR_PELLEAS}, {245, RetroNpcMapping.SIR_LUCAN}, {246, RetroNpcMapping.SIR_PALOMEDES},
-		{247, RetroNpcMapping.SIR_MORDRED}, {211, RetroNpcMapping.SIR_PERCIVAL}, {212, RetroNpcMapping.KING_PERCIVAL},
+		{247, RetroNpcMapping.SIR_MORDRED}, {237, RetroNpcMapping.RENEGADE_KNIGHT}, {211, RetroNpcMapping.SIR_PERCIVAL}, {212, RetroNpcMapping.KING_PERCIVAL},
 		{218, RetroNpcMapping.BROTHER_GALAHAD}, {249, RetroNpcMapping.MERLIN}, {248, RetroNpcMapping.MORGAN_LE_FAYE},
 		{250, RetroNpcMapping.LADY_OF_THE_LAKE}, {606, RetroNpcMapping.SQUIRE}};
 

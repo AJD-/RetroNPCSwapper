@@ -24,7 +24,14 @@
  */
 package com.retronpcswapper.inject;
 
+import com.retronpcswapper.RetroNpcMapping;
+import com.retronpcswapper.RetroNpcSwapperPlugin;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import org.junit.Test;
 
@@ -232,6 +239,107 @@ public class RetroDecalsTest
 				assertEquals(placedFirst[axis][v], placedAfter[axis][v], 0.01f);
 			}
 		}
+	}
+
+	/**
+	 * Merlin's hair through his hat's brim: a lower part poking out in front of the part painted
+	 * over it goes back behind it, and the upper part stays where it is.
+	 */
+	@Test
+	public void testALowerPartPokingThroughIsTuckedBehind()
+	{
+		// The surface square is the upper part, the triangle two units in front of it the lower
+		float[][] v = vertices(-18, -20);
+
+		int moved = RetroDecals.paintOver(v[0], v[1], v[2], FACES1, FACES2, FACES3, 2, 3, 0, 2);
+
+		assertEquals(3, moved);
+		for (int vertex = 4; vertex < 7; vertex++)
+		{
+			assertEquals(-18 + RetroDecals.CLEARANCE, v[1][vertex], 0.01f);
+		}
+		assertEquals(-18, v[1][0], 0f);
+	}
+
+	/** Merlin's robe: a panel lying on the torso is lifted off it like any decal. */
+	@Test
+	public void testAnUpperPartLyingOnTheLowerIsLiftedClear()
+	{
+		float[][] v = vertices(-18, -18);
+
+		// The square is the lower part this time, the triangle the panel
+		RetroDecals.paintOver(v[0], v[1], v[2], FACES1, FACES2, FACES3, 0, 2, 2, 3);
+
+		assertEquals(-18 - RetroDecals.CLEARANCE, v[1][4], 0.01f);
+		assertEquals(-18, v[1][0], 0f);
+	}
+
+	@Test
+	public void testAPartFurtherThanTheReachIsNotTucked()
+	{
+		float[][] v = vertices(-18, -18 - RetroDecals.TUCK_REACH - 1);
+
+		int moved = RetroDecals.paintOver(v[0], v[1], v[2], FACES1, FACES2, FACES3, 2, 3, 0, 2);
+
+		assertEquals(0, moved);
+	}
+
+	/** Merlin's pairs on his bundled kit: one pass settles both, so a second has nothing left to move. */
+	@Test
+	public void testMerlinsPaintedOverPairsSettleInOnePass() throws Exception
+	{
+		RetroAssetBundle bundle;
+		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))
+		{
+			assertNotNull("retro-assets.dat is missing - run ./gradlew generateRetroAssets", in);
+			bundle = RetroAssetCodec.read(in);
+		}
+
+		int[] ids = RetroNpcMapping.MERLIN.getInjectedModelIds();
+		int[] pairs = RetroNpcMapping.MERLIN.getPaintedOver();
+		assertArrayEquals(new int[]{214, 202, 292, 324}, pairs);
+
+		List<RetroMesh> parts = new ArrayList<>();
+		int[] starts = new int[ids.length + 1];
+		for (int i = 0; i < ids.length; i++)
+		{
+			RetroMesh part = bundle.getMesh(ids[i]);
+			assertNotNull("part " + ids[i] + " is missing from the bundle", part);
+			parts.add(part);
+			starts[i + 1] = starts[i] + part.getFaceCount();
+		}
+		RetroMesh mesh = RetroMeshMerger.merge(ids[0], parts);
+		float[] x = mesh.getVerticesX().clone();
+		float[] y = mesh.getVerticesY().clone();
+		float[] z = mesh.getVerticesZ().clone();
+
+		// Measured: five hair vertices out through the hat; the robe panel's 28 lying on the torso
+		int[] firstPass = {5, 28};
+		for (int pass = 0; pass < 2; pass++)
+		{
+			for (int pair = 0; pair < pairs.length; pair += 2)
+			{
+				int lower = indexOf(ids, pairs[pair]);
+				int upper = indexOf(ids, pairs[pair + 1]);
+				int moved = RetroDecals.paintOver(x, y, z,
+					mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
+					starts[lower], starts[lower + 1], starts[upper], starts[upper + 1]);
+				assertEquals("pass " + pass + ", " + pairs[pair] + " under " + pairs[pair + 1],
+					pass == 0 ? firstPass[pair / 2] : 0, moved);
+			}
+		}
+	}
+
+	private static int indexOf(int[] ids, int id)
+	{
+		for (int i = 0; i < ids.length; i++)
+		{
+			if (ids[i] == id)
+			{
+				return i;
+			}
+		}
+		throw new AssertionError(id + " is not a part");
 	}
 
 	private static RetroModel bound(float[][] v)

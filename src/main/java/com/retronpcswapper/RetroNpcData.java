@@ -224,6 +224,12 @@ public class RetroNpcData
 	@Getter
 	private final int chatheadKeyBase;
 
+	/**
+	 * Pairs of injected parts, lower then upper, that 2005 drew one over the other by priority alone -
+	 * which a depth buffer does not. See {@link com.retronpcswapper.inject.RetroDecals#paintOver}.
+	 */
+	private final int[] paintedOver;
+
 	public RetroNpcData(
 		RetroNpcCategory category,
 		int[] retroModelIds,
@@ -246,7 +252,7 @@ public class RetroNpcData
 		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
 			defendAnimationId, deathAnimationId, miscAnimationId, scaleXZ, scaleY, originalColors,
 			replacementColors, modernAttackAnims, modernDefendAnims, modernDeathAnims, modernMiscAnims,
-			null, false, 0, 0, null, 0);
+			null, false, 0, 0, null, 0, null);
 	}
 
 	public RetroNpcData(
@@ -272,7 +278,8 @@ public class RetroNpcData
 		int assetKeyBase,
 		int offsetZ,
 		int[] chatheadModelIds,
-		int chatheadKeyBase
+		int chatheadKeyBase,
+		int[] paintedOver
 	)
 	{
 		this.category = category;
@@ -313,6 +320,7 @@ public class RetroNpcData
 		this.chatheadModelIds = chatheadModelIds != null && chatheadModelIds.length > 0
 			? chatheadModelIds.clone() : null;
 		this.chatheadKeyBase = chatheadKeyBase;
+		this.paintedOver = paintedOver != null ? paintedOver.clone() : new int[0];
 	}
 
 	public boolean hasStaticIdle()
@@ -432,7 +440,8 @@ public class RetroNpcData
 			assetKeyBase,
 			offsetZ,
 			chatheadModelIds,
-			chatheadKeyBase);
+			chatheadKeyBase,
+			paintedOver);
 	}
 
 	/**
@@ -467,7 +476,8 @@ public class RetroNpcData
 			assetKeyBase,
 			offsetZ,
 			chatheadModelIds,
-			chatheadKeyBase);
+			chatheadKeyBase,
+			paintedOver);
 	}
 
 	/**
@@ -509,7 +519,14 @@ public class RetroNpcData
 			assetKeyBase,
 			offsetZ,
 			chatheadModelIds,
-			chatheadKeyBase);
+			chatheadKeyBase,
+			paintedOver);
+	}
+
+	/** Lower and upper part ids, flattened in pairs. See {@link #paintedOver}. */
+	public int[] getPaintedOver()
+	{
+		return paintedOver.clone();
 	}
 
 	/** Whether the 2005 definition had a dialogue head of its own. */
@@ -556,7 +573,8 @@ public class RetroNpcData
 			assetKeyBase,
 			offsetZ,
 			chatheadModelIds,
-			chatheadKeyBase);
+			chatheadKeyBase,
+			paintedOver);
 	}
 
 	@Override
@@ -583,6 +601,7 @@ public class RetroNpcData
 			Arrays.equals(originalColors, that.originalColors) &&
 			Arrays.equals(replacementColors, that.replacementColors) &&
 			Arrays.equals(chatheadModelIds, that.chatheadModelIds) &&
+			Arrays.equals(paintedOver, that.paintedOver) &&
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
 			Objects.equals(modernDefendAnims, that.modernDefendAnims) &&
 			Objects.equals(modernDeathAnims, that.modernDeathAnims) &&
@@ -609,6 +628,7 @@ public class RetroNpcData
 		result = 31 * result + offsetZ;
 		result = 31 * result + Arrays.hashCode(chatheadModelIds);
 		result = 31 * result + chatheadKeyBase;
+		result = 31 * result + Arrays.hashCode(paintedOver);
 		result = 31 * result + Arrays.hashCode(originalColors);
 		result = 31 * result + Arrays.hashCode(replacementColors);
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
@@ -644,6 +664,7 @@ public class RetroNpcData
 		private int offsetZ;
 		private int[] chatheadModelIds;
 		private Integer chatheadKeyBase;
+		private int[] paintedOver = new int[0];
 
 		public Builder category(RetroNpcCategory category)
 		{
@@ -874,6 +895,15 @@ public class RetroNpcData
 			return this;
 		}
 
+		/** The upper part was drawn over the lower by priority, see {@link RetroNpcData#paintedOver}. */
+		public Builder paintedOver(int lowerPart, int upperPart)
+		{
+			paintedOver = Arrays.copyOf(paintedOver, paintedOver.length + 2);
+			paintedOver[paintedOver.length - 2] = lowerPart;
+			paintedOver[paintedOver.length - 1] = upperPart;
+			return this;
+		}
+
 		public RetroNpcData build()
 		{
 			return new RetroNpcData(
@@ -899,7 +929,8 @@ public class RetroNpcData
 				assetKeyBase,
 				offsetZ,
 				chatheadModelIds,
-				chatheadKeyBase != null ? chatheadKeyBase : assetKeyBase
+				chatheadKeyBase != null ? chatheadKeyBase : assetKeyBase,
+				paintedOver
 			);
 		}
 	}

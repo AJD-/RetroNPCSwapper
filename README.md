@@ -33,7 +33,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Scorpions**
 - **Elves**
 - **Kalphites** — KQ, Guardians, Soldiers, Workers, Larvae
-- **Knights of the Round Table** — King Arthur and his knights, Merlin, Morgan Le Faye, the Lady of the Lake, the Holy Grail knights, the squire
+- **Knights of the Round Table** — King Arthur and his knights, Merlin, renegade knights, etc
 - **Chatheads** — Swaps chatheads for NPCs with dialogue. Follows each NPC's own toggle.
 
 Under **Scenery**:
