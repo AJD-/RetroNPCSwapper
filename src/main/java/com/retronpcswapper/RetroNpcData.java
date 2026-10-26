@@ -207,6 +207,23 @@ public class RetroNpcData
 	@Getter
 	private final int assetKeyBase;
 
+	/**
+	 * The parts of the 2005 dialogue head, npc.dat opcode 60, or null when the definition had none -
+	 * in which case the modern chathead is left alone. Drawn by the chathead overlay from the
+	 * bundle, recolored with {@link #originalColors} as the 2005 client recolored heads too, but
+	 * never resized: that client ignored opcodes 97 and 98 on a head.
+	 */
+	private final int[] chatheadModelIds;
+
+	/**
+	 * Added to every bundle lookup for the chathead: its parts and the clips for its emotes. The
+	 * same as {@link #assetKeyBase} except for a head on a rig of its own whose emotes would otherwise
+	 * share ids with the human heads' - see
+	 * {@link com.retronpcswapper.inject.RetroAssetBundle#GOBLIN_CHATHEAD_KEY_BASE}.
+	 */
+	@Getter
+	private final int chatheadKeyBase;
+
 	public RetroNpcData(
 		RetroNpcCategory category,
 		int[] retroModelIds,
@@ -229,7 +246,7 @@ public class RetroNpcData
 		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
 			defendAnimationId, deathAnimationId, miscAnimationId, scaleXZ, scaleY, originalColors,
 			replacementColors, modernAttackAnims, modernDefendAnims, modernDeathAnims, modernMiscAnims,
-			null, false, 0, 0);
+			null, false, 0, 0, null, 0);
 	}
 
 	public RetroNpcData(
@@ -253,7 +270,9 @@ public class RetroNpcData
 		Map<Integer, Integer> modernAttackOverrides,
 		boolean staticIdle,
 		int assetKeyBase,
-		int offsetZ
+		int offsetZ,
+		int[] chatheadModelIds,
+		int chatheadKeyBase
 	)
 	{
 		this.category = category;
@@ -291,6 +310,9 @@ public class RetroNpcData
 			: Collections.emptyMap();
 		this.assetKeyBase = assetKeyBase;
 		this.offsetZ = offsetZ;
+		this.chatheadModelIds = chatheadModelIds != null && chatheadModelIds.length > 0
+			? chatheadModelIds.clone() : null;
+		this.chatheadKeyBase = chatheadKeyBase;
 	}
 
 	public boolean hasStaticIdle()
@@ -408,7 +430,9 @@ public class RetroNpcData
 			modernAttackOverrides,
 			staticIdle,
 			assetKeyBase,
-			offsetZ);
+			offsetZ,
+			chatheadModelIds,
+			chatheadKeyBase);
 	}
 
 	/**
@@ -441,7 +465,9 @@ public class RetroNpcData
 			modernAttackOverrides,
 			staticIdle,
 			assetKeyBase,
-			offsetZ);
+			offsetZ,
+			chatheadModelIds,
+			chatheadKeyBase);
 	}
 
 	/**
@@ -481,7 +507,56 @@ public class RetroNpcData
 			modernAttackOverrides,
 			staticIdle,
 			assetKeyBase,
-			offsetZ);
+			offsetZ,
+			chatheadModelIds,
+			chatheadKeyBase);
+	}
+
+	/** Whether the 2005 definition had a dialogue head of its own. */
+	public boolean hasChathead()
+	{
+		return chatheadModelIds != null;
+	}
+
+	/** The dialogue head's parts, or null when there is none. See {@link #chatheadModelIds}. */
+	public int[] getChatheadModelIds()
+	{
+		return chatheadModelIds != null ? chatheadModelIds.clone() : null;
+	}
+
+	/**
+	 * Returns a copy with this dialogue head, in the same key range, leaving everything else
+	 * alone.
+	 *
+	 * <p>For the same reason {@link #withRecolors} exists - the head reaches an archetype from its
+	 * JSON row after construction - and for a variant that changes the head the body wears.
+	 */
+	public RetroNpcData withChathead(int[] chatheadModelIds)
+	{
+		return new RetroNpcData(
+			category,
+			retroModelIds,
+			injectedModelIds,
+			idleAnimationId,
+			walkAnimationId,
+			attackAnimationId,
+			defendAnimationId,
+			deathAnimationId,
+			miscAnimationId,
+			scaleXZ,
+			scaleY,
+			originalColors,
+			replacementColors,
+			modernAttackAnims,
+			modernDefendAnims,
+			modernDeathAnims,
+			modernMiscAnims,
+			modernAttackOverrides,
+			staticIdle,
+			assetKeyBase,
+			offsetZ,
+			chatheadModelIds,
+			chatheadKeyBase);
 	}
 
 	@Override
@@ -501,11 +576,13 @@ public class RetroNpcData
 			scaleY == that.scaleY &&
 			assetKeyBase == that.assetKeyBase &&
 			offsetZ == that.offsetZ &&
+			chatheadKeyBase == that.chatheadKeyBase &&
 			category == that.category &&
 			Arrays.equals(retroModelIds, that.retroModelIds) &&
 			Arrays.equals(injectedModelIds, that.injectedModelIds) &&
 			Arrays.equals(originalColors, that.originalColors) &&
 			Arrays.equals(replacementColors, that.replacementColors) &&
+			Arrays.equals(chatheadModelIds, that.chatheadModelIds) &&
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
 			Objects.equals(modernDefendAnims, that.modernDefendAnims) &&
 			Objects.equals(modernDeathAnims, that.modernDeathAnims) &&
@@ -530,6 +607,8 @@ public class RetroNpcData
 		result = 31 * result + scaleY;
 		result = 31 * result + assetKeyBase;
 		result = 31 * result + offsetZ;
+		result = 31 * result + Arrays.hashCode(chatheadModelIds);
+		result = 31 * result + chatheadKeyBase;
 		result = 31 * result + Arrays.hashCode(originalColors);
 		result = 31 * result + Arrays.hashCode(replacementColors);
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
@@ -563,6 +642,8 @@ public class RetroNpcData
 		private final Map<Integer, Integer> modernAttackOverrides = new HashMap<>();
 		private int assetKeyBase;
 		private int offsetZ;
+		private int[] chatheadModelIds;
+		private Integer chatheadKeyBase;
 
 		public Builder category(RetroNpcCategory category)
 		{
@@ -776,6 +857,23 @@ public class RetroNpcData
 			return this;
 		}
 
+		/** The 2005 dialogue head's parts, see {@link RetroNpcData#chatheadModelIds}. */
+		public Builder chathead(int... chatheadModelIds)
+		{
+			this.chatheadModelIds = chatheadModelIds;
+			return this;
+		}
+
+		/**
+		 * Keys the dialogue head apart from the body, see {@link RetroNpcData#chatheadKeyBase}.
+		 * Unset, it follows {@link #assetKeyBase}.
+		 */
+		public Builder chatheadKeyBase(int chatheadKeyBase)
+		{
+			this.chatheadKeyBase = chatheadKeyBase;
+			return this;
+		}
+
 		public RetroNpcData build()
 		{
 			return new RetroNpcData(
@@ -799,7 +897,9 @@ public class RetroNpcData
 				modernAttackOverrides,
 				staticIdle,
 				assetKeyBase,
-				offsetZ
+				offsetZ,
+				chatheadModelIds,
+				chatheadKeyBase != null ? chatheadKeyBase : assetKeyBase
 			);
 		}
 	}

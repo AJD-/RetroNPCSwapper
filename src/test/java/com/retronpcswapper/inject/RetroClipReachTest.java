@@ -608,8 +608,9 @@ public class RetroClipReachTest
 	/**
 	 * The two copies of the human kit must never meet. A Nov-2005 elf looks up only keys at
 	 * {@link RetroAssetBundle#NOV_HUMAN_KEY_BASE}, so every clip there has to be bound to a Nov rig, and
-	 * every clip below it to anything else - a Nov clip on a Feb rig, or the reverse, is the right
-	 * vertices driven off the wrong bones, and reach alone would not say so.
+	 * every clip outside it to anything else - a Nov clip on a Feb rig, or the reverse, is the right
+	 * vertices driven off the wrong bones, and reach alone would not say so. The goblin chathead range
+	 * above it holds Feb clips.
 	 */
 	@Test
 	public void testNovKitStaysInItsNamespace() throws Exception
@@ -621,8 +622,9 @@ public class RetroClipReachTest
 		{
 			int key = entry.getKey();
 			int rigId = entry.getValue().getRigId();
+			boolean novKey = key >= NOV && key < RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE;
 			assertEquals("clip " + key + " is keyed apart from the rig it is bound to (" + rigId + ")",
-				key >= NOV, rigId >= novRigBase);
+				novKey, rigId >= novRigBase);
 		}
 
 		// Every mesh and the idle, walk and death clip of every Nov elf resolve inside the namespace,

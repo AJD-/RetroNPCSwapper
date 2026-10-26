@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper;
 
+import com.retronpcswapper.chathead.RetroHead;
 import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroLighter;
@@ -113,6 +114,12 @@ public class RetroModelCache
 
 	/** Fully prepared injected geometry per NPC id, for NPCs the live cache can no longer supply. */
 	private final Map<Integer, InjectedModel> injectedModels = new HashMap<>();
+
+	/** Built 2005 chatheads per NPC id. */
+	private final Map<Integer, RetroHead> heads = new HashMap<>();
+
+	/** NPC ids whose chathead could not be built from the bundle, so dialogue stops retrying them. */
+	private final Set<Integer> headless = new HashSet<>();
 
 	private final RetroSkinner skinner = new RetroSkinner();
 
@@ -257,6 +264,8 @@ public class RetroModelCache
 		meshIds.clear();
 		injectedModels.clear();
 		unbuildable.clear();
+		heads.clear();
+		headless.clear();
 
 		log.debug("Retro asset bundle loaded: {}", this.bundle);
 	}
@@ -381,23 +390,7 @@ public class RetroModelCache
 		// Recolor before lighting, not after: lit colors are baked once and never recomputed, so
 		// a recolor applied afterward would have nothing left to bite on. Retro dragon meshes are
 		// greyscale ramps, so this is what separates a red dragon from a black one.
-		short[] colors = mesh.getFaceColors().clone();
-		if (data.hasRecolors())
-		{
-			short[] find = data.getOriginalColors();
-			short[] replace = data.getReplacementColors();
-			for (int face = 0; face < colors.length; face++)
-			{
-				for (int pair = 0; pair < find.length; pair++)
-				{
-					if (colors[face] == find[pair])
-					{
-						colors[face] = replace[pair];
-						break;
-					}
-				}
-			}
-		}
+		short[] colors = recolored(mesh.getFaceColors(), data);
 
 		mesh = scaled(mesh, colors, data.getScaleXZ(), data.getScaleY(), data.getOffsetZ());
 
@@ -417,6 +410,98 @@ public class RetroModelCache
 		InjectedModel injectedModel = new InjectedModel(mesh, keyBase);
 		injectedModel.model.bind(mesh, colors1, colors2, colors3);
 		return injectedModel;
+	}
+
+	/** A copy of the face colors with the NPC's recolor pairs applied, first match winning. */
+	private static short[] recolored(short[] faceColors, RetroNpcData data)
+	{
+		short[] colors = faceColors.clone();
+		if (data.hasRecolors())
+		{
+			short[] find = data.getOriginalColors();
+			short[] replace = data.getReplacementColors();
+			for (int face = 0; face < colors.length; face++)
+			{
+				for (int pair = 0; pair < find.length; pair++)
+				{
+					if (colors[face] == find[pair])
+					{
+						colors[face] = replace[pair];
+						break;
+					}
+				}
+			}
+		}
+		return colors;
+	}
+
+	/**
+	 * The 2005 chathead for an NPC id, built from the bundle on first use, or null when its mapping
+	 * names none or the bundle cannot supply it. Client thread only.
+	 */
+	public RetroHead headFor(int npcId, RetroNpcData data)
+	{
+		RetroHead head = heads.get(npcId);
+		if (head != null || headless.contains(npcId))
+		{
+			return head;
+		}
+
+		head = buildHead(data);
+		if (head == null)
+		{
+			headless.add(npcId);
+		}
+		else
+		{
+			heads.put(npcId, head);
+		}
+		return head;
+	}
+
+	/**
+	 * Merges, recolors and lights a chathead the way the 2005 client built one: the definition's own
+	 * recolor pairs, as for the body, but no resize, since that client never resized a head. Lit
+	 * with the interface model lighting, which is {@link ModelData}'s defaults rather than an NPC's.
+	 * A partial set of parts is refused, as {@link #buildInjected} refuses one.
+	 */
+	private RetroHead buildHead(RetroNpcData data)
+	{
+		int[] modelIds = data.getChatheadModelIds();
+		if (modelIds == null)
+		{
+			return null;
+		}
+
+		int keyBase = data.getChatheadKeyBase();
+		List<RetroMesh> parts = new ArrayList<>(modelIds.length);
+		for (int modelId : modelIds)
+		{
+			RetroMesh part = bundle.getMesh(keyBase + modelId);
+			if (part == null)
+			{
+				log.debug("Bundle has no chathead part {} for chathead {}; leaving the modern head",
+					keyBase + modelId, Arrays.toString(modelIds));
+				return null;
+			}
+			parts.add(part);
+		}
+
+		RetroMesh mesh = RetroMeshMerger.merge(keyBase + modelIds[0], parts);
+		int faceCount = mesh.getFaceCount();
+		int[] colors1 = new int[faceCount];
+		int[] colors2 = new int[faceCount];
+		int[] colors3 = new int[faceCount];
+
+		RetroLighter.light(
+			mesh.getVerticesCount(), mesh.getVerticesX(), mesh.getVerticesY(), mesh.getVerticesZ(),
+			faceCount, mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
+			recolored(mesh.getFaceColors(), data), mesh.getFaceRenderTypes(), mesh.getFaceTextures(),
+			ModelData.DEFAULT_AMBIENT, ModelData.DEFAULT_CONTRAST,
+			ModelData.DEFAULT_X, ModelData.DEFAULT_Y, ModelData.DEFAULT_Z,
+			colors1, colors2, colors3);
+
+		return new RetroHead(mesh, keyBase, bundle, colors1, colors2, colors3);
 	}
 
 	/**
@@ -734,6 +819,8 @@ public class RetroModelCache
 		injectedModels.clear();
 		animations.clear();
 		unbuildable.clear();
+		heads.clear();
+		headless.clear();
 	}
 
 	private Model build(RetroNpcData data)

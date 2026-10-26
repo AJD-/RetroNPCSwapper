@@ -50,6 +50,14 @@ public final class RetroAssetBundle
 	 */
 	public static final int NOV_HUMAN_KEY_BASE = 1_000_000;
 
+	/**
+	 * Key offset for the Feb-2005 goblin chatheads: head meshes at base + model id, emote clips at
+	 * base + sequence id. Their head rig is not the human heads', so a human emote played on a
+	 * goblin head - which the shared key range would hand it - drives the wrong vertices; kept apart,
+	 * an emote the goblin has no clip of its own for leaves the head at rest instead.
+	 */
+	public static final int GOBLIN_CHATHEAD_KEY_BASE = 2_000_000;
+
 	private final Map<Integer, RetroMesh> meshes;
 	private final Map<Integer, RetroRig> rigs;
 	private final Map<Integer, RetroClip> clips;

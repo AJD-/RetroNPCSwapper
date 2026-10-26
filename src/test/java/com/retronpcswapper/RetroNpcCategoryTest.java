@@ -27,6 +27,7 @@ package com.retronpcswapper;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroAssetCodec;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -3241,5 +3242,104 @@ public class RetroNpcCategoryTest
 
 		// Verify Wilderness Varbit constant
 		assertEquals(5963, VarbitID.INSIDE_WILDERNESS);
+	}
+
+	/**
+	 * Dialogue heads resolve through the same lookup the body does: a named elf by id, a Nov elf in
+	 * the Nov namespace, a citizen or Prifddinas guard by the kit it wears, a goblin in the goblin
+	 * range, and a ghost row by name. A definition 2005 could not talk with keeps the modern head.
+	 */
+	@Test
+	public void testChatheadsResolveWithTheirNpc()
+	{
+		assertChathead(NpcID.MOURNING_ARIANWYN_VIS, null, 0, 4012);
+		assertChathead(NpcID.ELENA2_VIS, null, 0, 113);
+		assertChathead(NpcID.SOTE_ELENA_PRISON, null, 0, 113);
+
+		// Amrod wears the kit his id picks, so he talks with that kit's head
+		RetroNpcData amrod = RetroNpcMapping.get(NpcID.PRIF_CITIZEN_AMROD, null);
+		assertNotNull(amrod);
+		assertEquals(RetroAssetBundle.NOV_HUMAN_KEY_BASE, amrod.getChatheadKeyBase());
+		RetroNpcData kit = Arrays.asList(RetroNpcMapping.GOREU, RetroNpcMapping.YSGAWYN, RetroNpcMapping.EUDAV,
+				RetroNpcMapping.DALLDAV, RetroNpcMapping.LLETYA_BANKER_MALE)
+			.get(NpcID.PRIF_CITIZEN_AMROD % 5);
+		assertArrayEquals(kit.getChatheadModelIds(), amrod.getChatheadModelIds());
+
+		assertChathead(NpcID.PRIF_GUARD0, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 4011);
+		assertChathead(NpcID.PRIF_GUARD4, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 4013);
+
+		assertChathead(NpcID.GOBLIN_GREENARMOUR, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 142);
+		assertChathead(NpcID.GOBLIN_REDARMOUR, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 144);
+		assertChathead(NpcID.GOBLIN_GUARD, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 142);
+		assertChathead(NpcID.GUARD_CARNILLEAN_VIS, null, 0, 60);
+
+		// Ghost rows by name, from the generated JSON: the plain Ghost takes def 491's head, the
+		// Port Phasmatys townsfolk their own
+		assertChathead(-1, "Ghost", 0, 10);
+		assertChathead(-1, "Ghost villager", 0, 5203);
+		assertChathead(-1, "Ghost farmer", 0, 5203, 5202);
+		assertChathead(-1, "Restless ghost", 0, 28, 78);
+
+		// No 2005 head: the warriors, the cows (the Zanaris cow among them) and the town guard
+		assertFalse(RetroNpcMapping.get(NpcID.REGICIDE_DARKELF2, null).hasChathead());
+		assertFalse(RetroNpcMapping.get(NpcID.FAIRY_COW, null).hasChathead());
+		assertFalse(RetroNpcMapping.GUARD_DEFAULT.hasChathead());
+		assertFalse(RetroNpcMapping.get(-1, "Goblin").hasChathead());
+	}
+
+	/**
+	 * Every head a mapping names is in the shipped bundle at its key, or that NPC silently keeps its
+	 * modern head - RetroModelCache refuses a partial set, as it does for a body.
+	 */
+	@Test
+	public void testEveryChatheadIsInTheBundle() throws Exception
+	{
+		RetroAssetBundle bundle;
+		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))
+		{
+			assertNotNull("retro-assets.dat is missing - run ./gradlew generateRetroAssets", in);
+			bundle = RetroAssetCodec.read(in);
+		}
+
+		List<RetroNpcData> mappings = new ArrayList<>();
+		for (int npcId = 0; npcId < 20000; npcId++)
+		{
+			mappings.add(RetroNpcMapping.get(npcId, null));
+		}
+		for (RetroNpcMappingEntry entry : loadCommittedEntries())
+		{
+			// The transmogrified monkey zombies are internal names no live NPC carries
+			if (!entry.getName().startsWith("mm_"))
+			{
+				mappings.add(RetroNpcMapping.get(-1, entry.getName()));
+			}
+		}
+
+		int heads = 0;
+		for (RetroNpcData data : mappings)
+		{
+			if (data == null || !data.hasChathead())
+			{
+				continue;
+			}
+			heads++;
+			for (int part : data.getChatheadModelIds())
+			{
+				int key = data.getChatheadKeyBase() + part;
+				assertNotNull("chathead part " + key + " is missing from the bundle", bundle.getMesh(key));
+			}
+			assertNotNull("the neutral emote for heads keyed at " + data.getChatheadKeyBase() + " is missing",
+				bundle.getClip(data.getChatheadKeyBase() + (data.getCategory() == RetroNpcCategory.GOBLINS
+					? AnimationID.CHATGOBLIN1 : AnimationID.CHATNEU1)));
+		}
+		assertTrue("no mapping names a head", heads > 0);
+	}
+
+	private static void assertChathead(int npcId, String name, int keyBase, int... parts)
+	{
+		RetroNpcData data = RetroNpcMapping.get(npcId, name);
+		assertNotNull("no mapping for " + npcId + " / " + name, data);
+		assertArrayEquals("chathead of " + npcId + " / " + name, parts, data.getChatheadModelIds());
+		assertEquals("chathead key base of " + npcId + " / " + name, keyBase, data.getChatheadKeyBase());
 	}
 }

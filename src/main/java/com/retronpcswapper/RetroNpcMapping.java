@@ -737,7 +737,9 @@ public class RetroNpcMapping
 
 	public static final RetroNpcData ARDOUGNE_GUARD_DEFAULT = ardougneGuard(ARDOUGNE_GUARD_PARTS);
 
-	public static final RetroNpcData CARNILLEAN_GUARD_DEFAULT = ardougneGuard(ARDOUGNE_CARNILLEAN_PARTS);
+	// 2005 def 887 is the one guard of the costume who talks, with head 60
+	public static final RetroNpcData CARNILLEAN_GUARD_DEFAULT = ardougneGuard(ARDOUGNE_CARNILLEAN_PARTS)
+		.withChathead(new int[]{60});
 
 	/**
 	 * 2005 definition 1183, 4044 is the bow.
@@ -772,6 +774,10 @@ public class RetroNpcMapping
 	/**
 	 * An elf in 2005 human kit. Only the pose is set here: combat ids pass straight through to the
 	 * bundle's 2005 clips, the same way the guards' weapon families do.
+	 * <p>
+	 * Each named elf carries its definition's opcode 60 head: 4011 for Islwyn, 4012 for Arianwyn,
+	 * 4013 for Eluned. The warriors 1183 and 1184 had none - they could not be talked to - so they
+	 * keep the modern chathead.
 	 */
 	private static RetroNpcData.Builder elf(int[] parts, int idle)
 	{
@@ -800,20 +806,27 @@ public class RetroNpcMapping
 		.defendAnimationId(AnimationID.HUMAN_SPEAR_BLOCK)
 		.build();
 
-	public static final RetroNpcData ARIANWYN_DEFAULT = elf(ARIANWYN_PARTS, AnimationID.HUMAN_READY).build();
+	public static final RetroNpcData ARIANWYN_DEFAULT = elf(ARIANWYN_PARTS, AnimationID.HUMAN_READY)
+		.chathead(4012)
+		.build();
 
-	public static final RetroNpcData ARIANWYN_BOW = bowElf(ARIANWYN_BOW_PARTS, AnimationID.HUMAN_READY).build();
+	public static final RetroNpcData ARIANWYN_BOW = bowElf(ARIANWYN_BOW_PARTS, AnimationID.HUMAN_READY)
+		.chathead(4012)
+		.build();
 
 	public static final RetroNpcData ISLWYN_DEFAULT = elf(ISLWYN_PARTS, AnimationID.HUMAN_READY)
 		.recolors(ISLWYN_RECOLOR_FIND, ISLWYN_RECOLOR_REPLACE)
+		.chathead(4011)
 		.build();
 
 	public static final RetroNpcData ISLWYN_BOW = bowElf(ISLWYN_BOW_PARTS, AnimationID.HUMAN_READY)
 		.recolors(ISLWYN_RECOLOR_FIND, ISLWYN_RECOLOR_REPLACE)
+		.chathead(4011)
 		.build();
 
 	public static final RetroNpcData ELUNED_DEFAULT = elf(ELUNED_PARTS, AnimationID.HUMAN_READY)
 		.recolors(ELUNED_RECOLOR_FIND, ELUNED_RECOLOR_REPLACE)
+		.chathead(4013)
 		.build();
 
 	/**
@@ -823,7 +836,8 @@ public class RetroNpcMapping
 	 * warriors included, where their Feb counterparts stood in 813 - and like the Feb elves, combat
 	 * ids pass straight through to the clips the bundle carries under that base.
 	 * <p>
-	 * Parts, recolor pairs and resize are each definition's own, in npc.dat order.
+	 * Parts, recolor pairs and resize are each definition's own, in npc.dat order, and so is the
+	 * dialogue head, on the Nov head rig in the same namespace. 2360 and 2362 had no head.
 	 */
 	private static RetroNpcData.Builder novElf(int[] parts, short[] find, short[] replace, int scaleXZ,
 		int scaleY)
@@ -840,6 +854,7 @@ public class RetroNpcMapping
 		new short[]{9152, 6449, 25886}, new short[]{8912, 7646, 7646}, 127, 120)
 		.attackAnimationId(AnimationID.HUMAN_SCYTHE_SWEEP)
 		.defendAnimationId(AnimationID.HUMAN_SPEAR_BLOCK)
+		.chathead(4011)
 		.build();
 
 	/** Nov-2005 definition 2360, the second pike warrior, on the Lletya head 8266. */
@@ -854,6 +869,7 @@ public class RetroNpcMapping
 		new short[]{9152, 9137, 25886}, new short[]{8910, 5429, 7646}, 127, 120)
 		.attackAnimationId(AnimationID.HUMAN_BOW)
 		.defendAnimationId(AnimationID.HUMAN_UNARMEDBLOCK)
+		.chathead(8261)
 		.build();
 
 	/** Nov-2005 definition 2362, the second bow warrior, on the head 8263. */
@@ -865,62 +881,62 @@ public class RetroNpcMapping
 
 	/** Nov-2005 definition 1777. */
 	public static final RetroNpcData ILFEEN = novElf(new int[]{4029, 4030, 4032, 3194, 4028, 4031},
-		new short[]{17864, 14517, 9327}, new short[]{7845, 8753, 6478}, 128, 128).build();
+		new short[]{17864, 14517, 9327}, new short[]{7845, 8753, 6478}, 128, 128).chathead(4013).build();
 
 	/** Nov-2005 definition 2352, the general store. */
 	public static final RetroNpcData EUDAV = novElf(new int[]{8264, 8268, 6975, 8267},
-		new short[]{7595, 8792}, new short[]{6587, 7634}, 127, 120).build();
+		new short[]{7595, 8792}, new short[]{6587, 7634}, 127, 120).chathead(8258).build();
 
 	/** Nov-2005 definition 2353, the seamstress. */
 	public static final RetroNpcData ORONWEN = novElf(new int[]{4030, 6981, 480, 6978, 8270},
-		new short[]{7595, 8792}, new short[]{6587, 16706}, 128, 129).build();
+		new short[]{7595, 8792}, new short[]{6587, 16706}, 128, 129).chathead(4013).build();
 
 	/** Nov-2005 definition 2354. */
 	public static final RetroNpcData LLETYA_BANKER_MALE = novElf(new int[]{8266, 8269, 6975, 6976},
-		new short[]{107, 7595, 8792, 8652}, new short[]{7390, 7376, 7479, 5400}, 128, 128).build();
+		new short[]{107, 7595, 8792, 8652}, new short[]{7390, 7376, 7479, 5400}, 128, 128).chathead(8261).build();
 
 	/** Nov-2005 definition 2355. */
 	public static final RetroNpcData LLETYA_BANKER_FEMALE = novElf(new int[]{4030, 6980, 480, 6978, 6979},
 		new short[]{107, 7595, 8792, 9137, 14517, 8652}, new short[]{7390, 7376, 7479, 4502, 7479, 6439},
-		135, 130).build();
+		135, 130).chathead(4013).build();
 
 	/** Nov-2005 definition 2356, the bow seller. */
 	public static final RetroNpcData DALLDAV = novElf(new int[]{4021, 6977, 6975, 8267},
-		new short[]{8792, 7595, 8741}, new short[]{7634, 13867, 13867}, 127, 120).build();
+		new short[]{8792, 7595, 8741}, new short[]{7634, 13867, 13867}, 127, 120).chathead(4012).build();
 
 	/** Nov-2005 definition 2357, the cook. */
 	public static final RetroNpcData GETHIN = novElf(new int[]{8357, 8263, 8268, 6975, 6976},
-		new short[]{107, 7595, 8792}, new short[]{7390, 6480, 6583}, 128, 128).build();
+		new short[]{107, 7595, 8792}, new short[]{7390, 6480, 6583}, 128, 128).chathead(8257, 41).build();
 
 	/** Nov-2005 definition 2363. */
 	public static final RetroNpcData GOREU = novElf(new int[]{8266, 6977, 6975, 4023},
-		new short[]{16701, 9137, 25886}, new short[]{7613, 5429, 7646}, 127, 113).build();
+		new short[]{16701, 9137, 25886}, new short[]{7613, 5429, 7646}, 127, 113).chathead(8261).build();
 
 	/** Nov-2005 definition 2364. */
 	public static final RetroNpcData YSGAWYN = novElf(new int[]{4020, 8269, 6975, 8267},
 		new short[]{16701, 9137, 25886, 8792, 9152}, new short[]{7613, 5429, 7646, 13762, 8101},
-		132, 131).build();
+		132, 131).chathead(4011).build();
 
 	/** Nov-2005 definition 2365. */
 	public static final RetroNpcData ARVEL = novElf(new int[]{4030, 6981, 480, 6978, 6979},
 		new short[]{16701, 9137, 25886, 8792, 8652, 14517}, new short[]{7613, 8109, 7646, 13762, 7595, 7595},
-		128, 128).build();
+		128, 128).chathead(4013).build();
 
 	/** Nov-2005 definition 2366. */
 	public static final RetroNpcData MAWRTH = novElf(new int[]{4030, 6980, 480, 6978, 6979},
-		new short[]{14517}, new short[]{7595}, 123, 110).build();
+		new short[]{14517}, new short[]{7595}, 123, 110).chathead(4013).build();
 
 	/** Nov-2005 definition 2367. */
 	public static final RetroNpcData KELYN = novElf(new int[]{4030, 6981, 6978, 6979},
-		new short[]{16701, 9137, 25886}, new short[]{7613, 5429, 7646}, 128, 128).build();
+		new short[]{16701, 9137, 25886}, new short[]{7613, 5429, 7646}, 128, 128).chathead(4013).build();
 
 	/** Nov-2005 definition 2368, an elven child. */
 	public static final RetroNpcData EOIN = novElf(new int[]{8264, 8269, 6975, 6976},
-		new short[]{9137, 8792}, new short[]{8117, 11592}, 100, 79).build();
+		new short[]{9137, 8792}, new short[]{8117, 11592}, 100, 79).chathead(8259).build();
 
 	/** Nov-2005 definition 2369, an elven child. */
 	public static final RetroNpcData IONA = novElf(new int[]{4021, 6977, 6975, 8267},
-		new short[]{9137, 8792}, new short[]{8117, 11592}, 106, 87).build();
+		new short[]{9137, 8792}, new short[]{8117, 11592}, 106, 87).chathead(8260).build();
 
 	/*
 	 * The colors painted on the Nov Lletya kits' meshes, by what they cover - measured on the meshes
@@ -1014,6 +1030,8 @@ public class RetroNpcMapping
 
 	private static final int[] PRIF_GUARD_FEMALE_PARTS = {4030, 4025, 4016, 4033, 4023};
 
+	private static final int[] PRIF_GUARD_FEMALE_CHATHEAD = {4013};
+
 	private static final short[] PRIF_GUARD_RECOLOR_FIND = {
 		KIT_HAIR, KIT_HAIR_OLD_HEAD, KIT_TUNIC, KIT_TRIM, KIT_WARRIOR_BAND, KIT_PIKE_SHAFT, KIT_PIKE_BAND};
 
@@ -1028,7 +1046,10 @@ public class RetroNpcMapping
 
 	static RetroNpcData prifGuard(boolean female, int hair)
 	{
+		// The women's head 4030 is the one the Lletya women wear, and every one of them talks with
+		// head 4013
 		return NOV_ELF_WARRIOR.withModelIds(female ? PRIF_GUARD_FEMALE_PARTS : PRIF_GUARD_PARTS)
+		    .withChathead(female ? PRIF_GUARD_FEMALE_CHATHEAD : NOV_ELF_WARRIOR.getChatheadModelIds())
 			.withRecolors(PRIF_GUARD_RECOLOR_FIND, new short[]{(short) hair, (short) hair, PRIF_CRYSTAL,
 				PRIF_BOOTS, PRIF_UNDERSUIT, PIKE_WOOD, PIKE_WOOD});
 	}
@@ -1061,7 +1082,7 @@ public class RetroNpcMapping
 	 */
 	public static final RetroNpcData ELENA_PRISONER = elena(new int[]{390, 456, 332, 353, 440, 445},
 		new short[]{8741, 25238, 6798, (short) 43072, 41},
-		new short[]{(short) 32962, 21838, 4502, 4550, (short) 59350}).build();
+		new short[]{(short) 32962, 21838, 4502, 4550, (short) 59350}).chathead(113).build();
 
 	/**
 	 * Feb-2005 definition 715, "She doesn't look too happy.", in the Biohazard block - Elena once
@@ -1069,7 +1090,7 @@ public class RetroNpcMapping
 	 */
 	public static final RetroNpcData ELENA_DEFAULT = elena(new int[]{390, 474, 347, 353, 438, 358},
 		new short[]{8741, 25238, 6798, (short) 43072},
-		new short[]{(short) 32962, 21838, 4502, 4550}).build();
+		new short[]{(short) 32962, 21838, 4502, 4550}).chathead(113).build();
 
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
@@ -1262,11 +1283,13 @@ public class RetroNpcMapping
 	 * A 2005 goblin variant: a part list, and the opcode 40 pairs that are the only thing telling
 	 * one colored goblin from another.
 	 */
-	private static RetroNpcData goblin(int[] models, short[] find, short[] replace)
+	private static RetroNpcData goblin(int[] models, short[] find, short[] replace, int... chathead)
 	{
 		return RetroNpcData.builder()
 			.category(RetroNpcCategory.GOBLINS)
 			.retroModelIds(models)
+			.chathead(chathead)
+			.chatheadKeyBase(RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE)
 			.idleAnimationId(AnimationID.GOBLIN_READY)
 			.walkAnimationId(AnimationID.GOBLIN_WALK)
 			.attackAnimationId(AnimationID.GOBLIN_ATTACK_UNARMED)
@@ -1291,18 +1314,19 @@ public class RetroNpcMapping
 	// body mesh rather than a color. Unarmed, and the modern level 13 goblin is unarmed too.
 	public static final RetroNpcData GOBLIN_STRONG = goblin(GOBLIN_STRONG_PARTS, null, null);
 
-	// Def 298 - green armour, 916 -> 22443. Live GOBLIN_GREENARMOUR still carries this pair
+	// Def 298 - green armor, 916 -> 22443. Live GOBLIN_GREENARMOUR still carries this pair
 	// verbatim over the 2005 meshes themselves, which is what pins green to this definition.
 	public static final RetroNpcData GOBLIN_GREEN = goblin(GOBLIN_ARMED_PARTS,
-		new short[]{916, 70, 8084}, new short[]{22443, -22417, 528});
+		new short[]{916, 70, 8084}, new short[]{22443, -22417, 528}, 142);
 
-	// Def 299 - red armour, 916 -> 933, and live GOBLIN_REDARMOUR carries that pair verbatim too.
+	// Def 299 - red armor, 916 -> 933, and live GOBLIN_REDARMOUR carries that pair verbatim too.
 	public static final RetroNpcData GOBLIN_RED = goblin(GOBLIN_ARMED_PARTS,
-		new short[]{916, 70, 8084}, new short[]{933, -22417, 528});
+		new short[]{916, 70, 8084}, new short[]{933, -22417, 528}, 144);
 
-	// Def 489 - the Goblin guard. The same armed kit as def 101 in the plain colors
+	// Def 489 - the Goblin guard. The same armed kit as def 101 in the plain colors, and the green
+	// goblin's head 142
 	public static final RetroNpcData GOBLIN_GUARD_DEFAULT = goblin(
-		GOBLIN_ARMED_PARTS, GOBLIN_WEAPON_DRIFT_FIND, GOBLIN_WEAPON_DRIFT_REPLACE);
+		GOBLIN_ARMED_PARTS, GOBLIN_WEAPON_DRIFT_FIND, GOBLIN_WEAPON_DRIFT_REPLACE, 142);
 
 	// The 2005 hellhound is def 49: mesh 2997, no opcode 40 data, no resize. Found in the live cache.
 	private static final int HELLHOUND_BODY = 2997;
@@ -1781,8 +1805,8 @@ public class RetroNpcMapping
 	}
 
 	/**
-	 * Grafts what only the 2005 definition knows - the recolor pairs and the resize - onto the
-	 * static archetypes.
+	 * Grafts what only the 2005 definition knows - the recolor pairs, the resize and the dialogue
+	 * head - onto the static archetypes.
 	 *
 	 * <p>An archetype wins over the generated JSON row for a name, which is what keeps hand-checked
 	 * combat animations and model ids in place. But the row is the only source of these two, and the
@@ -1821,6 +1845,13 @@ public class RetroNpcMapping
 				&& (entry.getScaleXZ() != 128 || entry.getScaleY() != 128))
 			{
 				updated = updated.withScale(entry.getScaleXZ(), entry.getScaleY());
+			}
+
+			// The head is the definition's own, like the resize, and only fills a gap: an archetype
+			// that names a head keeps it
+			if (!data.hasChathead() && entry.getChatheadModelIds() != null)
+			{
+				updated = updated.withChathead(entry.getChatheadModelIds());
 			}
 
 			if (updated == data)
@@ -2780,6 +2811,8 @@ public class RetroNpcMapping
 			.modernDefendAnims(modernDefends)
 			.modernDeathAnims(modernDeaths)
 			.modernMiscAnims(modernMisc)
+			.chathead(entry.getChatheadModelIds())
+			.chatheadKeyBase(category == RetroNpcCategory.GOBLINS ? RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE : 0)
 			.build();
 	}
 

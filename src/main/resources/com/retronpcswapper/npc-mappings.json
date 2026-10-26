@@ -224,6 +224,9 @@
       6579,
       10004,
       41
+    ],
+    "chatheadModelIds": [
+      5179
     ]
   },
   {
@@ -237,7 +240,10 @@
     "idleAnim": 125,
     "walkAnim": 119,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "chatheadModelIds": [
+      10
+    ]
   },
   {
     "name": "ghost (?)",
@@ -254,6 +260,9 @@
     ],
     "replacementColors": [
       7599
+    ],
+    "chatheadModelIds": [
+      5204
     ]
   },
   {
@@ -274,6 +283,9 @@
     ],
     "replacementColors": [
       18626
+    ],
+    "chatheadModelIds": [
+      5203
     ]
   },
   {
@@ -296,6 +308,9 @@
     ],
     "replacementColors": [
       18626
+    ],
+    "chatheadModelIds": [
+      5203
     ]
   },
   {
@@ -318,6 +333,9 @@
     ],
     "replacementColors": [
       18626
+    ],
+    "chatheadModelIds": [
+      5205
     ]
   },
   {
@@ -340,6 +358,10 @@
     ],
     "replacementColors": [
       18626
+    ],
+    "chatheadModelIds": [
+      5203,
+      5202
     ]
   },
   {
@@ -360,6 +382,9 @@
     ],
     "replacementColors": [
       18626
+    ],
+    "chatheadModelIds": [
+      5203
     ]
   },
   {
@@ -380,6 +405,9 @@
     ],
     "replacementColors": [
       18626
+    ],
+    "chatheadModelIds": [
+      5203
     ]
   },
   {
@@ -402,6 +430,9 @@
     ],
     "replacementColors": [
       18626
+    ],
+    "chatheadModelIds": [
+      5203
     ]
   },
   {
@@ -422,6 +453,9 @@
     ],
     "replacementColors": [
       18626
+    ],
+    "chatheadModelIds": [
+      5203
     ]
   },
   {
@@ -442,6 +476,9 @@
     ],
     "replacementColors": [
       18626
+    ],
+    "chatheadModelIds": [
+      5203
     ]
   },
   {
@@ -471,7 +508,10 @@
     "idleAnim": 311,
     "walkAnim": 308,
     "scaleXZ": 128,
-    "scaleY": 128
+    "scaleY": 128,
+    "chatheadModelIds": [
+      142
+    ]
   },
   {
     "name": "greater demon",
@@ -676,6 +716,9 @@
       23849,
       17734,
       -81
+    ],
+    "chatheadModelIds": [
+      4656
     ]
   },
   {
@@ -698,6 +741,9 @@
       23849,
       17734,
       -81
+    ],
+    "chatheadModelIds": [
+      4656
     ]
   },
   {
@@ -793,6 +839,10 @@
       0,
       24,
       37
+    ],
+    "chatheadModelIds": [
+      28,
+      78
     ]
   },
   {

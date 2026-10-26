@@ -9,6 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+import com.retronpcswapper.RetroNpcData;
+import com.retronpcswapper.RetroNpcMapping;
 import com.retronpcswapper.RetroNpcMappingEntry;
 import com.retronpcswapper.RetroNpcSwapperPlugin;
 import org.junit.Test;
@@ -18,6 +20,8 @@ import static org.junit.Assume.assumeTrue;
 public class RetroCacheTest
 {
 	private static final File CACHE_DIR = new File("retrocache/2005cache");
+
+	private static final File NOV_CACHE_DIR = new File("retrocache/nov2005cache");
 
 	/**
 	 * Every sequence the 2005 {@code seq.idx} declares, and the guard's shield block among them.
@@ -111,5 +115,64 @@ public class RetroCacheTest
 		Gson gson = new Gson();
 		assertEquals("Committed npc-mappings.json is stale - run ./gradlew generateNpcMappings",
 			gson.toJson(generated), gson.toJson(committed));
+	}
+
+	/**
+	 * Every archetype's dialogue head is the opcode 60 list of the 2005 definition it was built from,
+	 * and a definition that had none leaves its archetype headless - which is what keeps the modern
+	 * chathead for an NPC 2005 could not talk to, rather than one guessed from its kit.
+	 */
+	@Test
+	public void testArchetypeChatheadsAreTheir2005Definitions() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
+		assumeTrue("Nov-2005 cache not present at " + NOV_CACHE_DIR, NOV_CACHE_DIR.exists());
+
+		Map<Integer, RetroNpcDefinition> feb = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
+		assertChathead(feb, 1183, RetroNpcMapping.ELF_ARCHER);
+		assertChathead(feb, 1184, RetroNpcMapping.ELF_WARRIOR);
+		assertChathead(feb, 1202, RetroNpcMapping.ARIANWYN_DEFAULT);
+		assertChathead(feb, 1202, RetroNpcMapping.ARIANWYN_BOW);
+		assertChathead(feb, 1680, RetroNpcMapping.ISLWYN_DEFAULT);
+		assertChathead(feb, 1680, RetroNpcMapping.ISLWYN_BOW);
+		assertChathead(feb, 1679, RetroNpcMapping.ELUNED_DEFAULT);
+		assertChathead(feb, 335, RetroNpcMapping.ELENA_PRISONER);
+		assertChathead(feb, 715, RetroNpcMapping.ELENA_DEFAULT);
+		assertChathead(feb, 298, RetroNpcMapping.GOBLIN_GREEN);
+		assertChathead(feb, 299, RetroNpcMapping.GOBLIN_RED);
+		assertChathead(feb, 489, RetroNpcMapping.GOBLIN_GUARD_DEFAULT);
+		assertChathead(feb, 100, RetroNpcMapping.GOBLIN_DEFAULT);
+		assertChathead(feb, 887, RetroNpcMapping.CARNILLEAN_GUARD_DEFAULT);
+		assertChathead(feb, 9, RetroNpcMapping.GUARD_DEFAULT);
+
+		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
+		assertChathead(nov, 2359, RetroNpcMapping.NOV_ELF_WARRIOR);
+		assertChathead(nov, 2360, RetroNpcMapping.NOV_ELF_WARRIOR2);
+		assertChathead(nov, 2361, RetroNpcMapping.NOV_ELF_ARCHER);
+		assertChathead(nov, 2362, RetroNpcMapping.NOV_ELF_ARCHER2);
+		assertChathead(nov, 1777, RetroNpcMapping.ILFEEN);
+		assertChathead(nov, 2352, RetroNpcMapping.EUDAV);
+		assertChathead(nov, 2353, RetroNpcMapping.ORONWEN);
+		assertChathead(nov, 2354, RetroNpcMapping.LLETYA_BANKER_MALE);
+		assertChathead(nov, 2355, RetroNpcMapping.LLETYA_BANKER_FEMALE);
+		assertChathead(nov, 2356, RetroNpcMapping.DALLDAV);
+		assertChathead(nov, 2357, RetroNpcMapping.GETHIN);
+		assertChathead(nov, 2363, RetroNpcMapping.GOREU);
+		assertChathead(nov, 2364, RetroNpcMapping.YSGAWYN);
+		assertChathead(nov, 2365, RetroNpcMapping.ARVEL);
+		assertChathead(nov, 2366, RetroNpcMapping.MAWRTH);
+		assertChathead(nov, 2367, RetroNpcMapping.KELYN);
+		assertChathead(nov, 2368, RetroNpcMapping.EOIN);
+		assertChathead(nov, 2369, RetroNpcMapping.IONA);
+	}
+
+	private static void assertChathead(Map<Integer, RetroNpcDefinition> defs, int defId, RetroNpcData data)
+	{
+		RetroNpcDefinition def = defs.get(defId);
+		assertNotNull("2005 definition " + defId + " is missing", def);
+		int[] expected = def.getAdditionalModels() == null || def.getAdditionalModels().length == 0
+			? null : def.getAdditionalModels();
+		assertArrayEquals("chathead of the archetype built from definition " + defId + " (" + def.getName() + ")",
+			expected, data.getChatheadModelIds());
 	}
 }
