@@ -35,11 +35,16 @@ public class RetroChatheadReachTest
 	private static final int NO_BONE = 255;
 
 	private static final int HUMAN_FLOOR = 40;
+	// Tristram's head 56 (Sir Prysin's too) binds no groups 1-4, 6, 18 or 20, so it moves less: 34%
+	private static final int SPARSE_HEAD = 56;
+	private static final int SPARSE_HEAD_FLOOR = 30;
 	private static final int GOBLIN_FLOOR = 80;
 
 	/** Each face-rigged head as the overlay merges it: key base, then its parts. */
 	private static final int[][] HEADS = {
 		{0, 4011}, {0, 4012}, {0, 4013}, {0, 113}, {0, 60}, {0, 10}, {0, 5203}, {0, 5203, 5202}, {0, 5205},
+		{0, 53, 84, 43}, {0, 46}, {0, 65, 80}, {0, 49, 81}, {0, 56}, {0, 65, 83}, {0, 66, 80}, {0, 57, 80},
+		{0, 65}, {0, 65, 35}, {0, 59, 81}, {0, 52, 82, 44}, {0, 55, 85, 34},
 		{NOV, 4011}, {NOV, 4012}, {NOV, 4013}, {NOV, 8257, 41}, {NOV, 8258}, {NOV, 8259}, {NOV, 8260},
 		{NOV, 8261},
 		{GOBLIN, 142}, {GOBLIN, 144}};
@@ -62,7 +67,8 @@ public class RetroChatheadReachTest
 		{
 			RetroMesh mesh = merge(bundle, head);
 			Set<Integer> meshGroups = groupsUsedBy(mesh);
-			int floor = head[0] == GOBLIN ? GOBLIN_FLOOR : HUMAN_FLOOR;
+			int floor = head[0] == GOBLIN ? GOBLIN_FLOOR
+				: head[0] == 0 && head[1] == SPARSE_HEAD ? SPARSE_HEAD_FLOOR : HUMAN_FLOOR;
 
 			for (int emote : emotesFor(head))
 			{

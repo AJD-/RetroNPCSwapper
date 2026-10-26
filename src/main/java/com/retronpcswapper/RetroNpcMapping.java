@@ -81,7 +81,7 @@ public class RetroNpcMapping
 	 * onto the archetypes.
 	 */
 	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
-		Set.of(RetroNpcCategory.GUARDS, RetroNpcCategory.ELVES);
+		Set.of(RetroNpcCategory.GUARDS, RetroNpcCategory.ELVES, RetroNpcCategory.ROUND_TABLE);
 
 	/**
 	 * Ids whose registered row beats the name row even when the two disagree about the category.
@@ -1093,6 +1093,105 @@ public class RetroNpcMapping
 		new short[]{(short) 32962, 21838, 4502, 4550}).chathead(113).build();
 
 	/**
+	 * Arthur's court: plain Feb-2005 human kit on the guards' rig and clips, no key base. Each
+	 * archetype is its own 2005 definition.
+	 */
+	private static RetroNpcData.Builder roundTable(int[] parts, int idle, short[] find, short[] replace)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.ROUND_TABLE)
+			.retroModelIds(parts)
+			.idleAnimationId(idle)
+			.walkAnimationId(AnimationID.HUMAN_WALK_F)
+			.deathAnimationId(AnimationID.HUMAN_DEATH)
+			.recolors(find, replace);
+	}
+
+	private static final short[] KNIGHT_RECOLOR_FIND = {10128, 6798, 61, 22430, 4626, 57};
+
+	/** A Round Table knight: the shared plate body, whose pairs differ only in what 6798 becomes. */
+	private static RetroNpcData.Builder knight(int idle, int color, int[] parts)
+	{
+		return roundTable(parts, idle, KNIGHT_RECOLOR_FIND, new short[]{70, (short) color, 107, 960, 70, 107});
+	}
+
+	/** Feb-2005 definition 251. */
+	public static final RetroNpcData KING_ARTHUR = roundTable(
+		new int[]{215, 306, 164, 179, 268, 185, 501, 526, 252, 318, 201}, AnimationID.HUMAN_READY,
+		new short[]{22430, 57, 61, 5056, 4626, 10128},
+		new short[]{-21568, 107, 107, 107, 70, 70}).chathead(53, 84, 43).build();
+
+	/** Feb-2005 definitions 239-246, 211 and 212, in that order. */
+	public static final RetroNpcData SIR_LANCELOT = knight(AnimationID.HUMAN_READY, 5807,
+		new int[]{206, 306, 164, 179, 268, 185, 518, 486, 246, 318}).chathead(46).build();
+	public static final RetroNpcData SIR_GAWAIN = knight(AnimationID.HUMAN_STAFFREADY, 5807,
+		new int[]{232, 306, 164, 179, 268, 185, 555, 248, 318}).chathead(65, 80).build();
+	public static final RetroNpcData SIR_KAY = knight(AnimationID.HUMAN_STAFFREADY, 8,
+		new int[]{225, 306, 164, 179, 268, 185, 502, 246, 318, 521}).chathead(60).build();
+	public static final RetroNpcData SIR_BEDIVERE = knight(AnimationID.HUMAN_READY, 4626,
+		new int[]{210, 306, 164, 179, 268, 185, 540, 249, 318}).chathead(49, 81).build();
+	public static final RetroNpcData SIR_TRISTRAM = knight(AnimationID.HUMAN_READY, 5807,
+		new int[]{218, 306, 164, 179, 268, 185, 490, 486, 318}).chathead(56).build();
+	public static final RetroNpcData SIR_PELLEAS = knight(AnimationID.HUMAN_READY, 11222,
+		new int[]{232, 306, 164, 179, 268, 185, 542, 517, 251, 318}).chathead(65, 83).build();
+	public static final RetroNpcData SIR_LUCAN = knight(AnimationID.HUMAN_READY, 0,
+		new int[]{233, 306, 164, 179, 268, 185, 518, 521, 248, 318}).chathead(66, 80).build();
+	public static final RetroNpcData SIR_PALOMEDES = knight(AnimationID.HUMAN_READY, 7070,
+		new int[]{219, 306, 164, 179, 268, 185, 490, 541, 248, 318}).chathead(57, 80).build();
+	public static final RetroNpcData SIR_PERCIVAL = knight(AnimationID.HUMAN_READY, 8,
+		new int[]{232, 306, 164, 179, 268, 185, 246, 318}).chathead(65).build();
+	public static final RetroNpcData KING_PERCIVAL = knight(AnimationID.HUMAN_READY, 8,
+		new int[]{232, 306, 164, 179, 268, 185, 246, 318, 192, 323}).chathead(65, 35).build();
+
+	// Empty until a fight logs Mordred's live combat ids: his live stance is modern (6487), so his
+	// attacks likely are too
+	public static final Set<Integer> MORDRED_MODERN_ATTACKS = Set.of();
+	public static final Set<Integer> MORDRED_MODERN_DEFENDS = Set.of();
+	public static final Set<Integer> MORDRED_MODERN_DEATHS = Set.of();
+
+	/** Feb-2005 definition 247. Sword 513 and shield 541. */
+	public static final RetroNpcData SIR_MORDRED = roundTable(
+		new int[]{225, 306, 164, 179, 268, 185, 513, 246, 541, 240}, AnimationID.HUMAN_READY,
+		new short[]{61, 41, 57, 4626, 11218, -18368},
+		new short[]{0, 8, 0, 0, -10348, 20})
+		.attackAnimationId(AnimationID.HUMAN_SWORD_SLASH)
+		.defendAnimationId(AnimationID.HUMAN_SHIELD_DEFENCE)
+		.modernAttackAnims(MORDRED_MODERN_ATTACKS)
+		.modernDefendAnims(MORDRED_MODERN_DEFENDS)
+		.modernDeathAnims(MORDRED_MODERN_DEATHS)
+		.chathead(60).build();
+
+	/** Feb-2005 definition 218, "Galahad". */
+	public static final RetroNpcData BROTHER_GALAHAD = roundTable(
+		new int[]{223, 295, 162, 176, 265, 185, 284, 249}, AnimationID.HUMAN_READY,
+		new short[]{8090, 25238, 6798, 8741, 8090},
+		new short[]{7070, 7070, 6057, 7070, 7070}).chathead(59, 81).build();
+
+	/** Feb-2005 definition 249; 213 is identical. */
+	public static final RetroNpcData MERLIN = roundTable(
+		new int[]{214, 292, 170, 176, 265, 183, 250, 553, 567, 202, 324}, AnimationID.HUMAN_STAFFREADY,
+		new short[]{6798, 8090, 25238, 4626, -22464, 8741},
+		new short[]{103, -26722, -26722, -26722, 4550, -26722}).chathead(52, 82, 44).build();
+
+	/** Feb-2005 definition 248. */
+	public static final RetroNpcData MORGAN_LE_FAYE = roundTable(
+		new int[]{390, 472, 348, 353, 421, 358, 534, 414}, AnimationID.HUMAN_STAFFREADY,
+		new short[]{6798, 7056, 8741, 25238, 4626},
+		new short[]{0, 20, 20, 20, 0}).chathead(113).build();
+
+	/** Feb-2005 definition 250. */
+	public static final RetroNpcData LADY_OF_THE_LAKE = roundTable(
+		new int[]{390, 456, 332, 353, 421, 358, 417}, AnimationID.HUMAN_READY,
+		new short[]{6798, 7056, 8741, 25238, 4626},
+		new short[]{103, 127, 127, 127, 127}).chathead(113).build();
+
+	/** Feb-2005 definition 606, Squire Asrol. */
+	public static final RetroNpcData SQUIRE = roundTable(
+		new int[]{217, 253, 297, 254, 163, 181, 179, 191, 534}, AnimationID.HUMAN_STAFFREADY,
+		new short[]{8741, 9756, 9137, 10297, 4626, 10128},
+		new short[]{86, 99, 99, 86, 86, 86}).chathead(55, 85, 34).build();
+
+	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
 	 * vertices in both, 355 faces against 347 - so the cache-backed path can still load it.
 	 */
@@ -1902,7 +2001,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.COWS
 			|| category == RetroNpcCategory.SCORPIONS
 			|| category == RetroNpcCategory.ELVES
-			|| category == RetroNpcCategory.KALPHITES;
+			|| category == RetroNpcCategory.KALPHITES
+			|| category == RetroNpcCategory.ROUND_TABLE;
 	}
 
 	/**
@@ -2363,6 +2463,29 @@ public class RetroNpcMapping
 			NpcID.SOTE_ELENA_CUTSCENE_NOMOVE, NpcID.SOTE_ELENA_CUTSCENE_RUN, NpcID.SOTE_RESISTANCE_ELENA,
 			NpcID.ELENA_PRIF
 		);
+
+		// Arthur's court. Deliberately left out: the Knight Waves knights (KR_CAM_* and KR_KNIGHT1-8),
+		// the jail copies, DS2_MEETING_KING_ARTHUR and KR_ARTHUR_RESTORATION (partial models),
+		// KR_ARTHUR_DISGUISE (a different costume), the KR_MULTI_* parents, the other Morgan
+		// (MORGAN_PRE/POST) and WHITE_KNIGHT_CRYPT_SQUIRE
+		registerMapping(KING_ARTHUR, NpcID.KING_ARTHUR, NpcID.KING_ARTHUR_CUTSCENE);
+		registerMapping(SIR_LANCELOT, NpcID.SIR_LANCELOT, NpcID.SIR_LANCELOT_CUTSCENE);
+		registerMapping(SIR_GAWAIN, NpcID.SIR_GAWAIN, NpcID.SIR_GAWAIN_CUTSCENE);
+		registerMapping(SIR_KAY, NpcID.SIR_KAY, NpcID.SIR_KAY_CUTSCENE);
+		registerMapping(SIR_BEDIVERE, NpcID.SIR_BEDIVERE, NpcID.SIR_BEDIVERE_CUTSCENE);
+		registerMapping(SIR_TRISTRAM, NpcID.SIR_TRISTRAM, NpcID.SIR_TRISTRAM_CUTSCENE);
+		registerMapping(SIR_PELLEAS, NpcID.SIR_PELLEAS, NpcID.SIR_PELLEAS_CUTSCENE);
+		registerMapping(SIR_LUCAN, NpcID.SIR_LUCAN, NpcID.SIR_LUCAN_CUTSCENE);
+		registerMapping(SIR_PALOMEDES, NpcID.SIR_PALOMEDES, NpcID.SIR_PALOMEDES_CUTSCENE);
+		registerMapping(SIR_MORDRED, NpcID.SIR_MORDRED);
+		registerMapping(SIR_PERCIVAL, NpcID.SIR_PERCIVAL);
+		registerMapping(KING_PERCIVAL, NpcID.KING_PERCIVAL);
+		registerMapping(BROTHER_GALAHAD, NpcID.BROTHER_GALAHAD);
+		registerMapping(MERLIN, NpcID.MERLIN, NpcID.MERLIN2);
+		registerMapping(MORGAN_LE_FAYE, NpcID.MORGAN_LE_FAYE, NpcID.KR_MORGAN_CUTSCENE);
+		registerMapping(LADY_OF_THE_LAKE, NpcID.LADYOFTHELAKE);
+		// SQUIRE is Squire Asrol in Falador; King's Ransom's squire wears the same live model
+		registerMapping(SQUIRE, NpcID.SQUIRE, NpcID.KR_SQUIRE);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.

@@ -271,6 +271,21 @@ public class RetroAssetGenerator
 		new Spec("Elena", Source.RETRO, Source.RETRO,
 			new int[]{390, 456, 332, 353, 440, 445, 474, 347, 438, 358},
 			new int[]{808, 819, 836}),
+		// Arthur's court, Feb-2005 human kit: definitions 251 Arthur, 239-247 the knights, 211/212
+		// Percival, 218 Galahad, 249 Merlin, 248 Morgan, 250 the Lady of the Lake and 606 the squire.
+		// 210, 513, 540, 555, 292, 170, 265, 202, 323, 162, 284, 297, 254, 163 and most of the female
+		// kit were overwritten in live, so they are injection-only like the guards
+		new Spec("Round Table", Source.RETRO, Source.RETRO,
+			new int[]{306, 164, 179, 268, 185, 318,
+				206, 210, 215, 218, 219, 225, 232, 233,
+				501, 526, 252, 201, 502, 246, 521, 540, 249, 490, 486, 542, 517, 251, 518, 248, 541,
+				555, 513, 240, 192, 323,
+				223, 295, 162, 176, 265, 284,
+				214, 292, 170, 183, 250, 553, 567, 202, 324,
+				390, 472, 348, 353, 421, 358, 534, 414, 456, 332, 417,
+				217, 253, 297, 254, 163, 181, 191},
+			// Mordred fights with sword 513 and shield 541
+			new int[]{808, 813, 819, 836, 390, 1156}),
 		// The large scorpion's 2005 mesh 2967 is gone from the live cache (0% vertex overlap). Its
 		// 2005 sequences 244-248 (frame file 44) have been overwritten as well
 		new Spec("Scorpions", Source.RETRO, Source.RETRO, new int[]{2967},
@@ -375,10 +390,12 @@ public class RetroAssetGenerator
 		// The dialogue heads, npc.dat opcode 60, of every swapped NPC whose 2005 definition had one:
 		// the Feb elves 1680 Islwyn (4011), 1202 Arianwyn (4012) and 1679 Eluned (4013), Elena (113),
 		// the Carnillean guard 887 (60), and the ghosts - 491 the plain Ghost (10), the Restless
-		// ghost (28, 78), the Gardener ghost (5179) and the Port Phasmatys townsfolk (5202-5205).
+		// ghost (28, 78), the Gardener ghost (5179) and the Port Phasmatys townsfolk (5202-5205) -
+		// and Arthur's court, whose heads follow.
 		// Drawn by the chathead overlay, posed by the human emotes from the same cache
 		new Spec("Chatheads", Source.RETRO, Source.RETRO,
-			new int[]{4011, 4012, 4013, 113, 60, 10, 28, 78, 5179, 5202, 5203, 5204, 5205},
+			new int[]{4011, 4012, 4013, 113, 60, 10, 28, 78, 5179, 5202, 5203, 5204, 5205,
+				46, 49, 81, 53, 84, 43, 56, 65, 83, 66, 80, 57, 52, 82, 44, 35, 59, 55, 85, 34},
 			HUMAN_CHAT_EMOTES),
 		// The Lletya elves' heads. Nov re-authored the human rig, heads included, so these and their
 		// emotes sit in the Nov namespace beside the bodies. 41 is Gethin's chef's hat, the second
