@@ -274,20 +274,4 @@ public class PartnerOutlinesTest
 		assertFalse(outlines.isHandshakeDone());
 		verifyNoInteractions(servantsPoser, cnmPoser);
 	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	public void testTheSinglePartnerCallsAreCustomNpcModels()
-	{
-		outlines.accept(state(true, cnmPoser));
-		assertTrue(outlines.isOwning(CNM));
-		assertFalse(outlines.isOwning(SERVANTS));
-		assertTrue(outlines.isOwning());
-
-		// The old isOwning asks about every partner, so the plugin holds back for Custom Servants too
-		outlines.accept(SERVANTS, state(true, null));
-		outlines.forget();
-		assertFalse(outlines.isOwning(CNM));
-		assertTrue(outlines.isOwning());
-	}
 }

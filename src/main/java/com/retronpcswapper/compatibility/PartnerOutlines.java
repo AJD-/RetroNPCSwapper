@@ -165,25 +165,4 @@ public class PartnerOutlines
 			return null;
 		}
 	}
-
-	/** Records Custom NPC Models' outlines state. */
-	@Deprecated // removed in R-2
-	public void accept(ModelSwapProtocol.Outlines outlines)
-	{
-		accept(ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS, outlines);
-	}
-
-	/** Forgets Custom NPC Models' state, as it stops. */
-	@Deprecated // removed in R-2
-	public void forget()
-	{
-		forget(ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS);
-	}
-
-	/** Whether any partner has taken Interact Highlight's NPC outlines over. */
-	@Deprecated // removed in R-2
-	public boolean isOwning()
-	{
-		return isAnyOwning();
-	}
 }

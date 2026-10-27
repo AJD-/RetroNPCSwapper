@@ -51,8 +51,9 @@ import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
  * That object is never activated. It is a model carrier handed straight to the outline renderer,
  * never registered with the client, so it adds nothing to the scene and no clickbox of its own.
  *
- * <p>An NPC Custom NPC Models swaps is outlined around its custom model the same way, posed by that
- * plugin through {@link PartnerOutlines}, so only one of the two plugins needs to draw the outlines.
+ * <p>An NPC Custom Servants or Custom NPC Models swaps is outlined around its custom model the same
+ * way, posed by that plugin through {@link PartnerOutlines}, so only one of the plugins needs to draw
+ * the outlines.
  */
 @Singleton
 public class RetroNpcOutliner
@@ -77,7 +78,7 @@ public class RetroNpcOutliner
 	 * {@link ModelOutlineRenderer#drawOutline(net.runelite.api.Actor, int, Color, int)} would
 	 * produce for the vanilla one.
 	 *
-	 * @return false when neither plugin swaps the NPC, leaving the caller to fall back to the
+	 * @return false when no plugin swaps the NPC, leaving the caller to fall back to the
 	 * vanilla outline
 	 */
 	boolean drawOutline(NPC npc, int outlineWidth, Color color, int feather)
@@ -92,7 +93,8 @@ public class RetroNpcOutliner
 		Model posed = modelCache.pose(npc);
 		if (posed == null)
 		{
-			// An NPC Custom NPC Models swaps, which this plugin leaves alone
+			// An NPC a partner plugin swaps, which this plugin leaves alone: Custom Servants' poser is
+			// tried before Custom NPC Models'
 			posed = partnerOutlines.pose(npc);
 		}
 		if (posed == null)

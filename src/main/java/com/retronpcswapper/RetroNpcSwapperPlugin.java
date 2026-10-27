@@ -196,7 +196,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	/** Another Hub plugin, so recognized by class name alone like 117 HD. */
 	private static final String CUSTOM_PLUGIN_CLASS = "com.customnpcmodels.CustomNpcModelsPlugin";
 
-	/** Likewise another Hub plugin; it claims NPCs but takes no part in the outlines handshake. */
+	/** Likewise another Hub plugin; it claims NPCs and takes part in the outlines handshake too. */
 	private static final String SERVANTS_PLUGIN_CLASS = "com.customservants.CustomServantsPlugin";
 
 	// Our decorator, while it owns the client's draw callbacks slot
@@ -211,15 +211,21 @@ public class RetroNpcSwapperPlugin extends Plugin
 	// Whether we are currently drawing Interact Highlight's NPC outlines in its place
 	private boolean outlineTakeover;
 
-	// What Custom NPC Models was last told about outlineTakeover, or null when it has been told
-	// nothing this start
+	// What the partner plugins were last told about outlineTakeover, or null when they have been
+	// told nothing this start
 	private Boolean postedOutlines;
 
-	// Handed to Custom NPC Models, which calls it on the client thread while it draws the outlines.
-	// The active check keeps a stopped plugin from posing for it before it hears the poser was
-	// withdrawn, and a claimed NPC is drawn by the partner plugin claiming it, not us.
+	// Handed to the partner plugins, which call it on the client thread while they draw the
+	// outlines. The active check keeps a stopped plugin from posing for them before they hear the
+	// poser was withdrawn. A servant Custom Servants claims is relayed to its poser, so Custom NPC
+	// Models can outline it too: only this plugin relays, and Custom Servants' poser never asks the
+	// partners, so the chain stops after two hops. An NPC Custom NPC Models claims gets null here,
+	// and that plugin poses its own.
 	private final Function<NPC, Model> outlinePoser =
-		npc -> this.active && !partnerClaims.isClaimed(npc.getId()) ? modelCache.pose(npc) : null;
+		npc -> !this.active ? null
+			: partnerClaims.isClaimed(npc.getId())
+				? partnerOutlines.pose(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS, npc)
+				: modelCache.pose(npc);
 
 	/**
 	 * The in-flight bundle read, so shutDown can cancel it.
@@ -389,7 +395,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			final String changedKey = event.getKey();
 			clientThread.invoke(() ->
 			{
-				// First, so Custom NPC Models turns its fix off before we post that we have let go
+				// First, so a partner plugin turns its fix off before we post that we have let go
 				eventBus.post(ModelSwapProtocol.optOutMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
 
 				// optOut() has to clear the suppression before the write below, or
@@ -422,25 +428,29 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onPluginMessage(PluginMessage event)
 	{
-		if (ModelSwapProtocol.isSyncReq(event, ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS))
+		if (ModelSwapProtocol.partnerSource(event, ModelSwapProtocol.SYN) != null)
 		{
-			// Custom NPC Models has just started and knows nothing of our outlines state yet
+			// A partner plugin has just started and knows nothing of our outlines state yet
 			clientThread.invoke(() -> publishOutlines(true));
 			return;
 		}
 
-		ModelSwapProtocol.Outlines outlines = ModelSwapProtocol.readOutlines(event, ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS);
-		if (outlines != null)
+		String outlinesSource = ModelSwapProtocol.partnerSource(event, ModelSwapProtocol.OUTLINES);
+		if (outlinesSource != null)
 		{
-			// Recorded straight away, so a decision made after this sees it; acted on later
-			partnerOutlines.accept(outlines);
-			clientThread.invokeLater(this::onPartnerOutlinesChanged);
+			ModelSwapProtocol.Outlines outlines = ModelSwapProtocol.readOutlines(event, outlinesSource);
+			if (outlines != null)
+			{
+				// Recorded straight away, so a decision made after this sees it; acted on later
+				partnerOutlines.accept(outlinesSource, outlines);
+				clientThread.invokeLater(this::onPartnerOutlinesChanged);
+			}
 			return;
 		}
 
-		if (ModelSwapProtocol.isOptOut(event, ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS))
+		if (ModelSwapProtocol.partnerSource(event, ModelSwapProtocol.OUTLINES_OPT_OUT) != null)
 		{
-			// Custom NPC Models was drawing the outlines and the user turned Interact Highlight's back
+			// A partner plugin was drawing the outlines and the user turned Interact Highlight's back
 			// on. Written straight away, so the fix is off here before it posts that it has let go
 			// and this plugin would otherwise take the outlines over again.
 			if (config.overrideInteractHighlight())
@@ -510,8 +520,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			// Posted from here as well as startUp, which runs before the event bus has registered
 			// us, so the partner plugins' answers are heard. The outlines handshake is finished behind
-			// Custom NPC Models' answer on the client thread queue, so the takeover decision never
-			// races it.
+			// the partner plugins' answers on the client thread queue, so the takeover decision never
+			// races them.
 			eventBus.post(ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
 			clientThread.invokeLater(this::finishHandshake);
 		}
@@ -531,17 +541,30 @@ public class RetroNpcSwapperPlugin extends Plugin
 				// would stash its false values
 				clientThread.invokeLater(() ->
 				{
-					partnerOutlines.forget();
+					partnerOutlines.forget(ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS);
 					onPartnerOutlinesChanged();
 				});
 			}
 		}
 		else if (isServantsPlugin(event.getPlugin()))
 		{
-			// Nothing to do as it starts: it posts its claims itself, and takes no part in outlines
-			if (!event.isLoaded())
+			if (event.isLoaded())
+			{
+				// It posts its claims itself, but its sync request goes out before it is listening,
+				// so the outlines answer is sent from here too
+				clientThread.invoke(() -> publishOutlines(true));
+			}
+			else
 			{
 				forgetClaims(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS);
+
+				// Queued for the same reason as Custom NPC Models': Custom Servants hands the outlines
+				// back on the client thread after its shutDown
+				clientThread.invokeLater(() ->
+				{
+					partnerOutlines.forget(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS);
+					onPartnerOutlinesChanged();
+				});
 			}
 		}
 		else if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin()))
@@ -576,7 +599,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			interactHighlight.restoreStaleStash();
 			syncInteractHighlight();
 			// syncInteractHighlight() sees no change when the new profile is not taken over either,
-			// but Custom NPC Models may still think we draw the outlines
+			// but a partner plugin may still think we draw the outlines
 			publishOutlines(false);
 		});
 	}
@@ -1333,7 +1356,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		boolean takeOver = shouldTakeOver(
 			config.overrideInteractHighlight() && wrapper != null && interactHighlight.isInteractHighlightActive(),
-			outlineTakeover, partnerOutlines.isHandshakeDone(), partnerOutlines.isOwning());
+			outlineTakeover, partnerOutlines.isHandshakeDone(), partnerOutlines.isAnyOwning());
 
 		if (takeOver == outlineTakeover)
 		{
@@ -1361,7 +1384,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	/**
 	 * Whether to draw the outlines, given whether they are {@code wanted} here at all.
 	 *
-	 * <p>Only one of this plugin and Custom NPC Models may: both would turn Interact Highlight's
+	 * <p>Only one of this plugin and a partner plugin may: both would turn Interact Highlight's
 	 * settings off and stash the other's false as the user's choice. Whichever took them first
 	 * keeps them until it lets go, and neither takes them before its handshake, when it cannot yet
 	 * know whether the other already has.
@@ -1372,7 +1395,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Tells Custom NPC Models whether we draw the outlines, and how to pose our NPCs. Posted only
+	 * Tells the partner plugins whether we draw the outlines, and how to pose our NPCs. Posted only
 	 * when that changes, unless {@code always}. Must be called on the client thread.
 	 */
 	private void publishOutlines(boolean always)
@@ -1388,8 +1411,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Tells Custom NPC Models we have let go of the outlines and the poser, as the plugin stops.
-	 * Called after detach() has handed the outlines back, so Custom NPC Models stashes Interact
+	 * Tells the partner plugins we have let go of the outlines and the poser, as the plugin stops.
+	 * Called after detach() has handed the outlines back, so a partner plugin stashes Interact
 	 * Highlight's restored settings rather than our false ones if it takes them over.
 	 */
 	private void withdrawOutlines()
@@ -1400,13 +1423,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Finishes the handshake: Custom NPC Models has answered the sync request by now if it is
-	 * running, so deciding whether to take the outlines over can no longer race its answer.
+	 * Finishes the handshake: each partner plugin has answered the sync request by now if it is
+	 * running, so deciding whether to take the outlines over can no longer race their answers.
 	 */
 	private void finishHandshake()
 	{
-		log.debug("Handshake done; Custom NPC Models {} the outlines",
-			partnerOutlines.isOwning() ? "draws" : "does not draw");
+		log.debug("Handshake done; a partner plugin {} the outlines",
+			partnerOutlines.isAnyOwning() ? "draws" : "does not draw");
 		partnerOutlines.setHandshakeDone();
 		publishOutlines(true);
 		syncInteractHighlight();
@@ -1414,7 +1437,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	private void onPartnerOutlinesChanged()
 	{
-		// The carrier may still hold a model Custom NPC Models posed
+		// The carrier may still hold a model a partner plugin posed
 		outliner.clear();
 		syncInteractHighlight();
 	}
