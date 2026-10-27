@@ -27,6 +27,7 @@ package com.retronpcswapper.compatibility;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -43,23 +44,27 @@ import net.runelite.client.events.PluginMessage;
  * animations, since the partners' clips are keyed to the live sequences. Claims are kept per source,
  * so one partner's message never replaces another's.
  * <p>
- * This plugin and Custom NPC Models can both draw Interact Highlight's NPC outlines in its place,
- * and only one may at a time: two would each turn that plugin's settings off and stash the other's
- * {@code false} as the user's choice. Each posts an {@code outlines} message saying whether it has
- * taken the outlines over, and the first to do so keeps them until it posts that it has let go. The
- * message also carries a poser, so the one drawing can outline the NPCs the other swaps around the
- * model on screen. The one drawing posts {@code outlinesOptOut} when the user turns Interact
- * Highlight's own outlines back on, and the other turns its fix off too rather than taking the
- * outlines over again. Custom Servants takes no part in the outlines.
+ * Any of the three plugins may take Interact Highlight's NPC outlines over and draw them in its
+ * place, and only one may at a time: two would each turn that plugin's settings off and stash the
+ * other's {@code false} as the user's choice. Each posts an {@code outlines} message saying whether it
+ * has taken the outlines over, and the first whose sync takes them over keeps them until it posts
+ * that it has let go; the others hold back while any partner says it owns them. The message also
+ * carries a poser, a {@code Function<NPC, Model>} - a JDK type, so it is safe across the plugins'
+ * classloaders - so the one drawing can outline the NPCs the others swap around the model on screen.
+ * The one drawing posts {@code outlinesOptOut} when the user turns Interact Highlight's own outlines
+ * back on, and the others turn their fix off too rather than taking the outlines over again.
  * <p>
  * Each plugin posts {@code modelSyncReq} once it is listening, which the others answer by posting
- * their claims (and, between this plugin and Custom NPC Models, outlines) again, so start order does
- * not matter. A plugin hears its own messages, so every read names the partner it expects them from.
+ * their claims and outlines again, so start order does not matter. A plugin hears its own messages,
+ * so this one reads {@code outlines}, {@code outlinesOptOut} and {@code modelSyncReq} from every
+ * source in {@link #PARTNERS}, and never from its own.
  * <p>
  * The plugins are loaded by different classloaders, so everything in a message is a JDK type or a
  * RuneLite API type, which all of them see through the client's classloader. A copy of this class
- * lives in each plugin and the copies must stay in step; {@link #VERSION} is bumped on any
- * incompatible change, and a message of another version is ignored.
+ * lives in each of the three plugins (this one, Custom NPC Models and Custom Servants) and the copies
+ * must stay in step; {@link #VERSION} is bumped only on an incompatible change, and a message of
+ * another version is ignored. A third party taking part in the outlines added no message and no key,
+ * so the version is unchanged.
  */
 public final class ModelSwapProtocol
 {
@@ -69,10 +74,10 @@ public final class ModelSwapProtocol
 	/** Posted by each partner: the NPC ids it draws, which Retro NPC Swapper must leave alone. */
 	public static final String CLAIMS = "claims";
 
-	/** Posted by either plugin once it is listening, asking for the other's current state. */
+	/** Posted by a plugin once it is listening, asking for the others' current state. */
 	public static final String SYN = "modelSyncReq";
 
-	/** Posted by either plugin: whether it draws Interact Highlight's NPC outlines, and its poser. */
+	/** Posted by each plugin: whether it draws Interact Highlight's NPC outlines, and its poser. */
 	public static final String OUTLINES = "outlines";
 
 	/** Posted by the plugin drawing the outlines when the user turned Interact Highlight's back on. */
@@ -81,6 +86,13 @@ public final class ModelSwapProtocol
 	public static final String SOURCE_CUSTOM_NPC_MODELS = "custom-npc-models";
 	public static final String SOURCE_RETRO_NPC_SWAPPER = "retro-npc-swapper";
 	public static final String SOURCE_CUSTOM_SERVANTS = "custom-servants";
+
+	/**
+	 * The other sources this plugin reads outlines, opt-outs and sync requests from, in the order
+	 * their posers are tried. Custom Servants comes first: a servant it claims is its to draw, so its
+	 * poser has the model on screen.
+	 */
+	public static final List<String> PARTNERS = List.of(SOURCE_CUSTOM_SERVANTS, SOURCE_CUSTOM_NPC_MODELS);
 
 	/** The sources whose claims this plugin honours. */
 	private static final Set<String> CLAIMING_SOURCES = Set.of(SOURCE_CUSTOM_NPC_MODELS, SOURCE_CUSTOM_SERVANTS);
@@ -193,6 +205,22 @@ public final class ModelSwapProtocol
 	public static boolean isOptOut(PluginMessage message, String fromSource)
 	{
 		return isFrom(message, OUTLINES_OPT_OUT, fromSource);
+	}
+
+	/**
+	 * The partner a {@code name} message is from, or null when {@code message} is anything else - of
+	 * another name or version, or from a source not in {@link #PARTNERS}.
+	 */
+	public static String partnerSource(PluginMessage message, String name)
+	{
+		if (!isMessage(message, name))
+		{
+			return null;
+		}
+
+		// List.of throws on a null lookup, and a malformed message must not throw in the handler
+		Object source = message.getData().get(KEY_SOURCE);
+		return source instanceof String && PARTNERS.contains(source) ? (String) source : null;
 	}
 
 	/**
