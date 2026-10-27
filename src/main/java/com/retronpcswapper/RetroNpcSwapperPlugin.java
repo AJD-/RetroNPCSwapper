@@ -831,6 +831,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case ROUND_TABLE:
 				// 2005 human kit again, with several parts and heads overwritten in live
 				return config.swapRoundTable() && injectionEnabled();
+			case VARROCK:
+				return config.swapVarrockNpcs() && injectionEnabled();
 			case GHOSTS:
 				return config.swapGhosts();
 			case ADULT_DRAGONS:

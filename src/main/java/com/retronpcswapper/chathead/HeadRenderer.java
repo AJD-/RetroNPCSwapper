@@ -125,7 +125,7 @@ public class HeadRenderer
 				continue;
 			}
 			double[][] p = projectFace(mesh, face, x, y, z, camera, centerX, centerY);
-			if (p == null)
+			if (p == null || backFacing(p))
 			{
 				continue;
 			}
@@ -151,6 +151,12 @@ public class HeadRenderer
 			fillTriangle(pixels, width, height, seeThrough.get(i), cornerColors(face), alpha);
 		}
 		return image;
+	}
+
+	/** Culled as the client culls: wound the other way round on screen. */
+	private static boolean backFacing(double[][] p)
+	{
+		return (p[1][0] - p[0][0]) * (p[2][1] - p[0][1]) - (p[2][0] - p[0][0]) * (p[1][1] - p[0][1]) > 0;
 	}
 
 	private static double meanDepth(double[][] p)

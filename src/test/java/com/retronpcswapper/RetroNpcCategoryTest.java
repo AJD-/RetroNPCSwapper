@@ -835,15 +835,15 @@ public class RetroNpcCategoryTest
 	public void testRoundTableCategory()
 	{
 		Object[][] registered = {
-			{RetroNpcMapping.KING_ARTHUR, new int[]{NpcID.KING_ARTHUR, NpcID.KING_ARTHUR_CUTSCENE}},
-			{RetroNpcMapping.SIR_LANCELOT, new int[]{NpcID.SIR_LANCELOT, NpcID.SIR_LANCELOT_CUTSCENE}},
-			{RetroNpcMapping.SIR_GAWAIN, new int[]{NpcID.SIR_GAWAIN, NpcID.SIR_GAWAIN_CUTSCENE}},
-			{RetroNpcMapping.SIR_KAY, new int[]{NpcID.SIR_KAY, NpcID.SIR_KAY_CUTSCENE}},
-			{RetroNpcMapping.SIR_BEDIVERE, new int[]{NpcID.SIR_BEDIVERE, NpcID.SIR_BEDIVERE_CUTSCENE}},
-			{RetroNpcMapping.SIR_TRISTRAM, new int[]{NpcID.SIR_TRISTRAM, NpcID.SIR_TRISTRAM_CUTSCENE}},
-			{RetroNpcMapping.SIR_PELLEAS, new int[]{NpcID.SIR_PELLEAS, NpcID.SIR_PELLEAS_CUTSCENE}},
-			{RetroNpcMapping.SIR_LUCAN, new int[]{NpcID.SIR_LUCAN, NpcID.SIR_LUCAN_CUTSCENE}},
-			{RetroNpcMapping.SIR_PALOMEDES, new int[]{NpcID.SIR_PALOMEDES, NpcID.SIR_PALOMEDES_CUTSCENE}},
+			{RetroNpcMapping.KING_ARTHUR, new int[]{NpcID.KING_ARTHUR}},
+			{RetroNpcMapping.SIR_LANCELOT, new int[]{NpcID.SIR_LANCELOT}},
+			{RetroNpcMapping.SIR_GAWAIN, new int[]{NpcID.SIR_GAWAIN}},
+			{RetroNpcMapping.SIR_KAY, new int[]{NpcID.SIR_KAY}},
+			{RetroNpcMapping.SIR_BEDIVERE, new int[]{NpcID.SIR_BEDIVERE}},
+			{RetroNpcMapping.SIR_TRISTRAM, new int[]{NpcID.SIR_TRISTRAM}},
+			{RetroNpcMapping.SIR_PELLEAS, new int[]{NpcID.SIR_PELLEAS}},
+			{RetroNpcMapping.SIR_LUCAN, new int[]{NpcID.SIR_LUCAN}},
+			{RetroNpcMapping.SIR_PALOMEDES, new int[]{NpcID.SIR_PALOMEDES}},
 			{RetroNpcMapping.SIR_MORDRED, new int[]{NpcID.SIR_MORDRED}},
 			{RetroNpcMapping.RENEGADE_KNIGHT, new int[]{NpcID.RENEGADE_KNIGHT, NpcID.KR_KEEP_KNIGHT}},
 			{RetroNpcMapping.SIR_PERCIVAL, new int[]{NpcID.SIR_PERCIVAL}},
@@ -904,6 +904,69 @@ public class RetroNpcCategoryTest
 		assertEquals(AnimationID.HUMAN_SWORD_BLOCK, renegade.getDefendAnimationId());
 		assertTrue(renegade.isDeathAnimation(AnimationID.FAI_VARROCK_GUARD_DEATH));
 		assertEquals(AnimationID.HUMAN_DEATH, renegade.getDeathAnimationId());
+	}
+
+	@Test
+	public void testVarrockCategory()
+	{
+		Object[][] registered = {
+			{RetroNpcMapping.GYPSY_ARIS, new int[]{NpcID.ARIS, NpcID.HUNDRED_ARIS_BASE, NpcID.HUNDRED_ARIS_CUTSCENE}},
+			{RetroNpcMapping.ROMEO, new int[]{NpcID.ROMEO}},
+			{RetroNpcMapping.SIR_PRYSIN, new int[]{NpcID.SIR_PRYSIN, NpcID.SIR_PRYSIN_SILVERLIGHT, NpcID.DOV_PRYSIN}},
+			{RetroNpcMapping.KING_ROALD, new int[]{NpcID.KING_ROALD, NpcID.KING_ROALD_CUTSCENE,
+				NpcID.DS2_MEETING_KING_ROALD, NpcID.AKD_KING_ROALD_CUTSCENE, NpcID.DOV_ROALD, NpcID.SUROK_KING,
+				NpcID.NZONE_SUROK_KING_HARD, NpcID.NZONE_SUROK_KING_NORMAL}},
+			{RetroNpcMapping.MUGGER, new int[]{NpcID.MUGGER, NpcID.ZEAH_MUGGER}},
+			{RetroNpcMapping.JAIL_MUGGER, new int[]{NpcID.JAIL_MUGGER}},
+			{RetroNpcMapping.TRAMP, new int[]{NpcID.TRAMP, NpcID.TRAMPPG}}};
+		for (Object[] row : registered)
+		{
+			RetroNpcData data = (RetroNpcData) row[0];
+			assertEquals(RetroNpcCategory.VARROCK, data.getCategory());
+			for (int id : (int[]) row[1])
+			{
+				assertSame("npc " + id, data, RetroNpcMapping.get(id, null));
+			}
+		}
+
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.VARROCK));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.VARROCK));
+
+		// The muggers never talked; everyone else has their 2005 head
+		assertFalse(RetroNpcMapping.MUGGER.hasChathead());
+		assertFalse(RetroNpcMapping.JAIL_MUGGER.hasChathead());
+		assertTrue(RetroNpcMapping.KING_ROALD.hasChathead());
+
+		// Only the jail mugger is Nov kit
+		assertEquals(RetroAssetBundle.NOV_HUMAN_KEY_BASE, RetroNpcMapping.JAIL_MUGGER.getAssetKeyBase());
+		assertEquals(AnimationID.PRISONER_READY_ANGRY, RetroNpcMapping.JAIL_MUGGER.getIdleAnimationId());
+		assertEquals(0, RetroNpcMapping.MUGGER.getAssetKeyBase());
+
+		// By registered id only
+		assertNull(RetroNpcMapping.get(0, "King Roald"));
+		assertNull(RetroNpcMapping.get(0, "Mugger"));
+		assertNull(RetroNpcMapping.get(0, "Tramp"));
+		assertNull(RetroNpcMapping.get(0, "Aris"));
+
+		for (int id : new int[]{
+			NpcID.HUNDRED_ARIS, NpcID.HUNDRED_ARIS2, NpcID.VMQ1_KING_ROALD_CUTSCENE, NpcID.JAIL_MUGGER_NOOP,
+			NpcID.VARLAMORE_MUGGER})
+		{
+			assertNull("npc " + id + " must not be swapped", RetroNpcMapping.get(id, null));
+		}
+
+		// Surok's Roald fights unarmed, in place of his own live set
+		RetroNpcData roald = RetroNpcMapping.KING_ROALD;
+		assertEquals(AnimationID.HUMAN_UNARMEDPUNCH, roald.getAttackAnimationFor(AnimationID.SUROK_KING_ROALD_ATTACK));
+		assertEquals(AnimationID.HUMAN_UNARMEDPUNCH,
+			roald.getAttackAnimationFor(AnimationID.SUROK_KING_ROALD_ATTACK_WALKMERGE));
+		assertTrue(roald.isDefendAnimation(AnimationID.SUROK_KING_ROALD_IMPACT));
+		assertEquals(AnimationID.HUMAN_UNARMEDBLOCK, roald.getDefendAnimationId());
+		assertTrue(roald.isDeathAnimation(AnimationID.SUROK_KING_ROALD_COLLAPSE));
+		assertTrue(roald.isDeathAnimation(AnimationID.SUROK_KING_ROALD_NEW_COLLAPSE));
+
+		assertEquals(AnimationID.HUMAN_UNARMEDPUNCH, RetroNpcMapping.MUGGER.getAttackAnimationId());
+		assertEquals(AnimationID.HUMAN_UNARMEDBLOCK, RetroNpcMapping.JAIL_MUGGER.getDefendAnimationId());
 	}
 
 	@Test
@@ -2621,6 +2684,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapElves must default to true", config.swapElves());
 		assertTrue("swapKalphites must default to true", config.swapKalphites());
 		assertTrue("swapRoundTable must default to true", config.swapRoundTable());
+		assertTrue("swapVarrockNpcs must default to true", config.swapVarrockNpcs());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
@@ -3349,11 +3413,15 @@ public class RetroNpcCategoryTest
 		assertChathead(NpcID.GOBLIN_GUARD, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 142);
 		assertChathead(NpcID.GUARD_CARNILLEAN_VIS, null, 0, 60);
 		assertChathead(NpcID.KING_ARTHUR, null, 0, 53, 84, 43);
-		assertChathead(NpcID.SIR_KAY_CUTSCENE, null, 0, 60);
 		assertChathead(NpcID.KR_KEEP_KNIGHT, null, 0, 65);
 		assertChathead(NpcID.MERLIN2, null, 0, 52, 82, 44);
 		assertChathead(NpcID.LADYOFTHELAKE, null, 0, 113);
 		assertChathead(NpcID.SQUIRE, null, 0, 55, 85, 34);
+		assertChathead(NpcID.ARIS, null, 0, 103);
+		assertChathead(NpcID.ROMEO, null, 0, 53, 43);
+		assertChathead(NpcID.SIR_PRYSIN, null, 0, 56);
+		assertChathead(NpcID.KING_ROALD, null, 0, 53, 35);
+		assertChathead(NpcID.TRAMPPG, null, 0, 52, 81);
 
 		// Ghost rows by name, from the generated JSON: the plain Ghost takes def 491's head, the
 		// Port Phasmatys townsfolk their own

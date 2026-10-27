@@ -56,5 +56,6 @@ public enum RetroNpcCategory
 	SPIDERS,
 	BEARS,
 	KALPHITES,
-	ROUND_TABLE
+	ROUND_TABLE,
+	VARROCK
 }

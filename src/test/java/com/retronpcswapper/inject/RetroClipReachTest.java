@@ -104,11 +104,11 @@ public class RetroClipReachTest
 		{
 			CLIP_FLOORS.put(humanClip, 60);
 		}
-		// The Nov-2005 copies of the human clips the Lletya elves play, held to the same floor. The
+		// The Nov-2005 copies of the human clips the Lletya elves and the jail mugger play, held to the same floor. The
 		// walk alone gets 55: on the female kits built around head 4030 it lands at 59%, the same
 		// thin margin Eluned's Feb kit has on the Feb walk
-		for (int humanClip : new int[]{808, 819, 836, 424, 425, 426, 428, 429, 430, 431,
-			435, 436, 437, 438, 439, 440})
+		for (int humanClip : new int[]{808, 819, 836, 422, 423, 424, 425, 426, 428, 429, 430, 431,
+			435, 436, 437, 438, 439, 440, 2701})
 		{
 			CLIP_FLOORS.put(NOV + humanClip, 60);
 		}
@@ -321,6 +321,32 @@ public class RetroClipReachTest
 		{808, 390, 456, 332, 353, 421, 358, 417},
 		{813, 217, 253, 297, 254, 163, 181, 179, 191, 534},
 		{819, 217, 253, 297, 254, 163, 181, 179, 191, 534},
+		// Varrock, Feb-2005 kit on the same clips: the Gypsy, Romeo, Sir Prysin, King Roald and the
+		// Mugger, who fight unarmed, and the tramp
+		{808, 378, 471, 348, 353, 431, 358},
+		{819, 378, 471, 348, 353, 431, 358},
+		{808, 217, 246, 292, 170, 176, 254, 181, 201},
+		{808, 218, 306, 156, 176, 254, 185},
+		{819, 218, 306, 156, 176, 254, 185},
+		{808, 215, 246, 292, 170, 176, 254, 181, 192, 323, 326},
+		{422, 215, 246, 292, 170, 176, 254, 181, 192, 323, 326},
+		{424, 215, 246, 292, 170, 176, 254, 181, 192, 323, 326},
+		{836, 215, 246, 292, 170, 176, 254, 181, 192, 323, 326},
+		{808, 230, 246, 310, 167, 176, 275, 185, 243},
+		{819, 230, 246, 310, 167, 176, 275, 185, 243},
+		{422, 230, 246, 310, 167, 176, 275, 185, 243},
+		{423, 230, 246, 310, 167, 176, 275, 185, 243},
+		{424, 230, 246, 310, 167, 176, 275, 185, 243},
+		{836, 230, 246, 310, 167, 176, 275, 185, 243},
+		{808, 214, 249, 310, 151, 176, 275, 181},
+		{819, 214, 249, 310, 151, 176, 275, 181},
+		// The jail mugger, Nov-2005 definition 2697, in the angry stance only that build has
+		{NOV + 2701, NOV + 230, NOV + 243, NOV + 246, NOV + 310, NOV + 167, NOV + 176, NOV + 275, NOV + 185},
+		{NOV + 819, NOV + 230, NOV + 243, NOV + 246, NOV + 310, NOV + 167, NOV + 176, NOV + 275, NOV + 185},
+		{NOV + 836, NOV + 230, NOV + 243, NOV + 246, NOV + 310, NOV + 167, NOV + 176, NOV + 275, NOV + 185},
+		{NOV + 422, NOV + 230, NOV + 243, NOV + 246, NOV + 310, NOV + 167, NOV + 176, NOV + 275, NOV + 185},
+		{NOV + 423, NOV + 230, NOV + 243, NOV + 246, NOV + 310, NOV + 167, NOV + 176, NOV + 275, NOV + 185},
+		{NOV + 424, NOV + 230, NOV + 243, NOV + 246, NOV + 310, NOV + 167, NOV + 176, NOV + 275, NOV + 185},
 		// The Lletya elves: Nov-2005 kit, every mesh and clip read at the Nov key base. These are
 		// the only rows on the re-authored Nov human rig, 200082/200083, so they are what would
 		// notice a Feb clip or rig leaking into the namespace.
@@ -668,8 +694,12 @@ public class RetroClipReachTest
 			RetroNpcMapping.LADY_OF_THE_LAKE, RetroNpcMapping.SQUIRE, RetroNpcMapping.SIR_LANCELOT,
 			RetroNpcMapping.SIR_GAWAIN, RetroNpcMapping.SIR_BEDIVERE, RetroNpcMapping.SIR_TRISTRAM,
 			RetroNpcMapping.SIR_PELLEAS, RetroNpcMapping.SIR_LUCAN, RetroNpcMapping.SIR_PALOMEDES,
-			RetroNpcMapping.SIR_PERCIVAL, RetroNpcMapping.KING_PERCIVAL, RetroNpcMapping.RENEGADE_KNIGHT};
+			RetroNpcMapping.SIR_PERCIVAL, RetroNpcMapping.KING_PERCIVAL, RetroNpcMapping.RENEGADE_KNIGHT,
+			RetroNpcMapping.GYPSY_ARIS, RetroNpcMapping.ROMEO, RetroNpcMapping.SIR_PRYSIN,
+			RetroNpcMapping.KING_ROALD, RetroNpcMapping.MUGGER, RetroNpcMapping.TRAMP};
 
+		assertEquals(NOV, RetroNpcMapping.JAIL_MUGGER.getAssetKeyBase());
+		assertResolves(bundle, RetroNpcMapping.JAIL_MUGGER, true);
 		for (RetroNpcData elf : novElves)
 		{
 			assertEquals(NOV, elf.getAssetKeyBase());

@@ -81,7 +81,8 @@ public class RetroNpcMapping
 	 * onto the archetypes.
 	 */
 	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
-		Set.of(RetroNpcCategory.GUARDS, RetroNpcCategory.ELVES, RetroNpcCategory.ROUND_TABLE);
+		Set.of(RetroNpcCategory.GUARDS, RetroNpcCategory.ELVES, RetroNpcCategory.ROUND_TABLE,
+			RetroNpcCategory.VARROCK);
 
 	/**
 	 * Ids whose registered row beats the name row even when the two disagree about the category.
@@ -1208,6 +1209,89 @@ public class RetroNpcMapping
 		new short[]{8741, 9756, 9137, 10297, 4626, 10128},
 		new short[]{86, 99, 99, 86, 86, 86}).chathead(55, 85, 34).build();
 
+	/** Varrock's quest NPCs: plain Feb-2005 human kit, each its own 2005 definition. */
+	private static RetroNpcData.Builder varrock(int[] parts, int idle, short[] find, short[] replace)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.VARROCK)
+			.retroModelIds(parts)
+			.idleAnimationId(idle)
+			.walkAnimationId(AnimationID.HUMAN_WALK_F)
+			.deathAnimationId(AnimationID.HUMAN_DEATH)
+			.recolors(find, replace);
+	}
+
+	/** Feb-2005 definition 882, "Gypsy". */
+	public static final RetroNpcData GYPSY_ARIS = varrock(
+		new int[]{378, 471, 348, 353, 431, 358}, AnimationID.HUMAN_READY,
+		new short[]{25238, 8741, 6798, 8741},
+		new short[]{19383, -30281, 45, -30281}).chathead(103).build();
+
+	/** Feb-2005 definition 639. */
+	public static final RetroNpcData ROMEO = varrock(
+		new int[]{217, 246, 292, 170, 176, 254, 181, 201}, AnimationID.HUMAN_READY,
+		new short[]{25238, 8741, 6798},
+		new short[]{-28747, -21948, 6854}).chathead(53, 43).build();
+
+	/** Feb-2005 definition 883. It has no stance, so he stands in 808 as he does live. */
+	public static final RetroNpcData SIR_PRYSIN = varrock(
+		new int[]{218, 306, 156, 176, 254, 185}, AnimationID.HUMAN_READY,
+		new short[]{8741, 6798},
+		new short[]{5652, 926}).chathead(56).build();
+
+	// Surok's disguise fights in its own set
+	public static final Set<Integer> KING_ROALD_MODERN_ATTACKS =
+		Set.of(AnimationID.SUROK_KING_ROALD_ATTACK, AnimationID.SUROK_KING_ROALD_ATTACK_WALKMERGE);
+	public static final Set<Integer> KING_ROALD_MODERN_DEFENDS = Set.of(AnimationID.SUROK_KING_ROALD_IMPACT);
+	public static final Set<Integer> KING_ROALD_MODERN_DEATHS =
+		Set.of(AnimationID.SUROK_KING_ROALD_COLLAPSE, AnimationID.SUROK_KING_ROALD_NEW_COLLAPSE);
+
+	/** Feb-2005 definition 648. */
+	public static final RetroNpcData KING_ROALD = varrock(
+		new int[]{215, 246, 292, 170, 176, 254, 181, 192, 323, 326}, AnimationID.HUMAN_READY,
+		new short[]{25238, 8741, 12224},
+		new short[]{107, 561, 6990})
+		.attackAnimationId(AnimationID.HUMAN_UNARMEDPUNCH)
+		.defendAnimationId(AnimationID.HUMAN_UNARMEDBLOCK)
+		.modernAttackAnims(KING_ROALD_MODERN_ATTACKS)
+		.modernDefendAnims(KING_ROALD_MODERN_DEFENDS)
+		.modernDeathAnims(KING_ROALD_MODERN_DEATHS)
+		.chathead(53, 35).build();
+
+	// Empty until a fight logs the muggers' live combat ids
+	public static final Set<Integer> MUGGER_MODERN_ATTACKS = Set.of();
+	public static final Set<Integer> MUGGER_MODERN_DEFENDS = Set.of();
+	public static final Set<Integer> MUGGER_MODERN_DEATHS = Set.of();
+
+	/** Mask 243 over head 230. */
+	private static RetroNpcData.Builder mugger(int idle, short[] replace, int[] parts)
+	{
+		return varrock(parts, idle, new short[]{25238, 8741, 6798, -22464}, replace)
+			.attackAnimationId(AnimationID.HUMAN_UNARMEDPUNCH)
+			.defendAnimationId(AnimationID.HUMAN_UNARMEDBLOCK)
+			.modernAttackAnims(MUGGER_MODERN_ATTACKS)
+			.modernDefendAnims(MUGGER_MODERN_DEFENDS)
+			.modernDeathAnims(MUGGER_MODERN_DEATHS)
+			.paintedOver(230, 243);
+	}
+
+	/** Feb-2005 definition 175. */
+	public static final RetroNpcData MUGGER = mugger(AnimationID.HUMAN_READY,
+		new short[]{10508, 1569, 5921, 1569},
+		new int[]{230, 246, 310, 167, 176, 275, 185, 243}).build();
+
+	/** Nov-2005 definition 2697, in the angry prisoner stance only that build has. */
+	public static final RetroNpcData JAIL_MUGGER = mugger(AnimationID.PRISONER_READY_ANGRY,
+		new short[]{6674, 1569, 5921, 4550},
+		new int[]{230, 243, 246, 310, 167, 176, 275, 185})
+		.assetKeyBase(RetroAssetBundle.NOV_HUMAN_KEY_BASE).build();
+
+	/** Feb-2005 definition 641, the tramp who talks. */
+	public static final RetroNpcData TRAMP = varrock(
+		new int[]{214, 249, 310, 151, 176, 275, 181}, AnimationID.HUMAN_READY,
+		new short[]{25238, 6798},
+		new short[]{5652, 4913}).chathead(52, 81).build();
+
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
 	 * vertices in both, 355 faces against 347 - so the cache-backed path can still load it.
@@ -2019,7 +2103,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.SCORPIONS
 			|| category == RetroNpcCategory.ELVES
 			|| category == RetroNpcCategory.KALPHITES
-			|| category == RetroNpcCategory.ROUND_TABLE;
+			|| category == RetroNpcCategory.ROUND_TABLE
+			|| category == RetroNpcCategory.VARROCK;
 	}
 
 	/**
@@ -2505,6 +2590,19 @@ public class RetroNpcMapping
 		registerMapping(LADY_OF_THE_LAKE, NpcID.LADYOFTHELAKE);
 		// SQUIRE is the Falador squire; King's Ransom's squire wears the same model
 		registerMapping(SQUIRE, NpcID.SQUIRE, NpcID.KR_SQUIRE);
+
+		// Varrock. Deliberately left out: the HUNDRED_ARIS parents, VMQ1_KING_ROALD_CUTSCENE,
+		// JAIL_MUGGER_NOOP and VARLAMORE_MUGGER
+		registerMapping(GYPSY_ARIS, NpcID.ARIS, NpcID.HUNDRED_ARIS_BASE, NpcID.HUNDRED_ARIS_CUTSCENE);
+		registerMapping(ROMEO, NpcID.ROMEO);
+		registerMapping(SIR_PRYSIN, NpcID.SIR_PRYSIN, NpcID.SIR_PRYSIN_SILVERLIGHT, NpcID.DOV_PRYSIN);
+		// Surok's disguise (What Lies Below and Nightmare Zone) wears the king's live model
+		registerMapping(KING_ROALD, NpcID.KING_ROALD, NpcID.KING_ROALD_CUTSCENE, NpcID.DS2_MEETING_KING_ROALD,
+			NpcID.AKD_KING_ROALD_CUTSCENE, NpcID.DOV_ROALD, NpcID.SUROK_KING, NpcID.NZONE_SUROK_KING_HARD,
+			NpcID.NZONE_SUROK_KING_NORMAL);
+		registerMapping(MUGGER, NpcID.MUGGER, NpcID.ZEAH_MUGGER);
+		registerMapping(JAIL_MUGGER, NpcID.JAIL_MUGGER);
+		registerMapping(TRAMP, NpcID.TRAMP, NpcID.TRAMPPG);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.
