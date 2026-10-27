@@ -13,6 +13,7 @@ import com.retronpcswapper.RetroNpcData;
 import com.retronpcswapper.RetroNpcMapping;
 import com.retronpcswapper.RetroNpcMappingEntry;
 import com.retronpcswapper.RetroNpcSwapperPlugin;
+import net.runelite.api.gameval.AnimationID;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
@@ -147,6 +148,10 @@ public class RetroCacheTest
 		{
 			assertChathead(feb, (int) row[0], (RetroNpcData) row[1]);
 		}
+		for (Object[] row : VARROCK_DEFINITIONS)
+		{
+			assertChathead(feb, (int) row[0], (RetroNpcData) row[1]);
+		}
 		assertChathead(feb, 9, RetroNpcMapping.GUARD_DEFAULT);
 
 		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
@@ -168,6 +173,7 @@ public class RetroCacheTest
 		assertChathead(nov, 2367, RetroNpcMapping.KELYN);
 		assertChathead(nov, 2368, RetroNpcMapping.EOIN);
 		assertChathead(nov, 2369, RetroNpcMapping.IONA);
+		assertChathead(nov, 2697, RetroNpcMapping.JAIL_MUGGER);
 	}
 
 	private static final Object[][] ROUND_TABLE_DEFINITIONS = {
@@ -196,6 +202,39 @@ public class RetroCacheTest
 			assertEquals(label, def.getStanceAnimation(), data.getIdleAnimationId());
 			assertEquals(label, def.getWalkAnimation(), data.getWalkAnimationId());
 		}
+	}
+
+	private static final Object[][] VARROCK_DEFINITIONS = {
+		{882, RetroNpcMapping.GYPSY_ARIS}, {639, RetroNpcMapping.ROMEO}, {883, RetroNpcMapping.SIR_PRYSIN},
+		{648, RetroNpcMapping.KING_ROALD}, {175, RetroNpcMapping.MUGGER}, {641, RetroNpcMapping.TRAMP}};
+
+	/** Varrock's NPCs are each their own 2005 definition; the jail mugger's is Nov's 2697. */
+	@Test
+	public void testVarrockArchetypesAreTheir2005Definitions() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
+		assumeTrue("Nov-2005 cache not present at " + NOV_CACHE_DIR, NOV_CACHE_DIR.exists());
+
+		Map<Integer, RetroNpcDefinition> feb = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
+		for (Object[] row : VARROCK_DEFINITIONS)
+		{
+			assertDefinition(feb.get((int) row[0]), (RetroNpcData) row[1]);
+		}
+
+		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
+		assertDefinition(nov.get(2697), RetroNpcMapping.JAIL_MUGGER);
+	}
+
+	private static void assertDefinition(RetroNpcDefinition def, RetroNpcData data)
+	{
+		String label = def.getId() + " " + def.getName();
+		assertArrayEquals(label, def.getModels(), data.getRetroModelIds());
+		assertArrayEquals(label, def.getOriginalColors(), data.getOriginalColors());
+		assertArrayEquals(label, def.getReplacementColors(), data.getReplacementColors());
+		// Sir Prysin's definition has no stance, so he keeps the 808 he stands in live
+		int stance = def.getId() == 883 ? AnimationID.HUMAN_READY : def.getStanceAnimation();
+		assertEquals(label, stance, data.getIdleAnimationId());
+		assertEquals(label, def.getWalkAnimation(), data.getWalkAnimationId());
 	}
 
 	private static void assertChathead(Map<Integer, RetroNpcDefinition> defs, int defId, RetroNpcData data)

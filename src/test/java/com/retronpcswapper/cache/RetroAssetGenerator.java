@@ -286,6 +286,21 @@ public class RetroAssetGenerator
 				217, 253, 297, 254, 163, 181, 191},
 			// Mordred fights with sword 513 and shield 541
 			new int[]{808, 813, 819, 836, 390, 1156}),
+		// Varrock, Feb-2005 human kit: definitions 882 Gypsy, 639 Romeo, 883 Sir Prysin, 648 King
+		// Roald, 175 Mugger and 641 Tramp. The muggers and Surok's Roald fight unarmed
+		new Spec("Varrock", Source.RETRO, Source.RETRO,
+			new int[]{378, 471, 348, 353, 431, 358,
+				217, 246, 292, 170, 176, 254, 181, 201,
+				218, 306, 156, 185,
+				215, 192, 323, 326,
+				230, 310, 167, 275, 243,
+				214, 249, 151},
+			new int[]{808, 819, 836, 422, 423, 424}),
+		// The jail mugger is Nov-2005 definition 2697, whose angry stance 2701 Feb does not have
+		Spec.keyed("Jail mugger (Nov 2005)", RetroAssetBundle.NOV_HUMAN_KEY_BASE,
+			Source.RETRO_NOV, Source.RETRO_NOV,
+			new int[]{230, 243, 246, 310, 167, 176, 275, 185},
+			new int[]{2701, 819, 836, 422, 423, 424}),
 		// The large scorpion's 2005 mesh 2967 is gone from the live cache (0% vertex overlap). Its
 		// 2005 sequences 244-248 (frame file 44) have been overwritten as well
 		new Spec("Scorpions", Source.RETRO, Source.RETRO, new int[]{2967},
@@ -391,11 +406,12 @@ public class RetroAssetGenerator
 		// the Feb elves 1680 Islwyn (4011), 1202 Arianwyn (4012) and 1679 Eluned (4013), Elena (113),
 		// the Carnillean guard 887 (60), and the ghosts - 491 the plain Ghost (10), the Restless
 		// ghost (28, 78), the Gardener ghost (5179) and the Port Phasmatys townsfolk (5202-5205) -
-		// and Arthur's court, whose heads follow.
+		// and Arthur's court, whose heads follow, then the Gypsy's 103.
 		// Drawn by the chathead overlay, posed by the human emotes from the same cache
 		new Spec("Chatheads", Source.RETRO, Source.RETRO,
 			new int[]{4011, 4012, 4013, 113, 60, 10, 28, 78, 5179, 5202, 5203, 5204, 5205,
-				46, 49, 81, 53, 84, 43, 56, 65, 83, 66, 80, 57, 52, 82, 44, 35, 59, 55, 85, 34},
+				46, 49, 81, 53, 84, 43, 56, 65, 83, 66, 80, 57, 52, 82, 44, 35, 59, 55, 85, 34,
+				103},
 			HUMAN_CHAT_EMOTES),
 		// The Lletya elves' heads. Nov re-authored the human rig, heads included, so these and their
 		// emotes sit in the Nov namespace beside the bodies. 41 is Gethin's chef's hat, the second

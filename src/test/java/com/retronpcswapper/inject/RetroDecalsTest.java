@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper.inject;
 
+import com.retronpcswapper.RetroNpcData;
 import com.retronpcswapper.RetroNpcMapping;
 import com.retronpcswapper.RetroNpcSwapperPlugin;
 import java.io.InputStream;
@@ -288,6 +289,24 @@ public class RetroDecalsTest
 	@Test
 	public void testMerlinsPaintedOverPairsSettleInOnePass() throws Exception
 	{
+		assertArrayEquals(new int[]{214, 202, 292, 324}, RetroNpcMapping.MERLIN.getPaintedOver());
+		// Measured: five hair vertices out through the hat; the robe panel's 28 lying on the torso
+		assertSettlesInOnePass(RetroNpcMapping.MERLIN, 5, 28);
+	}
+
+	/** The mugger's mask lies on his head; Feb and Nov kits alike. */
+	@Test
+	public void testTheMuggersMaskSettlesInOnePass() throws Exception
+	{
+		assertArrayEquals(new int[]{230, 243}, RetroNpcMapping.MUGGER.getPaintedOver());
+		assertArrayEquals(new int[]{230, 243}, RetroNpcMapping.JAIL_MUGGER.getPaintedOver());
+		// Measured: six mask vertices lying on the head
+		assertSettlesInOnePass(RetroNpcMapping.MUGGER, 6);
+		assertSettlesInOnePass(RetroNpcMapping.JAIL_MUGGER, 6);
+	}
+
+	private static void assertSettlesInOnePass(RetroNpcData data, int... firstPass) throws Exception
+	{
 		RetroAssetBundle bundle;
 		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))
 		{
@@ -295,26 +314,24 @@ public class RetroDecalsTest
 			bundle = RetroAssetCodec.read(in);
 		}
 
-		int[] ids = RetroNpcMapping.MERLIN.getInjectedModelIds();
-		int[] pairs = RetroNpcMapping.MERLIN.getPaintedOver();
-		assertArrayEquals(new int[]{214, 202, 292, 324}, pairs);
+		int base = data.getAssetKeyBase();
+		int[] ids = data.getInjectedModelIds();
+		int[] pairs = data.getPaintedOver();
 
 		List<RetroMesh> parts = new ArrayList<>();
 		int[] starts = new int[ids.length + 1];
 		for (int i = 0; i < ids.length; i++)
 		{
-			RetroMesh part = bundle.getMesh(ids[i]);
+			RetroMesh part = bundle.getMesh(base + ids[i]);
 			assertNotNull("part " + ids[i] + " is missing from the bundle", part);
 			parts.add(part);
 			starts[i + 1] = starts[i] + part.getFaceCount();
 		}
-		RetroMesh mesh = RetroMeshMerger.merge(ids[0], parts);
+		RetroMesh mesh = RetroMeshMerger.merge(base + ids[0], parts);
 		float[] x = mesh.getVerticesX().clone();
 		float[] y = mesh.getVerticesY().clone();
 		float[] z = mesh.getVerticesZ().clone();
 
-		// Measured: five hair vertices out through the hat; the robe panel's 28 lying on the torso
-		int[] firstPass = {5, 28};
 		for (int pass = 0; pass < 2; pass++)
 		{
 			for (int pair = 0; pair < pairs.length; pair += 2)

@@ -25,6 +25,19 @@ public class HeadRendererTest
 		assertEquals("the corners are clear", 0, image.getRGB(0, 0) >>> 24);
 	}
 
+	/** Back faces are culled as the client culls them; the tramp's hair showed its dark inside under his neck. */
+	@Test
+	public void testCullsFacesSeenFromBehind()
+	{
+		RetroHead head = TestHeads.triangle();
+		RetroMesh mesh = head.getMesh();
+
+		BufferedImage image = new HeadRenderer().render(head, mesh.getVerticesX(), mesh.getVerticesY(),
+			mesh.getVerticesZ(), new ChatheadCamera(0, 0, 1024, 600), 100, 100);
+
+		assertEquals("turned away, nothing is drawn", 0, image.getRGB(50, 50) >>> 24);
+	}
+
 	/** A widget resized by the chatbox or client scaling is drawn at its new size every frame. */
 	@Test
 	public void testRendersAtTheSizeAsked()
