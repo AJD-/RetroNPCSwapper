@@ -35,35 +35,38 @@ import net.runelite.api.NPC;
 import net.runelite.client.events.PluginMessage;
 
 /**
- * The messages this plugin and Custom NPC Models exchange over the event bus so both can run at once.
+ * The messages this plugin exchanges over the event bus with its partners, Custom NPC Models and
+ * Custom Servants, so they can all run at once.
  * <p>
- * Custom NPC Models posts a {@code claims} message naming every NPC id it is currently drawing a
- * custom model for, and this plugin leaves those NPCs alone entirely - no retro model and no retro
- * animations, since Custom NPC Models' clips are keyed to the live sequences.
+ * Each partner posts a {@code claims} message naming every NPC id it is currently drawing a custom
+ * model for, and this plugin leaves those NPCs alone entirely - no retro model and no retro
+ * animations, since the partners' clips are keyed to the live sequences. Claims are kept per source,
+ * so one partner's message never replaces another's.
  * <p>
- * Both plugins can draw Interact Highlight's NPC outlines in its place, and only one may at a time:
- * two would each turn that plugin's settings off and stash the other's {@code false} as the user's
- * choice. Each posts an {@code outlines} message saying whether it has taken the outlines over, and
- * the first to do so keeps them until it posts that it has let go. The message also carries a
- * poser, so the one drawing can outline the NPCs the other swaps around the model on screen. The
- * one drawing posts {@code outlinesOptOut} when the user turns Interact Highlight's own outlines back
- * on, and the other turns its fix off too rather than taking the outlines over again.
+ * This plugin and Custom NPC Models can both draw Interact Highlight's NPC outlines in its place,
+ * and only one may at a time: two would each turn that plugin's settings off and stash the other's
+ * {@code false} as the user's choice. Each posts an {@code outlines} message saying whether it has
+ * taken the outlines over, and the first to do so keeps them until it posts that it has let go. The
+ * message also carries a poser, so the one drawing can outline the NPCs the other swaps around the
+ * model on screen. The one drawing posts {@code outlinesOptOut} when the user turns Interact
+ * Highlight's own outlines back on, and the other turns its fix off too rather than taking the
+ * outlines over again. Custom Servants takes no part in the outlines.
  * <p>
- * Each plugin posts {@code modelSyncReq} once it is listening, which the other answers by posting
- * its claims and outlines again, so start order does not matter. A plugin hears its own messages, so
- * every read names the partner it expects them from.
+ * Each plugin posts {@code modelSyncReq} once it is listening, which the others answer by posting
+ * their claims (and, between this plugin and Custom NPC Models, outlines) again, so start order does
+ * not matter. A plugin hears its own messages, so every read names the partner it expects them from.
  * <p>
- * The two plugins are loaded by different classloaders, so everything in a message is a JDK type or
- * a RuneLite API type, which both see through the client's classloader. A copy of this class lives in
- * each plugin and the two must stay in step; {@link #VERSION} is bumped on any incompatible change,
- * and a message of another version is ignored.
+ * The plugins are loaded by different classloaders, so everything in a message is a JDK type or a
+ * RuneLite API type, which all of them see through the client's classloader. A copy of this class
+ * lives in each plugin and the copies must stay in step; {@link #VERSION} is bumped on any
+ * incompatible change, and a message of another version is ignored.
  */
 public final class ModelSwapProtocol
 {
 	public static final String NAMESPACE = "npc-model-swap";
 	public static final int VERSION = 1;
 
-	/** Posted by Custom NPC Models: the NPC ids it draws, which Retro NPC Swapper must leave alone. */
+	/** Posted by each partner: the NPC ids it draws, which Retro NPC Swapper must leave alone. */
 	public static final String CLAIMS = "claims";
 
 	/** Posted by either plugin once it is listening, asking for the other's current state. */
@@ -77,6 +80,10 @@ public final class ModelSwapProtocol
 
 	public static final String SOURCE_CUSTOM_NPC_MODELS = "custom-npc-models";
 	public static final String SOURCE_RETRO_NPC_SWAPPER = "retro-npc-swapper";
+	public static final String SOURCE_CUSTOM_SERVANTS = "custom-servants";
+
+	/** The sources whose claims this plugin honours. */
+	private static final Set<String> CLAIMING_SOURCES = Set.of(SOURCE_CUSTOM_NPC_MODELS, SOURCE_CUSTOM_SERVANTS);
 
 	static final String KEY_VERSION = "version";
 	static final String KEY_SOURCE = "source";
@@ -121,11 +128,21 @@ public final class ModelSwapProtocol
 	}
 
 	/**
-	 * The claims message naming {@code npcIds}. The set in it is a copy and cannot be modified.
+	 * Custom NPC Models' claims message naming {@code npcIds}. The set in it is a copy and cannot be
+	 * modified.
 	 */
 	public static PluginMessage claimsMessage(Set<Integer> npcIds)
 	{
-		Map<String, Object> data = header(SOURCE_CUSTOM_NPC_MODELS);
+		return claimsMessage(SOURCE_CUSTOM_NPC_MODELS, npcIds);
+	}
+
+	/**
+	 * The claims message from {@code source} naming {@code npcIds}. The set in it is a copy and
+	 * cannot be modified.
+	 */
+	public static PluginMessage claimsMessage(String source, Set<Integer> npcIds)
+	{
+		Map<String, Object> data = header(source);
 		data.put(KEY_NPC_IDS, Set.copyOf(npcIds));
 		return new PluginMessage(NAMESPACE, CLAIMS, data);
 	}
@@ -179,12 +196,28 @@ public final class ModelSwapProtocol
 	}
 
 	/**
-	 * The NPC ids in a claims message from Custom NPC Models, or null when {@code message} is
-	 * anything else.
+	 * The partner a claims message is from, or null when {@code message} is anything else - not a
+	 * claims message, of another version, or from a source whose claims this plugin does not honour.
 	 */
-	public static Set<Integer> readClaims(PluginMessage message)
+	public static String claimsSource(PluginMessage message)
 	{
-		if (!isFrom(message, CLAIMS, SOURCE_CUSTOM_NPC_MODELS))
+		if (!isMessage(message, CLAIMS))
+		{
+			return null;
+		}
+
+		// Set.of throws on a null lookup, and a malformed message must not throw in the handler
+		Object source = message.getData().get(KEY_SOURCE);
+		return source instanceof String && CLAIMING_SOURCES.contains(source) ? (String) source : null;
+	}
+
+	/**
+	 * The NPC ids in a claims message from {@code fromSource}, or null when {@code message} is
+	 * anything else or {@code fromSource} is not a partner whose claims this plugin honours.
+	 */
+	public static Set<Integer> readClaims(PluginMessage message, String fromSource)
+	{
+		if (fromSource == null || !CLAIMING_SOURCES.contains(fromSource) || !isFrom(message, CLAIMS, fromSource))
 		{
 			return null;
 		}
@@ -240,11 +273,16 @@ public final class ModelSwapProtocol
 
 	private static boolean isFrom(PluginMessage message, String name, String source)
 	{
+		return isMessage(message, name) && source.equals(message.getData().get(KEY_SOURCE));
+	}
+
+	/** Whether {@code message} is a {@code name} message of this protocol, in a version it speaks. */
+	private static boolean isMessage(PluginMessage message, String name)
+	{
 		return message != null
 			&& NAMESPACE.equals(message.getNamespace())
 			&& name.equals(message.getName())
 			&& message.getData() != null
-			&& Integer.valueOf(VERSION).equals(message.getData().get(KEY_VERSION))
-			&& source.equals(message.getData().get(KEY_SOURCE));
+			&& Integer.valueOf(VERSION).equals(message.getData().get(KEY_VERSION));
 	}
 }

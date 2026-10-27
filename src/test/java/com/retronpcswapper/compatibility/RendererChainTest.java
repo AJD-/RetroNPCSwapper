@@ -38,14 +38,17 @@ import org.junit.Test;
 /**
  * Walking the stack of model-substituting decorators in the draw callbacks slot.
  *
- * <p>Custom NPC Models' decorator is only ever named here, never stubbed: a class declared under
- * its real name would sit on the {@code run} task's classpath, and the Hub plugin's parent-first
- * classloader could resolve that plugin's own decorator to it. So the partner is covered by name through
- * {@link RendererChain#canUnwrap}, and chains are built from this plugin's real decorator.
+ * <p>The partners' decorators (Custom NPC Models' and Custom Servants') are only ever named here,
+ * never stubbed: a class declared under its real name would sit on the {@code run} task's classpath,
+ * and the Hub plugin's parent-first classloader could resolve that plugin's own decorator to it. So
+ * the partners are covered by name through {@link RendererChain#canUnwrap}, and chains are built from
+ * this plugin's real decorator.
  */
 public class RendererChainTest
 {
 	private static final String CUSTOM = "com.customnpcmodels.CustomDrawCallbacks";
+
+	private static final String SERVANTS = "com.customservants.ServantDrawCallbacks";
 
 	private final DrawCallbacks renderer = mock(DrawCallbacks.class);
 
@@ -66,6 +69,18 @@ public class RendererChainTest
 	{
 		// Custom NPC Models before it could stack: stand each other down, exactly as before
 		assertFalse(RendererChain.canUnwrap(CUSTOM, mock(DrawCallbacks.class)));
+	}
+
+	@Test
+	public void testCustomServantsIsSeenThroughWhenItSuppliesItsDelegate()
+	{
+		assertTrue(RendererChain.canUnwrap(SERVANTS, mock(DrawCallbacks.class, withSettings().extraInterfaces(Supplier.class))));
+	}
+
+	@Test
+	public void testACustomServantsThatDoesNotSupplyItsDelegateIsNotSeenThrough()
+	{
+		assertFalse(RendererChain.canUnwrap(SERVANTS, mock(DrawCallbacks.class)));
 	}
 
 	@Test

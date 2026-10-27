@@ -31,20 +31,22 @@ import net.runelite.api.hooks.DrawCallbacks;
 /**
  * Sees through the stack of model-substituting decorators sitting in the draw callbacks slot.
  *
- * <p>This plugin and Custom NPC Models each wrap the renderer to swap NPC models, and can stack on
- * top of one another. They are loaded by different classloaders, so neither can name the other's
- * decorator type. Instead, each decorator also implements {@link Supplier}, a JDK type both can see,
- * returning the callbacks it wraps. Only the decorators named here are unwrapped: anything else is
- * treated as the bottom of the chain, and a partner build too old to implement {@code Supplier} is
- * not unwrapped either, so the two keep standing each other down exactly as before.
+ * <p>This plugin, Custom NPC Models and Custom Servants each wrap the renderer to swap NPC models,
+ * and can stack on top of one another. They are loaded by different classloaders, so none can name
+ * another's decorator type. Instead, each decorator also implements {@link Supplier}, a JDK type all
+ * of them can see, returning the callbacks it wraps. Only the decorators named here are unwrapped:
+ * anything else is treated as the bottom of the chain, and a partner build too old to implement
+ * {@code Supplier} is not unwrapped either, so the plugins keep standing each other down exactly as
+ * before.
  */
 public final class RendererChain
 {
 	/** Decorators known to forward everything but {@code drawTemp} and to supply their delegate. */
 	static final Set<String> KNOWN_DECORATORS =
-			Set.of("com.customnpcmodels.CustomDrawCallbacks", "com.retronpcswapper.RetroDrawCallbacks");
+			Set.of("com.customnpcmodels.CustomDrawCallbacks", "com.customservants.ServantDrawCallbacks",
+				"com.retronpcswapper.RetroDrawCallbacks");
 
-	/** More than the two known decorators could ever stack; stops a pathological chain. */
+	/** More than the known decorators could ever stack; stops a pathological chain. */
 	private static final int MAX_DEPTH = 8;
 
 	private RendererChain()
