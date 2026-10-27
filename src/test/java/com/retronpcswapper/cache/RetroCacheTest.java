@@ -143,6 +143,10 @@ public class RetroCacheTest
 		assertChathead(feb, 489, RetroNpcMapping.GOBLIN_GUARD_DEFAULT);
 		assertChathead(feb, 100, RetroNpcMapping.GOBLIN_DEFAULT);
 		assertChathead(feb, 887, RetroNpcMapping.CARNILLEAN_GUARD_DEFAULT);
+		for (Object[] row : ROUND_TABLE_DEFINITIONS)
+		{
+			assertChathead(feb, (int) row[0], (RetroNpcData) row[1]);
+		}
 		assertChathead(feb, 9, RetroNpcMapping.GUARD_DEFAULT);
 
 		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
@@ -164,6 +168,34 @@ public class RetroCacheTest
 		assertChathead(nov, 2367, RetroNpcMapping.KELYN);
 		assertChathead(nov, 2368, RetroNpcMapping.EOIN);
 		assertChathead(nov, 2369, RetroNpcMapping.IONA);
+	}
+
+	private static final Object[][] ROUND_TABLE_DEFINITIONS = {
+		{251, RetroNpcMapping.KING_ARTHUR}, {239, RetroNpcMapping.SIR_LANCELOT}, {240, RetroNpcMapping.SIR_GAWAIN},
+		{241, RetroNpcMapping.SIR_KAY}, {242, RetroNpcMapping.SIR_BEDIVERE}, {243, RetroNpcMapping.SIR_TRISTRAM},
+		{244, RetroNpcMapping.SIR_PELLEAS}, {245, RetroNpcMapping.SIR_LUCAN}, {246, RetroNpcMapping.SIR_PALOMEDES},
+		{247, RetroNpcMapping.SIR_MORDRED}, {237, RetroNpcMapping.RENEGADE_KNIGHT}, {211, RetroNpcMapping.SIR_PERCIVAL}, {212, RetroNpcMapping.KING_PERCIVAL},
+		{218, RetroNpcMapping.BROTHER_GALAHAD}, {249, RetroNpcMapping.MERLIN}, {248, RetroNpcMapping.MORGAN_LE_FAYE},
+		{250, RetroNpcMapping.LADY_OF_THE_LAKE}, {606, RetroNpcMapping.SQUIRE}};
+
+	/** Arthur's court is each character's own 2005 definition: parts, colors and stance. */
+	@Test
+	public void testRoundTableArchetypesAreTheir2005Definitions() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
+
+		Map<Integer, RetroNpcDefinition> feb = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
+		for (Object[] row : ROUND_TABLE_DEFINITIONS)
+		{
+			RetroNpcDefinition def = feb.get((int) row[0]);
+			RetroNpcData data = (RetroNpcData) row[1];
+			String label = def.getId() + " " + def.getName();
+			assertArrayEquals(label, def.getModels(), data.getRetroModelIds());
+			assertArrayEquals(label, def.getOriginalColors(), data.getOriginalColors());
+			assertArrayEquals(label, def.getReplacementColors(), data.getReplacementColors());
+			assertEquals(label, def.getStanceAnimation(), data.getIdleAnimationId());
+			assertEquals(label, def.getWalkAnimation(), data.getWalkAnimationId());
+		}
 	}
 
 	private static void assertChathead(Map<Integer, RetroNpcDefinition> defs, int defId, RetroNpcData data)

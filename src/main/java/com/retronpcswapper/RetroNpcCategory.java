@@ -55,5 +55,6 @@ public enum RetroNpcCategory
 	ELVES,
 	SPIDERS,
 	BEARS,
-	KALPHITES
+	KALPHITES,
+	ROUND_TABLE
 }

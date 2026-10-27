@@ -832,6 +832,81 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testRoundTableCategory()
+	{
+		Object[][] registered = {
+			{RetroNpcMapping.KING_ARTHUR, new int[]{NpcID.KING_ARTHUR, NpcID.KING_ARTHUR_CUTSCENE}},
+			{RetroNpcMapping.SIR_LANCELOT, new int[]{NpcID.SIR_LANCELOT, NpcID.SIR_LANCELOT_CUTSCENE}},
+			{RetroNpcMapping.SIR_GAWAIN, new int[]{NpcID.SIR_GAWAIN, NpcID.SIR_GAWAIN_CUTSCENE}},
+			{RetroNpcMapping.SIR_KAY, new int[]{NpcID.SIR_KAY, NpcID.SIR_KAY_CUTSCENE}},
+			{RetroNpcMapping.SIR_BEDIVERE, new int[]{NpcID.SIR_BEDIVERE, NpcID.SIR_BEDIVERE_CUTSCENE}},
+			{RetroNpcMapping.SIR_TRISTRAM, new int[]{NpcID.SIR_TRISTRAM, NpcID.SIR_TRISTRAM_CUTSCENE}},
+			{RetroNpcMapping.SIR_PELLEAS, new int[]{NpcID.SIR_PELLEAS, NpcID.SIR_PELLEAS_CUTSCENE}},
+			{RetroNpcMapping.SIR_LUCAN, new int[]{NpcID.SIR_LUCAN, NpcID.SIR_LUCAN_CUTSCENE}},
+			{RetroNpcMapping.SIR_PALOMEDES, new int[]{NpcID.SIR_PALOMEDES, NpcID.SIR_PALOMEDES_CUTSCENE}},
+			{RetroNpcMapping.SIR_MORDRED, new int[]{NpcID.SIR_MORDRED}},
+			{RetroNpcMapping.RENEGADE_KNIGHT, new int[]{NpcID.RENEGADE_KNIGHT, NpcID.KR_KEEP_KNIGHT}},
+			{RetroNpcMapping.SIR_PERCIVAL, new int[]{NpcID.SIR_PERCIVAL}},
+			{RetroNpcMapping.KING_PERCIVAL, new int[]{NpcID.KING_PERCIVAL}},
+			{RetroNpcMapping.BROTHER_GALAHAD, new int[]{NpcID.BROTHER_GALAHAD}},
+			{RetroNpcMapping.MERLIN, new int[]{NpcID.MERLIN, NpcID.MERLIN2}},
+			{RetroNpcMapping.MORGAN_LE_FAYE, new int[]{NpcID.MORGAN_LE_FAYE, NpcID.KR_MORGAN_CUTSCENE}},
+			{RetroNpcMapping.LADY_OF_THE_LAKE, new int[]{NpcID.LADYOFTHELAKE}},
+			{RetroNpcMapping.SQUIRE, new int[]{NpcID.SQUIRE, NpcID.KR_SQUIRE}}};
+		for (Object[] row : registered)
+		{
+			RetroNpcData data = (RetroNpcData) row[0];
+			assertEquals(RetroNpcCategory.ROUND_TABLE, data.getCategory());
+			assertTrue(data.hasChathead());
+			assertEquals(0, data.getAssetKeyBase());
+			for (int id : (int[]) row[1])
+			{
+				assertSame("npc " + id, data, RetroNpcMapping.get(id, null));
+			}
+		}
+
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.ROUND_TABLE));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.ROUND_TABLE));
+
+		// By registered id only
+		assertNull(RetroNpcMapping.get(0, "King Arthur"));
+		assertNull(RetroNpcMapping.get(0, "Sir Kay"));
+		assertNull(RetroNpcMapping.get(0, "Merlin"));
+		assertNull(RetroNpcMapping.get(0, "Squire"));
+
+		// Knight Waves, partial models, other costumes and the multiloc parents stay vanilla
+		for (int id : new int[]{
+			NpcID.KR_CAM_LUCAN, NpcID.KR_CAM_PALOMEDES, NpcID.KR_CAM_LANCELOT, NpcID.KR_CAM_BEDIVERE,
+			NpcID.KR_CAM_TRISTRAM, NpcID.KR_CAM_PELLEAS, NpcID.KR_CAM_GAWAIN, NpcID.KR_CAM_KAY,
+			NpcID.KR_KNIGHT1, NpcID.KR_KNIGHT2, NpcID.KR_KNIGHT3, NpcID.KR_KNIGHT4, NpcID.KR_KNIGHT5,
+			NpcID.KR_KNIGHT6, NpcID.KR_KNIGHT7, NpcID.KR_KNIGHT8,
+			NpcID.KR_CAM_PELLEAS_JAIL, NpcID.KR_CAM_GAWAIN_JAIL, NpcID.KR_CAM_KAY_JAIL,
+			NpcID.DS2_MEETING_KING_ARTHUR, NpcID.KR_ARTHUR_RESTORATION, NpcID.KR_ARTHUR_DISGUISE,
+			NpcID.KR_MULTI_KING_ARTHUR, NpcID.KR_MULTI_MERLIN_JAIL, NpcID.MORGAN_PRE, NpcID.MORGAN_POST,
+			NpcID.WHITE_KNIGHT_CRYPT_SQUIRE})
+		{
+			assertNull("npc " + id + " must not be swapped", RetroNpcMapping.get(id, null));
+		}
+
+		// Mordred fights with sword and shield, in place of the Varrock guard's set he uses live
+		RetroNpcData mordred = RetroNpcMapping.SIR_MORDRED;
+		assertEquals(AnimationID.HUMAN_SWORD_SLASH, mordred.getAttackAnimationFor(AnimationID.FAI_VARROCK_GUARD_ATTACK));
+		assertTrue(mordred.isDefendAnimation(AnimationID.FAI_VARROCK_GUARD_DEFEND));
+		assertEquals(AnimationID.HUMAN_SHIELD_DEFENCE, mordred.getDefendAnimationId());
+		assertTrue(mordred.isDeathAnimation(AnimationID.FAI_VARROCK_GUARD_DEATH));
+		assertEquals(AnimationID.HUMAN_DEATH, mordred.getDeathAnimationId());
+
+		// The renegade knights carry a sword and no shield. Live they attack and die in the Varrock
+		// guard's set (logged in a fight) and block in the Keep Le Faye guard's
+		RetroNpcData renegade = RetroNpcMapping.RENEGADE_KNIGHT;
+		assertEquals(AnimationID.HUMAN_SWORD_SLASH, renegade.getAttackAnimationFor(AnimationID.FAI_VARROCK_GUARD_ATTACK));
+		assertTrue(renegade.isDefendAnimation(AnimationID.KR_KEEP_LE_FAYE_GUARD_DEFEND));
+		assertEquals(AnimationID.HUMAN_SWORD_BLOCK, renegade.getDefendAnimationId());
+		assertTrue(renegade.isDeathAnimation(AnimationID.FAI_VARROCK_GUARD_DEATH));
+		assertEquals(AnimationID.HUMAN_DEATH, renegade.getDeathAnimationId());
+	}
+
+	@Test
 	public void testPrifddinasCitizensWearTheirClanColors()
 	{
 		short[] find = {9137, 9152, 8792, 16701, 8652, 7595};
@@ -2545,6 +2620,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapGuards must default to true", config.swapGuards());
 		assertTrue("swapElves must default to true", config.swapElves());
 		assertTrue("swapKalphites must default to true", config.swapKalphites());
+		assertTrue("swapRoundTable must default to true", config.swapRoundTable());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
@@ -3272,6 +3348,12 @@ public class RetroNpcCategoryTest
 		assertChathead(NpcID.GOBLIN_REDARMOUR, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 144);
 		assertChathead(NpcID.GOBLIN_GUARD, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 142);
 		assertChathead(NpcID.GUARD_CARNILLEAN_VIS, null, 0, 60);
+		assertChathead(NpcID.KING_ARTHUR, null, 0, 53, 84, 43);
+		assertChathead(NpcID.SIR_KAY_CUTSCENE, null, 0, 60);
+		assertChathead(NpcID.KR_KEEP_KNIGHT, null, 0, 65);
+		assertChathead(NpcID.MERLIN2, null, 0, 52, 82, 44);
+		assertChathead(NpcID.LADYOFTHELAKE, null, 0, 113);
+		assertChathead(NpcID.SQUIRE, null, 0, 55, 85, 34);
 
 		// Ghost rows by name, from the generated JSON: the plain Ghost takes def 491's head, the
 		// Port Phasmatys townsfolk their own

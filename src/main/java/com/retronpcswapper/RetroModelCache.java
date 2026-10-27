@@ -27,6 +27,7 @@ package com.retronpcswapper;
 import com.retronpcswapper.chathead.RetroHead;
 import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroClip;
+import com.retronpcswapper.inject.RetroDecals;
 import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
 import com.retronpcswapper.inject.RetroMeshMerger;
@@ -340,8 +341,8 @@ public class RetroModelCache
 
 	/**
 	 * Prepares injected geometry for an NPC, or null when the bundle has nothing for it.
-	 *
-	 * <p>This is the path for meshes the live cache no longer holds. Everything the cache-backed
+	 * <p>
+	 * This is the path for meshes the live cache no longer holds. Everything the cache-backed
 	 * build gets from the client - merging, recoloring, scaling, lighting - happens here instead,
 	 * once, at spawn.
 	 */
@@ -394,6 +395,14 @@ public class RetroModelCache
 
 		mesh = scaled(mesh, colors, data.getScaleXZ(), data.getScaleY(), data.getOffsetZ());
 
+		// Before lighting, which reads the moved vertices
+		int[] paintedOver = data.getPaintedOver();
+		int[] faceStarts = faceStarts(parts);
+		if (paintedOver.length > 0)
+		{
+			mesh = paintedOver(mesh, modelIds, faceStarts, paintedOver);
+		}
+
 		int faceCount = mesh.getFaceCount();
 		int[] colors1 = new int[faceCount];
 		int[] colors2 = new int[faceCount];
@@ -409,7 +418,67 @@ public class RetroModelCache
 
 		InjectedModel injectedModel = new InjectedModel(mesh, keyBase);
 		injectedModel.model.bind(mesh, colors1, colors2, colors3);
+		for (int pair = 0; pair < paintedOver.length; pair += 2)
+		{
+			int upper = indexOf(modelIds, paintedOver[pair + 1]);
+			if (upper != -1)
+			{
+				RetroDecals.biasOver(injectedModel.model, faceStarts[upper], faceStarts[upper + 1]);
+			}
+		}
 		return injectedModel;
+	}
+
+	/** Where each part's faces begin in the merged mesh, which keeps them in part order. */
+	static int[] faceStarts(List<RetroMesh> parts)
+	{
+		int[] starts = new int[parts.size() + 1];
+		for (int i = 0; i < parts.size(); i++)
+		{
+			starts[i + 1] = starts[i] + parts.get(i).getFaceCount();
+		}
+		return starts;
+	}
+
+	/** A copy with each painted-over pair settled, see {@link RetroDecals#paintOver}. */
+	static RetroMesh paintedOver(RetroMesh mesh, int[] modelIds, int[] faceStarts, int[] pairs)
+	{
+		// Copied: scaled() hands back the bundle's own arrays when it did not resize
+		float[] vx = mesh.getVerticesX().clone();
+		float[] vy = mesh.getVerticesY().clone();
+		float[] vz = mesh.getVerticesZ().clone();
+		for (int pair = 0; pair < pairs.length; pair += 2)
+		{
+			int lower = indexOf(modelIds, pairs[pair]);
+			int upper = indexOf(modelIds, pairs[pair + 1]);
+			if (lower == -1 || upper == -1)
+			{
+				log.debug("Painted-over pair {}/{} is not among parts {}", pairs[pair], pairs[pair + 1],
+					Arrays.toString(modelIds));
+				continue;
+			}
+			RetroDecals.paintOver(vx, vy, vz,
+				mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
+				faceStarts[lower], faceStarts[lower + 1], faceStarts[upper], faceStarts[upper + 1]);
+		}
+		return new RetroMesh(mesh.getId(), mesh.getPriority(), vx, vy, vz,
+			mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
+			mesh.getFaceColors(), mesh.getFaceRenderTypes(), mesh.getFaceTransparencies(),
+			mesh.getFaceRenderPriorities(), mesh.getFaceTextures(),
+			mesh.getTextureCoords(), mesh.getTexIndices1(), mesh.getTexIndices2(),
+			mesh.getTexIndices3(), mesh.getVertexGroups());
+	}
+
+	private static int indexOf(int[] ids, int id)
+	{
+		for (int i = 0; i < ids.length; i++)
+		{
+			if (ids[i] == id)
+			{
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	/** A copy of the face colors with the NPC's recolor pairs applied, first match winning. */

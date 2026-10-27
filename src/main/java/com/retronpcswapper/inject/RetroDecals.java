@@ -256,6 +256,102 @@ public final class RetroDecals
 		return moved;
 	}
 
+	/**
+	 * How far a lower part may poke out through the part painted over it.
+	 */
+	static final float TUCK_REACH = 8f;
+
+	/**
+	 * Settles, in place, one part that 2005 painted over another by priority: the lower part's
+	 * vertices poking out through the upper are tucked behind it, then the upper is lifted clear of
+	 * the lower as a decal. Opt-in per pair, since priority is structural elsewhere in a kit.
+	 *
+	 * @return how many vertices moved
+	 */
+	public static int paintOver(float[] x, float[] y, float[] z,
+		int[] faces1, int[] faces2, int[] faces3,
+		int lowerStart, int lowerEnd, int upperStart, int upperEnd)
+	{
+		int moved = tuck(x, y, z, faces1, faces2, faces3, lowerStart, lowerEnd, upperStart, upperEnd);
+
+		// Just the pair, lower as the surface and upper as the decal, whatever their own priorities
+		int lowerCount = lowerEnd - lowerStart;
+		int count = lowerCount + upperEnd - upperStart;
+		int[] pair1 = new int[count];
+		int[] pair2 = new int[count];
+		int[] pair3 = new int[count];
+		byte[] layer = new byte[count];
+		for (int i = 0; i < count; i++)
+		{
+			int f = i < lowerCount ? lowerStart + i : upperStart + i - lowerCount;
+			pair1[i] = faces1[f];
+			pair2[i] = faces2[f];
+			pair3[i] = faces3[f];
+			layer[i] = (byte) (i < lowerCount ? 0 : 1);
+		}
+		return moved + lift(x, y, z, pair1, pair2, pair3, layer, 0, count);
+	}
+
+	/** Moves each lower vertex in front of an upper face to behind it. Vertices the upper uses stay. */
+	static int tuck(float[] x, float[] y, float[] z, int[] faces1, int[] faces2, int[] faces3,
+		int lowerStart, int lowerEnd, int upperStart, int upperEnd)
+	{
+		boolean[] upper = new boolean[x.length];
+		for (int g = upperStart; g < upperEnd; g++)
+		{
+			upper[faces1[g]] = true;
+			upper[faces2[g]] = true;
+			upper[faces3[g]] = true;
+		}
+
+		boolean[] done = new boolean[x.length];
+		int count = 0;
+		for (int f = lowerStart; f < lowerEnd; f++)
+		{
+			for (int v : new int[]{faces1[f], faces2[f], faces3[f]})
+			{
+				if (done[v] || upper[v])
+				{
+					continue;
+				}
+				done[v] = true;
+
+				float deepest = 0;
+				float[] by = null;
+				for (int g = upperStart; g < upperEnd; g++)
+				{
+					float[] n = normal(x, y, z, faces1[g], faces2[g], faces3[g]);
+					float t = intersect(x[v], y[v], z[v], -n[0], -n[1], -n[2],
+						x, y, z, faces1[g], faces2[g], faces3[g]);
+					if (t > 0 && t <= TUCK_REACH && t > deepest)
+					{
+						deepest = t;
+						by = n;
+					}
+				}
+				if (by != null)
+				{
+					float distance = deepest + CLEARANCE;
+					x[v] -= by[0] * distance;
+					y[v] -= by[1] * distance;
+					z[v] -= by[2] * distance;
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+
+	/** Biases faces {@code [start, end)} one step toward the camera, the ties a painted-over part wins. */
+	public static void biasOver(RetroModel model, int start, int end)
+	{
+		byte[] bias = model.writableFaceBias();
+		for (int f = start; f < end; f++)
+		{
+			bias[f] = (byte) Math.max(bias[f] & 0xFF, BIAS_STEP);
+		}
+	}
+
 	/** Depth bias per priority step above the lowest. */
 	static final int BIAS_STEP = 2;
 
