@@ -34,7 +34,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Elves**
 - **Kalphites** — KQ, Guardians, Soldiers, Workers, Larvae
 - **Knights of the Round Table** — King Arthur and his knights, Merlin, renegade knights, etc
-- **Varrock NPCs** — Gypsy Aris, Romeo, Sir Prysin, King Roald, muggers and tramps
+- **Varrock NPCs** — Aris, Romeo, Sir Prysin, King Roald, muggers and tramps
 - **Chatheads** — Swaps chatheads for NPCs with dialogue. Follows each NPC's own toggle.
 
 Under **Scenery**:
