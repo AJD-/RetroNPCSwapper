@@ -55,7 +55,7 @@ public class RetroConfigMigrationTest
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn(null);
 
 		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		// A user who had turned hill giants off must not find giants back on
 		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS, false);
@@ -72,7 +72,7 @@ public class RetroConfigMigrationTest
 		when(configManager.getConfiguration(GROUP, "newA")).thenReturn(null);
 		when(configManager.getConfiguration(GROUP, "newB")).thenReturn(null);
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager, "legacyThing", "newA", "newB");
+		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager, "legacyThing", true, "newA", "newB");
 
 		verify(configManager).setConfiguration(GROUP, "newA", true);
 		verify(configManager).setConfiguration(GROUP, "newB", true);
@@ -80,16 +80,32 @@ public class RetroConfigMigrationTest
 	}
 
 	@Test
+	public void testTheSavedDefaultDoesNotBlockTheMigration()
+	{
+		// RuneLite saves swapGiants' default before startUp, so it is set but was never chosen
+		ConfigManager configManager = mock(ConfigManager.class);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS))
+			.thenReturn("false");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("true");
+
+		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
+
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS, false);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS);
+	}
+
+	@Test
 	public void testAChoiceAlreadyMadeOnTheNewKeyIsNotOverwritten()
 	{
 		ConfigManager configManager = mock(ConfigManager.class);
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS))
-			.thenReturn("false");
-		// The user has since set the new toggle themselves
-		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("true");
+			.thenReturn("true");
+		// The user has since set the new toggle themselves; "true" would be the saved default
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("false");
 
 		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		verify(configManager, never()).setConfiguration(anyString(), anyString(), any());
 
@@ -105,7 +121,7 @@ public class RetroConfigMigrationTest
 			.thenReturn(null);
 
 		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		// This runs on every start, so the ordinary case has to be inert - it must not write a
 		// default over a key the user has never touched, nor unset anything
@@ -123,9 +139,9 @@ public class RetroConfigMigrationTest
 			.thenReturn(null, "false");
 
 		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		// The second start finds the legacy key gone and does nothing, so the value written by the
 		// first is never disturbed
