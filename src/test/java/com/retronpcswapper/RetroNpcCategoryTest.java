@@ -2658,7 +2658,7 @@ public class RetroNpcCategoryTest
 
 		// Every category that renders without the bundle defaults to on
 		assertTrue("swapChickens must default to true", config.swapChickens());
-		assertTrue("swapGoblins must default to true", config.swapGoblins());
+		assertEquals("goblinEra must default to 2004/05", GoblinEra.RETRO_2005, config.goblinEra());
 		assertTrue("swapSkeletons must default to true", config.swapSkeletons());
 		assertTrue("swapZombies must default to true", config.swapZombies());
 		assertTrue("swapGiants must default to true", config.swapGiants());

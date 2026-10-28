@@ -132,4 +132,54 @@ public class RetroConfigMigrationTest
 		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS, false);
 		verify(configManager).unsetConfiguration(eq(GROUP), eq(RetroNpcConfig.LEGACY_HILL_GIANTS));
 	}
+
+	private static ConfigManager goblinManager(String legacy, String chosen)
+	{
+		ConfigManager configManager = mock(ConfigManager.class);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS)).thenReturn(legacy);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA)).thenReturn(chosen);
+		return configManager;
+	}
+
+	private static void migrateGoblins(ConfigManager configManager)
+	{
+		RetroNpcSwapperPlugin.migrateLegacyToggleToChoice(configManager, RetroNpcConfig.LEGACY_SWAP_GOBLINS,
+			RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name(), GoblinEra.RETRO_2005.name());
+	}
+
+	@Test
+	public void testSwapGoblinsOffBecomesModern()
+	{
+		ConfigManager configManager = goblinManager("false", null);
+		migrateGoblins(configManager);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name());
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+	}
+
+	@Test
+	public void testSwapGoblinsOnBecomes2005()
+	{
+		ConfigManager configManager = goblinManager("true", null);
+		migrateGoblins(configManager);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA, GoblinEra.RETRO_2005.name());
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+	}
+
+	@Test
+	public void testAnAlreadyChosenEraIsNotOverwritten()
+	{
+		ConfigManager configManager = goblinManager("false", GoblinEra.RETRO_2006.name());
+		migrateGoblins(configManager);
+		verify(configManager, never()).setConfiguration(anyString(), anyString(), anyString());
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+	}
+
+	@Test
+	public void testNoLegacyGoblinKeyDoesNothing()
+	{
+		ConfigManager configManager = goblinManager(null, null);
+		migrateGoblins(configManager);
+		verify(configManager).getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+		verifyNoMoreInteractions(configManager);
+	}
 }

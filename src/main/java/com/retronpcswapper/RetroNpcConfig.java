@@ -40,6 +40,13 @@ public interface RetroNpcConfig extends Config
 	 */
 	String LEGACY_HILL_GIANTS = "swapHillGiants";
 
+	String GOBLIN_ERA = "goblinEra";
+
+	/**
+	 * Retired in favor of {@link #goblinEra()}; kept only so a saved value can be carried across.
+	 */
+	String LEGACY_SWAP_GOBLINS = "swapGoblins";
+
 	/**
 	 * {@link #SWAP_GIANTS} is written by the migration as well as the user; the other two are named
 	 * alongside it for consistency.
@@ -108,15 +115,15 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapGoblins",
+		keyName = GOBLIN_ERA,
 		name = "Goblins",
-		description = "Swap modern Goblin models and animations to their 2004/2005 retro variants.",
+		description = "Modern: leave goblins alone. 2004/05: the single Feb-2005 goblin kit. 2006: the varied goblins added in 2006 (Lumbridge, Goblin Cave, Goblin Village).",
 		section = npcTogglesSection,
 		position = 2
 	)
-	default boolean swapGoblins()
+	default GoblinEra goblinEra()
 	{
-		return true;
+		return GoblinEra.RETRO_2005;
 	}
 
 	@ConfigItem(

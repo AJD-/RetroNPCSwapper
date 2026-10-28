@@ -229,6 +229,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_HILL_GIANTS,
 			RetroNpcConfig.SWAP_GIANTS);
+		migrateLegacyToggleToChoice(configManager, RetroNpcConfig.LEGACY_SWAP_GOBLINS,
+			RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name(), GoblinEra.RETRO_2005.name());
 	}
 
 	/**
@@ -263,6 +265,30 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		configManager.unsetConfiguration(RetroNpcConfig.GROUP, legacyKey);
 		log.debug("Migrated {}={} to {}", legacyKey, legacy, String.join(", ", newKeys));
+	}
+
+	/**
+	 * Turns a retired boolean toggle into an enum choice. Same contract as
+	 * {@link #migrateLegacyToggle}; values are enum names because that is how RuneLite stores them.
+	 */
+	static void migrateLegacyToggleToChoice(ConfigManager configManager, String legacyKey, String newKey,
+		String offValue, String onValue)
+	{
+		String legacy = configManager.getConfiguration(RetroNpcConfig.GROUP, legacyKey);
+
+		if (legacy == null)
+		{
+			return;
+		}
+
+		if (configManager.getConfiguration(RetroNpcConfig.GROUP, newKey) == null)
+		{
+			configManager.setConfiguration(RetroNpcConfig.GROUP, newKey,
+				Boolean.parseBoolean(legacy) ? onValue : offValue);
+		}
+
+		configManager.unsetConfiguration(RetroNpcConfig.GROUP, legacyKey);
+		log.debug("Migrated {}={} to {}", legacyKey, legacy, newKey);
 	}
 
 	@Override
@@ -798,7 +824,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 				// Meshes 3849-3854 are gone from the live cache, so only the bundle can draw them
 				return config.swapKalphites() && injectionEnabled();
 			case GOBLINS:
-				return config.swapGoblins();
+				return config.goblinEra() != GoblinEra.MODERN;
 			case SKELETONS:
 				return config.swapSkeletons();
 			case SKELETON_MAGES:
