@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.IntFunction;
 import java.util.zip.GZIPInputStream;
 import net.runelite.cache.IndexType;
 import net.runelite.cache.definitions.ModelDefinition;
@@ -70,7 +71,7 @@ import net.runelite.cache.fs.Store;
  *
  * <p>Run with {@code ./gradlew compareRetroModels -Pmodels=2853,2854}, optionally
  * {@code -Pfindmoved} and {@code -PcacheDir=...}. Reads the untracked {@code retrocache/} 2005
- * cache alongside the live one. This class lives in the test sourceSet and is never shipped, so
+ * cache alongside the live one; {@code -Pcache=2006} reads the Dec-2006 cache instead. This class lives in the test sourceSet and is never shipped, so
  * console output and reading files outside {@code .runelite} are fine here.
  */
 public class RetroModelComparator
@@ -80,6 +81,8 @@ public class RetroModelComparator
 	private static final String FIND_MOVED_PROPERTY = "retronpcswapper.findmoved";
 	private static final String FACE_DIFF_PROPERTY = "retronpcswapper.facediff";
 	private static final String RETRO_CACHE_DIR = "retrocache/2005cache";
+	/** "2006" compares against the Dec-2006 cache instead. */
+	private static final String CACHE_PROPERTY = "retronpcswapper.cache";
 
 	/** Index 1 of the RS2 cache holds models. */
 	private static final int RETRO_MODEL_INDEX = 1;
@@ -100,14 +103,38 @@ public class RetroModelComparator
 			return;
 		}
 
-		File retroDir = resolveRetroCacheDir();
-		RetroCacheReader retro = new RetroCacheReader(retroDir);
-		if (!retro.init())
+		boolean dec2006 = "2006".equals(System.getProperty(CACHE_PROPERTY));
+		String era = dec2006 ? "2006" : "2005";
+		File retroDir;
+		IntFunction<byte[]> retroModels;
+		Runnable closeRetro;
+		if (dec2006)
 		{
-			System.err.println("Could not read the 2005 cache at " + retroDir.getAbsolutePath()
-				+ " - it is untracked, so copy it in before running this.");
-			System.exit(1);
-			return;
+			retroDir = Retro2006CacheReader.resolveDir();
+			Retro2006CacheReader reader = Retro2006CacheReader.open(retroDir);
+			if (reader == null)
+			{
+				System.err.println("Could not read the 2006 cache at " + retroDir.getAbsolutePath()
+					+ " - it is untracked, so copy it in before running this.");
+				System.exit(1);
+				return;
+			}
+			retroModels = reader::modelData;
+			closeRetro = reader::close;
+		}
+		else
+		{
+			retroDir = resolveRetroCacheDir();
+			RetroCacheReader retro = new RetroCacheReader(retroDir);
+			if (!retro.init())
+			{
+				System.err.println("Could not read the 2005 cache at " + retroDir.getAbsolutePath()
+					+ " - it is untracked, so copy it in before running this.");
+				System.exit(1);
+				return;
+			}
+			retroModels = id -> gunzipIfNeeded(retro.readFile(RETRO_MODEL_INDEX, id));
+			closeRetro = retro::close;
 		}
 
 		List<Geometry> replaced = new ArrayList<>();
@@ -117,7 +144,7 @@ public class RetroModelComparator
 			store.load();
 
 			System.out.println("Live cache:  " + liveDir);
-			System.out.println("2005 cache:  " + retroDir.getAbsolutePath());
+			System.out.println(era + " cache:  " + retroDir.getAbsolutePath());
 			System.out.println();
 
 			for (String arg : args)
@@ -128,7 +155,7 @@ public class RetroModelComparator
 					continue;
 				}
 
-				Geometry lost = compare(store, retro, Integer.parseInt(trimmed));
+				Geometry lost = compare(store, retroModels, era, Integer.parseInt(trimmed));
 				if (lost != null)
 				{
 					replaced.add(lost);
@@ -151,7 +178,7 @@ public class RetroModelComparator
 		}
 		finally
 		{
-			retro.close();
+			closeRetro.run();
 		}
 	}
 
@@ -159,10 +186,10 @@ public class RetroModelComparator
 	 * Prints both versions of one model id. Returns the 2005 geometry when the asset was replaced,
 	 * so the caller can go looking for it elsewhere, else null.
 	 */
-	private static Geometry compare(Store store, RetroCacheReader retro, int modelId) throws IOException
+	private static Geometry compare(Store store, IntFunction<byte[]> retroModels, String era, int modelId) throws IOException
 	{
 		byte[] liveData = loadLive(store, modelId);
-		byte[] oldData = gunzipIfNeeded(retro.readFile(RETRO_MODEL_INDEX, modelId));
+		byte[] oldData = retroModels.apply(modelId);
 
 		ModelDefinition liveModel = decodeModel(modelId, liveData);
 		ModelDefinition oldModel = decodeModel(modelId, oldData);
@@ -171,7 +198,7 @@ public class RetroModelComparator
 		Geometry old = describeOf(oldModel, oldData);
 
 		System.out.println("model " + modelId);
-		System.out.println("  2005  " + describe(old));
+		System.out.println("  " + era + "  " + describe(old));
 		System.out.println("  live  " + describe(live));
 		System.out.println("  ->    " + verdict(old, live));
 

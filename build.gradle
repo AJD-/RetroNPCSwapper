@@ -101,6 +101,7 @@ tasks.register('dumpNpcDefinitions', JavaExec) {
 // Prints NPC definitions from the 2005 cache, eg:
 //   ./gradlew dumpRetroNpcDefinitions -Pnpc=guard
 //   ./gradlew dumpRetroNpcDefinitions -Pnpc=277,278 -PretroDir=/path/to/2005cache
+//   ./gradlew dumpRetroNpcDefinitions -Pnpc=goblin -Pcache=2006
 //
 // npc-mappings.json keeps only the lowest-id row per name, so it cannot answer a question about
 // one particular 2005 NPC among several sharing a name.
@@ -114,6 +115,12 @@ tasks.register('dumpRetroNpcDefinitions', JavaExec) {
 	}
 	if (project.hasProperty('retroDir')) {
 		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
+	}
+	if (project.hasProperty('cache')) {
+		systemProperty 'retronpcswapper.cache', project.property('cache')
+	}
+	if (project.hasProperty('retro2006Dir')) {
+		systemProperty 'retronpcswapper.retro2006Dir', project.property('retro2006Dir')
 	}
 	if (project.hasProperty('max')) {
 		systemProperty 'retronpcswapper.maxMatches', project.property('max')
@@ -162,6 +169,7 @@ tasks.register('dumpRetroObjectDefinitions', JavaExec) {
 // id that was reused, eg:
 //   ./gradlew compareRetroModels -Pmodels=2853,2854
 //   ./gradlew compareRetroModels -Pmodels=2942,2943 -Pfindmoved
+//   ./gradlew compareRetroModels -Pmodels=5540,15551 -Pcache=2006
 tasks.register('compareRetroModels', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
 	mainClass = 'com.retronpcswapper.cache.RetroModelComparator'
@@ -181,6 +189,12 @@ tasks.register('compareRetroModels', JavaExec) {
 	}
 	if (project.hasProperty('retroDir')) {
 		systemProperty 'retronpcswapper.retroDir', project.property('retroDir')
+	}
+	if (project.hasProperty('cache')) {
+		systemProperty 'retronpcswapper.cache', project.property('cache')
+	}
+	if (project.hasProperty('retro2006Dir')) {
+		systemProperty 'retronpcswapper.retro2006Dir', project.property('retro2006Dir')
 	}
 }
 

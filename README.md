@@ -119,6 +119,11 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
   source: https://archive.openrs2.org/caches/runescape/2572) placed in
   `retrocache/2005cache` (the cache itself is not committed - if you want to generate your own you will
   need to download it yourself).
+- The late-2006 cache (build 443, 2006-12-19, original source:
+  https://archive.openrs2.org/caches/runescape/233) goes in `retrocache/dec2006cache/`, with
+  `disk.zip` extracted flat (`main_file_cache.dat2` and the `idx` files directly inside). Pass
+  `-Pcache=2006` to `dumpRetroNpcDefinitions` and `compareRetroModels` to read it instead of the
+  2005 cache, and `-Pretro2006Dir=<path>` to point at another copy.
 - `./gradlew compareRetroModels -Pmodels=<ids> -Pfindmoved` decodes a model from both caches
   and compares vertex count, face count and palette, which settles whether an ID still holds its
   2005 asset. Byte comparison cannot: Jagex re-encoded every model for the v2/v3 format markers.

@@ -47,7 +47,8 @@ import java.util.TreeSet;
  * cache rather than two.
  *
  * <p>Run with {@code ./gradlew dumpRetroNpcDefinitions -Pnpc=guard} (ids, or a name substring),
- * and {@code -PretroDir=...} to point at a cache other than {@code retrocache/2005cache}. This
+ * and {@code -PretroDir=...} to point at a cache other than {@code retrocache/2005cache};
+ * {@code -Pcache=2006} reads the Dec-2006 cache through {@link Retro2006CacheReader}. This
  * class lives in the test sourceSet and is never shipped, so console output and reading files
  * outside {@code .runelite} are fine here.
  */
@@ -55,6 +56,8 @@ public class RetroNpcDumper
 {
 	private static final String DEFAULT_CACHE_DIR = "retrocache/2005cache";
 	private static final String MAX_MATCHES_PROPERTY = "retronpcswapper.maxMatches";
+	/** "2006" reads the Dec-2006 cache instead. */
+	private static final String CACHE_PROPERTY = "retronpcswapper.cache";
 
 	/**
 	 * Guard against a broad name search printing thousands of definitions. Raise it with
@@ -67,22 +70,47 @@ public class RetroNpcDumper
 	{
 		// The retro dir arrives as the first argument, the way generateNpcMappings passes it
 		List<String> queries = new ArrayList<>(Arrays.asList(args));
+		boolean dec2006 = "2006".equals(System.getProperty(CACHE_PROPERTY));
 		String cacheArg = System.getProperty("retronpcswapper.retroDir");
 		if (cacheArg == null && !queries.isEmpty() && new File(queries.get(0)).isDirectory())
 		{
 			cacheArg = queries.remove(0);
 		}
 
-		File cacheDir = new File(cacheArg != null ? cacheArg : DEFAULT_CACHE_DIR);
+		File cacheDir = dec2006
+			? Retro2006CacheReader.resolveDir()
+			: new File(cacheArg != null ? cacheArg : DEFAULT_CACHE_DIR);
 		if (!cacheDir.isDirectory())
 		{
-			System.err.println("2005 cache directory not found: " + cacheDir.getAbsolutePath());
-			System.err.println("Run from the repo root, or pass one with -PretroDir=<path>");
+			System.err.println((dec2006 ? "2006" : "2005") + " cache directory not found: " + cacheDir.getAbsolutePath());
+			System.err.println("Run from the repo root, or pass one with " + (dec2006 ? "-Pretro2006Dir" : "-PretroDir") + "=<path>");
 			System.exit(1);
 			return;
 		}
 
-		Map<Integer, RetroNpcDefinition> defs = NpcMappingGenerator.decodeDefinitions(cacheDir);
+		Map<Integer, RetroNpcDefinition> defs;
+		if (dec2006)
+		{
+			Retro2006CacheReader reader = Retro2006CacheReader.open(cacheDir);
+			if (reader == null)
+			{
+				System.err.println("Could not read the 2006 cache at " + cacheDir.getAbsolutePath());
+				System.exit(1);
+				return;
+			}
+			try
+			{
+				defs = reader.npcDefinitions();
+			}
+			finally
+			{
+				reader.close();
+			}
+		}
+		else
+		{
+			defs = NpcMappingGenerator.decodeDefinitions(cacheDir);
+		}
 		int maxMatches = maxMatches();
 
 		System.out.println("Cache: " + cacheDir);
