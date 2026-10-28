@@ -337,15 +337,16 @@ public class RetroSkinnerTest
 	@Test
 	public void testInterleavedTransformIndicesMerge()
 	{
-		RetroRig rig = new RetroRig(1, new int[]{0, 1, 1, 1}, new int[][]{{0}, {0}, {0}, {0}});
+		RetroRig rig = new RetroRig(1, new int[]{0, 1, 3, 1}, new int[][]{{0}, {0}, {0}, {0}});
 		RetroClip clip = clip2(
 			new int[][]{op(0, 0, 0, 0), op(1, 8, 0, 0), op(3, 0, 0, 4)},
-			new int[][]{op(0, 0, 0, 0), op(2, 0, 6, 0), op(3, 0, 0, 4)});
+			new int[][]{op(0, 0, 0, 0), op(2, 192, 128, 128), op(3, 0, 0, 4)});
 
 		float[][] posed = blend(rig, clip, 1, 1f, 2);
 
-		assertArrayEquals(new float[]{4f, 104f}, posed[0], EPSILON);
-		assertArrayEquals(new float[]{3f, 3f}, posed[1], EPSILON);
+		// Translate 8 to 0 gives +4, then scale 128 to 192 gives 160/128 about the pivot of 50
+		assertArrayEquals(new float[]{-7.5f, 117.5f}, posed[0], EPSILON);
+		assertArrayEquals(new float[]{0f, 0f}, posed[1], EPSILON);
 		assertArrayEquals(new float[]{4f, 4f}, posed[2], EPSILON);
 	}
 
