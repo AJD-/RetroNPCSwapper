@@ -24,7 +24,6 @@
  */
 package com.retronpcswapper;
 
-import net.runelite.api.AnimationController;
 import net.runelite.api.GameObject;
 import net.runelite.api.Model;
 import net.runelite.api.Perspective;
@@ -45,7 +44,7 @@ class RetroGameObjectController extends RuneLiteObjectController
 	private final Model carrier;
 
 	/** Where an animated object's stand-in is in its 2005 animation; null for one that stands still. */
-	private final AnimationController animation;
+	private final SequenceClock animation;
 
 	/**
 	 * @param carrier   the carrier for the object's quarter turns - the model comes already turned, as
@@ -53,7 +52,7 @@ class RetroGameObjectController extends RuneLiteObjectController
 	 * @param animation for an animated object, its place in the animation, which only advances here:
 	 *                  the 2005 geometry is posed for its frame where it is swapped onto the carrier
 	 */
-	RetroGameObjectController(GameObject object, Model carrier, AnimationController animation)
+	RetroGameObjectController(GameObject object, Model carrier, SequenceClock animation)
 	{
 		this.carrier = carrier;
 		this.animation = animation;

@@ -415,6 +415,51 @@ public class RetroScenerySwapperTest
 		assertNotNull(swapper.substitute(secondCarrier));
 	}
 
+	/** Mid-frame, with Animation Smoothing on, a cow is drawn between its frames, not on the earlier one. */
+	@Test
+	public void testAnAnimatedStandInBlendsMidFrame() throws Exception
+	{
+		RetroAssetBundle bundle = shippedBundle();
+		int frames = bundle.getClip(RetroScenery.DAIRY_COW.animationId).getFrameCount();
+		int[] lengths = new int[frames];
+		Arrays.fill(lengths, 4);
+
+		Client client = mock(Client.class);
+		when(client.getAnimationInterpolationFilter()).thenReturn(id -> true);
+		ModelData data = mock(ModelData.class);
+		when(data.light()).thenAnswer(invocation -> mock(Model.class));
+		when(client.loadModelData(RetroScenery.DAIRY_COW.meshId)).thenReturn(data);
+		Animation chewing = mock(Animation.class);
+		when(chewing.getNumFrames()).thenReturn(frames);
+		when(chewing.getFrameStep()).thenReturn(-1);
+		when(chewing.getFrameLengths()).thenReturn(lengths);
+		when(client.loadAnimation(RetroScenery.DAIRY_COW.animationId)).thenReturn(chewing);
+
+		RetroAnimationSmoothing smoothing = new RetroAnimationSmoothing(client);
+		RetroScenerySwapper swapper = Guice.createInjector(binder ->
+		{
+			binder.bind(Client.class).toInstance(client);
+			binder.bind(RetroAnimationSmoothing.class).toInstance(smoothing);
+		}).getInstance(RetroScenerySwapper.class);
+		swapper.setBundle(bundle);
+		swapper.refresh(EnumSet.of(RetroScenery.DAIRY_COW));
+
+		GameObject cow = gameObject(ObjectID.FAT_COW, config(10, 0));
+		when(cow.getWorldView()).thenReturn(mock(WorldView.class));
+		swapper.onSpawned(cow);
+		RuneLiteObjectController standIn = swapper.getStandIns(cow).get(0);
+
+		// Frame 0, two cycles in
+		standIn.tick(3);
+		smoothing.setEnabled(false);
+		RetroModel model = (RetroModel) swapper.substitute(standIn.getModel());
+		float[] plain = model.getVerticesY().clone();
+		smoothing.setEnabled(true);
+		model = (RetroModel) swapper.substitute(standIn.getModel());
+
+		assertFalse(Arrays.equals(plain, model.getVerticesY()));
+	}
+
 	private static RetroAssetBundle shippedBundle() throws Exception
 	{
 		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))
