@@ -702,12 +702,12 @@ public class RetroModelCache
 
 		RetroRig rig = clip == null ? null : bundle.getRig(clip.getRigId());
 
-		// Clocks follow the live animation id, not the bundle key
+		// Clocks follow the live animation id, not the bundle key; the id gate keeps smoothing-off free
 		int liveId = acting ? action : npc.getPoseAnimation();
-		Animation live = animation(liveId);
+		Animation live = clip != null && rig != null && smoothing.blends(liveId) ? animation(liveId) : null;
 		int[] lengths = live == null ? null : live.getFrameLengths();
 		boolean blended = false;
-		if (clip != null && rig != null && lengths != null && frame >= 0 && frame < lengths.length && smoothing.blends(live))
+		if (lengths != null && frame >= 0 && frame < lengths.length && smoothing.blends(live))
 		{
 			FrameClock clock = acting ? clocks(npc).action : clocks(npc).pose;
 			int elapsed = clock.elapsed(liveId, frame, client.getGameCycle(), lengths[frame]);

@@ -25,6 +25,7 @@
 package com.retronpcswapper;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -36,8 +37,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroFrameTiming;
+import com.retronpcswapper.inject.RetroMesh;
+import com.retronpcswapper.inject.RetroRig;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.function.IntPredicate;
 import net.runelite.api.Animation;
 import net.runelite.api.Client;
@@ -206,5 +212,52 @@ public class RetroModelCacheSmoothingTest
 		cache.pose(npc(ACTION_ID, 2, POSE_ID, 7));
 
 		verify(client).applyTransformations(base, action, 2, pose, 7);
+	}
+
+	/** Swaps in a one-mesh bundle and builds the NPC down the injected path, idling on POSE_ID. */
+	private void installInjected()
+	{
+		RetroMesh mesh = new RetroMesh(MODEL_ID, 0,
+			new float[]{0f, 100f}, new float[]{0f, 0f}, new float[]{0f, 0f},
+			new int[]{0}, new int[]{1}, new int[]{0},
+			new short[]{0}, null, null, null, null,
+			null, null, null, null,
+			new int[][]{{0, 1}});
+		RetroRig rig = new RetroRig(2, new int[]{0, 1}, new int[][]{{0}, {0}});
+		RetroClip clip = new RetroClip(POSE_ID, 2,
+			new int[][]{{0, 1}, {0, 1}},
+			new int[][]{{0, 0}, {0, 10}},
+			new int[][]{{0, 0}, {0, 0}},
+			new int[][]{{0, 0}, {0, 0}});
+
+		cache.setUseInjectionPipeline(true);
+		cache.setBundle(new RetroAssetBundle(Collections.singletonMap(MODEL_ID, mesh),
+			Collections.singletonMap(2, rig), Collections.singletonMap(POSE_ID, clip)));
+		RetroNpcData npcData = RetroNpcData.builder()
+			.category(RetroNpcCategory.COWS)
+			.retroModelIds(new int[]{MODEL_ID})
+			.build();
+		assertTrue(cache.ensureBuilt(NPC_ID, npcData));
+	}
+
+	@Test
+	public void testInjectedPoseSkipsTheAnimationLookupWhileSmoothingIsOff()
+	{
+		installInjected();
+
+		assertNotNull(cache.pose(npc(-1, -1, POSE_ID, 1)));
+
+		verify(client, never()).loadAnimation(anyInt());
+	}
+
+	@Test
+	public void testInjectedPoseLooksUpTheLiveAnimationWhileSmoothing()
+	{
+		installInjected();
+		smoothing.setEnabled(true);
+
+		assertNotNull(cache.pose(npc(-1, -1, POSE_ID, 1)));
+
+		verify(client).loadAnimation(POSE_ID);
 	}
 }
