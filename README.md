@@ -10,7 +10,7 @@ are in the OSRS cache where they survived, and a bundled 2005 set where they did
 Each category can be toggled individually under **NPC Toggles** in the plugin config:
 
 - **Chickens**
-- **Goblins**
+- **Goblins** — Modern, 2004/05 (one Feb-2005 kit) or 2006 (the varied 2006 goblins)
 - **Skeletons**
 - **Zombies**
 - **Giants**
@@ -99,7 +99,7 @@ the live objects around it. The Varrock retextures are not supported.
 - **The injected categories ship their assets.** Dragons, demons, imps, guards, elves, the Knights
   of the Round Table, the Varrock NPCs, cows, scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
   live cache, so `retro-assets.dat` (~280 KB) is bundled in the jar and carries their meshes, rigs and animation
-  clips, extracted from the February 2005 & November 2005 caches.
+  clips, extracted from the February 2005 & November 2005 & December 2006 caches. The 2006 goblin bodies need no bundle (their meshes and clips are unchanged in the live cache); only their chathead parts are bundled.
 - **Scenery is drawn by a stand-in.** Static scenery is baked into the renderer's geometry when the
   scene loads and never passes through a per-frame draw, so the plugin asks the renderer to leave
   the live object out and places a stand-in object in its spot, which the draw callback dresses in
