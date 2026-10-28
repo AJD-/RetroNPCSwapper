@@ -54,6 +54,7 @@ public interface RetroNpcConfig extends Config
 	String USE_INJECTION_PIPELINE = "useInjectionPipeline";
 
 	String INCREASE_CHICKEN_SIZE = "increaseChickenSize";
+	String SMOOTH_RETRO_ANIMATIONS = "smoothRetroAnimations";
 
 	/**
 	 * Read-only notice for users, not a setting.
@@ -454,6 +455,20 @@ public interface RetroNpcConfig extends Config
 		position = 2
 	)
 	default boolean increaseChickenSize()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = SMOOTH_RETRO_ANIMATIONS,
+		name = "Smooth retro animations",
+		description = "<html><body style='width:170px'>Blend retro models between animation frames, as "
+			+ "the <b>Animation Smoothing</b> plugin does for everything else.<br><br>Only has an effect "
+			+ "while that plugin is on.</body></html>",
+		section = compatibilitySection,
+		position = 3
+	)
+	default boolean smoothRetroAnimations()
 	{
 		return true;
 	}

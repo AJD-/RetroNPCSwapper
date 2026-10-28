@@ -163,6 +163,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Inject
 	private ChatheadOverlay chatheadOverlay;
 
+	@Inject
+	private RetroAnimationSmoothing smoothing;
+
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
 
@@ -935,6 +938,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// startup, config change, world change, a landed bundle, and attach
 		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
 		modelCache.setIncreaseChickenSize(config.increaseChickenSize());
+		smoothing.setEnabled(config.smoothRetroAnimations());
 
 		// Ahead of the login check: the icon is drawn on the login-free paths too, and the same
 		// triggers - config, safety, attach - decide these swaps as decide the NPCs
