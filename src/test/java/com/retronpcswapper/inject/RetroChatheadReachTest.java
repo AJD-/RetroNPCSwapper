@@ -39,10 +39,10 @@ public class RetroChatheadReachTest
 	private static final int SPARSE_HEAD = 56;
 	private static final int SPARSE_HEAD_FLOOR = 30;
 	private static final int GOBLIN_FLOOR = 80;
-	// 2006 accessories bind few groups, so alone they reach 21-24%; the rows draw them on 142
+	// 2006 rigid accessories, only ever drawn on 142 (checked as merged heads): alone they reach 21-24%,
+	// so they skip the reach floor but keep the group and tear checks
 	private static final int GOBLIN_ACCESSORY_A = 15550;
 	private static final int GOBLIN_ACCESSORY_B = 15552;
-	private static final int GOBLIN_ACCESSORY_FLOOR = 20;
 
 	/** Each face-rigged head as the overlay merges it: key base, then its parts. */
 	private static final int[][] HEADS = {
@@ -71,11 +71,14 @@ public class RetroChatheadReachTest
 		RetroAssetBundle bundle = loadBundle();
 		for (int[] head : HEADS)
 		{
+			if (isLoneGoblinAccessory(head))
+			{
+				continue;
+			}
+
 			RetroMesh mesh = merge(bundle, head);
 			Set<Integer> meshGroups = groupsUsedBy(mesh);
-			int floor = head[0] == GOBLIN && head.length == 2
-				&& (head[1] == GOBLIN_ACCESSORY_A || head[1] == GOBLIN_ACCESSORY_B) ? GOBLIN_ACCESSORY_FLOOR
-				: head[0] == GOBLIN ? GOBLIN_FLOOR
+			int floor = head[0] == GOBLIN ? GOBLIN_FLOOR
 				: head[0] == 0 && head[1] == SPARSE_HEAD ? SPARSE_HEAD_FLOOR : HUMAN_FLOOR;
 
 			for (int emote : emotesFor(head))
@@ -193,6 +196,12 @@ public class RetroChatheadReachTest
 		{
 			merge(bundle, head);
 		}
+	}
+
+	private static boolean isLoneGoblinAccessory(int[] head)
+	{
+		return head[0] == GOBLIN && head.length == 2
+			&& (head[1] == GOBLIN_ACCESSORY_A || head[1] == GOBLIN_ACCESSORY_B);
 	}
 
 	private static int[] emotesFor(int[] head)
