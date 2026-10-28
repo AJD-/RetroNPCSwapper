@@ -93,6 +93,10 @@ the live objects around it. The Varrock retextures are not supported.
   of those settings back on yourself in the `Interact Highlight` config while retro compatibility is
   enabled hands the outlines straight back to the `Interact Highlight` plugin and unticks the
   compatibility checkbox in this plugin.
+- `Animation Smoothing` plugin compatibility: the **Compatibility** section also has a `Smooth retro
+  animations` checkbox, on by default. While RuneLite's `Animation Smoothing` plugin is enabled, it
+  blends retro NPC and scenery models between animation frames, following that plugin's own
+  exclusions. Dialogue chatheads are not blended.
 - **Nothing is downloaded.** For the categories in the first list, the plugin ships only a table of
   numeric model and animation IDs, and every asset it displays already comes from the live game
   cache.
