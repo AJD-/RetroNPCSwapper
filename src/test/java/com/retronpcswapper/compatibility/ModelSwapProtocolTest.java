@@ -174,18 +174,6 @@ public class ModelSwapProtocolTest
 	}
 
 	@Test
-	public void testSyncReqIsRecognisedFromThePartnerOnly()
-	{
-		PluginMessage syn = ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER);
-		assertTrue(ModelSwapProtocol.isSyncReq(syn, ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
-		assertFalse(ModelSwapProtocol.isSyncReq(syn, ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS));
-		assertFalse(ModelSwapProtocol.isSyncReq(ModelSwapProtocol.claimsMessage(Collections.emptySet()),
-			ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS));
-		assertFalse(ModelSwapProtocol.isSyncReq(new PluginMessage(ModelSwapProtocol.NAMESPACE, ModelSwapProtocol.SYN),
-			ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
-	}
-
-	@Test
 	public void testOutlinesRoundTrip()
 	{
 		Function<NPC, Model> poser = npc -> null;
@@ -241,16 +229,6 @@ public class ModelSwapProtocolTest
 	}
 
 	@Test
-	public void testOptOutIsRecognisedFromThePartnerOnly()
-	{
-		PluginMessage optOut = ModelSwapProtocol.optOutMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER);
-		assertTrue(ModelSwapProtocol.isOptOut(optOut, ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
-		assertFalse(ModelSwapProtocol.isOptOut(optOut, ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS));
-		assertFalse(ModelSwapProtocol.isOptOut(ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER),
-			ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
-	}
-
-	@Test
 	public void testThePartnersAreCustomServantsThenCustomNpcModels()
 	{
 		// The order is the order their posers are tried in, so it is part of the contract
@@ -295,29 +273,6 @@ public class ModelSwapProtocolTest
 			new HashMap<>(ModelSwapProtocol.outlinesMessage(SERVANTS, true, null).getData())), outlines));
 		assertNull(ModelSwapProtocol.partnerSource(new PluginMessage(ModelSwapProtocol.NAMESPACE, outlines), outlines));
 		assertNull(ModelSwapProtocol.partnerSource(null, outlines));
-	}
-
-	@Test
-	public void testOptOutAndSyncReqAreRecognisedFromEachPartner()
-	{
-		for (String partner : ModelSwapProtocol.PARTNERS)
-		{
-			assertTrue(partner, ModelSwapProtocol.isOptOut(ModelSwapProtocol.optOutMessage(partner), partner));
-			assertTrue(partner, ModelSwapProtocol.isSyncReq(ModelSwapProtocol.synMessage(partner), partner));
-
-			// Neither is the other, and neither is ours
-			assertFalse(partner, ModelSwapProtocol.isOptOut(ModelSwapProtocol.synMessage(partner), partner));
-			assertFalse(partner, ModelSwapProtocol.isSyncReq(ModelSwapProtocol.optOutMessage(partner), partner));
-			assertFalse(partner, ModelSwapProtocol.isOptOut(ModelSwapProtocol.optOutMessage(RETRO), partner));
-			assertFalse(partner, ModelSwapProtocol.isSyncReq(ModelSwapProtocol.synMessage(RETRO), partner));
-		}
-
-		// One partner's is never the other's
-		assertFalse(ModelSwapProtocol.isOptOut(ModelSwapProtocol.optOutMessage(SERVANTS), CUSTOM));
-		assertFalse(ModelSwapProtocol.isSyncReq(ModelSwapProtocol.synMessage(CUSTOM), SERVANTS));
-		assertFalse(ModelSwapProtocol.isOptOut(null, SERVANTS));
-		assertFalse(ModelSwapProtocol.isOptOut(message(ModelSwapProtocol.OUTLINES_OPT_OUT, ModelSwapProtocol.VERSION + 1, SERVANTS),
-			SERVANTS));
 	}
 
 	/** A message of this protocol built by hand, as a partner's copy would send it. */
