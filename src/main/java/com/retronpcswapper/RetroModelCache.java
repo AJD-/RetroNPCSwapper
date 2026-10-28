@@ -263,12 +263,7 @@ public class RetroModelCache
 		// The bundle arrives off-thread and can land after NPCs have already been built, whose
 		// mesh lookups would then have been recorded against an empty bundle. Dropping the built
 		// models makes them pick it up on the next spawn check; it costs one rebuild, once.
-		baseModels.clear();
-		meshIds.clear();
-		injectedModels.clear();
-		unbuildable.clear();
-		heads.clear();
-		headless.clear();
+		flushBuilt();
 
 		log.debug("Retro asset bundle loaded: {}", this.bundle);
 	}
@@ -849,10 +844,7 @@ public class RetroModelCache
 
 		// Which path a model was built down is decided at build time, so already-built models have
 		// to go for the toggle to take effect on NPCs that are already on screen
-		baseModels.clear();
-		injectedModels.clear();
-		meshIds.clear();
-		unbuildable.clear();
+		flushBuiltModels();
 	}
 
 	/**
@@ -868,11 +860,8 @@ public class RetroModelCache
 		this.goblinEra = goblinEra;
 		log.debug("Goblin era {}", goblinEra);
 
-		// Goblin ids resolve to different rows per era, so built models are stale
-		baseModels.clear();
-		injectedModels.clear();
-		meshIds.clear();
-		unbuildable.clear();
+		// Goblin ids resolve to different rows per era, so built models and heads are stale
+		flushBuilt();
 	}
 
 	/**
@@ -890,10 +879,22 @@ public class RetroModelCache
 
 		// The resize is baked in at build time, as with the injection toggle, so chickens already on
 		// screen keep their old size until what was built for them goes
+		flushBuiltModels();
+	}
+
+	private void flushBuiltModels()
+	{
 		baseModels.clear();
 		injectedModels.clear();
 		meshIds.clear();
 		unbuildable.clear();
+	}
+
+	private void flushBuilt()
+	{
+		flushBuiltModels();
+		heads.clear();
+		headless.clear();
 	}
 
 	public void clear()

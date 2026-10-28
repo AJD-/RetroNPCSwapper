@@ -25,11 +25,18 @@
 package com.retronpcswapper;
 
 import com.google.inject.Guice;
+import com.retronpcswapper.chathead.RetroHead;
+import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroMesh;
+import java.util.Collections;
 import net.runelite.api.Client;
 import net.runelite.api.Model;
 import net.runelite.api.ModelData;
 import org.junit.Before;
 import org.junit.Test;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -40,6 +47,7 @@ public class RetroModelCacheTest
 {
 	private static final int NPC_ID = 3;
 	private static final int MODEL_ID = 2951;
+	private static final int HEAD_ID = 142;
 
 	private Client client;
 	private RetroModelCache cache;
@@ -57,7 +65,16 @@ public class RetroModelCacheTest
 		data = RetroNpcData.builder()
 			.category(RetroNpcCategory.GOBLINS)
 			.retroModelIds(new int[]{MODEL_ID})
+			.chathead(HEAD_ID)
 			.build();
+		RetroMesh head = new RetroMesh(HEAD_ID, 0,
+			new float[]{-64f, 64f, 0f}, new float[]{64f, 64f, -64f}, new float[]{0f, 0f, 0f},
+			new int[]{0}, new int[]{1}, new int[]{2},
+			new short[]{(short) 0x3A05}, null, null, null, null,
+			null, null, null, null,
+			null);
+		cache.setBundle(new RetroAssetBundle(Collections.singletonMap(HEAD_ID, head),
+			Collections.emptyMap(), Collections.emptyMap()));
 	}
 
 	@Test
@@ -81,5 +98,26 @@ public class RetroModelCacheTest
 		cache.setGoblinEra(GoblinEra.RETRO_2005);
 		assertTrue(cache.ensureBuilt(NPC_ID, data));
 		verify(client, times(1)).loadModelData(MODEL_ID);
+	}
+
+	@Test
+	public void testChangingTheGoblinEraRebuildsChatheads()
+	{
+		RetroHead head = cache.headFor(NPC_ID, data);
+		assertNotNull(head);
+		assertSame(head, cache.headFor(NPC_ID, data));
+
+		cache.setGoblinEra(GoblinEra.RETRO_2006);
+		assertNotSame(head, cache.headFor(NPC_ID, data));
+	}
+
+	@Test
+	public void testSettingTheSameGoblinEraKeepsChatheads()
+	{
+		cache.setGoblinEra(GoblinEra.RETRO_2005);
+		RetroHead head = cache.headFor(NPC_ID, data);
+
+		cache.setGoblinEra(GoblinEra.RETRO_2005);
+		assertSame(head, cache.headFor(NPC_ID, data));
 	}
 }
