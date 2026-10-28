@@ -3512,7 +3512,8 @@ public class RetroNpcCategoryTest
 	@Test
 	public void test2006EraNeverFallsBackToA2005GoblinRow()
 	{
-		assertNotSame(RetroNpcMapping.GOBLIN_DEFAULT,
-			RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.RETRO_2006));
+		RetroNpcData d = RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.RETRO_2006);
+		assertNotSame(RetroNpcMapping.GOBLIN_DEFAULT, d);
+		assertArrayEquals(new int[]{5536, 5539, 5544, 5547}, d.getRetroModelIds());
 	}
 }
