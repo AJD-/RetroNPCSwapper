@@ -59,6 +59,7 @@ public class RetroModelCacheSmoothingTest
 	private static final int MODEL_ID = 100;
 	private static final int ACTION_ID = 6184;
 	private static final int POSE_ID = 6182;
+	private static final int WALK_ID = 6183;
 
 	private Client client;
 	private RetroModelCache cache;
@@ -86,6 +87,7 @@ public class RetroModelCacheSmoothingTest
 		when(npc.getAnimationFrame()).thenReturn(frame);
 		when(npc.getPoseAnimation()).thenReturn(poseAnimation);
 		when(npc.getPoseAnimationFrame()).thenReturn(poseFrame);
+		when(npc.getIdlePoseAnimation()).thenReturn(POSE_ID);
 		return npc;
 	}
 
@@ -200,6 +202,19 @@ public class RetroModelCacheSmoothingTest
 		cache.pose(npc(ACTION_ID, 2, POSE_ID, 7));
 
 		verify(client).applyTransformations(base, action, 2, pose, 7);
+		verify(client, never()).applyTransformations(any(), any(), anyInt(), isNull(), anyInt());
+	}
+
+	@Test
+	public void testActingWhileWalkingKeepsTheTwoAnimationCall()
+	{
+		smoothing.setEnabled(true);
+		Animation walk = animation(WALK_ID, 8, 4);
+		when(client.loadAnimation(WALK_ID)).thenReturn(walk);
+
+		cache.pose(npc(ACTION_ID, 2, WALK_ID, 7));
+
+		verify(client).applyTransformations(base, action, 2, walk, 7);
 		verify(client, never()).applyTransformations(any(), any(), anyInt(), isNull(), anyInt());
 	}
 

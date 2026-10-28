@@ -339,9 +339,11 @@ public class RetroModelCache
 		boolean acting = acting(action, actionFrame);
 		Animation single = acting ? action : pose;
 		int frame = acting ? actionFrame : poseFrame;
+		// The client keeps a non-idle pose under an action, interleaved and never blended
+		boolean layered = acting && npc.getPoseAnimation() != npc.getIdlePoseAnimation();
 
 		Model posed;
-		if (smoothing.blends(single) && frame >= 0 && frame < single.getFrameLengths().length)
+		if (!layered && smoothing.blends(single) && frame >= 0 && frame < single.getFrameLengths().length)
 		{
 			// One animation only: the client does not blend when handed two
 			FrameClock clock = acting ? clocks(npc).action : clocks(npc).pose;
