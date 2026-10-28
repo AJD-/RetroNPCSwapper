@@ -39,6 +39,10 @@ public class RetroChatheadReachTest
 	private static final int SPARSE_HEAD = 56;
 	private static final int SPARSE_HEAD_FLOOR = 30;
 	private static final int GOBLIN_FLOOR = 80;
+	// 2006 accessories bind few groups, so alone they reach 21-24%; the rows draw them on 142
+	private static final int GOBLIN_ACCESSORY_A = 15550;
+	private static final int GOBLIN_ACCESSORY_B = 15552;
+	private static final int GOBLIN_ACCESSORY_FLOOR = 20;
 
 	/** Each face-rigged head as the overlay merges it: key base, then its parts. */
 	private static final int[][] HEADS = {
@@ -48,7 +52,8 @@ public class RetroChatheadReachTest
 		{0, 103}, {0, 53, 43}, {0, 53, 35}, {0, 52, 81},
 		{NOV, 4011}, {NOV, 4012}, {NOV, 4013}, {NOV, 8257, 41}, {NOV, 8258}, {NOV, 8259}, {NOV, 8260},
 		{NOV, 8261},
-		{GOBLIN, 142}, {GOBLIN, 144}};
+		{GOBLIN, 142}, {GOBLIN, 144}, {GOBLIN, 15550}, {GOBLIN, 15551}, {GOBLIN, 15552},
+		{GOBLIN, 142, 15550}, {GOBLIN, 142, 15552}};
 
 	/** The heads that move whole or not at all, which only have to be in the bundle. */
 	private static final int[][] STILL_HEADS = {{0, 28, 78}, {0, 5204}, {0, 5179}};
@@ -68,7 +73,9 @@ public class RetroChatheadReachTest
 		{
 			RetroMesh mesh = merge(bundle, head);
 			Set<Integer> meshGroups = groupsUsedBy(mesh);
-			int floor = head[0] == GOBLIN ? GOBLIN_FLOOR
+			int floor = head[0] == GOBLIN && head.length == 2
+				&& (head[1] == GOBLIN_ACCESSORY_A || head[1] == GOBLIN_ACCESSORY_B) ? GOBLIN_ACCESSORY_FLOOR
+				: head[0] == GOBLIN ? GOBLIN_FLOOR
 				: head[0] == 0 && head[1] == SPARSE_HEAD ? SPARSE_HEAD_FLOOR : HUMAN_FLOOR;
 
 			for (int emote : emotesFor(head))

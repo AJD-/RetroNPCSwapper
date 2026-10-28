@@ -423,7 +423,10 @@ public class RetroAssetGenerator
 		// The armoured goblins' heads, 298 green (142) and 299 red (144), which the Goblin guard 489
 		// shares. Their own rig and emotes, so a namespace of their own
 		Spec.keyed("Goblin chatheads", RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE,
-			Source.RETRO, Source.RETRO, new int[]{142, 144}, GOBLIN_CHAT_EMOTES)
+			Source.RETRO, Source.RETRO, new int[]{142, 144}, GOBLIN_CHAT_EMOTES),
+		// The 2006 goblins' extra head parts, on the same head rig, so posed by the Feb emotes above
+		Spec.keyed("Goblin chatheads (2006)", RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE,
+			Source.RETRO_2006, Source.RETRO_2006, new int[]{15550, 15551, 15552}, new int[]{})
 	);
 
 	enum Source
@@ -434,7 +437,9 @@ public class RetroAssetGenerator
 		 * The November 2005 cache. Its clips are decoded onto rig ids of their own, see
 		 * {@link RetroFrameDecoder#RETRO_NOV_RIG_ID_BASE}.
 		 */
-		RETRO_NOV
+		RETRO_NOV,
+		/** The Dec-2006 cache. Meshes only: its clips use the modern frame format. */
+		RETRO_2006
 	}
 
 	public static void main(String[] args) throws IOException
@@ -468,21 +473,42 @@ public class RetroAssetGenerator
 			return;
 		}
 
+		Retro2006CacheReader retro2006 = null;
+		if (SPECS.stream().anyMatch(spec -> spec.source == Source.RETRO_2006))
+		{
+			File retro2006Dir = Retro2006CacheReader.resolveDir();
+			retro2006 = Retro2006CacheReader.open(retro2006Dir);
+			if (retro2006 == null)
+			{
+				retro.close();
+				retroNov.close();
+				System.err.println("Could not read the December 2006 cache at " + retro2006Dir.getAbsolutePath()
+					+ " - extract the cache/ folder of the OpenRS2 233 zip there, or pass one with -Pretro2006Dir=<path>.");
+				System.exit(1);
+				return;
+			}
+		}
+
 		try (Store store = new Store(liveDir))
 		{
 			store.load();
 
-			RetroAssetBundle bundle = build(store, retro, retroNov);
+			RetroAssetBundle bundle = build(store, retro, retroNov, retro2006);
 			write(bundle);
 		}
 		finally
 		{
 			retro.close();
 			retroNov.close();
+			if (retro2006 != null)
+			{
+				retro2006.close();
+			}
 		}
 	}
 
-	static RetroAssetBundle build(Store store, RetroCacheReader retro, RetroCacheReader retroNov) throws IOException
+	static RetroAssetBundle build(Store store, RetroCacheReader retro, RetroCacheReader retroNov,
+		Retro2006CacheReader retro2006) throws IOException
 	{
 		Map<Integer, RetroMesh> meshes = new LinkedHashMap<>();
 		Map<Integer, RetroRig> rigs = new LinkedHashMap<>();
@@ -490,7 +516,7 @@ public class RetroAssetGenerator
 
 		RetroFrameIndex retroFrames = null;
 		Map<Integer, RetroSeqDefinition> retroSequences = null;
-		if (SPECS.stream().anyMatch(spec -> spec.clipSource == Source.RETRO))
+		if (SPECS.stream().anyMatch(spec -> spec.clipSource == Source.RETRO && spec.sequenceIds.length > 0))
 		{
 			retroFrames = RetroFrameDecoder.decodeAll(retro);
 			retroSequences = decodeRetroSequences(retro);
@@ -500,7 +526,7 @@ public class RetroAssetGenerator
 
 		RetroFrameIndex novFrames = null;
 		Map<Integer, RetroSeqDefinition> novSequences = null;
-		if (SPECS.stream().anyMatch(spec -> spec.clipSource == Source.RETRO_NOV))
+		if (SPECS.stream().anyMatch(spec -> spec.clipSource == Source.RETRO_NOV && spec.sequenceIds.length > 0))
 		{
 			novFrames = RetroFrameDecoder.decodeAll(retroNov, RetroFrameDecoder.RETRO_NOV_RIG_ID_BASE);
 			novSequences = decodeRetroSequences(retroNov);
@@ -544,6 +570,9 @@ public class RetroAssetGenerator
 						break;
 					case RETRO_NOV:
 						part = decodeRetroModel(retroNov, modelId);
+						break;
+					case RETRO_2006:
+						part = retro2006.model(modelId);
 						break;
 					default:
 						part = decodeLiveModel(store, modelId);
@@ -630,6 +659,8 @@ public class RetroAssetGenerator
 						clip = buildRetroClip(store, sequenceId, retroSequenceId, key,
 							novFrames, novSequences, rigs);
 						break;
+					case RETRO_2006:
+						throw new IllegalStateException(spec.label + ": 2006 clips are not decoded (modern frame format)");
 					case LIVE:
 						sourceSequences = null;
 						clip = buildClip(store, sequenceId, rigs);

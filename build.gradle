@@ -234,7 +234,7 @@ tasks.register('verifyRetroRigs', JavaExec) {
 // Meshes and clips each come from whichever cache still holds a usable copy - see SPECS in
 // RetroAssetGenerator. Only the skeleton and the giant family stay on live clips. The dairy cow
 // and the Lletya elves come from the November 2005 cache, extracted to retrocache/nov2005cache
-// (or -PretroNovDir).
+// (or -PretroNovDir). The 2006 goblin head parts come from retrocache/dec2006cache (or -Pretro2006Dir).
 //   ./gradlew generateRetroAssets
 tasks.register('generateRetroAssets', JavaExec) {
 	classpath = sourceSets.test.runtimeClasspath
@@ -249,6 +249,9 @@ tasks.register('generateRetroAssets', JavaExec) {
 	}
 	if (project.hasProperty('retroNovDir')) {
 		systemProperty 'retronpcswapper.retroNovDir', project.property('retroNovDir')
+	}
+	if (project.hasProperty('retro2006Dir')) {
+		systemProperty 'retronpcswapper.retro2006Dir', project.property('retro2006Dir')
 	}
 }
 
