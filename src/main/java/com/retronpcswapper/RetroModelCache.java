@@ -26,6 +26,7 @@ package com.retronpcswapper;
 
 import com.retronpcswapper.chathead.RetroHead;
 import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroBlend;
 import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroDecals;
 import com.retronpcswapper.inject.RetroFrameTiming;
@@ -131,6 +132,9 @@ public class RetroModelCache
 	private final Set<Integer> headless = new HashSet<>();
 
 	private final RetroSkinner skinner = new RetroSkinner();
+
+	/** Scratch blend for the injected path, reused per draw. */
+	private final RetroBlend blend = new RetroBlend();
 
 	/** Scratch pose buffers for the skinner comparison, grown to whatever mesh needs them. */
 	private float[] skinnedX = new float[0];
@@ -687,19 +691,41 @@ public class RetroModelCache
 			reportAction(npc.getId(), action, frame, clip);
 		}
 
+		boolean acting = true;
 		if (clip == null || !clip.hasFrame(frame))
 		{
 			int pose = npc.getPoseAnimation();
 			clip = pose == -1 ? null : bundle.getClip(keyBase + pose);
 			frame = npc.getPoseAnimationFrame();
+			acting = false;
 		}
 
 		RetroRig rig = clip == null ? null : bundle.getRig(clip.getRigId());
 
+		// Clocks follow the live animation id, not the bundle key
+		int liveId = acting ? action : npc.getPoseAnimation();
+		Animation live = animation(liveId);
+		int[] lengths = live == null ? null : live.getFrameLengths();
+		boolean blended = false;
+		if (clip != null && rig != null && lengths != null && frame >= 0 && frame < lengths.length && smoothing.blends(live))
+		{
+			FrameClock clock = acting ? clocks(npc).action : clocks(npc).pose;
+			int elapsed = clock.elapsed(liveId, frame, client.getGameCycle(), lengths[frame]);
+			blended = blend.compute(clip, frame, elapsed, lengths, live.getFrameStep(), !acting);
+		}
+
 		// A missing clip is not a failure - it leaves the mesh in its rest pose, which is far better
 		// than not drawing the NPC at all
-		skinner.pose(mesh, rig, clip, frame,
-			model.getVerticesX(), model.getVerticesY(), model.getVerticesZ());
+		if (blended)
+		{
+			skinner.pose(mesh, rig, clip, frame, blend.next, blend.t, blend.interval,
+				model.getVerticesX(), model.getVerticesY(), model.getVerticesZ());
+		}
+		else
+		{
+			skinner.pose(mesh, rig, clip, frame,
+				model.getVerticesX(), model.getVerticesY(), model.getVerticesZ());
+		}
 		model.calculateBoundsCylinder();
 
 		return model;
