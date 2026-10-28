@@ -120,6 +120,12 @@ public class Retro2006CacheTest
 				assertArrayEquals("x " + id, retro.vertexX, live.vertexX);
 				assertArrayEquals("y " + id, retro.vertexY, live.vertexY);
 				assertArrayEquals("z " + id, retro.vertexZ, live.vertexZ);
+				assertArrayEquals("face a " + id, retro.faceIndices1, live.faceIndices1);
+				assertArrayEquals("face b " + id, retro.faceIndices2, live.faceIndices2);
+				assertArrayEquals("face c " + id, retro.faceIndices3, live.faceIndices3);
+				// load() nulls packedVertexGroups, so the rig is read unpacked
+				assertNotNull("rig " + id, retro.getVertexGroups());
+				assertArrayEquals("rig " + id, retro.getVertexGroups(), live.getVertexGroups());
 			}
 		}
 	}

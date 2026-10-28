@@ -483,7 +483,8 @@ public class RetroAssetGenerator
 				retro.close();
 				retroNov.close();
 				System.err.println("Could not read the December 2006 cache at " + retro2006Dir.getAbsolutePath()
-					+ " - extract the cache/ folder of the OpenRS2 233 zip there, or pass one with -Pretro2006Dir=<path>.");
+					+ " - extract the OpenRS2 233 disk.zip there flat (main_file_cache.dat2 and the idx files directly"
+					+ " inside), or pass one with -Pretro2006Dir=<path>.");
 				System.exit(1);
 				return;
 			}
