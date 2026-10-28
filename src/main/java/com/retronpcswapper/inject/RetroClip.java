@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper.inject;
 
+import java.util.Arrays;
 import lombok.Getter;
 
 /**
@@ -52,6 +53,10 @@ public final class RetroClip
 	private final int[][] dy;
 	private final int[][] dz;
 
+	/** Per frame: bounds of the run of identical consecutive frames it sits in. */
+	private final int[] runStart;
+	private final int[] runEnd;
+
 	public RetroClip(int sequenceId, int rigId, int[][] transforms, int[][] dx, int[][] dy, int[][] dz)
 	{
 		this.sequenceId = sequenceId;
@@ -60,6 +65,38 @@ public final class RetroClip
 		this.dx = dx;
 		this.dy = dy;
 		this.dz = dz;
+
+		int n = transforms.length;
+		runStart = new int[n];
+		runEnd = new int[n];
+		for (int f = 0; f < n; f++)
+		{
+			runStart[f] = f > 0 && sameFrame(f - 1, f) ? runStart[f - 1] : f;
+		}
+		for (int f = n - 1; f >= 0; f--)
+		{
+			runEnd[f] = f < n - 1 && sameFrame(f, f + 1) ? runEnd[f + 1] : f;
+		}
+	}
+
+	private boolean sameFrame(int a, int b)
+	{
+		return Arrays.equals(transforms[a], transforms[b])
+			&& Arrays.equals(dx[a], dx[b])
+			&& Arrays.equals(dy[a], dy[b])
+			&& Arrays.equals(dz[a], dz[b]);
+	}
+
+	/** First frame of the run of identical consecutive frames containing {@code frame}. */
+	public int getRunStart(int frame)
+	{
+		return runStart[frame];
+	}
+
+	/** Last frame of that run. */
+	public int getRunEnd(int frame)
+	{
+		return runEnd[frame];
 	}
 
 	public int getFrameCount()
