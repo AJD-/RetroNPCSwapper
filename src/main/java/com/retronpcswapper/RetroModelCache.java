@@ -28,6 +28,7 @@ import com.retronpcswapper.chathead.RetroHead;
 import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroDecals;
+import com.retronpcswapper.inject.RetroFrameTiming;
 import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
 import com.retronpcswapper.inject.RetroMeshMerger;
@@ -38,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,6 +65,12 @@ public class RetroModelCache
 {
 	@Inject
 	private Client client;
+
+	@Inject
+	private RetroAnimationSmoothing smoothing;
+
+	/** Per-NPC frame clocks for smoothing, keyed by instance: same-id NPCs sit on different frames. */
+	private final Map<NPC, NpcClocks> clocks = new IdentityHashMap<>();
 
 	/** Unposed, lit retro models keyed by NPC id. */
 	private final Map<Integer, Model> baseModels = new HashMap<>();
@@ -322,10 +330,25 @@ public class RetroModelCache
 
 		Animation action = animation(npc.getAnimation());
 		Animation pose = animation(npc.getPoseAnimation());
-		Model posed = client.applyTransformations(base, action, npc.getAnimationFrame(), pose,
-			npc.getPoseAnimationFrame());
+		int actionFrame = npc.getAnimationFrame();
+		int poseFrame = npc.getPoseAnimationFrame();
+		boolean acting = acting(action, actionFrame);
+		Animation single = acting ? action : pose;
+		int frame = acting ? actionFrame : poseFrame;
 
-		verifySkinning(npc, posed);
+		Model posed;
+		if (smoothing.blends(single) && frame >= 0 && frame < single.getFrameLengths().length)
+		{
+			// One animation only: the client does not blend when handed two
+			FrameClock clock = acting ? clocks(npc).action : clocks(npc).pose;
+			int elapsed = clock.elapsed(single.getId(), frame, client.getGameCycle(), single.getFrameLengths()[frame]);
+			posed = client.applyTransformations(base, single, RetroFrameTiming.pack(frame, elapsed, !acting), null, 0);
+		}
+		else
+		{
+			posed = client.applyTransformations(base, action, actionFrame, pose, poseFrame);
+			verifySkinning(npc, posed);
+		}
 
 		if (posed == null || !useInjectionPipeline)
 		{
@@ -337,6 +360,28 @@ public class RetroModelCache
 		// than at the consumer.
 		injected.copyFrom(posed);
 		return injected;
+	}
+
+	private NpcClocks clocks(NPC npc)
+	{
+		return clocks.computeIfAbsent(npc, k -> new NpcClocks());
+	}
+
+	/** Drops a despawned NPC's frame clocks. */
+	public void forget(NPC npc)
+	{
+		clocks.remove(npc);
+	}
+
+	public void clearClocks()
+	{
+		clocks.clear();
+	}
+
+	/** Whether the action channel is showing, as the client decides it. */
+	static boolean acting(Animation action, int frame)
+	{
+		return action != null && frame >= 0 && frame < action.getNumFrames();
 	}
 
 	/**
@@ -714,6 +759,13 @@ public class RetroModelCache
 		}
 	}
 
+	/** One NPC's action and pose frame clocks. */
+	private static final class NpcClocks
+	{
+		final FrameClock action = new FrameClock();
+		final FrameClock pose = new FrameClock();
+	}
+
 	/**
 	 * Checks {@link RetroSkinner} against the client's own animation for the same mesh and frame.
 	 * <p>
@@ -890,6 +942,7 @@ public class RetroModelCache
 		unbuildable.clear();
 		heads.clear();
 		headless.clear();
+		clocks.clear();
 	}
 
 	private Model build(RetroNpcData data)

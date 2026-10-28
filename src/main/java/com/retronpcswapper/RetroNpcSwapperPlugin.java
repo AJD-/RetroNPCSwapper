@@ -504,6 +504,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			// Only per-NPC bookkeeping is dropped. The cache's substitution memo is keyed by NPC
 			// id, not index, and is shared by every instance of that type, so it is left alone.
 			originalNpcState.remove(npc.getIndex());
+			modelCache.forget(npc);
 		}
 	}
 
@@ -585,6 +586,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			|| gameStateChanged.getGameState() == GameState.HOPPING)
 		{
 			originalNpcState.clear();
+			modelCache.clearClocks();
 			targetTracker.reset();
 		}
 
