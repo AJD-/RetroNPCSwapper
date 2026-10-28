@@ -222,8 +222,10 @@ public class RetroGoblinMapping2006Test
 		};
 		for (int id : ids)
 		{
-			assertNotNull("npc " + id, row(id));
-			assertEquals(RetroNpcCategory.GOBLINS, row(id).getCategory());
+			// By id alone, so a missing register() is not hidden by the "goblin" name row
+			RetroNpcData d = RetroGoblinMapping2006.get(id, null);
+			assertNotNull("npc " + id, d);
+			assertEquals(RetroNpcCategory.GOBLINS, d.getCategory());
 		}
 	}
 
