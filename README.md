@@ -175,6 +175,8 @@ NPC's model, its animations nor its chathead. Every other NPC is swapped as usua
 any of them: only one draws `Interact Highlight`'s NPC outlines at a time, each around whichever plugin's
 model is on screen. Custom NPC Models' current release coordinates with this plugin only, so when it and
 Custom Servants both run, turn the option on in this plugin, or in only one of those two.
+Whichever plugin takes the outlines first keeps them until it lets go; untick the option in Custom
+Servants if you want this plugin to draw them, so its object outlines are kept too.
 </details>
 
 ### If you'd like to report a bug or request a feature, please create an issue [here](https://github.com/AJD-/RetroNPCSwapper/issues)
