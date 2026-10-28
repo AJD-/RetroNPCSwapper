@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -274,5 +275,23 @@ public class RetroModelCacheSmoothingTest
 		assertNotNull(cache.pose(npc(-1, -1, POSE_ID, 1)));
 
 		verify(client).loadAnimation(POSE_ID);
+	}
+
+	@Test
+	public void testInjectedPoseBlendsTowardTheNextFrame()
+	{
+		installInjected();
+		smoothing.setEnabled(true);
+		// Live sequence matches the clip's two frames
+		Animation twoFrames = animation(POSE_ID, 2, 4);
+		when(client.loadAnimation(POSE_ID)).thenReturn(twoFrames);
+		when(client.getGameCycle()).thenReturn(100, 102);
+		NPC npc = npc(-1, -1, POSE_ID, 0);
+
+		float[] plain = cache.pose(npc).getVerticesX().clone();
+		float[] blended = cache.pose(npc).getVerticesX();
+
+		assertArrayEquals(new float[]{0f, 100f}, plain, 0.01f);
+		assertArrayEquals(new float[]{5f, 105f}, blended, 0.01f);
 	}
 }
