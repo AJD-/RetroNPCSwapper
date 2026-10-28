@@ -145,7 +145,8 @@ public final class RetroSkinner
 					translate(mesh, groups, dx, dy, dz, outX, outY, outZ);
 					break;
 				case TYPE_ROTATE:
-					rotate(mesh, groups, dx, dy, dz, outX, outY, outZ);
+					rotate(mesh, groups, (dx & 0xFF) * ROTATION_SHIFT, (dy & 0xFF) * ROTATION_SHIFT,
+						(dz & 0xFF) * ROTATION_SHIFT, outX, outY, outZ);
 					break;
 				case TYPE_SCALE:
 					scale(mesh, groups, dx, dy, dz, outX, outY, outZ);
@@ -166,7 +167,7 @@ public final class RetroSkinner
 	 * already applied this frame - which is how a limb ends up rotating about its parent's current
 	 * position rather than its resting one.
 	 */
-	private void setPivot(RetroMesh mesh, int[] groups, int dx, int dy, int dz,
+	private void setPivot(RetroMesh mesh, int[] groups, float dx, float dy, float dz,
 		float[] outX, float[] outY, float[] outZ)
 	{
 		float sumX = 0f;
@@ -199,7 +200,7 @@ public final class RetroSkinner
 		}
 	}
 
-	private void translate(RetroMesh mesh, int[] groups, int dx, int dy, int dz,
+	private void translate(RetroMesh mesh, int[] groups, float dx, float dy, float dz,
 		float[] outX, float[] outY, float[] outZ)
 	{
 		for (int group : groups)
@@ -213,13 +214,10 @@ public final class RetroSkinner
 		}
 	}
 
-	private void rotate(RetroMesh mesh, int[] groups, int dx, int dy, int dz,
+	/** Angles are trig-table indices, 0..2047. */
+	private void rotate(RetroMesh mesh, int[] groups, int angleX, int angleY, int angleZ,
 		float[] outX, float[] outY, float[] outZ)
 	{
-		int angleX = (dx & 0xFF) * ROTATION_SHIFT;
-		int angleY = (dy & 0xFF) * ROTATION_SHIFT;
-		int angleZ = (dz & 0xFF) * ROTATION_SHIFT;
-
 		for (int group : groups)
 		{
 			for (int vertex : mesh.getVertexGroup(group))
@@ -264,7 +262,7 @@ public final class RetroSkinner
 		}
 	}
 
-	private void scale(RetroMesh mesh, int[] groups, int dx, int dy, int dz,
+	private void scale(RetroMesh mesh, int[] groups, float dx, float dy, float dz,
 		float[] outX, float[] outY, float[] outZ)
 	{
 		for (int group : groups)
