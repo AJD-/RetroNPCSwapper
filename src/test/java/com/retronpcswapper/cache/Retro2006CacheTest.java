@@ -24,9 +24,11 @@
  */
 package com.retronpcswapper.cache;
 
+import com.retronpcswapper.RetroGoblinMapping2006Test;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import net.runelite.cache.IndexType;
 import net.runelite.cache.definitions.ModelDefinition;
 import net.runelite.cache.definitions.loaders.ModelLoader;
@@ -94,33 +96,40 @@ public class Retro2006CacheTest
 	}
 
 	/**
-	 * The goblin body and head are still the 2006 meshes in the live cache.
+	 * The cache-backed goblin rows rely on the live cache still holding the Dec-2006 geometry.
 	 */
 	@Test
-	public void testGoblinMeshesMatchLive() throws Exception
+	public void testEvery2006GoblinMeshIsIdenticalInLive() throws Exception
 	{
 		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
 		assumeTrue("live cache not found", liveDir != null);
 
+		Set<Integer> ids = RetroGoblinMapping2006Test.modelIds();
+		assertEquals(31, ids.size());
 		try (Store store = new Store(liveDir))
 		{
 			store.load();
-			for (int id : new int[]{5540, 15551})
+			for (int id : ids)
 			{
 				Archive archive = store.getIndex(IndexType.MODELS).getArchive(id);
+				assertNotNull("live archive " + id, archive);
 				ModelDefinition live = new ModelLoader().load(id, archive.decompress(store.getStorage().loadArchive(archive)));
-				ModelDefinition old = reader.model(id);
-				assertEquals("model " + id + " vertices", live.vertexCount, old.vertexCount);
-				assertEquals("model " + id + " faces", live.faceCount, old.faceCount);
-				assertArrayEquals("model " + id + " palette", palette(live), palette(old));
+				ModelDefinition retro = reader.model(id);
+				assertNotNull("2006 model " + id, retro);
+				assertEquals("vertices " + id, retro.vertexCount, live.vertexCount);
+				assertEquals("faces " + id, retro.faceCount, live.faceCount);
+				assertArrayEquals("colours " + id, sorted(retro.faceColors), sorted(live.faceColors));
+				assertArrayEquals("x " + id, retro.vertexX, live.vertexX);
+				assertArrayEquals("y " + id, retro.vertexY, live.vertexY);
+				assertArrayEquals("z " + id, retro.vertexZ, live.vertexZ);
 			}
 		}
 	}
 
-	private static short[] palette(ModelDefinition model)
+	private static short[] sorted(short[] colors)
 	{
-		short[] colors = model.faceColors.clone();
-		Arrays.sort(colors);
-		return colors;
+		short[] copy = colors.clone();
+		Arrays.sort(copy);
+		return copy;
 	}
 }
