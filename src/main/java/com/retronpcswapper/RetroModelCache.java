@@ -98,6 +98,8 @@ public class RetroModelCache
 	 */
 	private boolean useInjectionPipeline;
 
+	private GoblinEra goblinEra = GoblinEra.RETRO_2005;
+
 	/**
 	 * Whether chickens are enlarged to match modern OSRS model/hitbox. Off draws them at the size
 	 * their 2005 definitions asked for - see {@link RetroNpcMapping#at2005Size}.
@@ -847,6 +849,26 @@ public class RetroModelCache
 
 		// Which path a model was built down is decided at build time, so already-built models have
 		// to go for the toggle to take effect on NPCs that are already on screen
+		baseModels.clear();
+		injectedModels.clear();
+		meshIds.clear();
+		unbuildable.clear();
+	}
+
+	/**
+	 * Switches the goblin era. Client thread only.
+	 */
+	public void setGoblinEra(GoblinEra goblinEra)
+	{
+		if (this.goblinEra == goblinEra)
+		{
+			return;
+		}
+
+		this.goblinEra = goblinEra;
+		log.debug("Goblin era {}", goblinEra);
+
+		// Goblin ids resolve to different rows per era, so built models are stale
 		baseModels.clear();
 		injectedModels.clear();
 		meshIds.clear();

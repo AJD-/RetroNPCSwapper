@@ -550,7 +550,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName());
+		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName(), config.goblinEra());
 		if (data == null)
 		{
 			return;
@@ -666,7 +666,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName());
+		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName(), config.goblinEra());
 
 		// Animation overrides are gated on substitution being live. Without the wrapper the
 		// model stays vanilla, and a modern-rigged model playing a 2005 sequence - which is
@@ -721,7 +721,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		NPCComposition composition = client.getNpcDefinition(npcId);
-		RetroNpcData data = RetroNpcMapping.get(npcId, composition == null ? null : composition.getName());
+		RetroNpcData data = RetroNpcMapping.get(npcId, composition == null ? null : composition.getName(),
+			config.goblinEra());
 		if (!isSwapLive(data) || !data.hasChathead())
 		{
 			return null;
@@ -960,6 +961,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Cheap and idempotent, and this runs on every path that could have changed the setting -
 		// startup, config change, world change, a landed bundle, and attach
 		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
+		modelCache.setGoblinEra(config.goblinEra());
 		modelCache.setIncreaseChickenSize(config.increaseChickenSize());
 
 		// Ahead of the login check: the icon is drawn on the login-free paths too, and the same

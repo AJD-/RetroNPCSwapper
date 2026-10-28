@@ -3492,4 +3492,27 @@ public class RetroNpcCategoryTest
 		assertArrayEquals("chathead of " + npcId + " / " + name, parts, data.getChatheadModelIds());
 		assertEquals("chathead key base of " + npcId + " / " + name, keyBase, data.getChatheadKeyBase());
 	}
+
+	@Test
+	public void testModernEraHidesEveryGoblinRow()
+	{
+		assertNull(RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.MODERN));
+		assertNull(RetroNpcMapping.get(NpcID.GOBLIN_GREENARMOUR, "Goblin", GoblinEra.MODERN));
+		// a non-goblin row is untouched by the era
+		assertNotNull(RetroNpcMapping.get(0, "Chicken", GoblinEra.MODERN));
+	}
+
+	@Test
+	public void test2005EraIsTheTwoArgLookup()
+	{
+		assertSame(RetroNpcMapping.get(NpcID.GOBLIN, "Goblin"),
+			RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.RETRO_2005));
+	}
+
+	@Test
+	public void test2006EraNeverFallsBackToA2005GoblinRow()
+	{
+		assertNotSame(RetroNpcMapping.GOBLIN_DEFAULT,
+			RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.RETRO_2006));
+	}
 }

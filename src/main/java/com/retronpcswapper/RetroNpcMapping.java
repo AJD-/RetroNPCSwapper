@@ -3058,18 +3058,44 @@ public class RetroNpcMapping
 
 	public static RetroNpcData get(int npcId, String npcName)
 	{
+		return get(npcId, npcName, GoblinEra.RETRO_2005);
+	}
+
+	public static RetroNpcData get(int npcId, String npcName, GoblinEra era)
+	{
 		// Ahead of both tables: an excluded NPC must not be reachable by name either
 		if (EXCLUDED_IDS.contains(npcId))
 		{
 			return null;
 		}
 
-		if (npcName == null)
+		String nameLower = npcName == null ? null : npcName.toLowerCase(Locale.ROOT).trim();
+		if (era == GoblinEra.RETRO_2006)
+		{
+			RetroNpcData goblin2006 = RetroGoblinMapping2006.get(npcId, nameLower);
+			if (goblin2006 != null)
+			{
+				return goblin2006;
+			}
+		}
+
+		RetroNpcData resolved = resolve(npcId, nameLower);
+		// Eras never mix: a goblin with no row in the chosen era stays modern
+		if (resolved != null && resolved.getCategory() == RetroNpcCategory.GOBLINS
+			&& era != GoblinEra.RETRO_2005)
+		{
+			return null;
+		}
+		return resolved;
+	}
+
+	private static RetroNpcData resolve(int npcId, String nameLower)
+	{
+		if (nameLower == null)
 		{
 			return ID_MAPPINGS.get(npcId);
 		}
 
-		String nameLower = npcName.toLowerCase(Locale.ROOT).trim();
 		RetroNpcData byName = NAME_MAPPINGS.get(nameLower);
 		RetroNpcData byId = ID_MAPPINGS.get(npcId);
 
