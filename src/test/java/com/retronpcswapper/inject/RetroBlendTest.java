@@ -107,8 +107,15 @@ public class RetroBlendTest
 	public void testShortLengths()
 	{
 		int[] shortLengths = {2, 3};
-		assertTrue(b.compute(clip(), 1, 1, shortLengths, -1, false));
+		assertFalse(b.compute(clip(), 1, 1, shortLengths, -1, false));
 		assertFalse(b.compute(clip(), 2, 1, shortLengths, -1, false));
+		assertEquals(-1, b.next);
+	}
+
+	@Test
+	public void testLongLengths()
+	{
+		assertFalse(b.compute(clip(), 1, 1, new int[]{2, 3, 4, 1, 1}, -1, false));
 		assertEquals(-1, b.next);
 	}
 

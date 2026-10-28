@@ -40,7 +40,8 @@ public final class RetroBlend
 	public boolean compute(RetroClip clip, int frame, int elapsed, int[] lengths, int frameStep, boolean loop)
 	{
 		next = -1;
-		if (clip == null || lengths == null || !clip.hasFrame(frame) || clip.getRunEnd(frame) >= lengths.length)
+		if (clip == null || lengths == null || clip.getFrameCount() != lengths.length || !clip.hasFrame(frame)
+			|| clip.getRunEnd(frame) >= lengths.length)
 		{
 			return false;
 		}
