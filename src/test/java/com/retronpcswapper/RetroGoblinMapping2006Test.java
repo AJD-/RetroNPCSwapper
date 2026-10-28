@@ -233,7 +233,7 @@ public class RetroGoblinMapping2006Test
 	public void testModelIdsAreTheSpikeSet()
 	{
 		Set<Integer> expected = new HashSet<>();
-		for (int id : new int[]{2951, 2952, 2953, 2955, 2956, 2957, 142, 144, 15550, 15551, 15552})
+		for (int id : new int[]{2951, 2952, 2953, 2955, 2956, 2957, 2994, 142, 144, 15550, 15551, 15552})
 		{
 			expected.add(id);
 		}
@@ -241,7 +241,7 @@ public class RetroGoblinMapping2006Test
 		{
 			expected.add(id);
 		}
-		assertEquals(31, expected.size());
+		assertEquals(32, expected.size());
 		assertEquals(expected, RetroGoblinMapping2006.modelIds());
 	}
 
@@ -258,6 +258,7 @@ public class RetroGoblinMapping2006Test
 		}
 		rows.add(RetroGoblinMapping2006.get(0, "goblin"));
 		rows.add(RetroGoblinMapping2006.get(0, "goblin guard"));
+		rows.add(RetroGoblinMapping2006.get(0, "hobgoblin"));
 		return rows;
 	}
 }

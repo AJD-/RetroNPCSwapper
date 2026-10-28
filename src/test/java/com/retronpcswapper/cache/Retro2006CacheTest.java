@@ -103,7 +103,7 @@ public class Retro2006CacheTest
 		assumeTrue("live cache not found", liveDir != null);
 
 		Set<Integer> ids = RetroGoblinMapping2006.modelIds();
-		assertEquals(31, ids.size());
+		assertEquals(32, ids.size());
 		try (Store store = new Store(liveDir))
 		{
 			store.load();

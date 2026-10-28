@@ -194,6 +194,10 @@ public final class RetroGoblinMapping2006
 	private static final RetroNpcData DEF_4492 = spear(p(5535, 5540, 5546, 5548, 2957), 124,
 		c(14238, 8086, 2974), c(14656, 8732, 22414), 15551);
 
+	// Hobgoblin, no head
+	private static final RetroNpcData DEF_122 = goblin2006(p(2994), 128, null, null,
+		AnimationID.HOBGOBLIN_READY, AnimationID.HOBGOBLIN_WALK);
+
 	private static void register(RetroNpcData data, int... npcIds)
 	{
 		for (int npcId : npcIds)
@@ -206,6 +210,7 @@ public final class RetroGoblinMapping2006
 	{
 		NAME_MAPPINGS.put("goblin", DEF_2274);
 		NAME_MAPPINGS.put("goblin guard", DEF_489);
+		NAME_MAPPINGS.put("hobgoblin", DEF_122);
 
 		// Lumbridge and its twins
 		register(DEF_2274, NpcID.GOBLIN, NpcID.GOBLIN_ARMED_MELEE_3);

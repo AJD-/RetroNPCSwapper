@@ -3516,4 +3516,39 @@ public class RetroNpcCategoryTest
 		assertNotSame(RetroNpcMapping.GOBLIN_DEFAULT, d);
 		assertArrayEquals(new int[]{5536, 5539, 5544, 5547}, d.getRetroModelIds());
 	}
+
+	@Test
+	public void testHobgoblinIsDef122InEveryRetroEra()
+	{
+		RetroNpcData d = RetroNpcMapping.get(0, "Hobgoblin", GoblinEra.RETRO_2006);
+		assertNotNull(d);
+		assertEquals(RetroNpcCategory.GOBLINS, d.getCategory());
+		assertArrayEquals(new int[]{2994}, d.getRetroModelIds());
+		assertEquals(128, d.getScaleXZ());
+		assertEquals(AnimationID.HOBGOBLIN_READY, d.getIdleAnimationId());
+		assertEquals(AnimationID.HOBGOBLIN_WALK, d.getWalkAnimationId());
+		assertFalse(d.hasChathead());
+
+		RetroNpcData d2005 = RetroNpcMapping.get(0, "Hobgoblin", GoblinEra.RETRO_2005);
+		assertNotNull(d2005);
+		assertEquals(RetroNpcCategory.GOBLINS, d2005.getCategory());
+		assertArrayEquals(new int[]{2994}, d2005.getRetroModelIds());
+		assertEquals(d2005.getAttackAnimationId(), d.getAttackAnimationId());
+		assertEquals(d2005.getDefendAnimationId(), d.getDefendAnimationId());
+		assertEquals(d2005.getDeathAnimationId(), d.getDeathAnimationId());
+		for (int anim : RetroNpcMapping.GOBLIN_MODERN_ATTACKS)
+		{
+			assertEquals("attack " + anim, d2005.isAttackAnimation(anim), d.isAttackAnimation(anim));
+		}
+		for (int anim : RetroNpcMapping.GOBLIN_MODERN_DEFENDS)
+		{
+			assertEquals("defend " + anim, d2005.isDefendAnimation(anim), d.isDefendAnimation(anim));
+		}
+		for (int anim : RetroNpcMapping.GOBLIN_MODERN_DEATHS)
+		{
+			assertEquals("death " + anim, d2005.isDeathAnimation(anim), d.isDeathAnimation(anim));
+		}
+
+		assertNull(RetroNpcMapping.get(0, "Hobgoblin", GoblinEra.MODERN));
+	}
 }
