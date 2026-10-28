@@ -35,7 +35,7 @@ import net.runelite.api.gameval.NpcID;
 /**
  * The 2006 goblin rows. Every row is {@link RetroNpcCategory#GOBLINS}.
  */
-final class RetroGoblinMapping2006
+public final class RetroGoblinMapping2006
 {
 	private static final Map<Integer, RetroNpcData> ID_MAPPINGS = new HashMap<>();
 	private static final Map<String, RetroNpcData> NAME_MAPPINGS = new HashMap<>();
@@ -302,7 +302,7 @@ final class RetroGoblinMapping2006
 	/**
 	 * Every live model id a row references.
 	 */
-	static Set<Integer> modelIds()
+	public static Set<Integer> modelIds()
 	{
 		Set<Integer> ids = new HashSet<>();
 		for (RetroNpcData data : ID_MAPPINGS.values())

@@ -40,14 +40,6 @@ import org.junit.Test;
 
 public class RetroGoblinMapping2006Test
 {
-	/**
-	 * Package-private modelIds(), exposed to the cache tests.
-	 */
-	public static Set<Integer> modelIds()
-	{
-		return RetroGoblinMapping2006.modelIds();
-	}
-
 	private static RetroNpcData row(int npcId)
 	{
 		return RetroNpcMapping.get(npcId, "Goblin", GoblinEra.RETRO_2006);

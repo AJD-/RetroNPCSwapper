@@ -24,7 +24,7 @@
  */
 package com.retronpcswapper.cache;
 
-import com.retronpcswapper.RetroGoblinMapping2006Test;
+import com.retronpcswapper.RetroGoblinMapping2006;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
@@ -95,16 +95,14 @@ public class Retro2006CacheTest
 		assertNull(reader.model(20506));
 	}
 
-	/**
-	 * The cache-backed goblin rows rely on the live cache still holding the Dec-2006 geometry.
-	 */
+	/** The live cache still holds every 2006 goblin mesh. */
 	@Test
 	public void testEvery2006GoblinMeshIsIdenticalInLive() throws Exception
 	{
 		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
 		assumeTrue("live cache not found", liveDir != null);
 
-		Set<Integer> ids = RetroGoblinMapping2006Test.modelIds();
+		Set<Integer> ids = RetroGoblinMapping2006.modelIds();
 		assertEquals(31, ids.size());
 		try (Store store = new Store(liveDir))
 		{
