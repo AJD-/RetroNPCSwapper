@@ -166,6 +166,16 @@ public class RetroConfigMigrationTest
 	}
 
 	@Test
+	public void testTheSavedDefaultEraDoesNotBlockTheMigration()
+	{
+		// RuneLite saves goblinEra's default before startUp, so it is set but was never chosen
+		ConfigManager configManager = goblinManager("false", GoblinEra.RETRO_2005.name());
+		migrateGoblins(configManager);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name());
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+	}
+
+	@Test
 	public void testAnAlreadyChosenEraIsNotOverwritten()
 	{
 		ConfigManager configManager = goblinManager("false", GoblinEra.RETRO_2006.name());

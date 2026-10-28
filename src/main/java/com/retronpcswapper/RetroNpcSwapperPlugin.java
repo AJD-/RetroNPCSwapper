@@ -270,6 +270,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	/**
 	 * Turns a retired boolean toggle into an enum choice. Same contract as
 	 * {@link #migrateLegacyToggle}; values are enum names because that is how RuneLite stores them.
+	 * RuneLite saves defaults before startUp, so {@code onValue}, the default, means never chosen.
 	 */
 	static void migrateLegacyToggleToChoice(ConfigManager configManager, String legacyKey, String newKey,
 		String offValue, String onValue)
@@ -281,7 +282,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		if (configManager.getConfiguration(RetroNpcConfig.GROUP, newKey) == null)
+		String current = configManager.getConfiguration(RetroNpcConfig.GROUP, newKey);
+		if (current == null || current.equals(onValue))
 		{
 			configManager.setConfiguration(RetroNpcConfig.GROUP, newKey,
 				Boolean.parseBoolean(legacy) ? onValue : offValue);
