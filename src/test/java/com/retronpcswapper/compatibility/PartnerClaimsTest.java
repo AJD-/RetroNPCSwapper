@@ -65,6 +65,23 @@ public class PartnerClaimsTest
 	}
 
 	@Test
+	public void testIsClaimedByTellsTheSourcesApart()
+	{
+		claims.put(CUSTOM, ids(1));
+		claims.put(SERVANTS, ids(2));
+
+		assertTrue(claims.isClaimedBy(CUSTOM, 1));
+		assertFalse(claims.isClaimedBy(SERVANTS, 1));
+		assertTrue(claims.isClaimedBy(SERVANTS, 2));
+		assertFalse(claims.isClaimedBy(CUSTOM, 2));
+		assertFalse(claims.isClaimedBy(CUSTOM, 3));
+		assertFalse(claims.isClaimedBy(null, 1));
+
+		claims.remove(SERVANTS);
+		assertFalse(claims.isClaimedBy(SERVANTS, 2));
+	}
+
+	@Test
 	public void testASourceReplacesOnlyItsOwnClaims()
 	{
 		claims.put(CUSTOM, ids(1, 2));
