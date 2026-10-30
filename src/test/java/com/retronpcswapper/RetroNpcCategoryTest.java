@@ -1997,6 +1997,23 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
+	 * The Ape Atoll Monkey Zombies already wear 2005 meshes 4817/4824 in the 2005 palette, so the
+	 * "monkey zombie" row could only strip the palette and hand them the human zombie's anims.
+	 */
+	@Test
+	public void testMonkeyZombiesAreLeftAlone()
+	{
+		for (int id : new int[]{
+			NpcID.MM_ZOMBIE_MONKEY_LARGE,
+			NpcID.MM_ZOMBIE_MONKEY_LARGE_GUARD,
+			NpcID.MM_ZOMBIE_MONKEY_SMALL})
+		{
+			assertNull("monkey zombie " + id + " must keep its own model",
+				RetroNpcMapping.get(id, "Monkey Zombie"));
+		}
+	}
+
+	/**
 	 * The rooster is the bird the 2005 palette belongs to, and nothing reached it before: the
 	 * generator only categorizes names containing "chicken", so no rooster row exists for the name
 	 * lookup to find. All three live variants have to resolve through the archetype - including

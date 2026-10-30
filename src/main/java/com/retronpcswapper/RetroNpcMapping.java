@@ -67,6 +67,9 @@ public class RetroNpcMapping
 		NpcID.WANDERING_DOOMSCORPION,
 		// Exclude the gorilla skeleton
 		NpcID.MM_SKELETON,
+		// The Monkey Zombies still wear 2005 meshes 4817/4824 in the 2005 palette; the "monkey zombie"
+		// row would drop the palette and hand them the human zombie's anims
+		NpcID.MM_ZOMBIE_MONKEY_LARGE, NpcID.MM_ZOMBIE_MONKEY_LARGE_GUARD, NpcID.MM_ZOMBIE_MONKEY_SMALL,
 		// Arianwyn's model in NMZ
 		NpcID.NZONE_SOTE_ARIANWYN_HARD,
 		// Exclude the Hallowed Sepulchre spiders
