@@ -45,6 +45,7 @@ Under **Scenery**:
 - **Trees** — oak and magic trees
 - **Picnic benches**
 - **Dairy cows**
+- **Fishing spots** - Excluding sailing-specific spots
 
 ![config](img/retronpcswapperconfig.png)
 
