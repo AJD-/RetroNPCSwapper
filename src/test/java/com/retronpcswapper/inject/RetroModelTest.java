@@ -24,11 +24,18 @@
  */
 package com.retronpcswapper.inject;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import com.retronpcswapper.RetroNpcMapping;
+import com.retronpcswapper.RetroNpcSwapperPlugin;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.Test;
 
 /**
@@ -655,6 +662,130 @@ public class RetroModelTest
 		model.setVertexNormals(new int[2], new int[4], new int[4]);
 
 		assertNull(model.getVertexNormalsX());
+	}
+
+	// --- bind: geometry posed from a mesh --------------------------------------------------------
+
+	/** Two triangles sharing an edge, lying in the XZ plane. */
+	private static RetroMesh flatQuad(byte[] renderTypes)
+	{
+		return new RetroMesh(1, 0,
+			new float[]{0, 100, 100, 0}, new float[]{0, 0, 0, 0}, new float[]{0, 0, 100, 100},
+			new int[]{0, 0}, new int[]{1, 2}, new int[]{2, 3},
+			new short[]{300, 301}, renderTypes, null, null, null, null, null, null, null, new int[0][]);
+	}
+
+	private static RetroModel bound(RetroMesh mesh)
+	{
+		RetroModel model = new RetroModel();
+		int faces = mesh.getFaceCount();
+		model.bind(mesh, new int[faces], new int[faces], new int[faces]);
+		return model;
+	}
+
+	/**
+	 * A mesh is lit once at rest, and the client keeps a model's normals at rest through animation,
+	 * so a bound model carries rest normals in the client's convention: each face's unit normal
+	 * scaled to 256 and summed into its corners. Y is negative upward.
+	 */
+	@Test
+	public void testBindComputesRestNormals()
+	{
+		RetroModel model = bound(flatQuad(null));
+
+		assertEquals(-512, model.getVertexNormalsY()[0]);
+		assertEquals(-256, model.getVertexNormalsY()[1]);
+		assertEquals(-512, model.getVertexNormalsY()[2]);
+		assertEquals(-256, model.getVertexNormalsY()[3]);
+		for (int v = 0; v < 4; v++)
+		{
+			assertEquals(0, model.getVertexNormalsX()[v]);
+			assertEquals(0, model.getVertexNormalsZ()[v]);
+		}
+	}
+
+	/** The mesh's own render types decide it: a flat face adds nothing to its corners. */
+	@Test
+	public void testBindLeavesFlatFacesOutOfNormals()
+	{
+		RetroModel model = bound(flatQuad(new byte[]{0, 1}));
+
+		assertEquals(-256, model.getVertexNormalsY()[0]);
+		assertEquals(0, model.getVertexNormalsY()[3]);
+	}
+
+	/** The mesh's colours are the unlit ones, so 117 HD's unlit shading modes draw from them. */
+	@Test
+	public void testBindCarriesUnlitFaceColors()
+	{
+		RetroMesh mesh = flatQuad(null);
+		RetroModel model = bound(mesh);
+
+		assertArrayEquals(new short[]{300, 301}, model.getUnlitFaceColors());
+		assertNotSame(mesh.getFaceColors(), model.getUnlitFaceColors());
+	}
+
+	/** Rebinding a smaller mesh leaves nothing of the first showing. */
+	@Test
+	public void testRebindReplacesNormalsAndUnlitColors()
+	{
+		RetroModel model = bound(flatQuad(null));
+
+		RetroMesh smaller = new RetroMesh(2, 0,
+			new float[]{0, 100, 100}, new float[]{0, 0, 0}, new float[]{0, 0, 100},
+			new int[]{0}, new int[]{1}, new int[]{2},
+			new short[]{7}, null, null, null, null, null, null, null, null, new int[0][]);
+		model.bind(smaller, new int[1], new int[1], new int[1]);
+
+		for (int v = 0; v < 3; v++)
+		{
+			assertEquals(-256, model.getVertexNormalsY()[v]);
+		}
+		assertEquals(7, model.getUnlitFaceColors()[0]);
+	}
+
+	/** The shipped Nov-2005 elf kit, merged as the swapper merges it: real sizes, welded vertices. */
+	@Test
+	public void testBindGivesAShippedKitNormalsForEveryVertex() throws Exception
+	{
+		RetroAssetBundle bundle;
+		try (InputStream in = RetroNpcSwapperPlugin.class.getResourceAsStream("retro-assets.dat"))
+		{
+			assertNotNull("retro-assets.dat is missing - run ./gradlew generateRetroAssets", in);
+			bundle = RetroAssetCodec.read(in);
+		}
+		int[] partIds = RetroNpcMapping.NOV_ELF_WARRIOR.getInjectedModelIds();
+		List<RetroMesh> parts = new ArrayList<>();
+		for (int partId : partIds)
+		{
+			RetroMesh part = bundle.getMesh(RetroAssetBundle.NOV_HUMAN_KEY_BASE + partId);
+			assertNotNull("part " + partId, part);
+			parts.add(part);
+		}
+		RetroMesh kit = RetroMeshMerger.merge(RetroAssetBundle.NOV_HUMAN_KEY_BASE + partIds[0], parts);
+
+		RetroModel model = bound(kit);
+
+		int vertices = kit.getVerticesCount();
+		int[][] expected = RetroLighter.vertexNormals(vertices,
+			kit.getVerticesX(), kit.getVerticesY(), kit.getVerticesZ(),
+			kit.getFaceCount(), kit.getFaceIndices1(), kit.getFaceIndices2(), kit.getFaceIndices3(),
+			kit.getFaceRenderTypes());
+		int shaded = 0;
+		for (int v = 0; v < vertices; v++)
+		{
+			assertEquals(expected[0][v], model.getVertexNormalsX()[v]);
+			assertEquals(expected[1][v], model.getVertexNormalsY()[v]);
+			assertEquals(expected[2][v], model.getVertexNormalsZ()[v]);
+			if (expected[0][v] != 0 || expected[1][v] != 0 || expected[2][v] != 0)
+			{
+				shaded++;
+			}
+		}
+		// Mirrored cloth can cancel a vertex out, but a kit is overwhelmingly gouraud
+		assertTrue(shaded + " of " + vertices + " vertices have a normal", shaded > vertices * 9 / 10);
+		assertEquals(kit.getFaceColors()[0], model.getUnlitFaceColors()[0]);
+		assertEquals(kit.getFaceColors()[kit.getFaceCount() - 1], model.getUnlitFaceColors()[kit.getFaceCount() - 1]);
 	}
 
 	/** Minimal stand-in for a posed client model. */
