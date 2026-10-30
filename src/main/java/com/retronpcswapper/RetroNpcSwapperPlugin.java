@@ -958,6 +958,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case BEARS:
 				// Mesh 2966 and sequences 37-44 survive intact, so the cache path draws them
 				return config.swapBears();
+			case FISHING_SPOTS:
+				// Mesh 1491 and sequences 447/448 survive intact, so the cache path draws it
+				return config.swapFishingSpots();
 			case KALPHITES:
 				// Meshes 3849-3854 are gone from the live cache, so only the bundle can draw them
 				return config.swapKalphites() && injectionEnabled();

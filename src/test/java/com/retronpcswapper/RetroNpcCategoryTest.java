@@ -2699,6 +2699,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapScorpions must default to true", config.swapScorpions());
 		assertTrue("swapSpiders must default to true", config.swapSpiders());
 		assertTrue("swapBears must default to true", config.swapBears());
+		assertTrue("swapFishingSpots must default to true", config.swapFishingSpots());
 
 		// The pipeline toggle carries the bundle-only categories, so its default decides whether
 		// they can render at all - see isCategoryEnabled
@@ -3235,6 +3236,72 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_ANGER_BEAR, "Angry bear"));
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_BEAR, "Angry bear"));
 		assertNull(RetroNpcMapping.get(NpcID.ARCEUUS_REANIMATED_BEAR, "Reanimated bear"));
+	}
+
+	@Test
+	public void testFishingSpots()
+	{
+		Object[][] spots = {
+			{NpcID._0_37_53_FRESHFISH, "Rod Fishing spot"},
+			{NpcID._0_50_49_SALTFISH, "Fishing spot"},
+			{NpcID._0_48_48_NEWBIEFISHING, "Fishing spot"},
+			{NpcID.SWAN_FISHINGSPOT, "Fishing spot"},
+			{NpcID.ALDARIN_SPECIAL_FISHING, "Fishing spot"},
+			{NpcID._0_44_53_RAREFISH, "Fishing spot"},
+			{99993, "Fishing spot"}
+		};
+		for (Object[] c : spots)
+		{
+			int id = (Integer) c[0];
+			RetroNpcData spot = RetroNpcMapping.get(id, (String) c[1]);
+			assertNotNull("Fishing spot " + id + " must be mapped", spot);
+			assertEquals(RetroNpcCategory.FISHING_SPOTS, spot.getCategory());
+			assertArrayEquals(new int[]{1491}, spot.getRetroModelIds());
+			assertEquals(128, spot.getScaleXZ());
+			assertEquals(128, spot.getScaleY());
+			assertFalse(spot.hasRecolors());
+			assertFalse(spot.hasStaticIdle());
+			assertEquals(AnimationID.FISHINGSPOT_READY, spot.getIdleAnimationId());
+			assertEquals(AnimationID.FISHINGSPOT_WALK, spot.getWalkAnimationId());
+			assertEquals(-1, spot.getAttackAnimationId());
+			assertEquals(-1, spot.getDefendAnimationId());
+			assertEquals(-1, spot.getDeathAnimationId());
+			assertEquals(-1, spot.getMiscAnimationId());
+			assertFalse(spot.isAttackAnimation(AnimationID.MINNOW_FISHING_SPOT_LOCATION));
+			assertFalse(spot.isDefendAnimation(AnimationID.MINNOW_FISHING_SPOT_LOCATION));
+			assertFalse(spot.isDeathAnimation(AnimationID.MINNOW_FISHING_SPOT_LOCATION));
+			assertFalse(spot.isMiscAnimation(AnimationID.MINNOW_FISHING_SPOT_LOCATION));
+		}
+
+		// Cache path: the mesh and both sequences survive
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.FISHING_SPOTS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.FISHING_SPOTS));
+
+		// Spots on their own meshes, and the Sailing boat spots, stay modern
+		int[] excluded = {
+			NpcID._0_49_149_CAVEFISH, NpcID._0_50_149_CAVEFISH, NpcID._0_42_81_CAVEFISH_EAST,
+			NpcID._0_42_81_CAVEFISH_WEST, NpcID.SNAKEBOSS_FISHINGSPOT, NpcID._0_45_90_CAVEFISH,
+			NpcID._0_45_152_LAVAFISH, NpcID._0_42_138_LAVAFISH, NpcID._0_40_134_LAVAFISH,
+			NpcID._0_47_59_LAVAFISH,
+			NpcID.MINNOW_FISHINGSPOT1, NpcID.MINNOW_FISHINGSPOT2, NpcID.MINNOW_FISHINGSPOT3,
+			NpcID.MINNOW_FISHINGSPOT4,
+			NpcID.FISHING_SPOT_AERIAL,
+			NpcID.TEMPOROSS_HARPOONFISH_FISHINGSPOT_NORTH, NpcID.TEMPOROSS_HARPOONFISH_FISHINGSPOT_SOUTH,
+			NpcID.TEMPOROSS_HARPOONFISH_FISHINGSPOT_SPECIAL,
+			NpcID.CAMDOZAAL_FISHINGSPOT_1, NpcID.CAMDOZAAL_FISHINGSPOT_2, NpcID.CAMDOZAAL_FISHINGSPOT_3,
+			NpcID.FISHING_BOAT_SALTFISH, NpcID.FISHING_BOAT_MEMBERFISH, NpcID.FISHING_BOAT_RAREFISH,
+			NpcID.FISHING_BOAT_KARAMBWANFISH, NpcID.FISHING_BOAT_PISCARILIUSFISH,
+			NpcID.FISHING_BOAT_MONKFISH
+		};
+		for (int id : excluded)
+		{
+			assertNull("Fishing spot " + id + " must stay modern", RetroNpcMapping.get(id, "Fishing spot"));
+		}
+		assertNull(RetroNpcMapping.get(NpcID.MORULREK_EELS_FISHINGSPOT, "Rod Fishing spot"));
+		assertNull(RetroNpcMapping.get(NpcID.INACTIVE_FISHING_SPOT, null));
+
+		// The lookup is whole-name, not substring
+		assertNull(RetroNpcMapping.get(99994, "Frenzied fishing spot"));
 	}
 
 	/**

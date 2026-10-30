@@ -73,7 +73,23 @@ public class RetroNpcMapping
 		// Arianwyn's model in NMZ
 		NpcID.NZONE_SOTE_ARIANWYN_HARD,
 		// Exclude the Hallowed Sepulchre spiders
-		NpcID.HALLOWED_SPIDER_01, NpcID.HALLOWED_SPIDER_02
+		NpcID.HALLOWED_SPIDER_01, NpcID.HALLOWED_SPIDER_02,
+		// Fishing spots on their own meshes - cave/lava eels 6568/2331/8785, minnows 33186, aerial 36386,
+		// Tempoross and Camdozaal 41967
+		NpcID._0_49_149_CAVEFISH, NpcID._0_50_149_CAVEFISH, NpcID._0_42_81_CAVEFISH_EAST,
+		NpcID._0_42_81_CAVEFISH_WEST, NpcID.SNAKEBOSS_FISHINGSPOT, NpcID._0_45_90_CAVEFISH,
+		NpcID._0_45_152_LAVAFISH, NpcID.MORULREK_EELS_FISHINGSPOT, NpcID._0_42_138_LAVAFISH,
+		NpcID._0_40_134_LAVAFISH, NpcID._0_47_59_LAVAFISH,
+		NpcID.MINNOW_FISHINGSPOT1, NpcID.MINNOW_FISHINGSPOT2, NpcID.MINNOW_FISHINGSPOT3,
+		NpcID.MINNOW_FISHINGSPOT4,
+		NpcID.FISHING_SPOT_AERIAL,
+		NpcID.TEMPOROSS_HARPOONFISH_FISHINGSPOT_NORTH, NpcID.TEMPOROSS_HARPOONFISH_FISHINGSPOT_SOUTH,
+		NpcID.TEMPOROSS_HARPOONFISH_FISHINGSPOT_SPECIAL,
+		NpcID.CAMDOZAAL_FISHINGSPOT_1, NpcID.CAMDOZAAL_FISHINGSPOT_2, NpcID.CAMDOZAAL_FISHINGSPOT_3,
+		// Sailing's 5x5 boat spots never had a pre-Sailing form
+		NpcID.FISHING_BOAT_SALTFISH, NpcID.FISHING_BOAT_MEMBERFISH, NpcID.FISHING_BOAT_RAREFISH,
+		NpcID.FISHING_BOAT_KARAMBWANFISH, NpcID.FISHING_BOAT_PISCARILIUSFISH,
+		NpcID.FISHING_BOAT_MONKFISH
 	);
 
 	/**
@@ -1568,6 +1584,17 @@ public class RetroNpcMapping
 
 	public static final RetroNpcData HELLHOUND_DEFAULT = hellhound(HELLHOUND_SCALE);
 
+	// 2005 def 233: mesh 1491, no opcode 40 data, no resize. Group-less, so 447/448 are inert -
+	// the motion is texture 17 scrolling on its six textured faces
+	private static final int FISHING_SPOT_RIPPLE = 1491;
+
+	public static final RetroNpcData FISHING_SPOT_DEFAULT = RetroNpcData.builder()
+		.category(RetroNpcCategory.FISHING_SPOTS)
+		.retroModelIds(new int[]{FISHING_SPOT_RIPPLE})
+		.idleAnimationId(AnimationID.FISHINGSPOT_READY)
+		.walkAnimationId(AnimationID.FISHINGSPOT_WALK)
+		.build();
+
 	// February 2005 has no God Wars. The live ancient hellhound's composition asks for 90 against the
 	// ordinary hound's 128, so it is the 2005 hound scaled by the same ratio - the calf's reasoning.
 	public static final RetroNpcData HELLHOUND_GODWARS = hellhound(HELLHOUND_SCALE * 90 / 128);
@@ -2852,6 +2879,12 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("bear cub", BEAR_CUB_1);
 		registerMapping(BEAR_CUB_1, NpcID.BROWNBEAR_CUB_1, NpcID.PRIF_GEE);
 		registerMapping(BEAR_CUB_2, NpcID.BROWNBEAR_CUB_2);
+
+		// Fishing spots. Since Sailing every shoreline spot draws 41238 on the minnow clip; the 2005
+		// ripple 1491 and clips 447/448 all survive, so the cache path draws it. 2005 only knew
+		// "Fishing spot" - the rod spots were renamed in 2018
+		NAME_MAPPINGS.put("fishing spot", FISHING_SPOT_DEFAULT);
+		NAME_MAPPINGS.put("rod fishing spot", FISHING_SPOT_DEFAULT);
 
 		// Kalphites, by id only. A name row would also take the Clan Cup queens and anything else
 		// that shares the names

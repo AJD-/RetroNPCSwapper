@@ -78,7 +78,7 @@ public interface RetroNpcConfig extends Config
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
 			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
 			+ "game cache. Turn it off and only Chickens, Goblins, Skeletons, Zombies, Hill Giants, "
-			+ "Ghosts, Hellhounds, Giant Rats, Spiders, Bears, and small Scorpions will swap to their retro assets. "
+			+ "Ghosts, Hellhounds, Giant Rats, Spiders, Bears, Fishing Spots, and small Scorpions will swap to their retro assets. "
             + "Hill Giants will wear a Jogre head.</body></html>",
 		position = 1
 	)
@@ -557,6 +557,18 @@ public interface RetroNpcConfig extends Config
 		position = 6
 	)
 	default boolean swapDairyCows()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapFishingSpots",
+		name = "Fishing Spots",
+		description = "Restore the 2004/2005 fishing spot ripple in place of the Sailing-era fishing spots.",
+		section = scenerySection,
+		position = 7
+	)
+	default boolean swapFishingSpots()
 	{
 		return true;
 	}
