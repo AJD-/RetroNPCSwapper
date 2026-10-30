@@ -1028,6 +1028,11 @@ public class RetroNpcCategoryTest
 		assertClan(NpcID.PRIF_LLIANN, true, 3738, -27558, -32686, -32700);       // Lliann, Ithell
 		assertClan(NpcID.PRIF_SAWMILL_OPERATOR, false, 7467, 9127, 9125, 9121);  // Crwys
 		assertClan(NpcID.PRIF_GEM, true, 8394, 32185, 32307, 32429);              // Glenda, Meilyr
+		// The Gwenith villagers; Gwerin Hapus draws the hooded kit
+		assertClan(NpcID.GWENITH_ELF_4, false, 28, 10520, 10644, 10768);        // Gwerin Hapus
+		assertClan(NpcID.GWENITH_ELF_5, true, 28, 10520, 10644, 10768);         // Preswylwyr Dall
+		assertClan(NpcID.GWENITH_ELF_6, true, 28, 10520, 10644, 10768);         // Marwolaeth Dawnsio
+		assertEquals(4021, Objects.requireNonNull(RetroNpcMapping.get(NpcID.GWENITH_ELF_4, null)).getRetroModelIds()[0]);
 		// The arena's gladiators are the city guard again
 		assertArrayEquals(new int[]{4020, 4025, 4016, 4033, 4023},
 			Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_GLADIATOR1, "Gladiator")).getRetroModelIds());
@@ -1079,8 +1084,8 @@ public class RetroNpcCategoryTest
 	/**
 	 * Every live NPC carrying the citizens' six recolors - three hair shades, three clothing - found by
 	 * sweeping the whole live cache on 2026-10-16. All of them are Prifddinas or Lletya elves, so all
-	 * of them must swap. The exceptions are the Gwenith villagers (9178-9180), who are not a clan, and
-	 * the Deadman Prifddinas guards (6595, 11211), left out with every other Deadman guard.
+	 * of them must swap, the Gwenith villagers (9178-9180) included. The exceptions are the Deadman
+	 * Prifddinas guards (6595, 11211), left out with every other Deadman guard.
 	 */
 	private static final int[] CITIZEN_RECOLOR_WEARERS = {
 			1479, 1480, 9020, 9052, 9053, 9054, 9055, 9056, 9057, 9058, 9059, 9060, 9061, 9062, 9063, 9064,
@@ -1090,7 +1095,7 @@ public class RetroNpcCategoryTest
 			9113, 9114, 9115, 9116, 9117, 9127, 9128, 9129, 9130, 9131, 9132, 9133, 9134, 9135, 9136, 9137,
 			9138, 9139, 9140, 9141, 9142, 9143, 9144, 9150, 9151, 9152, 9153, 9154, 9155, 9156, 9157, 9158,
 			9159, 9160, 9161, 9162, 9163, 9164, 9165, 9166, 9167, 9168, 9169, 9170, 9182, 9183, 9184, 9185,
-			9186, 9187, 9188, 9189, 9190
+			9178, 9179, 9180, 9186, 9187, 9188, 9189, 9190
 	};
 
 	@Test
@@ -1102,8 +1107,7 @@ public class RetroNpcCategoryTest
 			assertNotNull("NPC " + id + " wears the citizens' colors but is not swapped", elf);
 			assertEquals(RetroNpcCategory.ELVES, elf.getCategory());
 		}
-		for (int id : new int[]{NpcID.GWENITH_ELF_4, NpcID.GWENITH_ELF_5, NpcID.GWENITH_ELF_6,
-			NpcID.DEADMAN_GUARD_PRIF_VIS, NpcID.DEADMAN_GUARD_PRIF_RANGE_VIS})
+		for (int id : new int[]{NpcID.DEADMAN_GUARD_PRIF_VIS, NpcID.DEADMAN_GUARD_PRIF_RANGE_VIS})
 		{
 			assertNull("NPC " + id + " must stay live", RetroNpcMapping.get(id, null));
 		}

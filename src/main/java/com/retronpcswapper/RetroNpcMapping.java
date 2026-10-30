@@ -2493,8 +2493,8 @@ public class RetroNpcMapping
 		registerCitizen(NpcID.PRIF_CITIZEN_ARANWE, false, 4750, PrifClothing.CADARN); // Aranwe
 
 		// The city's shopkeepers and instructors, the same way - every NPC in the cache wearing the
-		// citizens' six live recolors, bar the Gwenith villagers and the Deadman guards. Oswallt's
-		// trowel, Elgan's staff and Iwan's mace have no part in any Lletya outfit and are left behind
+		// citizens' six live recolors, bar the Deadman guards. Oswallt's trowel, Elgan's staff and
+		// Iwan's mace have no part in any Lletya outfit and are left behind
 		registerCitizen(NpcID.PRIF_ARMOURSTORE, false, 3881, PrifClothing.IORWERTH); // Aneirin
 		registerCitizen(NpcID.PRIF_WEAPONSTORE, false, 28, PrifClothing.IORWERTH); // Celyn
 		registerCitizen(NpcID.PRIF_FARMINGSTORE, true, 12, PrifClothing.CRWYS); // Branwen
@@ -2525,6 +2525,11 @@ public class RetroNpcMapping
 		registerCitizen(NpcID.PRIF_SPICE, false, 10341, PrifClothing.MEILYR); // Caerwyn
 		registerCitizen(NpcID.PRIF_SILK, true, 8394, PrifClothing.MEILYR); // Anwen
 		registerCitizen(NpcID.PRIF_GEM, true, 8394, PrifClothing.MEILYR); // Glenda
+
+		// The Gwenith villagers
+		registerCitizen(NpcID.GWENITH_ELF_4, false, 28, 10520, 10644, 10768); // Gwerin Hapus
+		registerCitizen(NpcID.GWENITH_ELF_5, true, 28, 10520, 10644, 10768); // Preswylwyr Dall
+		registerCitizen(NpcID.GWENITH_ELF_6, true, 28, 10520, 10644, 10768); // Marwolaeth Dawnsio
 
 		// The bankers wear the Lletya bankers' own outfits, in the Prifddinas bank's grey
 		registerDressed(LLETYA_BANKER_MALE, 5667, PrifClothing.BANK_GREY,
