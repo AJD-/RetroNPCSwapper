@@ -301,6 +301,17 @@ public class RetroAssetGenerator
 			Source.RETRO_NOV, Source.RETRO_NOV,
 			new int[]{230, 243, 246, 310, 167, 176, 275, 185},
 			new int[]{2701, 819, 836, 422, 423, 424}),
+		// Barbarian Village, Feb-2005 human kit: definitions 12 Barbarian, 17 Barbarian woman, 199
+		// Gunthor and 538 Peksa. The men carry battleaxe 550 (Gunthor shield 523 too), the women
+		// spear 540, so each brings its family: 393-399 axe, 428-431 spear, 1156 shield block
+		new Spec("Barbarians", Source.RETRO, Source.RETRO,
+			new int[]{219, 252, 311, 173, 176, 274, 242, 185, 550,
+				390, 469, 332, 353, 443, 361, 376, 540, 414,
+				251, 299, 523,
+				244},
+			new int[]{808, 813, 819, 836, 1156,
+				393, 394, 395, 396, 397, 398, 399,
+				428, 429, 430, 431}),
 		// The large scorpion's 2005 mesh 2967 is gone from the live cache (0% vertex overlap). Its
 		// 2005 sequences 244-248 (frame file 44) have been overwritten as well
 		new Spec("Scorpions", Source.RETRO, Source.RETRO, new int[]{2967},
@@ -406,12 +417,12 @@ public class RetroAssetGenerator
 		// the Feb elves 1680 Islwyn (4011), 1202 Arianwyn (4012) and 1679 Eluned (4013), Elena (113),
 		// the Carnillean guard 887 (60), and the ghosts - 491 the plain Ghost (10), the Restless
 		// ghost (28, 78), the Gardener ghost (5179) and the Port Phasmatys townsfolk (5202-5205) -
-		// and Arthur's court, whose heads follow, then the Gypsy's 103.
+		// and Arthur's court, whose heads follow, then the Gypsy's 103 and the barbarians' 75 and 101.
 		// Drawn by the chathead overlay, posed by the human emotes from the same cache
 		new Spec("Chatheads", Source.RETRO, Source.RETRO,
 			new int[]{4011, 4012, 4013, 113, 60, 10, 28, 78, 5179, 5202, 5203, 5204, 5205,
 				46, 49, 81, 53, 84, 43, 56, 65, 83, 66, 80, 57, 52, 82, 44, 35, 59, 55, 85, 34,
-				103},
+				103, 75, 101},
 			HUMAN_CHAT_EMOTES),
 		// The Lletya elves' heads. Nov re-authored the human rig, heads included, so these and their
 		// emotes sit in the Nov namespace beside the bodies. 41 is Gethin's chef's hat, the second

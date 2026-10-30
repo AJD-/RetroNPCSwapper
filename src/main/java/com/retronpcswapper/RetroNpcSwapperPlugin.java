@@ -833,6 +833,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return config.swapRoundTable() && injectionEnabled();
 			case VARROCK:
 				return config.swapVarrockNpcs() && injectionEnabled();
+			case BARBARIANS:
+				return config.swapBarbarians() && injectionEnabled();
 			case GHOSTS:
 				return config.swapGhosts();
 			case ADULT_DRAGONS:

@@ -970,6 +970,72 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testBarbariansCategory()
+	{
+		Object[][] registered = {
+			{RetroNpcMapping.BARBARIAN, new int[]{NpcID.FAI_BARBARIAN_1, NpcID.FAI_BARBARIAN_2,
+				NpcID.FAI_BARBARIAN_3, NpcID.FAI_BARBARIAN_4, NpcID.FAI_BARBARIAN_5, NpcID.FAI_BARBARIAN_6,
+				NpcID.FAI_BARBARIAN_7, NpcID.FAI_BARBARIAN_8, NpcID.FAI_BARBARIAN_9, NpcID.FAI_BARBARIAN_10,
+				NpcID.FAI_BARBARIAN_11, NpcID.FAI_BARBARIAN_12, NpcID.FAI_BARBARIAN_14, NpcID.BARBARIAN}},
+			{RetroNpcMapping.BARBARIAN_WOMAN, new int[]{NpcID.FAI_BARBARIAN_FEMALE_1,
+				NpcID.FAI_BARBARIAN_FEMALE_2, NpcID.FAI_BARBARIAN_FEMALE_3, NpcID.FAI_BARBARIAN_FEMALE_4,
+				NpcID.BARBARIANWOMAN_VARROCK, NpcID.SOS_BARB_VISIBLE}},
+			{RetroNpcMapping.GUNTHOR, new int[]{NpcID.GUNTHOR_THE_BRAVE}},
+			{RetroNpcMapping.PEKSA, new int[]{NpcID.PEKSA}}};
+		for (Object[] row : registered)
+		{
+			RetroNpcData data = (RetroNpcData) row[0];
+			assertEquals(RetroNpcCategory.BARBARIANS, data.getCategory());
+			assertEquals(0, data.getAssetKeyBase());
+			assertTrue(data.hasChathead());
+			for (int id : (int[]) row[1])
+			{
+				assertSame("npc " + id, data, RetroNpcMapping.get(id, null));
+			}
+		}
+
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.BARBARIANS));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.BARBARIANS));
+
+		// By registered id only: Barbarian Assault and the Brut barbarians share the name
+		assertNull(RetroNpcMapping.get(0, "Barbarian"));
+		assertNull(RetroNpcMapping.get(0, "Gunthor the brave"));
+		assertNull(RetroNpcMapping.get(0, "Peksa"));
+
+		// Aitan, the archer, keeps his bow
+		assertNull(RetroNpcMapping.get(NpcID.FAI_BARBARIAN_13, "Barbarian"));
+		for (int id : new int[]{NpcID.BARBARIAN_GUARD, NpcID.SOS_BARB, NpcID.BIM_ATLAS, NpcID.BIM_CHECKAL,
+			NpcID.CANOEING_SIGURD, NpcID.FAVOUR_TASSIE_SLIPCAST, NpcID.BRUT_BARBARIAN1})
+		{
+			assertNull("npc " + id + " must not be swapped", RetroNpcMapping.get(id, null));
+		}
+
+		// Each fights with what it holds: battleaxe, spear, battleaxe and shield
+		RetroNpcData man = RetroNpcMapping.BARBARIAN;
+		assertEquals(AnimationID.HUMAN_READY, man.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_AXE_HACK, man.getAttackAnimationFor(AnimationID.BARROW_DHAROK_SLASH));
+		assertEquals(AnimationID.HUMAN_AXE_HACK, man.getAttackAnimationFor(AnimationID.HUMAN_DHSWORD_CHOP));
+		assertTrue(man.isDefendAnimation(AnimationID.BARBARIAN_BLUNT_BLOCK));
+		assertEquals(AnimationID.HUMAN_AXE_BLOCK, man.getDefendAnimationId());
+
+		RetroNpcData woman = RetroNpcMapping.BARBARIAN_WOMAN;
+		assertEquals(AnimationID.HUMAN_STAFFREADY, woman.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_WALK_F, woman.getWalkAnimationId());
+		assertEquals(AnimationID.HUMAN_SPEAR_LUNGE, woman.getAttackAnimationFor(AnimationID.HUMAN_SCYTHE_SWEEP));
+		assertTrue(woman.isDefendAnimation(AnimationID.BARBARIAN_UNARMEDBLOCK));
+		assertEquals(AnimationID.HUMAN_SPEAR_BLOCK, woman.getDefendAnimationId());
+
+		RetroNpcData gunthor = RetroNpcMapping.GUNTHOR;
+		assertEquals(AnimationID.HUMAN_AXE_HACK, gunthor.getAttackAnimationFor(AnimationID.BARROW_DHAROK_CRUSH));
+		assertEquals(AnimationID.HUMAN_SHIELD_DEFENCE, gunthor.getDefendAnimationId());
+
+		for (RetroNpcData data : new RetroNpcData[]{man, woman, gunthor, RetroNpcMapping.PEKSA})
+		{
+			assertEquals(AnimationID.HUMAN_DEATH, data.getDeathAnimationId());
+		}
+	}
+
+	@Test
 	public void testPrifddinasCitizensWearTheirClanColors()
 	{
 		short[] find = {9137, 9152, 8792, 16701, 8652, 7595};
@@ -2685,6 +2751,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapKalphites must default to true", config.swapKalphites());
 		assertTrue("swapRoundTable must default to true", config.swapRoundTable());
 		assertTrue("swapVarrockNpcs must default to true", config.swapVarrockNpcs());
+		assertTrue("swapBarbarians must default to true", config.swapBarbarians());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
@@ -3422,6 +3489,10 @@ public class RetroNpcCategoryTest
 		assertChathead(NpcID.SIR_PRYSIN, null, 0, 56);
 		assertChathead(NpcID.KING_ROALD, null, 0, 53, 35);
 		assertChathead(NpcID.TRAMPPG, null, 0, 52, 81);
+		assertChathead(NpcID.FAI_BARBARIAN_9, null, 0, 57, 84, 75);
+		assertChathead(NpcID.FAI_BARBARIAN_FEMALE_1, null, 0, 113, 101);
+		assertChathead(NpcID.GUNTHOR_THE_BRAVE, null, 0, 57, 83, 75);
+		assertChathead(NpcID.PEKSA, null, 0, 57, 84);
 
 		// Ghost rows by name, from the generated JSON: the plain Ghost takes def 491's head, the
 		// Port Phasmatys townsfolk their own

@@ -152,6 +152,10 @@ public class RetroCacheTest
 		{
 			assertChathead(feb, (int) row[0], (RetroNpcData) row[1]);
 		}
+		for (Object[] row : BARBARIAN_DEFINITIONS)
+		{
+			assertChathead(feb, (int) row[0], (RetroNpcData) row[1]);
+		}
 		assertChathead(feb, 9, RetroNpcMapping.GUARD_DEFAULT);
 
 		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
@@ -223,6 +227,26 @@ public class RetroCacheTest
 
 		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
 		assertDefinition(nov.get(2697), RetroNpcMapping.JAIL_MUGGER);
+	}
+
+	private static final Object[][] BARBARIAN_DEFINITIONS = {
+		{12, RetroNpcMapping.BARBARIAN}, {17, RetroNpcMapping.BARBARIAN_WOMAN}, {199, RetroNpcMapping.GUNTHOR},
+		{538, RetroNpcMapping.PEKSA}};
+
+	/** Barbarian Village is one Feb-2005 definition per costume; Nov's are identical. */
+	@Test
+	public void testBarbarianArchetypesAreTheir2005Definitions() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
+		assumeTrue("Nov-2005 cache not present at " + NOV_CACHE_DIR, NOV_CACHE_DIR.exists());
+
+		Map<Integer, RetroNpcDefinition> feb = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
+		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
+		for (Object[] row : BARBARIAN_DEFINITIONS)
+		{
+			assertDefinition(feb.get((int) row[0]), (RetroNpcData) row[1]);
+			assertDefinition(nov.get((int) row[0]), (RetroNpcData) row[1]);
+		}
 	}
 
 	private static void assertDefinition(RetroNpcDefinition def, RetroNpcData data)

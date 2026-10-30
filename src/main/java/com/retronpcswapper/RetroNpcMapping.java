@@ -70,7 +70,9 @@ public class RetroNpcMapping
 		// Arianwyn's model in NMZ
 		NpcID.NZONE_SOTE_ARIANWYN_HARD,
 		// Exclude the Hallowed Sepulchre spiders
-		NpcID.HALLOWED_SPIDER_01, NpcID.HALLOWED_SPIDER_02
+		NpcID.HALLOWED_SPIDER_01, NpcID.HALLOWED_SPIDER_02,
+		// Aitan, the barbarian archer
+		NpcID.FAI_BARBARIAN_13
 	);
 
 	/**
@@ -82,7 +84,7 @@ public class RetroNpcMapping
 	 */
 	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
 		Set.of(RetroNpcCategory.GUARDS, RetroNpcCategory.ELVES, RetroNpcCategory.ROUND_TABLE,
-			RetroNpcCategory.VARROCK);
+			RetroNpcCategory.VARROCK, RetroNpcCategory.BARBARIANS);
 
 	/**
 	 * Ids whose registered row beats the name row even when the two disagree about the category.
@@ -1292,6 +1294,75 @@ public class RetroNpcMapping
 		new short[]{25238, 6798},
 		new short[]{5652, 4913}).chathead(52, 81).build();
 
+	// Seeded from gameval names around the live stances, not a fight log: the greataxe and 2h sets
+	// the men stand in, the polearm sets the women walk in, and the barbarian blocks
+	public static final Set<Integer> BARBARIAN_MODERN_ATTACKS = Set.of(
+		AnimationID.BARROW_DHAROK_SLASH, AnimationID.BARROW_DHAROK_CRUSH,
+		AnimationID.HUMAN_DHSWORD_STAB, AnimationID.HUMAN_DHSWORD_CHOP, AnimationID.HUMAN_DHSWORD_SLASH,
+		AnimationID.HUMAN_DHSWORD_LUNGE, AnimationID.HUMAN_2H_AXE_ATTACK,
+		AnimationID.HUMAN_BLUNT_SPIKE, AnimationID.HUMAN_BLUNT_POUND, AnimationID.HUMAN_BLUNT_PUMMEL);
+	public static final Set<Integer> BARBARIAN_MODERN_DEFENDS = Set.of(
+		AnimationID.BARBARIAN_UNARMEDBLOCK, AnimationID.BARBARIAN_SWORD_BLOCK, AnimationID.BARBARIAN_BLUNT_BLOCK,
+		AnimationID.HUMAN_DHSWORD_BLOCK, AnimationID.HUMAN_2H_AXE_DEFEND, AnimationID.HUMAN_BLUNT_BLOCK);
+	public static final Set<Integer> BARBARIAN_WOMAN_MODERN_ATTACKS = Set.of(
+		AnimationID.HUMAN_SCYTHE_SLASH, AnimationID.HUMAN_SCYTHE_LUNGE, AnimationID.HUMAN_SCYTHE_SPIN,
+		AnimationID.HUMAN_SCYTHE_SWEEP, AnimationID.BARROWS_WAR_SPEAR_STAB, AnimationID.BARROWS_WAR_SPEAR_SLASH,
+		AnimationID.BARROWS_WAR_SPEAR_CRUSH);
+	public static final Set<Integer> BARBARIAN_WOMAN_MODERN_DEFENDS = Set.of(
+		AnimationID.BARBARIAN_UNARMEDBLOCK, AnimationID.BARBARIAN_SWORD_BLOCK, AnimationID.BARBARIAN_BLUNT_BLOCK,
+		AnimationID.HUMAN_SCYTHE_BLOCK);
+
+	/** Barbarian Village: plain Feb-2005 human kit, each its own 2005 definition. */
+	private static RetroNpcData.Builder barbarian(int[] parts, int idle, short[] find, short[] replace)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.BARBARIANS)
+			.retroModelIds(parts)
+			.idleAnimationId(idle)
+			.walkAnimationId(AnimationID.HUMAN_WALK_F)
+			.deathAnimationId(AnimationID.HUMAN_DEATH)
+			.recolors(find, replace);
+	}
+
+	/** Battleaxe 550. */
+	private static RetroNpcData.Builder axeBarbarian(int[] parts, short[] replace)
+	{
+		return barbarian(parts, AnimationID.HUMAN_READY, new short[]{25238, 926, 6798, 8741}, replace)
+			.attackAnimationId(AnimationID.HUMAN_AXE_HACK)
+			.defendAnimationId(AnimationID.HUMAN_AXE_BLOCK)
+			.modernAttackAnims(BARBARIAN_MODERN_ATTACKS)
+			.modernDefendAnims(BARBARIAN_MODERN_DEFENDS);
+	}
+
+	/** Feb-2005 definition 12, the one male barbarian. */
+	public static final RetroNpcData BARBARIAN = axeBarbarian(
+		new int[]{219, 252, 311, 173, 176, 274, 242, 185, 550},
+		new short[]{5652, 61, 6854, 4769}).chathead(57, 84, 75).build();
+
+	/** Feb-2005 definition 17. Spear 540. */
+	public static final RetroNpcData BARBARIAN_WOMAN = barbarian(
+		new int[]{390, 469, 332, 353, 443, 361, 376, 540, 414}, AnimationID.HUMAN_STAFFREADY,
+		new short[]{926, 8741, 6798},
+		new short[]{8078, 8078, 6854})
+		.attackAnimationId(AnimationID.HUMAN_SPEAR_LUNGE)
+		.defendAnimationId(AnimationID.HUMAN_SPEAR_BLOCK)
+		.modernAttackAnims(BARBARIAN_WOMAN_MODERN_ATTACKS)
+		.modernDefendAnims(BARBARIAN_WOMAN_MODERN_DEFENDS)
+		.chathead(113, 101).build();
+
+	/** Feb-2005 definition 199. Battleaxe 550 and shield 523. */
+	public static final RetroNpcData GUNTHOR = axeBarbarian(
+		new int[]{219, 251, 299, 173, 176, 274, 242, 185, 550, 523},
+		new short[]{5652, 61, 6854, 4913})
+		.defendAnimationId(AnimationID.HUMAN_SHIELD_DEFENCE)
+		.chathead(57, 83, 75).build();
+
+	/** Feb-2005 definition 538. */
+	public static final RetroNpcData PEKSA = barbarian(
+		new int[]{219, 252, 299, 173, 176, 274, 244, 185}, AnimationID.HUMAN_READY,
+		new short[]{25238, 61, 6798, 8741, -22464},
+		new short[]{10508, 8741, 6854, 10508, 4550}).chathead(57, 84).build();
+
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
 	 * vertices in both, 355 faces against 347 - so the cache-backed path can still load it.
@@ -2104,7 +2175,8 @@ public class RetroNpcMapping
 			|| category == RetroNpcCategory.ELVES
 			|| category == RetroNpcCategory.KALPHITES
 			|| category == RetroNpcCategory.ROUND_TABLE
-			|| category == RetroNpcCategory.VARROCK;
+			|| category == RetroNpcCategory.VARROCK
+			|| category == RetroNpcCategory.BARBARIANS;
 	}
 
 	/**
@@ -2603,6 +2675,20 @@ public class RetroNpcMapping
 		registerMapping(MUGGER, NpcID.MUGGER, NpcID.ZEAH_MUGGER);
 		registerMapping(JAIL_MUGGER, NpcID.JAIL_MUGGER);
 		registerMapping(TRAMP, NpcID.TRAMP, NpcID.TRAMPPG);
+
+		// Barbarian Village. 2005 had one male and one female barbarian, so the crowd is uniform.
+		// The same ids also stand at Barbarian Outpost. Hunding and Litara have no 2005 definition
+		// of their own
+		registerMapping(BARBARIAN, NpcID.FAI_BARBARIAN_1, NpcID.FAI_BARBARIAN_2, NpcID.FAI_BARBARIAN_3,
+			NpcID.FAI_BARBARIAN_4, NpcID.FAI_BARBARIAN_5, NpcID.FAI_BARBARIAN_6, NpcID.FAI_BARBARIAN_7,
+			NpcID.FAI_BARBARIAN_8, NpcID.FAI_BARBARIAN_9, NpcID.FAI_BARBARIAN_10, NpcID.FAI_BARBARIAN_11,
+			NpcID.FAI_BARBARIAN_12, NpcID.FAI_BARBARIAN_14, NpcID.BARBARIAN);
+		// BARBARIANWOMAN_VARROCK is the Blue Moon Inn's
+		registerMapping(BARBARIAN_WOMAN, NpcID.FAI_BARBARIAN_FEMALE_1, NpcID.FAI_BARBARIAN_FEMALE_2,
+			NpcID.FAI_BARBARIAN_FEMALE_3, NpcID.FAI_BARBARIAN_FEMALE_4, NpcID.BARBARIANWOMAN_VARROCK,
+			NpcID.SOS_BARB_VISIBLE);
+		registerMapping(GUNTHOR, NpcID.GUNTHOR_THE_BRAVE);
+		registerMapping(PEKSA, NpcID.PEKSA);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.
