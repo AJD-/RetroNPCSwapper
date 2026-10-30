@@ -168,15 +168,12 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
 <details>
 <summary>Other Model-Swapping Plugin Compatibility</summary>
 
-The **Custom NPC Models** and **Custom Servants** plugins run alongside this plugin, together or on their
+The **Custom Servants** plugin run alongside this plugin, together or on their
 own. Any NPC either of them has a custom model for is left to it entirely: this plugin swaps neither that
 NPC's model, its animations nor its chathead. Every other NPC is swapped as usual. The
-`Fix Interact Highlight outlines` option can be on in this plugin, Custom NPC Models, Custom Servants, or
-any of them: only one draws `Interact Highlight`'s NPC outlines at a time, each around whichever plugin's
-model is on screen. Custom NPC Models' current release coordinates with this plugin only, so when it and
-Custom Servants both run, turn the option on in this plugin, or in only one of those two.
-Whichever plugin takes the outlines first keeps them until it lets go; untick the option in Custom
-Servants if you want this plugin to draw them, so its object outlines are kept too.
+`Fix Interact Highlight outlines` option can be on in this plugin or Custom Servants (or both): only one draws
+`Interact Highlight`'s NPC outlines at a time, each around whichever plugin's
+model is on screen.
 </details>
 
 ### If you'd like to report a bug or request a feature, please create an issue [here](https://github.com/AJD-/RetroNPCSwapper/issues)
