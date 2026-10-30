@@ -972,7 +972,7 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testPrifddinasCitizensWearTheirClanColors()
 	{
-		short[] find = {9137, 9152, 8792, 16701, 8652, 7595};
+		short[] find = {9137, 9152, 8792, 16701, 8652, 7595, 8741};
 		int[] maleHeads = {8266, 4020, 8264, 4021};
 
 		// Every citizen and spectator is swapped, onto a Lletya outfit for its body, in the Nov range
@@ -992,6 +992,12 @@ public class RetroNpcCategoryTest
 		// One citizen per clan, carrying that clan's clothing onto the main garment, the secondary
 		// cloth and the trim
 		assertClan(NpcID.PRIF_CITIZEN_AMROD, false, 3738, 796, 920, 918);           // Hefin, crimson
+		// Amrod wears the hooded Dalldav kit: chathead 4012 paints the hood 8741 where the body
+		// paints it 7595, so both must land on the trim shade
+		RetroNpcData amrod = Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_CITIZEN_AMROD, null));
+		assertEquals(4021, amrod.getRetroModelIds()[0]);
+		assertEquals(4012, amrod.getChatheadModelIds()[0]);
+		assertEquals((short) 918, amrod.getReplacementColors()[6]);
 		assertClan(NpcID.PRIF_CITIZEN_TATIE, true, 12, -27116, -26864, -26740);     // Amlodd, navy
 		assertClan(NpcID.PRIF_CITIZEN_GELMIR, false, 3881, -27558, -32686, -32700); // Ithell, white
 		assertClan(NpcID.PRIF_CITIZEN_ELENWE, true, 138, -32750, -32626, -32630);   // Iorwerth, near-black
@@ -1004,7 +1010,7 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testPrifddinasShopsBanksLordsAndGuards()
 	{
-		short[] find = {9137, 9152, 8792, 16701, 8652, 7595};
+		short[] find = {9137, 9152, 8792, 16701, 8652, 7595, 8741};
 
 		// Shopkeepers and instructors are citizens like any other; a character with two ids keeps
 		// one outfit across both
@@ -1107,7 +1113,7 @@ public class RetroNpcCategoryTest
 	{
 		RetroNpcData citizen = Objects.requireNonNull(RetroNpcMapping.get(id, null));
 		assertArrayEquals("citizen " + id, new short[]{(short) hair, (short) hair, (short) cloth, (short) cloth,
-			(short) clothShade, (short) clothDark}, citizen.getReplacementColors());
+			(short) clothShade, (short) clothDark, (short) clothDark}, citizen.getReplacementColors());
 		assertEquals("citizen " + id + " wears the wrong body", female, citizen.getRetroModelIds()[0] == 4030);
 	}
 

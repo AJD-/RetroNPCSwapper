@@ -964,6 +964,8 @@ public class RetroNpcMapping
 	private static final short KIT_SECONDARY = 8652;
 	/** Trim, belts and boots. */
 	private static final short KIT_TRIM = 7595;
+	/** The hood on chathead 4012, which the body part 4021 paints KIT_TRIM. */
+	private static final short KIT_HOOD = 8741;
 	/** The low band on the warrior's body 4016. */
 	private static final short KIT_WARRIOR_BAND = 12469;
 	/** The two colors of the pike 4033 that definition 2359 paints wood. */
@@ -974,7 +976,7 @@ public class RetroNpcMapping
 
 	/** The hair and cloth slots of the Nov Lletya kits, which a Prifddinas citizen's own colors replace. */
 	private static final short[] CITIZEN_RECOLOR_FIND = {
-		KIT_HAIR, KIT_HAIR_OLD_HEAD, KIT_GARMENT, KIT_TUNIC, KIT_SECONDARY, KIT_TRIM};
+		KIT_HAIR, KIT_HAIR_OLD_HEAD, KIT_GARMENT, KIT_TUNIC, KIT_SECONDARY, KIT_TRIM, KIT_HOOD};
 
 	/**
 	 * The Lletya outfits a citizen can wear, by body. Gethin's chef's hat and the children are left
@@ -1004,7 +1006,8 @@ public class RetroNpcMapping
 	static RetroNpcData dressed(RetroNpcData kit, int hair, int cloth, int clothShade, int clothDark)
 	{
 		return kit.withRecolors(CITIZEN_RECOLOR_FIND, new short[]{
-			(short) hair, (short) hair, (short) cloth, (short) cloth, (short) clothShade, (short) clothDark});
+			(short) hair, (short) hair, (short) cloth, (short) cloth, (short) clothShade, (short) clothDark,
+			(short) clothDark});
 	}
 
 	/**
