@@ -972,7 +972,7 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testPrifddinasCitizensWearTheirClanColors()
 	{
-		short[] find = {9137, 9152, 8792, 16701, 8652, 7595};
+		short[] find = {9137, 9152, 8792, 16701, 8652, 7595, 8741};
 		int[] maleHeads = {8266, 4020, 8264, 4021};
 
 		// Every citizen and spectator is swapped, onto a Lletya outfit for its body, in the Nov range
@@ -992,6 +992,12 @@ public class RetroNpcCategoryTest
 		// One citizen per clan, carrying that clan's clothing onto the main garment, the secondary
 		// cloth and the trim
 		assertClan(NpcID.PRIF_CITIZEN_AMROD, false, 3738, 796, 920, 918);           // Hefin, crimson
+		// Amrod wears the hooded Dalldav kit: chathead 4012 paints the hood 8741 where the body
+		// paints it 7595, so both must land on the trim shade
+		RetroNpcData amrod = Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_CITIZEN_AMROD, null));
+		assertEquals(4021, amrod.getRetroModelIds()[0]);
+		assertEquals(4012, amrod.getChatheadModelIds()[0]);
+		assertEquals((short) 918, amrod.getReplacementColors()[6]);
 		assertClan(NpcID.PRIF_CITIZEN_TATIE, true, 12, -27116, -26864, -26740);     // Amlodd, navy
 		assertClan(NpcID.PRIF_CITIZEN_GELMIR, false, 3881, -27558, -32686, -32700); // Ithell, white
 		assertClan(NpcID.PRIF_CITIZEN_ELENWE, true, 138, -32750, -32626, -32630);   // Iorwerth, near-black
@@ -1004,7 +1010,7 @@ public class RetroNpcCategoryTest
 	@Test
 	public void testPrifddinasShopsBanksLordsAndGuards()
 	{
-		short[] find = {9137, 9152, 8792, 16701, 8652, 7595};
+		short[] find = {9137, 9152, 8792, 16701, 8652, 7595, 8741};
 
 		// Shopkeepers and instructors are citizens like any other; a character with two ids keeps
 		// one outfit across both
@@ -1022,6 +1028,11 @@ public class RetroNpcCategoryTest
 		assertClan(NpcID.PRIF_LLIANN, true, 3738, -27558, -32686, -32700);       // Lliann, Ithell
 		assertClan(NpcID.PRIF_SAWMILL_OPERATOR, false, 7467, 9127, 9125, 9121);  // Crwys
 		assertClan(NpcID.PRIF_GEM, true, 8394, 32185, 32307, 32429);              // Glenda, Meilyr
+		// The Gwenith villagers; Gwerin Hapus draws the hooded kit
+		assertClan(NpcID.GWENITH_ELF_4, false, 28, 10520, 10644, 10768);        // Gwerin Hapus
+		assertClan(NpcID.GWENITH_ELF_5, true, 28, 10520, 10644, 10768);         // Preswylwyr Dall
+		assertClan(NpcID.GWENITH_ELF_6, true, 28, 10520, 10644, 10768);         // Marwolaeth Dawnsio
+		assertEquals(4021, Objects.requireNonNull(RetroNpcMapping.get(NpcID.GWENITH_ELF_4, null)).getRetroModelIds()[0]);
 		// The arena's gladiators are the city guard again
 		assertArrayEquals(new int[]{4020, 4025, 4016, 4033, 4023},
 			Objects.requireNonNull(RetroNpcMapping.get(NpcID.PRIF_GLADIATOR1, "Gladiator")).getRetroModelIds());
@@ -1073,8 +1084,8 @@ public class RetroNpcCategoryTest
 	/**
 	 * Every live NPC carrying the citizens' six recolors - three hair shades, three clothing - found by
 	 * sweeping the whole live cache on 2026-10-16. All of them are Prifddinas or Lletya elves, so all
-	 * of them must swap. The exceptions are the Gwenith villagers (9178-9180), who are not a clan, and
-	 * the Deadman Prifddinas guards (6595, 11211), left out with every other Deadman guard.
+	 * of them must swap, the Gwenith villagers (9178-9180) included. The exceptions are the Deadman
+	 * Prifddinas guards (6595, 11211), left out with every other Deadman guard.
 	 */
 	private static final int[] CITIZEN_RECOLOR_WEARERS = {
 			1479, 1480, 9020, 9052, 9053, 9054, 9055, 9056, 9057, 9058, 9059, 9060, 9061, 9062, 9063, 9064,
@@ -1084,7 +1095,7 @@ public class RetroNpcCategoryTest
 			9113, 9114, 9115, 9116, 9117, 9127, 9128, 9129, 9130, 9131, 9132, 9133, 9134, 9135, 9136, 9137,
 			9138, 9139, 9140, 9141, 9142, 9143, 9144, 9150, 9151, 9152, 9153, 9154, 9155, 9156, 9157, 9158,
 			9159, 9160, 9161, 9162, 9163, 9164, 9165, 9166, 9167, 9168, 9169, 9170, 9182, 9183, 9184, 9185,
-			9186, 9187, 9188, 9189, 9190
+			9178, 9179, 9180, 9186, 9187, 9188, 9189, 9190
 	};
 
 	@Test
@@ -1096,8 +1107,7 @@ public class RetroNpcCategoryTest
 			assertNotNull("NPC " + id + " wears the citizens' colors but is not swapped", elf);
 			assertEquals(RetroNpcCategory.ELVES, elf.getCategory());
 		}
-		for (int id : new int[]{NpcID.GWENITH_ELF_4, NpcID.GWENITH_ELF_5, NpcID.GWENITH_ELF_6,
-			NpcID.DEADMAN_GUARD_PRIF_VIS, NpcID.DEADMAN_GUARD_PRIF_RANGE_VIS})
+		for (int id : new int[]{NpcID.DEADMAN_GUARD_PRIF_VIS, NpcID.DEADMAN_GUARD_PRIF_RANGE_VIS})
 		{
 			assertNull("NPC " + id + " must stay live", RetroNpcMapping.get(id, null));
 		}
@@ -1107,7 +1117,7 @@ public class RetroNpcCategoryTest
 	{
 		RetroNpcData citizen = Objects.requireNonNull(RetroNpcMapping.get(id, null));
 		assertArrayEquals("citizen " + id, new short[]{(short) hair, (short) hair, (short) cloth, (short) cloth,
-			(short) clothShade, (short) clothDark}, citizen.getReplacementColors());
+			(short) clothShade, (short) clothDark, (short) clothDark}, citizen.getReplacementColors());
 		assertEquals("citizen " + id + " wears the wrong body", female, citizen.getRetroModelIds()[0] == 4030);
 	}
 
@@ -1540,6 +1550,10 @@ public class RetroNpcCategoryTest
 		assertTrue(ghost.isDefendAnimation(AnimationID.GHOST_UPDATE_NORMAL_DEFEND));
 		assertTrue(ghost.isDeathAnimation(AnimationID.GHOST_UPDATE_NORMAL_DEATH));
 		assertTrue(ghost.isDeathAnimation(AnimationID.BOSSGHOST_DEATH));
+		// The tendril ghosts (model 21154: the wilderness Ghost 85 among them) have their own family
+		assertTrue(ghost.isAttackAnimation(AnimationID.GHOST_UPDATE_TENDRILL_ATTACK));
+		assertTrue(ghost.isDefendAnimation(AnimationID.GHOST_UPDATE_TENDRILL_DEFEND));
+		assertTrue(ghost.isDeathAnimation(AnimationID.GHOST_UPDATE_TENDRILL_DEATH));
 
 		// The retro sequences themselves are targets, not modern anims to intercept
 		assertFalse(ghost.isAttackAnimation(AnimationID.GHOST_ATTACK));
@@ -1990,6 +2004,23 @@ public class RetroNpcCategoryTest
 
 		// and no name row may creep back in and catch a variant added later
 		assertNull(RetroNpcMapping.get(0, "Evil Chicken"));
+	}
+
+	/**
+	 * The Ape Atoll Monkey Zombies already wear 2005 meshes 4817/4824 in the 2005 palette, so the
+	 * "monkey zombie" row could only strip the palette and hand them the human zombie's anims.
+	 */
+	@Test
+	public void testMonkeyZombiesAreLeftAlone()
+	{
+		for (int id : new int[]{
+			NpcID.MM_ZOMBIE_MONKEY_LARGE,
+			NpcID.MM_ZOMBIE_MONKEY_LARGE_GUARD,
+			NpcID.MM_ZOMBIE_MONKEY_SMALL})
+		{
+			assertNull("monkey zombie " + id + " must keep its own model",
+				RetroNpcMapping.get(id, "Monkey Zombie"));
+		}
 	}
 
 	/**

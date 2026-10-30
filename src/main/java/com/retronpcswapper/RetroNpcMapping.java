@@ -67,6 +67,9 @@ public class RetroNpcMapping
 		NpcID.WANDERING_DOOMSCORPION,
 		// Exclude the gorilla skeleton
 		NpcID.MM_SKELETON,
+		// The Monkey Zombies still wear 2005 meshes 4817/4824 in the 2005 palette; the "monkey zombie"
+		// row would drop the palette and hand them the human zombie's anims
+		NpcID.MM_ZOMBIE_MONKEY_LARGE, NpcID.MM_ZOMBIE_MONKEY_LARGE_GUARD, NpcID.MM_ZOMBIE_MONKEY_SMALL,
 		// Arianwyn's model in NMZ
 		NpcID.NZONE_SOTE_ARIANWYN_HARD,
 		// Exclude the Hallowed Sepulchre spiders
@@ -223,14 +226,19 @@ public class RetroNpcMapping
 
 	// GHOST_ATTACK/GHOST_BLOCK/GHOST_DEATH (123/124/126) are deliberately absent here: they are
 	// the surviving 2005 sequences themselves - the retro targets, not modern anims to intercept.
+	// The TENDRILL family is the second live ghost rig (model 21154: the wilderness Ghost 85, 93,
+	// 2527, 3625, 3975, 5370, 9194, 10538), which idles in 5538 where the others idle in 5530
 	public static final Set<Integer> GHOST_MODERN_ATTACKS = Set.of(
-		AnimationID.GHOST_UPDATE_NORMAL_ATTACK, AnimationID.BOSSGHOST_ATTACK
+		AnimationID.GHOST_UPDATE_NORMAL_ATTACK, AnimationID.GHOST_UPDATE_TENDRILL_ATTACK,
+		AnimationID.BOSSGHOST_ATTACK
 	);
 	public static final Set<Integer> GHOST_MODERN_DEFENDS = Set.of(
-		AnimationID.GHOST_UPDATE_NORMAL_DEFEND, AnimationID.BOSSGHOST_FADE_OUT
+		AnimationID.GHOST_UPDATE_NORMAL_DEFEND, AnimationID.GHOST_UPDATE_TENDRILL_DEFEND,
+		AnimationID.BOSSGHOST_FADE_OUT
 	);
 	public static final Set<Integer> GHOST_MODERN_DEATHS = Set.of(
-		AnimationID.GHOST_UPDATE_NORMAL_DEATH, AnimationID.BOSSGHOST_DEATH
+		AnimationID.GHOST_UPDATE_NORMAL_DEATH, AnimationID.GHOST_UPDATE_TENDRILL_DEATH,
+		AnimationID.BOSSGHOST_DEATH
 	);
 
 	public static final Set<Integer> GIANT_MODERN_ATTACKS = Set.of(
@@ -956,6 +964,8 @@ public class RetroNpcMapping
 	private static final short KIT_SECONDARY = 8652;
 	/** Trim, belts and boots. */
 	private static final short KIT_TRIM = 7595;
+	/** The hood on chathead 4012, which the body part 4021 paints KIT_TRIM. */
+	private static final short KIT_HOOD = 8741;
 	/** The low band on the warrior's body 4016. */
 	private static final short KIT_WARRIOR_BAND = 12469;
 	/** The two colors of the pike 4033 that definition 2359 paints wood. */
@@ -966,7 +976,7 @@ public class RetroNpcMapping
 
 	/** The hair and cloth slots of the Nov Lletya kits, which a Prifddinas citizen's own colors replace. */
 	private static final short[] CITIZEN_RECOLOR_FIND = {
-		KIT_HAIR, KIT_HAIR_OLD_HEAD, KIT_GARMENT, KIT_TUNIC, KIT_SECONDARY, KIT_TRIM};
+		KIT_HAIR, KIT_HAIR_OLD_HEAD, KIT_GARMENT, KIT_TUNIC, KIT_SECONDARY, KIT_TRIM, KIT_HOOD};
 
 	/**
 	 * The Lletya outfits a citizen can wear, by body. Gethin's chef's hat and the children are left
@@ -996,7 +1006,8 @@ public class RetroNpcMapping
 	static RetroNpcData dressed(RetroNpcData kit, int hair, int cloth, int clothShade, int clothDark)
 	{
 		return kit.withRecolors(CITIZEN_RECOLOR_FIND, new short[]{
-			(short) hair, (short) hair, (short) cloth, (short) cloth, (short) clothShade, (short) clothDark});
+			(short) hair, (short) hair, (short) cloth, (short) cloth, (short) clothShade, (short) clothDark,
+			(short) clothDark});
 	}
 
 	/**
@@ -2482,8 +2493,8 @@ public class RetroNpcMapping
 		registerCitizen(NpcID.PRIF_CITIZEN_ARANWE, false, 4750, PrifClothing.CADARN); // Aranwe
 
 		// The city's shopkeepers and instructors, the same way - every NPC in the cache wearing the
-		// citizens' six live recolors, bar the Gwenith villagers and the Deadman guards. Oswallt's
-		// trowel, Elgan's staff and Iwan's mace have no part in any Lletya outfit and are left behind
+		// citizens' six live recolors, bar the Deadman guards. Oswallt's trowel, Elgan's staff and
+		// Iwan's mace have no part in any Lletya outfit and are left behind
 		registerCitizen(NpcID.PRIF_ARMOURSTORE, false, 3881, PrifClothing.IORWERTH); // Aneirin
 		registerCitizen(NpcID.PRIF_WEAPONSTORE, false, 28, PrifClothing.IORWERTH); // Celyn
 		registerCitizen(NpcID.PRIF_FARMINGSTORE, true, 12, PrifClothing.CRWYS); // Branwen
@@ -2514,6 +2525,11 @@ public class RetroNpcMapping
 		registerCitizen(NpcID.PRIF_SPICE, false, 10341, PrifClothing.MEILYR); // Caerwyn
 		registerCitizen(NpcID.PRIF_SILK, true, 8394, PrifClothing.MEILYR); // Anwen
 		registerCitizen(NpcID.PRIF_GEM, true, 8394, PrifClothing.MEILYR); // Glenda
+
+		// The Gwenith villagers
+		registerCitizen(NpcID.GWENITH_ELF_4, false, 28, 10520, 10644, 10768); // Gwerin Hapus
+		registerCitizen(NpcID.GWENITH_ELF_5, true, 28, 10520, 10644, 10768); // Preswylwyr Dall
+		registerCitizen(NpcID.GWENITH_ELF_6, true, 28, 10520, 10644, 10768); // Marwolaeth Dawnsio
 
 		// The bankers wear the Lletya bankers' own outfits, in the Prifddinas bank's grey
 		registerDressed(LLETYA_BANKER_MALE, 5667, PrifClothing.BANK_GREY,
