@@ -114,7 +114,7 @@ public final class RetroGoblinMapping2006
 	private static final RetroNpcData DEF_2280 = stand(P2280, 128, c(14238, 8086), c(11047, 6038), 142);
 	private static final RetroNpcData DEF_2281 = stand(P2281, 124, c(14238), c(12973), 15551);
 
-	// Armed, strong, armoured and guard goblins
+	// Armed, strong, armored and guard goblins
 	private static final RetroNpcData DEF_101 = stand(ARMED, 128, null, null, 142);
 	private static final RetroNpcData DEF_102 = stand(HELMET, 128, null, null, 15551);
 	private static final RetroNpcData DEF_298 = spear(ARMED, 128, c(916), c(22443), 142);

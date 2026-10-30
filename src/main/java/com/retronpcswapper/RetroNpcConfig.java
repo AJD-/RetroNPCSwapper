@@ -117,7 +117,7 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = GOBLIN_ERA,
 		name = "Goblins",
-		description = "Modern: leave goblins alone. 2004/05: the single Feb-2005 goblin kit. 2006: the varied goblins added in 2006 (Lumbridge, Goblin Cave, Goblin Village).",
+		description = "Modern: leave goblins alone. 2004/05: the single 2005 goblin model. 2006: the variant goblins added in 2006.",
 		section = npcTogglesSection,
 		position = 2
 	)
