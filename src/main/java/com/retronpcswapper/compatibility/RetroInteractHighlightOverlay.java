@@ -55,8 +55,8 @@ import net.runelite.client.util.ColorUtil;
  * Registered only while {@link InteractHighlightCompat} has that plugin's own NPC and object
  * outlines suppressed, so the two never draw at once. Every color, border width and feather value is
  * read from {@link InteractHighlightConfig}, so the result is that plugin's appearance and settings,
- * not a second set of them. NPCs and objects this plugin does not swap take the ordinary path and
- * look unchanged.
+ * not a second set of them. NPCs Custom NPC Models swaps are outlined around its custom model, and
+ * NPCs and objects neither plugin swaps take the ordinary path and look unchanged.
  * <p>
  * The hover and target logic is Interact Highlight's, reproduced because its own is package
  * private. Only the NPC and object halves are here; that plugin still draws ground items and
