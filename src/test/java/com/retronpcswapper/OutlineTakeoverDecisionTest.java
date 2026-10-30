@@ -58,6 +58,15 @@ public class OutlineTakeoverDecisionTest
 	}
 
 	@Test
+	public void testRestoresAStaleStashOnlyWhileNobodyHasTheOutlines()
+	{
+		assertTrue(RetroNpcSwapperPlugin.shouldRestoreStaleStash(false, false));
+		// A partner's suppression is live, not stale, and so is ours
+		assertFalse(RetroNpcSwapperPlugin.shouldRestoreStaleStash(false, true));
+		assertFalse(RetroNpcSwapperPlugin.shouldRestoreStaleStash(true, false));
+	}
+
+	@Test
 	public void testLetsGoWhenNoLongerWanted()
 	{
 		assertFalse(RetroNpcSwapperPlugin.shouldTakeOver(false, true, true, false));

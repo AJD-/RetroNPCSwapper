@@ -257,9 +257,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 		overlayManager.add(chatheadOverlay);
 		clientThread.invoke(() ->
 		{
-			// A session that died while suppressing left Interact Highlight's NPC outlines off.
-			// Put them back before attach() decides whether to suppress again.
-			interactHighlight.restoreStaleStash();
 			scenerySwapper.scanLoadedScene();
 			recheckLoadedNpcs();
 			attach();
@@ -596,7 +593,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			sceneryOutliner.clear();
 			outlineTakeover = false;
 
-			interactHighlight.restoreStaleStash();
+			restoreStaleStashIfIdle();
 			syncInteractHighlight();
 			// syncInteractHighlight() sees no change when the new profile is not taken over either,
 			// but a partner plugin may still think we draw the outlines
@@ -1431,6 +1428,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		log.debug("Handshake done; a partner plugin {} the outlines",
 			partnerOutlines.isAnyOwning() ? "draws" : "does not draw");
 		partnerOutlines.setHandshakeDone();
+		restoreStaleStashIfIdle();
 		publishOutlines(true);
 		syncInteractHighlight();
 	}
@@ -1439,7 +1437,30 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		// The carrier may still hold a model a partner plugin posed
 		outliner.clear();
+		restoreStaleStashIfIdle();
 		syncInteractHighlight();
+	}
+
+	/**
+	 * Whether a stash left by a session that died while suppressing can be put back: not while this
+	 * plugin or a partner has the outlines, when the suppression is live and a restore would undo it
+	 * - and look to the partner like the user re-enabling Interact Highlight's outlines.
+	 */
+	static boolean shouldRestoreStaleStash(boolean takenOver, boolean partnerOwning)
+	{
+		return !takenOver && !partnerOwning;
+	}
+
+	/**
+	 * Puts a stale stash back once the handshake says nobody has the outlines, ahead of the sync
+	 * that decides whether to suppress again. Must be called on the client thread.
+	 */
+	private void restoreStaleStashIfIdle()
+	{
+		if (partnerOutlines.isHandshakeDone() && shouldRestoreStaleStash(outlineTakeover, partnerOutlines.isAnyOwning()))
+		{
+			interactHighlight.restoreStaleStash();
+		}
 	}
 
 	/**
