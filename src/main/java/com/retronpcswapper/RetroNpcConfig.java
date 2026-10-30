@@ -374,10 +374,9 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = "swapBarbarians",
 		name = "Barbarians",
-		description = "<html><body style='width:170px'>Swap Barbarian Village's barbarians, Gunthor the "
-			+ "brave, Hunding, Peksa, Litara and the Blue Moon Inn's barbarian to their 2004/2005 retro "
-			+ "models and animations.<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by "
-			+ "default.</body></html>",
+		description = "<html><body style='width:170px'>Swap Barbarian Village's barbarians, and the Blue "
+			+ "Moon Inn's barbarian to their 2004/2005 retro models and animations.<br><br>Needs <b>Use "
+			+ "Converted 2005 Assets</b>, which is on by default.</body></html>",
 		section = npcTogglesSection,
 		position = 22
 	)

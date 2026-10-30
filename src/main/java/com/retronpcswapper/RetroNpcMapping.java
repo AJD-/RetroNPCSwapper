@@ -1294,8 +1294,7 @@ public class RetroNpcMapping
 		new short[]{25238, 6798},
 		new short[]{5652, 4913}).chathead(52, 81).build();
 
-	// Seeded from gameval names around the live stances, not a fight log: the greataxe and 2h sets
-	// the men stand in, the polearm sets the women walk in, and the barbarian blocks
+	// Seeded from gameval names around the live stances
 	public static final Set<Integer> BARBARIAN_MODERN_ATTACKS = Set.of(
 		AnimationID.BARROW_DHAROK_SLASH, AnimationID.BARROW_DHAROK_CRUSH,
 		AnimationID.HUMAN_DHSWORD_STAB, AnimationID.HUMAN_DHSWORD_CHOP, AnimationID.HUMAN_DHSWORD_SLASH,
