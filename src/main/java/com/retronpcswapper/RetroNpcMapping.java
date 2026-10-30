@@ -223,14 +223,19 @@ public class RetroNpcMapping
 
 	// GHOST_ATTACK/GHOST_BLOCK/GHOST_DEATH (123/124/126) are deliberately absent here: they are
 	// the surviving 2005 sequences themselves - the retro targets, not modern anims to intercept.
+	// The TENDRILL family is the second live ghost rig (model 21154: the wilderness Ghost 85, 93,
+	// 2527, 3625, 3975, 5370, 9194, 10538), which idles in 5538 where the others idle in 5530
 	public static final Set<Integer> GHOST_MODERN_ATTACKS = Set.of(
-		AnimationID.GHOST_UPDATE_NORMAL_ATTACK, AnimationID.BOSSGHOST_ATTACK
+		AnimationID.GHOST_UPDATE_NORMAL_ATTACK, AnimationID.GHOST_UPDATE_TENDRILL_ATTACK,
+		AnimationID.BOSSGHOST_ATTACK
 	);
 	public static final Set<Integer> GHOST_MODERN_DEFENDS = Set.of(
-		AnimationID.GHOST_UPDATE_NORMAL_DEFEND, AnimationID.BOSSGHOST_FADE_OUT
+		AnimationID.GHOST_UPDATE_NORMAL_DEFEND, AnimationID.GHOST_UPDATE_TENDRILL_DEFEND,
+		AnimationID.BOSSGHOST_FADE_OUT
 	);
 	public static final Set<Integer> GHOST_MODERN_DEATHS = Set.of(
-		AnimationID.GHOST_UPDATE_NORMAL_DEATH, AnimationID.BOSSGHOST_DEATH
+		AnimationID.GHOST_UPDATE_NORMAL_DEATH, AnimationID.GHOST_UPDATE_TENDRILL_DEATH,
+		AnimationID.BOSSGHOST_DEATH
 	);
 
 	public static final Set<Integer> GIANT_MODERN_ATTACKS = Set.of(

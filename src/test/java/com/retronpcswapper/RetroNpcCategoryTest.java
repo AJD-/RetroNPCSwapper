@@ -1540,6 +1540,10 @@ public class RetroNpcCategoryTest
 		assertTrue(ghost.isDefendAnimation(AnimationID.GHOST_UPDATE_NORMAL_DEFEND));
 		assertTrue(ghost.isDeathAnimation(AnimationID.GHOST_UPDATE_NORMAL_DEATH));
 		assertTrue(ghost.isDeathAnimation(AnimationID.BOSSGHOST_DEATH));
+		// The tendril ghosts (model 21154: the wilderness Ghost 85 among them) have their own family
+		assertTrue(ghost.isAttackAnimation(AnimationID.GHOST_UPDATE_TENDRILL_ATTACK));
+		assertTrue(ghost.isDefendAnimation(AnimationID.GHOST_UPDATE_TENDRILL_DEFEND));
+		assertTrue(ghost.isDeathAnimation(AnimationID.GHOST_UPDATE_TENDRILL_DEATH));
 
 		// The retro sequences themselves are targets, not modern anims to intercept
 		assertFalse(ghost.isAttackAnimation(AnimationID.GHOST_ATTACK));
