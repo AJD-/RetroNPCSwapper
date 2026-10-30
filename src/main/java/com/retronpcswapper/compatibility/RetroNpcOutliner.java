@@ -70,6 +70,9 @@ public class RetroNpcOutliner
 	@Inject
 	private PartnerOutlines partnerOutlines;
 
+	@Inject
+	private PartnerClaims partnerClaims;
+
 	// Built lazily and reused - creating one per frame would churn for no reason
 	private RuneLiteObject carrier;
 
@@ -90,11 +93,11 @@ public class RetroNpcOutliner
 			return false;
 		}
 
-		Model posed = modelCache.pose(npc);
+		// A claimed NPC is the partner's even while the memo still holds a retro model for it, the
+		// same as in substitute(); Custom Servants' poser is tried before Custom NPC Models'
+		Model posed = partnerClaims.isClaimed(npc.getId()) ? null : modelCache.pose(npc);
 		if (posed == null)
 		{
-			// An NPC a partner plugin swaps, which this plugin leaves alone: Custom Servants' poser is
-			// tried before Custom NPC Models'
 			posed = partnerOutlines.pose(npc);
 		}
 		if (posed == null)

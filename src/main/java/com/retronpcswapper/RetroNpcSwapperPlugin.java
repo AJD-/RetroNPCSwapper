@@ -185,8 +185,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 * animations would break them as surely as a retro model.
 	 *
 	 * <p>Thread safe because a partner posts from its shutDown as well as from the client thread.
+	 * Shared with the outliner, which must not pose a claimed NPC from the memo either.
 	 */
-	private final PartnerClaims partnerClaims = new PartnerClaims();
+	@Inject
+	private PartnerClaims partnerClaims;
 
 	/** The renderer 117 HD registers by default; its legacy renderer lives in a sibling package. */
 	private static final String HD_ZONE_RENDERER_PACKAGE = "rs117.hd.renderer.zone.";
@@ -219,13 +221,14 @@ public class RetroNpcSwapperPlugin extends Plugin
 	// outlines. The active check keeps a stopped plugin from posing for them before they hear the
 	// poser was withdrawn. A servant Custom Servants claims is relayed to its poser, so Custom NPC
 	// Models can outline it too: only this plugin relays, and Custom Servants' poser never asks the
-	// partners, so the chain stops after two hops. An NPC Custom NPC Models claims gets null here,
-	// and that plugin poses its own.
+	// partners, so the chain stops after two hops. An NPC any other partner claims gets null here -
+	// routed by claimant, never by the union, so a Custom NPC Models claim is never sent back into
+	// Custom Servants' poser - and that plugin poses its own.
 	private final Function<NPC, Model> outlinePoser =
 		npc -> !this.active ? null
-			: partnerClaims.isClaimed(npc.getId())
+			: partnerClaims.isClaimedBy(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS, npc.getId())
 				? partnerOutlines.pose(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS, npc)
-				: modelCache.pose(npc);
+				: partnerClaims.isClaimed(npc.getId()) ? null : modelCache.pose(npc);
 
 	/**
 	 * The in-flight bundle read, so shutDown can cancel it.

@@ -169,8 +169,8 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
 <details>
 <summary>Other Model-Swapping Plugin Compatibility</summary>
 
-The **Custom Servants** plugin run alongside this plugin, together or on their
-own. Any NPC either of them has a custom model for is left to it entirely: this plugin swaps neither that
+The **Custom Servants** plugin runs alongside this plugin, together or on its
+own. Any NPC it has a custom model for is left to it entirely: this plugin swaps neither that
 NPC's model, its animations nor its chathead. Every other NPC is swapped as usual. The
 `Fix Interact Highlight outlines` option can be on in this plugin or Custom Servants (or both): only one draws
 `Interact Highlight`'s NPC outlines at a time, each around whichever plugin's

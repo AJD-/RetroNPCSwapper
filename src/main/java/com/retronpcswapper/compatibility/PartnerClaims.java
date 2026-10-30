@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.inject.Singleton;
 
 /**
  * The NPC ids each partner plugin says it is drawing, kept per source so one partner's claims never
@@ -38,6 +39,7 @@ import java.util.Set;
  * from the client thread - so the writes are synchronized and the union is published through a
  * volatile field, read per NPC per frame without locking.
  */
+@Singleton
 public class PartnerClaims
 {
 	private final Map<String, Set<Integer>> claimsBySource = new HashMap<>();
@@ -77,6 +79,13 @@ public class PartnerClaims
 	public boolean isClaimed(int npcId)
 	{
 		return claimed.contains(npcId);
+	}
+
+	/** Whether {@code source} itself claims {@code npcId}. Any thread. */
+	public synchronized boolean isClaimedBy(String source, int npcId)
+	{
+		Set<Integer> ids = source == null ? null : claimsBySource.get(source);
+		return ids != null && ids.contains(npcId);
 	}
 
 	/** Every NPC id some partner claims. Cannot be modified. */
