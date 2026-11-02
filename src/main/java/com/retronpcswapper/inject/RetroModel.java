@@ -68,7 +68,8 @@ import net.runelite.api.Node;
  * does set {@code NORMALS}, so a copied model carries the client's vertex normals: without them it
  * lights every face flat and leaves the client's baked shading showing. Its "None" and
  * "Experimental" shading modes also set {@code UNLIT_FACE_COLORS}, and those are carried the same
- * way. Geometry posed here from a mesh has neither, and the renderer null-checks for both.
+ * way. Geometry bound from a mesh works out its own rest normals and keeps the mesh's unlit
+ * colours. The renderer null-checks for both regardless.
  * {@code drawFrustum} and {@code drawOrtho} belong to the software rasterizer, which neither uses.
  * <p>
  * <b>Maintenance cost, deliberately accepted:</b> {@code Model} has no default methods, so a
@@ -214,9 +215,14 @@ public class RetroModel implements Model
 		texIndices2 = mesh.getTexIndices2();
 		texIndices3 = mesh.getTexIndices3();
 		faceBias = null;
-		// Posing a mesh would have to turn its normals bone by bone, which the skinner does not do
-		clearVertexNormals();
-		unlitFaceColors = null;
+		// Rest normals, the ones the lighter baked with: the client keeps a model's normals at rest
+		// through animation, and 117 HD undoes the baked shading by them
+		int[][] normals = RetroLighter.vertexNormals(verticesCount,
+			mesh.getVerticesX(), mesh.getVerticesY(), mesh.getVerticesZ(),
+			faceCount, mesh.getFaceIndices1(), mesh.getFaceIndices2(), mesh.getFaceIndices3(),
+			mesh.getFaceRenderTypes());
+		setVertexNormals(normals[0], normals[1], normals[2]);
+		setUnlitFaceColors(mesh.getFaceColors());
 
 		transparency = 0;
 		overrideAmount = 0;
@@ -1082,8 +1088,8 @@ public class RetroModel implements Model
 	// Never reached under the GPU plugin, whose setupGpuFlags never sets NORMALS or
 	// UNLIT_FACE_COLORS. 117 HD sets NORMALS always and UNLIT_FACE_COLORS in its "None" and
 	// "Experimental" shading modes, so the client fills them in on the models copied here, and they
-	// are carried. It null-checks each one, falling back to flat face normals and the lit colours,
-	// so null is safe wherever there is nothing to give.
+	// are carried; a bound mesh computes its own at rest. It null-checks each one, falling back to
+	// flat face normals and the lit colours, so null is safe wherever there is nothing to give.
 
 	@Override
 	public short[] getUnlitFaceColors()

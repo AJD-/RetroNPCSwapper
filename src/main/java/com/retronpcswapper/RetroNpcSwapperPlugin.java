@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import javax.inject.Inject;
 
 import com.retronpcswapper.chathead.ChatheadOverlay;
@@ -48,6 +49,10 @@ import com.retronpcswapper.inject.RetroAssetBundle;
 import com.retronpcswapper.inject.RetroAssetSource;
 import com.retronpcswapper.compatibility.InteractHighlightCompat;
 import com.retronpcswapper.compatibility.InteractTargetTracker;
+import com.retronpcswapper.compatibility.ModelSwapProtocol;
+import com.retronpcswapper.compatibility.PartnerClaims;
+import com.retronpcswapper.compatibility.PartnerOutlines;
+import com.retronpcswapper.compatibility.RendererChain;
 import com.retronpcswapper.compatibility.RetroInteractHighlightOverlay;
 import com.retronpcswapper.compatibility.RetroNpcOutliner;
 import com.retronpcswapper.compatibility.RetroSceneryOutliner;
@@ -85,9 +90,11 @@ import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.callback.RenderCallbackManager;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.PluginChanged;
+import net.runelite.client.events.PluginMessage;
 import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -146,6 +153,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private RetroNpcOutliner outliner;
 
 	@Inject
+	private EventBus eventBus;
+
+	@Inject
+	private PartnerOutlines partnerOutlines;
+
+	@Inject
 	private RetroSceneryOutliner sceneryOutliner;
 
 	@Inject
@@ -169,10 +182,27 @@ public class RetroNpcSwapperPlugin extends Plugin
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
 
+	/**
+	 * NPC ids a partner plugin - Custom NPC Models or Custom Servants - is drawing, kept per source,
+	 * which this plugin leaves alone entirely: their clips are keyed to the live sequences, so retro
+	 * animations would break them as surely as a retro model.
+	 *
+	 * <p>Thread safe because a partner posts from its shutDown as well as from the client thread.
+	 * Shared with the outliner, which must not pose a claimed NPC from the memo either.
+	 */
+	@Inject
+	private PartnerClaims partnerClaims;
+
 	/** The renderer 117 HD registers by default; its legacy renderer lives in a sibling package. */
 	private static final String HD_ZONE_RENDERER_PACKAGE = "rs117.hd.renderer.zone.";
 
 	private static final String HD_PLUGIN_CLASS = "rs117.hd.HdPlugin";
+
+	/** Another Hub plugin, so recognized by class name alone like 117 HD. */
+	private static final String CUSTOM_PLUGIN_CLASS = "com.customnpcmodels.CustomNpcModelsPlugin";
+
+	/** Likewise another Hub plugin; it claims NPCs and takes part in the outlines handshake too. */
+	private static final String SERVANTS_PLUGIN_CLASS = "com.customservants.CustomServantsPlugin";
 
 	// Our decorator, while it owns the client's draw callbacks slot
 	private RetroDrawCallbacks wrapper;
@@ -185,6 +215,23 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	// Whether we are currently drawing Interact Highlight's NPC outlines in its place
 	private boolean outlineTakeover;
+
+	// What the partner plugins were last told about outlineTakeover, or null when they have been
+	// told nothing this start
+	private Boolean postedOutlines;
+
+	// Handed to the partner plugins, which call it on the client thread while they draw the
+	// outlines. The active check keeps a stopped plugin from posing for them before they hear the
+	// poser was withdrawn. A servant Custom Servants claims is relayed to its poser, so Custom NPC
+	// Models can outline it too: only this plugin relays, and Custom Servants' poser never asks the
+	// partners, so the chain stops after two hops. An NPC any other partner claims gets null here -
+	// routed by claimant, never by the union, so a Custom NPC Models claim is never sent back into
+	// Custom Servants' poser - and that plugin poses its own.
+	private final Function<NPC, Model> outlinePoser =
+		npc -> !this.active ? null
+			: partnerClaims.isClaimedBy(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS, npc.getId())
+				? partnerOutlines.pose(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS, npc)
+				: partnerClaims.isClaimed(npc.getId()) ? null : modelCache.pose(npc);
 
 	/**
 	 * The in-flight bundle read, so shutDown can cancel it.
@@ -216,13 +263,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 		overlayManager.add(chatheadOverlay);
 		clientThread.invoke(() ->
 		{
-			// A session that died while suppressing left Interact Highlight's NPC outlines off.
-			// Put them back before attach() decides whether to suppress again.
-			interactHighlight.restoreStaleStash();
 			scenerySwapper.scanLoadedScene();
 			recheckLoadedNpcs();
 			attach();
 		});
+
+		// A partner plugin may have started first; ask which NPCs it is drawing
+		eventBus.post(ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
 	}
 
 	/**
@@ -284,6 +331,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			bundleLoad = null;
 		}
 
+		// Asked for again by the hello on the next start
+		partnerClaims.clear();
+
 		// Here rather than in the invoke below, mirroring startUp's register. Deferred, a quick
 		// off-and-on would let this run after the next startUp registered, and unregister that.
 		// Once it is gone nothing hides the symbols, so the zone rebuild below puts them back.
@@ -296,6 +346,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			// Ahead of detach, so the zones it rebuilds are rebuilt by whichever renderer is drawing
 			scenerySwapper.shutDown();
 			detach();
+			withdrawOutlines();
 			resetAllModifiedNpcs();
 			shieldSwapper.shutDown();
 			// Ahead of the clear, so the dialogue head is put back before the heads it drew go
@@ -347,6 +398,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			final String changedKey = event.getKey();
 			clientThread.invoke(() ->
 			{
+				// First, so a partner plugin turns its fix off before we post that we have let go
+				eventBus.post(ModelSwapProtocol.optOutMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
+
 				// optOut() has to clear the suppression before the write below, or
 				// the ConfigChanged it posts comes back through syncInteractHighlight() into
 				// restore(), which would put the stash back over the value the user just chose.
@@ -372,6 +426,58 @@ public class RetroNpcSwapperPlugin extends Plugin
 			recheckLoadedNpcs();
 			syncInteractHighlight();
 		});
+	}
+
+	@Subscribe
+	public void onPluginMessage(PluginMessage event)
+	{
+		if (ModelSwapProtocol.partnerSource(event, ModelSwapProtocol.SYN) != null)
+		{
+			// A partner plugin has just started and knows nothing of our outlines state yet
+			clientThread.invoke(() -> publishOutlines(true));
+			return;
+		}
+
+		String outlinesSource = ModelSwapProtocol.partnerSource(event, ModelSwapProtocol.OUTLINES);
+		if (outlinesSource != null)
+		{
+			ModelSwapProtocol.Outlines outlines = ModelSwapProtocol.readOutlines(event, outlinesSource);
+			if (outlines != null)
+			{
+				// Recorded straight away, so a decision made after this sees it; acted on later
+				partnerOutlines.accept(outlinesSource, outlines);
+				clientThread.invokeLater(this::onPartnerOutlinesChanged);
+			}
+			return;
+		}
+
+		if (ModelSwapProtocol.partnerSource(event, ModelSwapProtocol.OUTLINES_OPT_OUT) != null)
+		{
+			// A partner plugin was drawing the outlines and the user turned Interact Highlight's back
+			// on. Written straight away, so the fix is off here before it posts that it has let go
+			// and this plugin would otherwise take the outlines over again.
+			if (config.overrideInteractHighlight())
+			{
+				log.debug("Interact Highlight NPC outlines re-enabled by the user; turning the fix off");
+				configManager.setConfiguration(RetroNpcConfig.GROUP,
+					RetroNpcConfig.OVERRIDE_INTERACT_HIGHLIGHT, false);
+			}
+			return;
+		}
+
+		String source = ModelSwapProtocol.claimsSource(event);
+		Set<Integer> claims = source == null ? null : ModelSwapProtocol.readClaims(event, source);
+		if (claims == null || !active || !partnerClaims.put(source, claims))
+		{
+			return;
+		}
+
+		log.debug("{} claims {} NPC id(s); {} excluded from retro swap in all", source, claims.size(),
+			partnerClaims.claimed().size());
+
+		// Hand back NPCs no longer claimed, and let go of the ones now claimed. Deferred because a
+		// partner plugin can post this from its shutDown, off the client thread.
+		clientThread.invoke(this::recheckLoadedNpcs);
 	}
 
 	@Subscribe
@@ -402,8 +508,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Cheap guard: the GPU plugin and 117 HD set and clear the draw callbacks slot
 		// unconditionally, so re-take it whenever we have lost it. Covers orderings PluginChanged
 		// misses - including 117 HD restarting itself on a settings change, which installs a new
-		// renderer without posting any plugin event.
-		if (wrapper == null || client.getDrawCallbacks() != wrapper)
+		// renderer without posting any plugin event. A partner plugin stacking on top leaves us
+		// beneath it rather than out, which is why this looks through the chain.
+		if (wrapper == null || !RendererChain.contains(client.getDrawCallbacks(), wrapper))
 		{
 			attach();
 		}
@@ -412,7 +519,58 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onPluginChanged(PluginChanged event)
 	{
-		if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin()))
+		if (event.getPlugin() == this && event.isLoaded())
+		{
+			// Posted from here as well as startUp, which runs before the event bus has registered
+			// us, so the partner plugins' answers are heard. The outlines handshake is finished behind
+			// the partner plugins' answers on the client thread queue, so the takeover decision never
+			// races them.
+			eventBus.post(ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
+			clientThread.invokeLater(this::finishHandshake);
+		}
+		else if (isCustomPlugin(event.getPlugin()))
+		{
+			if (event.isLoaded())
+			{
+				// Its sync request goes out before it is listening, so the answer is sent from here too
+				clientThread.invoke(() -> publishOutlines(true));
+			}
+			else
+			{
+				forgetClaims(ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS);
+
+				// Queued rather than done here: Custom NPC Models hands the outlines back on the
+				// client thread after its shutDown, and a sync already queued that saw it gone first
+				// would stash its false values
+				clientThread.invokeLater(() ->
+				{
+					partnerOutlines.forget(ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS);
+					onPartnerOutlinesChanged();
+				});
+			}
+		}
+		else if (isServantsPlugin(event.getPlugin()))
+		{
+			if (event.isLoaded())
+			{
+				// It posts its claims itself, but its sync request goes out before it is listening,
+				// so the outlines answer is sent from here too
+				clientThread.invoke(() -> publishOutlines(true));
+			}
+			else
+			{
+				forgetClaims(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS);
+
+				// Queued for the same reason as Custom NPC Models': Custom Servants hands the outlines
+				// back on the client thread after its shutDown
+				clientThread.invokeLater(() ->
+				{
+					partnerOutlines.forget(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS);
+					onPartnerOutlinesChanged();
+				});
+			}
+		}
+		else if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin()))
 		{
 			// attach() declines on its own when no supported renderer is holding the slot. 117 HD
 			// installs its renderer asynchronously once GL is up, so the per-tick guard is what
@@ -441,8 +599,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 			sceneryOutliner.clear();
 			outlineTakeover = false;
 
-			interactHighlight.restoreStaleStash();
+			restoreStaleStashIfIdle();
 			syncInteractHighlight();
+			// syncInteractHighlight() sees no change when the new profile is not taken over either,
+			// but a partner plugin may still think we draw the outlines
+			publishOutlines(false);
 		});
 	}
 
@@ -523,7 +684,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// processNpc, which maintains the cache's memo. Gating on the same memo keeps animation
 		// overrides tied to the model actually being substituted - a vanilla model playing a
 		// 2005 sequence renders distorted, since those sequences are keyed to 2005 framemaps.
-		if (!modelCache.isSubstituted(npc.getId()))
+		if (!modelCache.isSubstituted(npc.getId()) || partnerClaims.isClaimed(npc.getId()))
 		{
 			return;
 		}
@@ -650,7 +811,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Animation overrides are gated on substitution being live. Without the wrapper the
 		// model stays vanilla, and a modern-rigged model playing a 2005 sequence - which is
 		// keyed to 2005 framemaps - renders distorted rather than retro.
-		if (!isSwapLive(data))
+		//
+		// An NPC a partner plugin is drawing is left to it wholesale, animations included - its
+		// model is keyed to the live sequences, which a retro one would replace.
+		if (!isSwapLive(data) || partnerClaims.isClaimed(npc.getId()))
 		{
 			modelCache.clearSubstituted(npc.getId());
 			resetNpc(npc);
@@ -690,11 +854,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 * no GPU or 117 HD renderer wrapped, a toggle off, or a safety setting stepping in. The heads are
 	 * converted 2005 assets for every category, the cache-backed goblins and ghosts included, so the
 	 * assets toggle gates them as well. Client thread only: called by the swapper every frame a
-	 * dialogue head shows.
+	 * dialogue head shows. An NPC a partner plugin claims keeps its modern head, as it keeps its body.
 	 */
 	private RetroHead chatheadFor(int npcId)
 	{
-		if (!active || !config.swapChatheads() || !injectionEnabled())
+		if (!active || !config.swapChatheads() || !injectionEnabled() || partnerClaims.isClaimed(npcId))
 		{
 			return null;
 		}
@@ -799,6 +963,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case BEARS:
 				// Mesh 2966 and sequences 37-44 survive intact, so the cache path draws them
 				return config.swapBears();
+			case FISHING_SPOTS:
+				// Mesh 1491 and sequences 447/448 survive intact, so the cache path draws it
+				return config.swapFishingSpots();
 			case KALPHITES:
 				// Meshes 3849-3854 are gone from the live cache, so only the bundle can draw them
 				return config.swapKalphites() && injectionEnabled();
@@ -1042,27 +1209,37 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	/**
 	 * Takes over the client's draw callbacks slot by wrapping whichever supported renderer holds it:
-	 * the GPU plugin, or 117 HD's zone renderer.
+	 * the GPU plugin, or 117 HD's zone renderer - directly, or beneath the decorators of Custom NPC
+	 * Models and Custom Servants.
 	 *
-	 * <p>Declines for anything else - no renderer at all, an unknown one, or 117 HD's legacy
-	 * renderer. That last one is not an oversight: it implements no {@code drawTemp} and does not run
-	 * the ZBUF path, so wrapping it would substitute nothing while still letting processNpc apply
-	 * 2005 animations to modern rigs. Must be called on the client thread.
+	 * <p>Declines for anything else - no renderer at all, an unknown one, a decorator it cannot see
+	 * through, or 117 HD's legacy renderer. Which of the plugins stacks on top does not matter: this
+	 * one leaves the NPCs its partners claim alone, so each NPC is only ever swapped by one of them.
+	 * Must be called on the client thread.
 	 */
 	private void attach()
 	{
 		DrawCallbacks current = client.getDrawCallbacks();
-		if (wrapper != null && current == wrapper)
+		if (RendererChain.contains(current, wrapper))
 		{
 			return;
 		}
 
-		// We are not the registered callbacks anymore; drop the stale reference before
-		// deciding whether we can retake the slot
+		// We are not in the chain anymore; drop the stale reference before deciding whether we can
+		// retake the slot
 		boolean wasAttached = wrapper != null;
 		wrapper = null;
 
-		if (isSupportedHost(current, findGpuPlugin()))
+		// Left beneath a partner plugin by an earlier detach, which could not unlink it from under
+		// another plugin's decorator. Picking it back up keeps a second one from stacking on top.
+		RetroDrawCallbacks buried = RendererChain.find(current, RetroDrawCallbacks.class);
+		if (buried != null)
+		{
+			wrapper = buried;
+			declinedHost = null;
+			log.debug("Re-adopted retro draw callbacks beneath {}", current.getClass().getName());
+		}
+		else if (isSupportedHost(current, findGpuPlugin()))
 		{
 			RetroDrawCallbacks callbacks = new RetroDrawCallbacks(current, this::substitute,
 				shieldSwapper::substituteGroundItem, scenerySwapper::isHidden);
@@ -1101,9 +1278,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 		else if (wrapper != null)
 		{
-			// Something else holds the slot. If it wrapped our wrapper, that stale decorator
-			// stays in its chain - harmless once the cache's memo is cleared (every
-			// substitution then falls through to the vanilla model), but worth saying.
+			// Something else holds the slot. If it wrapped our wrapper - a partner plugin does -
+			// that decorator stays in its chain, harmless once the cache's memo is cleared (every
+			// substitution then falls through to the vanilla model), and the next attach() picks
+			// it back up.
 			log.debug("Draw callbacks slot no longer ours at detach; leaving it untouched");
 		}
 		wrapper = null;
@@ -1113,7 +1291,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Whether {@code current} is a renderer {@link RetroDrawCallbacks} can substitute models through.
+	 * Whether {@code current} is a renderer {@link RetroDrawCallbacks} can substitute models through,
+	 * either itself or beneath a partner plugin's decorator.
 	 *
 	 * <p>117 HD is a Plugin Hub plugin loaded in its own classloader, so it is recognized by class
 	 * name alone - there is no compile or runtime dependency on it, and with it absent nothing here
@@ -1122,7 +1301,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	static boolean isSupportedHost(DrawCallbacks current, Plugin gpu)
 	{
-		return current != null && (current == gpu || isHdZoneRenderer(current.getClass().getName()));
+		DrawCallbacks renderer = RendererChain.base(current);
+		return renderer != null && (renderer == gpu || isHdZoneRenderer(renderer.getClass().getName()));
 	}
 
 	static boolean isHdZoneRenderer(String className)
@@ -1133,6 +1313,29 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private static boolean isHdPlugin(Plugin plugin)
 	{
 		return plugin != null && HD_PLUGIN_CLASS.equals(plugin.getClass().getName());
+	}
+
+	private static boolean isCustomPlugin(Plugin plugin)
+	{
+		return plugin != null && CUSTOM_PLUGIN_CLASS.equals(plugin.getClass().getName());
+	}
+
+	private static boolean isServantsPlugin(Plugin plugin)
+	{
+		return plugin != null && SERVANTS_PLUGIN_CLASS.equals(plugin.getClass().getName());
+	}
+
+	/**
+	 * Drops what a partner plugin claimed as it stops, rather than relying on it posting an empty set
+	 * on the way out, and hands those NPCs back to the retro swap.
+	 */
+	private void forgetClaims(String source)
+	{
+		if (partnerClaims.remove(source))
+		{
+			log.debug("{} stopped; its claimed NPCs are swapped again", source);
+			clientThread.invoke(this::recheckLoadedNpcs);
+		}
 	}
 
 	private Plugin findGpuPlugin()
@@ -1160,9 +1363,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void syncInteractHighlight()
 	{
-		boolean takeOver = config.overrideInteractHighlight()
-			&& wrapper != null
-			&& interactHighlight.isInteractHighlightActive();
+		boolean takeOver = shouldTakeOver(
+			config.overrideInteractHighlight() && wrapper != null && interactHighlight.isInteractHighlightActive(),
+			outlineTakeover, partnerOutlines.isHandshakeDone(), partnerOutlines.isAnyOwning());
 
 		if (takeOver == outlineTakeover)
 		{
@@ -1184,6 +1387,92 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		// Last, so a failure to write config does not leave us recorded as having taken over
 		outlineTakeover = takeOver;
+		publishOutlines(false);
+	}
+
+	/**
+	 * Whether to draw the outlines, given whether they are {@code wanted} here at all.
+	 *
+	 * <p>Only one of this plugin and a partner plugin may: both would turn Interact Highlight's
+	 * settings off and stash the other's false as the user's choice. Whichever took them first
+	 * keeps them until it lets go, and neither takes them before its handshake, when it cannot yet
+	 * know whether the other already has.
+	 */
+	static boolean shouldTakeOver(boolean wanted, boolean takenOver, boolean handshakeDone, boolean partnerOwning)
+	{
+		return wanted && handshakeDone && (takenOver || !partnerOwning);
+	}
+
+	/**
+	 * Tells the partner plugins whether we draw the outlines, and how to pose our NPCs. Posted only
+	 * when that changes, unless {@code always}. Must be called on the client thread.
+	 */
+	private void publishOutlines(boolean always)
+	{
+		if (!always && postedOutlines != null && postedOutlines == outlineTakeover)
+		{
+			return;
+		}
+
+		postedOutlines = outlineTakeover;
+		eventBus.post(ModelSwapProtocol.outlinesMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER,
+			outlineTakeover, outlinePoser));
+	}
+
+	/**
+	 * Tells the partner plugins we have let go of the outlines and the poser, as the plugin stops.
+	 * Called after detach() has handed the outlines back, so a partner plugin stashes Interact
+	 * Highlight's restored settings rather than our false ones if it takes them over.
+	 */
+	private void withdrawOutlines()
+	{
+		postedOutlines = null;
+		eventBus.post(ModelSwapProtocol.outlinesMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER, false, null));
+		partnerOutlines.reset();
+	}
+
+	/**
+	 * Finishes the handshake: each partner plugin has answered the sync request by now if it is
+	 * running, so deciding whether to take the outlines over can no longer race their answers.
+	 */
+	private void finishHandshake()
+	{
+		log.debug("Handshake done; a partner plugin {} the outlines",
+			partnerOutlines.isAnyOwning() ? "draws" : "does not draw");
+		partnerOutlines.setHandshakeDone();
+		restoreStaleStashIfIdle();
+		publishOutlines(true);
+		syncInteractHighlight();
+	}
+
+	private void onPartnerOutlinesChanged()
+	{
+		// The carrier may still hold a model a partner plugin posed
+		outliner.clear();
+		restoreStaleStashIfIdle();
+		syncInteractHighlight();
+	}
+
+	/**
+	 * Whether a stash left by a session that died while suppressing can be put back: not while this
+	 * plugin or a partner has the outlines, when the suppression is live and a restore would undo it
+	 * - and look to the partner like the user re-enabling Interact Highlight's outlines.
+	 */
+	static boolean shouldRestoreStaleStash(boolean takenOver, boolean partnerOwning)
+	{
+		return !takenOver && !partnerOwning;
+	}
+
+	/**
+	 * Puts a stale stash back once the handshake says nobody has the outlines, ahead of the sync
+	 * that decides whether to suppress again. Must be called on the client thread.
+	 */
+	private void restoreStaleStashIfIdle()
+	{
+		if (partnerOutlines.isHandshakeDone() && shouldRestoreStaleStash(outlineTakeover, partnerOutlines.isAnyOwning()))
+		{
+			interactHighlight.restoreStaleStash();
+		}
 	}
 
 	/**
@@ -1198,9 +1487,17 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// The posed models are shared and only valid until the next applyTransformations call. They
 		// are handed straight to the delegate and uploaded before anything else can run, which is
 		// what makes that safe here.
+		//
+		// A claimed NPC is let through untouched even before the recheck the claim triggered has
+		// cleared it from the memo, so the partner plugin claiming it wins whichever is stacked on top.
 		if (renderable instanceof NPC)
 		{
-			return modelCache.pose((NPC) renderable);
+			NPC npc = (NPC) renderable;
+			if (partnerClaims.isClaimed(npc.getId()))
+			{
+				return null;
+			}
+			return modelCache.pose(npc);
 		}
 		if (renderable instanceof Player)
 		{

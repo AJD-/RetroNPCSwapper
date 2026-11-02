@@ -67,10 +67,29 @@ public class RetroNpcMapping
 		NpcID.WANDERING_DOOMSCORPION,
 		// Exclude the gorilla skeleton
 		NpcID.MM_SKELETON,
+		// The Monkey Zombies still wear 2005 meshes 4817/4824 in the 2005 palette; the "monkey zombie"
+		// row would drop the palette and hand them the human zombie's anims
+		NpcID.MM_ZOMBIE_MONKEY_LARGE, NpcID.MM_ZOMBIE_MONKEY_LARGE_GUARD, NpcID.MM_ZOMBIE_MONKEY_SMALL,
 		// Arianwyn's model in NMZ
 		NpcID.NZONE_SOTE_ARIANWYN_HARD,
 		// Exclude the Hallowed Sepulchre spiders
-		NpcID.HALLOWED_SPIDER_01, NpcID.HALLOWED_SPIDER_02
+		NpcID.HALLOWED_SPIDER_01, NpcID.HALLOWED_SPIDER_02,
+		// Fishing spots on their own meshes - cave/lava eels 6568/2331/8785, minnows 33186, aerial 36386,
+		// Tempoross and Camdozaal 41967
+		NpcID._0_49_149_CAVEFISH, NpcID._0_50_149_CAVEFISH, NpcID._0_42_81_CAVEFISH_EAST,
+		NpcID._0_42_81_CAVEFISH_WEST, NpcID.SNAKEBOSS_FISHINGSPOT, NpcID._0_45_90_CAVEFISH,
+		NpcID._0_45_152_LAVAFISH, NpcID.MORULREK_EELS_FISHINGSPOT, NpcID._0_42_138_LAVAFISH,
+		NpcID._0_40_134_LAVAFISH, NpcID._0_47_59_LAVAFISH,
+		NpcID.MINNOW_FISHINGSPOT1, NpcID.MINNOW_FISHINGSPOT2, NpcID.MINNOW_FISHINGSPOT3,
+		NpcID.MINNOW_FISHINGSPOT4,
+		NpcID.FISHING_SPOT_AERIAL,
+		NpcID.TEMPOROSS_HARPOONFISH_FISHINGSPOT_NORTH, NpcID.TEMPOROSS_HARPOONFISH_FISHINGSPOT_SOUTH,
+		NpcID.TEMPOROSS_HARPOONFISH_FISHINGSPOT_SPECIAL,
+		NpcID.CAMDOZAAL_FISHINGSPOT_1, NpcID.CAMDOZAAL_FISHINGSPOT_2, NpcID.CAMDOZAAL_FISHINGSPOT_3,
+		// Sailing's 5x5 boat spots never had a pre-Sailing form
+		NpcID.FISHING_BOAT_SALTFISH, NpcID.FISHING_BOAT_MEMBERFISH, NpcID.FISHING_BOAT_RAREFISH,
+		NpcID.FISHING_BOAT_KARAMBWANFISH, NpcID.FISHING_BOAT_PISCARILIUSFISH,
+		NpcID.FISHING_BOAT_MONKFISH
 	);
 
 	/**
@@ -223,14 +242,19 @@ public class RetroNpcMapping
 
 	// GHOST_ATTACK/GHOST_BLOCK/GHOST_DEATH (123/124/126) are deliberately absent here: they are
 	// the surviving 2005 sequences themselves - the retro targets, not modern anims to intercept.
+	// The TENDRILL family is the second live ghost rig (model 21154: the wilderness Ghost 85, 93,
+	// 2527, 3625, 3975, 5370, 9194, 10538), which idles in 5538 where the others idle in 5530
 	public static final Set<Integer> GHOST_MODERN_ATTACKS = Set.of(
-		AnimationID.GHOST_UPDATE_NORMAL_ATTACK, AnimationID.BOSSGHOST_ATTACK
+		AnimationID.GHOST_UPDATE_NORMAL_ATTACK, AnimationID.GHOST_UPDATE_TENDRILL_ATTACK,
+		AnimationID.BOSSGHOST_ATTACK
 	);
 	public static final Set<Integer> GHOST_MODERN_DEFENDS = Set.of(
-		AnimationID.GHOST_UPDATE_NORMAL_DEFEND, AnimationID.BOSSGHOST_FADE_OUT
+		AnimationID.GHOST_UPDATE_NORMAL_DEFEND, AnimationID.GHOST_UPDATE_TENDRILL_DEFEND,
+		AnimationID.BOSSGHOST_FADE_OUT
 	);
 	public static final Set<Integer> GHOST_MODERN_DEATHS = Set.of(
-		AnimationID.GHOST_UPDATE_NORMAL_DEATH, AnimationID.BOSSGHOST_DEATH
+		AnimationID.GHOST_UPDATE_NORMAL_DEATH, AnimationID.GHOST_UPDATE_TENDRILL_DEATH,
+		AnimationID.BOSSGHOST_DEATH
 	);
 
 	public static final Set<Integer> GIANT_MODERN_ATTACKS = Set.of(
@@ -956,6 +980,8 @@ public class RetroNpcMapping
 	private static final short KIT_SECONDARY = 8652;
 	/** Trim, belts and boots. */
 	private static final short KIT_TRIM = 7595;
+	/** The hood on chathead 4012, which the body part 4021 paints KIT_TRIM. */
+	private static final short KIT_HOOD = 8741;
 	/** The low band on the warrior's body 4016. */
 	private static final short KIT_WARRIOR_BAND = 12469;
 	/** The two colors of the pike 4033 that definition 2359 paints wood. */
@@ -966,7 +992,7 @@ public class RetroNpcMapping
 
 	/** The hair and cloth slots of the Nov Lletya kits, which a Prifddinas citizen's own colors replace. */
 	private static final short[] CITIZEN_RECOLOR_FIND = {
-		KIT_HAIR, KIT_HAIR_OLD_HEAD, KIT_GARMENT, KIT_TUNIC, KIT_SECONDARY, KIT_TRIM};
+		KIT_HAIR, KIT_HAIR_OLD_HEAD, KIT_GARMENT, KIT_TUNIC, KIT_SECONDARY, KIT_TRIM, KIT_HOOD};
 
 	/**
 	 * The Lletya outfits a citizen can wear, by body. Gethin's chef's hat and the children are left
@@ -996,7 +1022,8 @@ public class RetroNpcMapping
 	static RetroNpcData dressed(RetroNpcData kit, int hair, int cloth, int clothShade, int clothDark)
 	{
 		return kit.withRecolors(CITIZEN_RECOLOR_FIND, new short[]{
-			(short) hair, (short) hair, (short) cloth, (short) cloth, (short) clothShade, (short) clothDark});
+			(short) hair, (short) hair, (short) cloth, (short) cloth, (short) clothShade, (short) clothDark,
+			(short) clothDark});
 	}
 
 	/**
@@ -1556,6 +1583,17 @@ public class RetroNpcMapping
 	}
 
 	public static final RetroNpcData HELLHOUND_DEFAULT = hellhound(HELLHOUND_SCALE);
+
+	// 2005 def 233: mesh 1491, no opcode 40 data, no resize. Group-less, so 447/448 are inert -
+	// the motion is texture 17 scrolling on its six textured faces
+	private static final int FISHING_SPOT_RIPPLE = 1491;
+
+	public static final RetroNpcData FISHING_SPOT_DEFAULT = RetroNpcData.builder()
+		.category(RetroNpcCategory.FISHING_SPOTS)
+		.retroModelIds(new int[]{FISHING_SPOT_RIPPLE})
+		.idleAnimationId(AnimationID.FISHINGSPOT_READY)
+		.walkAnimationId(AnimationID.FISHINGSPOT_WALK)
+		.build();
 
 	// February 2005 has no God Wars. The live ancient hellhound's composition asks for 90 against the
 	// ordinary hound's 128, so it is the 2005 hound scaled by the same ratio - the calf's reasoning.
@@ -2482,8 +2520,8 @@ public class RetroNpcMapping
 		registerCitizen(NpcID.PRIF_CITIZEN_ARANWE, false, 4750, PrifClothing.CADARN); // Aranwe
 
 		// The city's shopkeepers and instructors, the same way - every NPC in the cache wearing the
-		// citizens' six live recolors, bar the Gwenith villagers and the Deadman guards. Oswallt's
-		// trowel, Elgan's staff and Iwan's mace have no part in any Lletya outfit and are left behind
+		// citizens' six live recolors, bar the Deadman guards. Oswallt's trowel, Elgan's staff and
+		// Iwan's mace have no part in any Lletya outfit and are left behind
 		registerCitizen(NpcID.PRIF_ARMOURSTORE, false, 3881, PrifClothing.IORWERTH); // Aneirin
 		registerCitizen(NpcID.PRIF_WEAPONSTORE, false, 28, PrifClothing.IORWERTH); // Celyn
 		registerCitizen(NpcID.PRIF_FARMINGSTORE, true, 12, PrifClothing.CRWYS); // Branwen
@@ -2514,6 +2552,11 @@ public class RetroNpcMapping
 		registerCitizen(NpcID.PRIF_SPICE, false, 10341, PrifClothing.MEILYR); // Caerwyn
 		registerCitizen(NpcID.PRIF_SILK, true, 8394, PrifClothing.MEILYR); // Anwen
 		registerCitizen(NpcID.PRIF_GEM, true, 8394, PrifClothing.MEILYR); // Glenda
+
+		// The Gwenith villagers
+		registerCitizen(NpcID.GWENITH_ELF_4, false, 28, 10520, 10644, 10768); // Gwerin Hapus
+		registerCitizen(NpcID.GWENITH_ELF_5, true, 28, 10520, 10644, 10768); // Preswylwyr Dall
+		registerCitizen(NpcID.GWENITH_ELF_6, true, 28, 10520, 10644, 10768); // Marwolaeth Dawnsio
 
 		// The bankers wear the Lletya bankers' own outfits, in the Prifddinas bank's grey
 		registerDressed(LLETYA_BANKER_MALE, 5667, PrifClothing.BANK_GREY,
@@ -2836,6 +2879,12 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("bear cub", BEAR_CUB_1);
 		registerMapping(BEAR_CUB_1, NpcID.BROWNBEAR_CUB_1, NpcID.PRIF_GEE);
 		registerMapping(BEAR_CUB_2, NpcID.BROWNBEAR_CUB_2);
+
+		// Fishing spots. Since Sailing every shoreline spot draws 41238 on the minnow clip; the 2005
+		// ripple 1491 and clips 447/448 all survive, so the cache path draws it. 2005 only knew
+		// "Fishing spot" - the rod spots were renamed in 2018
+		NAME_MAPPINGS.put("fishing spot", FISHING_SPOT_DEFAULT);
+		NAME_MAPPINGS.put("rod fishing spot", FISHING_SPOT_DEFAULT);
 
 		// Kalphites, by id only. A name row would also take the Clan Cup queens and anything else
 		// that shares the names

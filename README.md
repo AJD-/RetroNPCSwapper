@@ -45,6 +45,7 @@ Under **Scenery**:
 - **Trees** — oak and magic trees
 - **Picnic benches**
 - **Dairy cows**
+- **Fishing spots** - Excluding sailing-specific spots
 
 ![config](img/retronpcswapperconfig.png)
 
@@ -167,6 +168,17 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
   guard clips reach 65-80% and are right — so reach rules out a gross mismatch rather than proving
   a fit. `RetroClipReachTest` enforces a per-clip floor against the shipped bundle.
 
+</details>
+
+<details>
+<summary>Other Model-Swapping Plugin Compatibility</summary>
+
+The **Custom Servants** plugin runs alongside this plugin, together or on its
+own. Any NPC it has a custom model for is left to it entirely: this plugin swaps neither that
+NPC's model, its animations nor its chathead. Every other NPC is swapped as usual. The
+`Fix Interact Highlight outlines` option can be on in this plugin or Custom Servants (or both): only one draws
+`Interact Highlight`'s NPC outlines at a time, each around whichever plugin's
+model is on screen.
 </details>
 
 ### If you'd like to report a bug or request a feature, please create an issue [here](https://github.com/AJD-/RetroNPCSwapper/issues)

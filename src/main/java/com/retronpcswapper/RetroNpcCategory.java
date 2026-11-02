@@ -57,5 +57,6 @@ public enum RetroNpcCategory
 	BEARS,
 	KALPHITES,
 	ROUND_TABLE,
-	VARROCK
+	VARROCK,
+	FISHING_SPOTS
 }
