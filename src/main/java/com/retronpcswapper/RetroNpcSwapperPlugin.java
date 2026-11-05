@@ -317,6 +317,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		log.info("Retro NPC Swapper stopped");
 		active = false;
+		eventBus.post(com.retronpcswapper.compatibility.VisualModelBridge.state(null, null, null));
 
 		// The executor is RuneLite's own and is not ours to shut down, but the read we put on it is.
 		// Cancelling does not interrupt one already in progress - hence the active flag it also
@@ -428,6 +429,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onPluginMessage(PluginMessage event)
 	{
+		if (com.retronpcswapper.compatibility.VisualModelBridge.isRequest(event))
+		{
+			clientThread.invoke(this::publishModels);
+			return;
+		}
 		if (ModelSwapProtocol.partnerSource(event, ModelSwapProtocol.SYN) != null)
 		{
 			// A partner plugin has just started and knows nothing of our outlines state yet
@@ -1139,6 +1145,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		shieldSwapper.refresh(shield, shield);
 		// Likewise the scenery
 		scenerySwapper.refresh(allowed && wrapper != null ? wantedScenery(config) : EnumSet.noneOf(RetroScenery.class));
+        publishModels();
 	}
 
 	/**
@@ -1403,6 +1410,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void publishOutlines(boolean always)
 	{
+		publishModels();
 		if (!always && postedOutlines != null && postedOutlines == outlineTakeover)
 		{
 			return;
@@ -1476,7 +1484,20 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 * <p>Runs per entity per frame, so it does map lookups only - eligibility is decided ahead of
 	 * time ({@link #processNpc} for NPCs, the swappers for the rest) and the geometry is built then.
 	 */
-	private Model substitute(Renderable renderable, Model vanilla)
+	private void publishModels()
+    {
+        if (!active)
+        {
+            eventBus.post(com.retronpcswapper.compatibility.VisualModelBridge.state(null, null, null));
+            return;
+        }
+        eventBus.post(com.retronpcswapper.compatibility.VisualModelBridge.state(
+            npc -> active && wrapper != null && RendererChain.contains(client.getDrawCallbacks(), wrapper) && !partnerClaims.isClaimed(npc.getId()) ? modelCache.pose(npc) : null,
+            object -> active && wrapper != null && RendererChain.contains(client.getDrawCallbacks(), wrapper) ? scenerySwapper.getStandIns(object) : java.util.Collections.emptyList(),
+            controller -> active && wrapper != null && RendererChain.contains(client.getDrawCallbacks(), wrapper) && client.isRuneLiteObjectRegistered(controller) ? scenerySwapper.getDrawnModel(controller) : null));
+    }
+
+    private Model substitute(Renderable renderable, Model vanilla)
 	{
 		// The posed models are shared and only valid until the next applyTransformations call. They
 		// are handed straight to the delegate and uploaded before anything else can run, which is
