@@ -33,6 +33,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import com.google.inject.Guice;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -60,6 +61,11 @@ import net.runelite.api.ModelData;
 import net.runelite.api.RuneLiteObjectController;
 import net.runelite.api.WorldView;
 import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.GameState;
+import net.runelite.api.Point;
+import net.runelite.api.Scene;
+import net.runelite.api.Tile;
+import net.runelite.api.hooks.DrawCallbacks;
 import org.junit.Test;
 
 public class RetroScenerySwapperTest
@@ -582,5 +588,48 @@ public class RetroScenerySwapperTest
 
 		assertEquals(5, ObjectPlacement.type(config));
 		assertEquals(3, ObjectPlacement.orientation(config));
+	}
+	/**
+	 * The GPU plugin draws a wider ring of the map than the scene proper. Objects out there never
+	 * arrive as spawns, so once a scene has loaded they are found in the extended tiles, and the
+	 * zones the renderer may have reused from before are rebuilt.
+	 */
+	@Test
+	public void testSceneryBeyondTheSceneProperIsPickedUpOnceLoaded() throws Exception
+	{
+		Client client = mock(Client.class);
+		when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
+		ModelData data = mock(ModelData.class);
+		when(data.light()).thenAnswer(invocation -> mock(Model.class));
+		when(client.loadModelData(RetroScenery.WELL.meshId)).thenReturn(data);
+		DrawCallbacks drawCallbacks = mock(DrawCallbacks.class);
+		when(client.getDrawCallbacks()).thenReturn(drawCallbacks);
+
+		WorldView worldView = mock(WorldView.class);
+		Scene scene = mock(Scene.class);
+		when(client.getTopLevelWorldView()).thenReturn(worldView);
+		when(worldView.getScene()).thenReturn(scene);
+		Tile tile = mock(Tile.class);
+		when(scene.getExtendedTiles()).thenReturn(new Tile[][][]{{{tile}}});
+		when(tile.getGameObjects()).thenReturn(new GameObject[0]);
+
+		RetroScenerySwapper swapper = Guice.createInjector(binder -> binder.bind(Client.class).toInstance(client))
+			.getInstance(RetroScenerySwapper.class);
+		swapper.setBundle(shippedBundle());
+		swapper.refresh(EnumSet.of(RetroScenery.WELL));
+
+		// A well 30 tiles beyond the scene's south-west corner, in the ring only the GPU plugin draws
+		GameObject well = gameObject(ObjectID.WELL, config(10, 0));
+		when(well.getWorldView()).thenReturn(worldView);
+		when(well.getSceneMinLocation()).thenReturn(new Point(-30, -30));
+		when(well.getSceneMaxLocation()).thenReturn(new Point(-30, -30));
+		when(tile.getGameObjects()).thenReturn(new GameObject[]{well});
+
+		swapper.onLoaded();
+
+		assertEquals(1, swapper.getStandIns(well).size());
+		verify(client).registerRuneLiteObject(swapper.getStandIns(well).get(0));
+		// Scene tile -30 is zone -4, which is extended zone 1 once the ring is counted in
+		verify(drawCallbacks).invalidateZone(scene, 1, 1);
 	}
 }

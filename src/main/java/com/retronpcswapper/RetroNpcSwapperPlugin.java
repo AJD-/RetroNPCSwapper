@@ -756,6 +756,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		else if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
 			clientThread.invoke(this::recheckLoadedNpcs);
+			clientThread.invoke(scenerySwapper::onLoaded);
 		}
 	}
 
