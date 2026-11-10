@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +67,9 @@ import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
 import net.runelite.api.Player;
 import net.runelite.api.Renderable;
+import net.runelite.api.RuneLiteObjectController;
 import net.runelite.api.TileItem;
+import net.runelite.api.TileObject;
 import net.runelite.api.WorldType;
 import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
@@ -230,6 +233,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 				? partnerOutlines.pose(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS, npc)
 				: partnerClaims.isClaimed(npc.getId()) ? null : modelCache.pose(npc);
 
+	// Handed to capture consumers with outlinePoser. The active check keeps a stopped plugin from
+	// answering before they hear the providers were withdrawn; the swapper's own active set is
+	// already empty while no renderer is wrapped.
+	private final Function<TileObject, List<RuneLiteObjectController>> sceneryStandIns =
+		object -> !this.active ? Collections.emptyList()
+			: Collections.unmodifiableList(scenerySwapper.getStandIns(object));
+
+	// A consumer may still hold a controller this plugin has since removed
+	private final Function<RuneLiteObjectController, Model> sceneryModel =
+		standIn -> this.active && client.isRuneLiteObjectRegistered(standIn)
+			? scenerySwapper.getDrawnModel(standIn) : null;
+
 	/**
 	 * The in-flight bundle read, so shutDown can cancel it.
 	 *
@@ -344,6 +359,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			scenerySwapper.shutDown();
 			detach();
 			withdrawOutlines();
+			withdrawModels();
 			resetAllModifiedNpcs();
 			shieldSwapper.shutDown();
 			// Ahead of the clear, so the dialogue head is put back before the heads it drew go
@@ -428,6 +444,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onPluginMessage(PluginMessage event)
 	{
+		if (ModelSwapProtocol.modelsRequestSource(event) != null)
+		{
+			clientThread.invoke(this::publishModels);
+			return;
+		}
 		if (ModelSwapProtocol.partnerSource(event, ModelSwapProtocol.SYN) != null)
 		{
 			// A partner plugin has just started and knows nothing of our outlines state yet
@@ -1139,6 +1160,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		shieldSwapper.refresh(shield, shield);
 		// Likewise the scenery
 		scenerySwapper.refresh(allowed && wrapper != null ? wantedScenery(config) : EnumSet.noneOf(RetroScenery.class));
+		publishModels();
 	}
 
 	/**
@@ -1467,6 +1489,24 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			interactHighlight.restoreStaleStash();
 		}
+	}
+
+	/**
+	 * Tells the capture consumers how to pose our NPCs and find our scenery stand-ins. The providers
+	 * read live state, so this is posted once at startup and on request; it is posted again when the
+	 * scenery swaps are refreshed because 2DScape rescans the stand-ins on each.
+	 */
+	private void publishModels()
+	{
+		eventBus.post(ModelSwapProtocol.modelsMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER,
+			outlinePoser, sceneryStandIns, sceneryModel));
+	}
+
+	/** Tells the capture consumers the providers are gone, as the plugin stops. */
+	private void withdrawModels()
+	{
+		eventBus.post(ModelSwapProtocol.modelsMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER,
+			null, null, null));
 	}
 
 	/**

@@ -33,6 +33,8 @@ import java.util.Set;
 import java.util.function.Function;
 import net.runelite.api.Model;
 import net.runelite.api.NPC;
+import net.runelite.api.RuneLiteObjectController;
+import net.runelite.api.TileObject;
 import net.runelite.client.events.PluginMessage;
 
 /**
@@ -53,6 +55,11 @@ import net.runelite.client.events.PluginMessage;
  * classloaders - so the one drawing can outline the NPCs the others swap around the model on screen.
  * The one drawing posts {@code outlinesOptOut} when the user turns Interact Highlight's own outlines
  * back on, and the others turn their fix off too rather than taking the outlines over again.
+ * <p>
+ * Capture consumers such as 2DScape separately request {@code models} providers with
+ * {@code modelsSyncReq}. These consumers do not claim NPCs or take outline ownership. Providers use
+ * JDK functions of RuneLite API types, allowing consumers to read the current NPC and scenery
+ * geometry without depending on this plugin's classes.
  * <p>
  * Each plugin posts {@code modelSyncReq} once it is listening, which the others answer by posting
  * their claims and outlines again, so start order does not matter. A plugin hears its own messages,
@@ -83,6 +90,17 @@ public final class ModelSwapProtocol
 	/** Posted by the plugin drawing the outlines when the user turned Interact Highlight's back on. */
 	public static final String OUTLINES_OPT_OUT = "outlinesOptOut";
 
+	/** Posted by a capture consumer once it is listening, asking for current model providers. */
+	public static final String MODELS_SYN = "modelsSyncReq";
+
+	/** Posted by a provider: how to pose NPCs and find and pose scenery stand-ins. */
+	public static final String MODELS = "models";
+
+	public static final String SOURCE_2DSCAPE = "2dscape";
+
+	/** Capture consumers are independent of the claims and outline ownership handshake. */
+	private static final Set<String> MODEL_CONSUMERS = Set.of(SOURCE_2DSCAPE);
+
 	public static final String SOURCE_CUSTOM_NPC_MODELS = "custom-npc-models";
 	public static final String SOURCE_RETRO_NPC_SWAPPER = "retro-npc-swapper";
 	public static final String SOURCE_CUSTOM_SERVANTS = "custom-servants";
@@ -102,6 +120,9 @@ public final class ModelSwapProtocol
 	static final String KEY_NPC_IDS = "npcIds";
 	static final String KEY_OWNING = "owning";
 	static final String KEY_POSER = "poser";
+	static final String KEY_NPC_MODEL = "npcModel";
+	static final String KEY_SCENERY_STAND_INS = "sceneryStandIns";
+	static final String KEY_SCENERY_MODEL = "sceneryModel";
 
 	private ModelSwapProtocol()
 	{
@@ -271,6 +292,46 @@ public final class ModelSwapProtocol
 		// sender and puts nothing else there
 		Object poser = message.getData().get(KEY_POSER);
 		return new Outlines((Boolean) owning, poser instanceof Function ? (Function<NPC, Model>) poser : null);
+	}
+
+	/**
+	 * The consumer a models sync request is from, or null when {@code message} is anything else - of
+	 * another name or version, or from a source not in {@link #MODEL_CONSUMERS}.
+	 */
+	public static String modelsRequestSource(PluginMessage message)
+	{
+		if (!isMessage(message, MODELS_SYN))
+		{
+			return null;
+		}
+
+		Object source = message.getData().get(KEY_SOURCE);
+		return source instanceof String && MODEL_CONSUMERS.contains(source) ? (String) source : null;
+	}
+
+	/**
+	 * The models message from {@code source}. Null providers withdraw the ones sent before. Each is
+	 * client thread only, and a returned model is overwritten by the next pose, so it has to be
+	 * copied or consumed straight away.
+	 */
+	public static PluginMessage modelsMessage(String source, Function<NPC, Model> npcModel,
+		Function<TileObject, List<RuneLiteObjectController>> sceneryStandIns,
+		Function<RuneLiteObjectController, Model> sceneryModel)
+	{
+		Map<String, Object> data = header(source);
+		if (npcModel != null)
+		{
+			data.put(KEY_NPC_MODEL, npcModel);
+		}
+		if (sceneryStandIns != null)
+		{
+			data.put(KEY_SCENERY_STAND_INS, sceneryStandIns);
+		}
+		if (sceneryModel != null)
+		{
+			data.put(KEY_SCENERY_MODEL, sceneryModel);
+		}
+		return new PluginMessage(NAMESPACE, MODELS, data);
 	}
 
 	private static Map<String, Object> header(String source)

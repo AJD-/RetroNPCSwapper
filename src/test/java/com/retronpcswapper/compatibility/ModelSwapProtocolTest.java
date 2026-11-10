@@ -35,10 +35,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import net.runelite.api.Model;
 import net.runelite.api.NPC;
+import net.runelite.api.TileObject;
+import net.runelite.api.RuneLiteObjectController;
 import net.runelite.client.events.PluginMessage;
 import org.junit.Test;
 
@@ -47,6 +50,51 @@ public class ModelSwapProtocolTest
 	private static final String CUSTOM = ModelSwapProtocol.SOURCE_CUSTOM_NPC_MODELS;
 	private static final String SERVANTS = ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS;
 	private static final String RETRO = ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER;
+
+	@Test
+	public void testModelsRequestsAreIndependentOfClaimsAndOutlines()
+	{
+		PluginMessage request = new PluginMessage(ModelSwapProtocol.NAMESPACE, ModelSwapProtocol.MODELS_SYN,
+			Map.of("version", 1, "source", ModelSwapProtocol.SOURCE_2DSCAPE));
+		assertEquals(ModelSwapProtocol.SOURCE_2DSCAPE, ModelSwapProtocol.modelsRequestSource(request));
+		assertNull(ModelSwapProtocol.claimsSource(request));
+		assertNull(ModelSwapProtocol.partnerSource(request, ModelSwapProtocol.MODELS_SYN));
+		assertNull(ModelSwapProtocol.modelsRequestSource(null));
+		assertNull(ModelSwapProtocol.modelsRequestSource(new PluginMessage(ModelSwapProtocol.NAMESPACE, ModelSwapProtocol.MODELS_SYN)));
+
+		for (String name : new String[]{ModelSwapProtocol.SYN, ModelSwapProtocol.CLAIMS, ModelSwapProtocol.OUTLINES})
+		{
+			assertNull(ModelSwapProtocol.modelsRequestSource(new PluginMessage(ModelSwapProtocol.NAMESPACE, name, request.getData())));
+		}
+		assertNull(ModelSwapProtocol.modelsRequestSource(new PluginMessage("other", ModelSwapProtocol.MODELS_SYN, request.getData())));
+		for (Object source : new Object[]{RETRO, CUSTOM, SERVANTS, "unknown", 123})
+		{
+			assertNull(ModelSwapProtocol.modelsRequestSource(new PluginMessage(ModelSwapProtocol.NAMESPACE,
+				ModelSwapProtocol.MODELS_SYN, Map.of("version", 1, "source", source))));
+		}
+		assertNull(ModelSwapProtocol.modelsRequestSource(new PluginMessage(ModelSwapProtocol.NAMESPACE,
+			ModelSwapProtocol.MODELS_SYN, Map.of("version", 1))));
+		assertNull(ModelSwapProtocol.modelsRequestSource(new PluginMessage(ModelSwapProtocol.NAMESPACE,
+			ModelSwapProtocol.MODELS_SYN, Map.of("version", 2, "source", ModelSwapProtocol.SOURCE_2DSCAPE))));
+	}
+
+	@Test
+	public void testModelsProvidersAndWithdrawalUseSharedTypes()
+	{
+		Function<NPC, Model> npc = actor -> null;
+		Function<TileObject, List<RuneLiteObjectController>> scenery = object -> Collections.emptyList();
+		Function<RuneLiteObjectController, Model> model = controller -> null;
+		PluginMessage message = ModelSwapProtocol.modelsMessage(RETRO, npc, scenery, model);
+		assertEquals(ModelSwapProtocol.NAMESPACE, message.getNamespace());
+		assertEquals(ModelSwapProtocol.MODELS, message.getName());
+		assertEquals(1, message.getData().get("version"));
+		assertEquals(RETRO, message.getData().get("source"));
+		assertSame(npc, message.getData().get("npcModel"));
+		assertSame(scenery, message.getData().get("sceneryStandIns"));
+		assertSame(model, message.getData().get("sceneryModel"));
+		assertEquals(Map.of("version", 1, "source", RETRO),
+			ModelSwapProtocol.modelsMessage(RETRO, null, null, null).getData());
+	}
 
 	@Test
 	public void testClaimsRoundTrip()
