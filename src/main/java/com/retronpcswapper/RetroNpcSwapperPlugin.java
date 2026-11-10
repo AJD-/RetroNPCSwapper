@@ -199,6 +199,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	private static final String HD_PLUGIN_CLASS = "rs117.hd.HdPlugin";
 
+	/** Region Locker's copy of the GPU plugin, as it sits in the slot. */
+	private static final String REGION_LOCKER_RENDERER_CLASS = "com.gpu.RegionLockerGpuPlugin$GpuPluginWrapper";
+
+	private static final String REGION_LOCKER_GPU_PLUGIN_CLASS = "com.gpu.RegionLockerGpuPlugin";
+
 	/** Another Hub plugin, so recognized by class name alone like 117 HD. */
 	private static final String CUSTOM_PLUGIN_CLASS = "com.customnpcmodels.CustomNpcModelsPlugin";
 
@@ -595,7 +600,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 				});
 			}
 		}
-		else if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin()))
+		else if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin())
+			|| isRegionLockerGpuPlugin(event.getPlugin()))
 		{
 			// attach() declines on its own when no supported renderer is holding the slot. 117 HD
 			// installs its renderer asynchronously once GL is up, so the per-tick guard is what
@@ -1320,12 +1326,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 * <p>117 HD is a Plugin Hub plugin loaded in its own classloader, so it is recognized by class
 	 * name alone - there is no compile or runtime dependency on it, and with it absent nothing here
 	 * matches. The zone renderer package is allowlisted rather than the legacy one denylisted, so a
-	 * renderer 117 HD adds or renames later is declined instead of wrapped blind.
+	 * renderer 117 HD adds or renames later is declined instead of wrapped blind. Region Locker's
+	 * GPU renderer is matched by its exact class name for the same reason.
 	 */
 	static boolean isSupportedHost(DrawCallbacks current, Plugin gpu)
 	{
 		DrawCallbacks renderer = RendererChain.base(current);
-		return renderer != null && (renderer == gpu || isHdZoneRenderer(renderer.getClass().getName()));
+		if (renderer == null)
+		{
+			return false;
+		}
+		String name = renderer.getClass().getName();
+		return renderer == gpu || isHdZoneRenderer(name) || isRegionLockerRenderer(name);
 	}
 
 	static boolean isHdZoneRenderer(String className)
@@ -1333,9 +1345,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 		return className.startsWith(HD_ZONE_RENDERER_PACKAGE);
 	}
 
+	static boolean isRegionLockerRenderer(String className)
+	{
+		return REGION_LOCKER_RENDERER_CLASS.equals(className);
+	}
+
 	private static boolean isHdPlugin(Plugin plugin)
 	{
 		return plugin != null && HD_PLUGIN_CLASS.equals(plugin.getClass().getName());
+	}
+
+	private static boolean isRegionLockerGpuPlugin(Plugin plugin)
+	{
+		return plugin != null && REGION_LOCKER_GPU_PLUGIN_CLASS.equals(plugin.getClass().getName());
 	}
 
 	private static boolean isCustomPlugin(Plugin plugin)
