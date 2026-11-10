@@ -31,6 +31,7 @@ import net.runelite.api.gameval.NpcID;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.callback.RenderCallbackManager;
+import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.events.PluginMessage;
@@ -106,6 +107,7 @@ public class ModelCaptureProvidersTest
 			binder.bind(ChatheadSwapper.class).toInstance(chatheadSwapper);
 			binder.bind(ChatheadOverlay.class).toInstance(chatheadOverlay);
 			binder.bind(PartnerClaims.class).toInstance(partnerClaims);
+			binder.bind(ChatMessageManager.class).toInstance(mock(ChatMessageManager.class));
 		}).injectMembers(plugin);
 		doAnswer(call ->
 		{
