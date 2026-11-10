@@ -61,6 +61,7 @@ import com.retronpcswapper.compatibility.RetroSceneryOutliner;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.Actor;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
@@ -93,6 +94,10 @@ import net.runelite.api.events.WorldChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.callback.RenderCallbackManager;
+import net.runelite.client.chat.ChatColorType;
+import net.runelite.client.chat.ChatMessageBuilder;
+import net.runelite.client.chat.ChatMessageManager;
+import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -269,6 +274,15 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private volatile boolean active;
 
+	/** Ticks to wait after login, so the note lands below the welcome message. */
+	private static final int CHANGELOG_DELAY_TICKS = 5;
+
+	@Inject
+	private ChatMessageManager chatMessageManager;
+
+	private final RetroChangelog changelog = new RetroChangelog();
+	private int changelogDelayTicks;
+
 	@Override
 	protected void startUp() throws Exception
 	{
@@ -282,6 +296,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		overlayManager.add(chatheadOverlay);
 		clientThread.invoke(() ->
 		{
+			requestChangelogCheck();
 			scenerySwapper.scanLoadedScene();
 			recheckLoadedNpcs();
 			attach();
@@ -440,6 +455,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
+		if (RetroChangelog.LAST_SEEN_VERSION_KEY.equals(event.getKey())
+			|| RetroNpcConfig.SHOW_UPDATE_NOTES.equals(event.getKey()))
+		{
+			// Neither changes what is drawn
+			return;
+		}
+
 		// Refresh active NPC visual overrides when configuration options change
 		clientThread.invoke(() ->
 		{
@@ -529,6 +551,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	public void onGameTick(GameTick event)
 	{
 		targetTracker.onGameTick();
+		checkChangelog();
 
 		// Cheap guard: the GPU plugin and 117 HD set and clear the draw callbacks slot
 		// unconditionally, so re-take it whenever we have lost it. Covers orderings PluginChanged
@@ -609,6 +632,32 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 	}
 
+	private void requestChangelogCheck()
+	{
+		changelog.requestCheck();
+		changelogDelayTicks = CHANGELOG_DELAY_TICKS;
+	}
+
+	private void checkChangelog()
+	{
+		if (!changelog.isPending() || client.getGameState() != GameState.LOGGED_IN || changelogDelayTicks-- > 0)
+		{
+			return;
+		}
+
+		changelog.check(config.showUpdateNotes(),
+			() -> configManager.getConfiguration(RetroNpcConfig.GROUP, RetroChangelog.LAST_SEEN_VERSION_KEY),
+			message -> chatMessageManager.queue(QueuedMessage.builder()
+				.type(ChatMessageType.CONSOLE)
+				.runeLiteFormattedMessage(new ChatMessageBuilder()
+					.append(ChatColorType.HIGHLIGHT)
+					.append(message)
+					.build())
+				.build()),
+			version -> configManager.setConfiguration(RetroNpcConfig.GROUP,
+				RetroChangelog.LAST_SEEN_VERSION_KEY, version));
+	}
+
 	@Subscribe
 	public void onProfileChanged(ProfileChanged event)
 	{
@@ -618,6 +667,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// that would put its outlines back while ours were still drawing.
 		clientThread.invoke(() ->
 		{
+			// Each profile keeps its own last seen version
+			requestChangelogCheck();
+
 			interactHighlight.forget();
 			overlayManager.remove(interactHighlightOverlay);
 			outliner.clear();

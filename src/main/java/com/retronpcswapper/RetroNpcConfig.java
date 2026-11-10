@@ -55,6 +55,8 @@ public interface RetroNpcConfig extends Config
 
 	String INCREASE_CHICKEN_SIZE = "increaseChickenSize";
 
+	String SHOW_UPDATE_NOTES = "showUpdateNotes";
+
 	/**
 	 * Read-only notice for users, not a setting.
 	 */
@@ -569,6 +571,26 @@ public interface RetroNpcConfig extends Config
 		position = 7
 	)
 	default boolean swapFishingSpots()
+	{
+		return true;
+	}
+
+	@ConfigSection(
+			name = "Misc",
+			description = "Plugin-meta settings",
+			position = 7,
+			closedByDefault = true
+	)
+	String miscSection = "miscSection";
+
+	@ConfigItem(
+			keyName = SHOW_UPDATE_NOTES,
+			name = "Show update notes",
+			description = "Print a one-line summary in chat the first time you log in after the plugin updates.",
+			section = miscSection,
+			position = 1
+	)
+	default boolean showUpdateNotes()
 	{
 		return true;
 	}
