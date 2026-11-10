@@ -18,13 +18,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.runelite.api.Client;
 import net.runelite.api.Model;
 import net.runelite.api.NPC;
+import net.runelite.api.Player;
 import net.runelite.api.RuneLiteObjectController;
 import net.runelite.api.TileObject;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.gameval.NpcID;
+import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.callback.RenderCallbackManager;
 import net.runelite.client.config.ConfigManager;
@@ -227,5 +231,46 @@ public class ModelCaptureProvidersTest
 		assertSame(npcModel, latestModels().getData().get("npcModel"));
 		drainClientTasks();
 		assertEquals(Map.of("version", 1, "source", ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER), latestModels().getData());
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testPlayerProviderAnswersOnlyWhileTheShieldIsDrawn() throws Exception
+	{
+		BiFunction<Player, Model, Model> playerModel =
+			(BiFunction<Player, Model, Model>) latestModels().getData().get("playerModel");
+		Player player = mock(Player.class);
+		Model vanilla = mock(Model.class);
+		Model composed = mock(Model.class);
+		when(shieldSwapper.substitute(player, vanilla)).thenReturn(composed);
+		when(client.isClientThread()).thenReturn(true);
+
+		// No renderer wrapped, so the vanilla player is what is on screen
+		assertNull(playerModel.apply(player, vanilla));
+		verify(shieldSwapper, never()).substitute(player, vanilla);
+
+		when(client.getDrawCallbacks()).thenReturn(new RetroDrawCallbacks(mock(DrawCallbacks.class),
+			(renderable, model) -> null, (renderable, model) -> null, (scene, object, model, levels) -> false));
+		plugin.onGameTick(new GameTick());
+		drainClientTasks();
+		assertSame(composed, playerModel.apply(player, vanilla));
+		assertNull(playerModel.apply(null, vanilla));
+		assertNull(playerModel.apply(player, null));
+
+		// A player without the shield is drawn as it is
+		Player bare = mock(Player.class);
+		assertNull(playerModel.apply(bare, vanilla));
+
+		when(client.isClientThread()).thenReturn(false);
+		assertNull(playerModel.apply(player, vanilla));
+		when(client.isClientThread()).thenReturn(true);
+
+		requestModels();
+		assertSame(playerModel, latestModels().getData().get("playerModel"));
+
+		plugin.shutDown();
+		assertNull(playerModel.apply(player, vanilla));
+		drainClientTasks();
+		assertNull(latestModels().getData().get("playerModel"));
 	}
 }

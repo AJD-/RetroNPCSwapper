@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.inject.Inject;
 
@@ -232,6 +233,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 			: partnerClaims.isClaimedBy(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS, npc.getId())
 				? partnerOutlines.pose(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS, npc)
 				: partnerClaims.isClaimed(npc.getId()) ? null : modelCache.pose(npc);
+
+	// The player as drawn, for capture consumers: null unless the equipped anti-dragon shield is swapped. Composing
+	// writes the buffer the draw hands to the renderer, so never off the client thread.
+	private final BiFunction<Player, Model, Model> playerModel =
+		(player, vanilla) -> this.active && wrapper != null && player != null && vanilla != null
+			&& client.isClientThread() ? shieldSwapper.substitute(player, vanilla) : null;
 
 	// Handed to capture consumers with outlinePoser. The active check keeps a stopped plugin from
 	// answering before they hear the providers were withdrawn; the swapper's own active set is
@@ -1492,21 +1499,21 @@ public class RetroNpcSwapperPlugin extends Plugin
 	}
 
 	/**
-	 * Tells the capture consumers how to pose our NPCs and find our scenery stand-ins. The providers
-	 * read live state, so this is posted once at startup and on request; it is posted again when the
-	 * scenery swaps are refreshed because 2DScape rescans the stand-ins on each.
+	 * Tells the capture consumers how to pose our NPCs and players and find our scenery stand-ins.
+	 * The providers read live state, so this is posted once at startup and on request; it is posted
+	 * again when the scenery swaps are refreshed because 2DScape rescans the stand-ins on each.
 	 */
 	private void publishModels()
 	{
 		eventBus.post(ModelSwapProtocol.modelsMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER,
-			outlinePoser, sceneryStandIns, sceneryModel));
+			outlinePoser, playerModel, sceneryStandIns, sceneryModel));
 	}
 
 	/** Tells the capture consumers the providers are gone, as the plugin stops. */
 	private void withdrawModels()
 	{
 		eventBus.post(ModelSwapProtocol.modelsMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER,
-			null, null, null));
+			null, null, null, null));
 	}
 
 	/**

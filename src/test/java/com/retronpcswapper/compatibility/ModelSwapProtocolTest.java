@@ -37,9 +37,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.List;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.runelite.api.Model;
 import net.runelite.api.NPC;
+import net.runelite.api.Player;
 import net.runelite.api.TileObject;
 import net.runelite.api.RuneLiteObjectController;
 import net.runelite.client.events.PluginMessage;
@@ -82,18 +84,20 @@ public class ModelSwapProtocolTest
 	public void testModelsProvidersAndWithdrawalUseSharedTypes()
 	{
 		Function<NPC, Model> npc = actor -> null;
+		BiFunction<Player, Model, Model> player = (actor, posed) -> null;
 		Function<TileObject, List<RuneLiteObjectController>> scenery = object -> Collections.emptyList();
 		Function<RuneLiteObjectController, Model> model = controller -> null;
-		PluginMessage message = ModelSwapProtocol.modelsMessage(RETRO, npc, scenery, model);
+		PluginMessage message = ModelSwapProtocol.modelsMessage(RETRO, npc, player, scenery, model);
 		assertEquals(ModelSwapProtocol.NAMESPACE, message.getNamespace());
 		assertEquals(ModelSwapProtocol.MODELS, message.getName());
 		assertEquals(1, message.getData().get("version"));
 		assertEquals(RETRO, message.getData().get("source"));
 		assertSame(npc, message.getData().get("npcModel"));
+		assertSame(player, message.getData().get("playerModel"));
 		assertSame(scenery, message.getData().get("sceneryStandIns"));
 		assertSame(model, message.getData().get("sceneryModel"));
 		assertEquals(Map.of("version", 1, "source", RETRO),
-			ModelSwapProtocol.modelsMessage(RETRO, null, null, null).getData());
+			ModelSwapProtocol.modelsMessage(RETRO, null, null, null, null).getData());
 	}
 
 	@Test

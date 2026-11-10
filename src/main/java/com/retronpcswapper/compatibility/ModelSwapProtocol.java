@@ -30,9 +30,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import net.runelite.api.Model;
 import net.runelite.api.NPC;
+import net.runelite.api.Player;
 import net.runelite.api.RuneLiteObjectController;
 import net.runelite.api.TileObject;
 import net.runelite.client.events.PluginMessage;
@@ -58,8 +60,8 @@ import net.runelite.client.events.PluginMessage;
  * <p>
  * Capture consumers such as 2DScape separately request {@code models} providers with
  * {@code modelsSyncReq}. These consumers do not claim NPCs or take outline ownership. Providers use
- * JDK functions of RuneLite API types, allowing consumers to read the current NPC and scenery
- * geometry without depending on this plugin's classes.
+ * JDK functions of RuneLite API types, allowing consumers to read the current NPC, player and
+ * scenery geometry without depending on this plugin's classes.
  * <p>
  * Each plugin posts {@code modelSyncReq} once it is listening, which the others answer by posting
  * their claims and outlines again, so start order does not matter. A plugin hears its own messages,
@@ -121,6 +123,7 @@ public final class ModelSwapProtocol
 	static final String KEY_OWNING = "owning";
 	static final String KEY_POSER = "poser";
 	static final String KEY_NPC_MODEL = "npcModel";
+	static final String KEY_PLAYER_MODEL = "playerModel";
 	static final String KEY_SCENERY_STAND_INS = "sceneryStandIns";
 	static final String KEY_SCENERY_MODEL = "sceneryModel";
 
@@ -313,8 +316,12 @@ public final class ModelSwapProtocol
 	 * The models message from {@code source}. Null providers withdraw the ones sent before. Each is
 	 * client thread only, and a returned model is overwritten by the next pose, so it has to be
 	 * copied or consumed straight away.
+	 * <p>
+	 * {@code playerModel} takes a player and its posed model, and returns the model drawn in its
+	 * place, or null for a player drawn as it is.
 	 */
 	public static PluginMessage modelsMessage(String source, Function<NPC, Model> npcModel,
+		BiFunction<Player, Model, Model> playerModel,
 		Function<TileObject, List<RuneLiteObjectController>> sceneryStandIns,
 		Function<RuneLiteObjectController, Model> sceneryModel)
 	{
@@ -322,6 +329,10 @@ public final class ModelSwapProtocol
 		if (npcModel != null)
 		{
 			data.put(KEY_NPC_MODEL, npcModel);
+		}
+		if (playerModel != null)
+		{
+			data.put(KEY_PLAYER_MODEL, playerModel);
 		}
 		if (sceneryStandIns != null)
 		{
