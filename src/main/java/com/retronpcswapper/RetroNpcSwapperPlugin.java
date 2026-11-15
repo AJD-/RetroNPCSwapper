@@ -320,7 +320,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 			true, RetroNpcConfig.SWAP_GIANTS);
 		migrateLegacyToggleToChoice(configManager, RetroNpcConfig.LEGACY_SWAP_GOBLINS,
 			RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name(), GoblinEra.RETRO_2005.name());
-			true, RetroNpcConfig.SWAP_GIANTS);
 		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_SWAP_SPIDERS,
 			true, RetroNpcConfig.SWAP_SMALL_SPIDERS, RetroNpcConfig.SWAP_GIANT_SPIDERS);
 	}
