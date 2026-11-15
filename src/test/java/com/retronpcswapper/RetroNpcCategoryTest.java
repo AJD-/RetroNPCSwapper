@@ -2533,7 +2533,7 @@ public class RetroNpcCategoryTest
 		// A bare "giant" substring would sweep all of these into the giant family. The giant rat and
 		// giant spider are mapped, but to their own categories
 		assertEquals(RetroNpcCategory.GIANT_RATS, RetroNpcMapping.get(0, "Giant rat").getCategory());
-		assertEquals(RetroNpcCategory.SPIDERS, RetroNpcMapping.get(0, "Giant spider").getCategory());
+		assertEquals(RetroNpcCategory.GIANT_SPIDERS, RetroNpcMapping.get(0, "Giant spider").getCategory());
 		assertNull(RetroNpcMapping.get(0, "Giant frog"));
 		assertNull(RetroNpcMapping.get(0, "Giant bat"));
 
@@ -2697,7 +2697,8 @@ public class RetroNpcCategoryTest
 		assertTrue("swapHellhounds must default to true", config.swapHellhounds());
 		assertTrue("swapGiantRats must default to true", config.swapGiantRats());
 		assertTrue("swapScorpions must default to true", config.swapScorpions());
-		assertTrue("swapSpiders must default to true", config.swapSpiders());
+		assertTrue("swapSmallSpiders must default to true", config.swapSmallSpiders());
+		assertTrue("swapGiantSpiders must default to true", config.swapGiantSpiders());
 		assertTrue("swapBears must default to true", config.swapBears());
 		assertTrue("swapFishingSpots must default to true", config.swapFishingSpots());
 
@@ -3019,7 +3020,7 @@ public class RetroNpcCategoryTest
 
 	/**
 	 * The 2005 spiders are meshes 2883-2885 on sequences 142-146 and the small spider 2996 on
-	 * 279-282, all preserved - a cache-path category. The variants differ only by recolour and size.
+	 * 279-282, all preserved - two cache-path categories. The variants differ only by recolour and size.
 	 */
 	@Test
 	public void testSpiders()
@@ -3053,7 +3054,8 @@ public class RetroNpcCategoryTest
 		{
 			int id = (Integer) c[0];
 			RetroNpcData spider = RetroNpcMapping.get(id, (String) c[1]);
-			assertSpider(id, spider, (Integer) c[2], (short[]) c[3], (short[]) c[4], (Integer) c[5]);
+			assertSpider(id, spider, RetroNpcCategory.GIANT_SPIDERS, (Integer) c[2], (short[]) c[3],
+				(short[]) c[4], (Integer) c[5]);
 			assertFalse(spider.hasStaticIdle());
 			assertEquals(AnimationID.GIANTSPIDER_READY, spider.getIdleAnimationId());
 			assertEquals(AnimationID.GIANTSPIDER_ATTACK, spider.getAttackAnimationId());
@@ -3098,7 +3100,7 @@ public class RetroNpcCategoryTest
 		{
 			int id = (Integer) c[0];
 			RetroNpcData spider = RetroNpcMapping.get(id, (String) c[1]);
-			assertSpider(id, spider, 2996, new short[]{7591},
+			assertSpider(id, spider, RetroNpcCategory.SMALL_SPIDERS, 2996, new short[]{7591},
 				new short[]{(short) (int) (Integer) c[2]}, (Integer) c[3]);
 
 			// No 2005 stand sequence exists, so the modern idle is cleared rather than kept
@@ -3111,8 +3113,10 @@ public class RetroNpcCategoryTest
 		}
 
 		// Cache path: the meshes and rigs all survive
-		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SPIDERS));
-		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SPIDERS));
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SMALL_SPIDERS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SMALL_SPIDERS));
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.GIANT_SPIDERS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.GIANT_SPIDERS));
 
 		// The Hallowed Sepulchre spiders are excluded, and the families outside the list are left alone
 		assertNull(RetroNpcMapping.get(NpcID.HALLOWED_SPIDER_01, "Spider"));
@@ -3123,11 +3127,11 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(NpcID.VENENATIS_SPIDERLING, "Venenatis spiderling"));
 	}
 
-	private static void assertSpider(int id, RetroNpcData spider, int mesh, short[] find, short[] replace,
-		int scale)
+	private static void assertSpider(int id, RetroNpcData spider, RetroNpcCategory category, int mesh,
+		short[] find, short[] replace, int scale)
 	{
 		assertNotNull("Spider " + id + " must be mapped", spider);
-		assertEquals(RetroNpcCategory.SPIDERS, spider.getCategory());
+		assertEquals(category, spider.getCategory());
 		assertArrayEquals(new int[]{mesh}, spider.getRetroModelIds());
 		assertEquals(scale, spider.getScaleXZ());
 		assertEquals(scale, spider.getScaleY());

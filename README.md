@@ -18,7 +18,8 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Hellhounds**
 - **Giant Rats**
 - **Small Scorpions**
-- **Spiders**
+- **Giant Spiders**
+- **Small Spiders**
 - **Bears**
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
