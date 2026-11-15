@@ -40,6 +40,9 @@ public interface RetroNpcConfig extends Config
 	 */
 	String LEGACY_HILL_GIANTS = "swapHillGiants";
 
+	/** Retired when the toggle was split into {@link #swapSmallSpiders()} and {@link #swapGiantSpiders()}. */
+	String LEGACY_SWAP_SPIDERS = "swapSpiders";
+
 	/**
 	 * {@link #SWAP_GIANTS} is written by the migration as well as the user; the other two are named
 	 * alongside it for consistency.
@@ -47,6 +50,10 @@ public interface RetroNpcConfig extends Config
 	String SWAP_DRAGONS = "swapDragons";
 	String SWAP_DEMONS = "swapDemons";
 	String SWAP_GIANTS = "swapGiants";
+
+	/** Written by the migration as well as the user. */
+	String SWAP_SMALL_SPIDERS = "swapSmallSpiders";
+	String SWAP_GIANT_SPIDERS = "swapGiantSpiders";
 
 	/** Also written programmatically, so the key is named rather than repeated as a literal. */
 	String OVERRIDE_INTERACT_HIGHLIGHT = "overrideInteractHighlight";
@@ -294,13 +301,28 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapSpiders",
-		name = "Spiders",
-		description = "Swap modern Spider models and animations to their 2004/2005 retro variants.",
+		keyName = SWAP_GIANT_SPIDERS,
+		name = "Giant Spiders",
+		description = "<html><body style='width:170px'>Swap modern Giant, Shadow, Blessed, Deadly red, "
+			+ "Jungle, Ice, Poison and Giant crypt spider models and animations to their 2004/2005 "
+			+ "retro variants.</body></html>",
 		section = npcTogglesSection,
 		position = 16
 	)
-	default boolean swapSpiders()
+	default boolean swapGiantSpiders()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = SWAP_SMALL_SPIDERS,
+		name = "Small Spiders",
+		description = "Swap modern small Spider and Crypt spider models and animations to their "
+			+ "2004/2005 retro variants.",
+		section = npcTogglesSection,
+		position = 17
+	)
+	default boolean swapSmallSpiders()
 	{
 		return true;
 	}
@@ -312,7 +334,7 @@ public interface RetroNpcConfig extends Config
 			+ "2004/2005 retro variants.<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by "
 			+ "default. </body></html>",
 		section = npcTogglesSection,
-		position = 17
+		position = 18
 	)
 	default boolean swapElves()
 	{
@@ -324,7 +346,7 @@ public interface RetroNpcConfig extends Config
 		name = "Bears",
 		description = "Swap modern Bear models and animations to their 2004/2005 retro variants.",
 		section = npcTogglesSection,
-		position = 18
+		position = 19
 	)
 	default boolean swapBears()
 	{
@@ -338,7 +360,7 @@ public interface RetroNpcConfig extends Config
 			+ "Soldiers, Workers and Larvae to their 2004/2005 retro models and animations.<br><br>Needs "
 			+ "<b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 19
+		position = 20
 	)
 	default boolean swapKalphites()
 	{
@@ -352,7 +374,7 @@ public interface RetroNpcConfig extends Config
 			+ "Le Faye, and other Camelot-related NPCs to their 2004/2005 retro models and animations."
 			+  "<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 20
+		position = 21
 	)
 	default boolean swapRoundTable()
 	{
@@ -366,7 +388,7 @@ public interface RetroNpcConfig extends Config
 			+ "the muggers and the tramps to their 2004/2005 retro models and animations.<br><br>Needs "
 			+ "<b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 21
+		position = 22
 	)
 	default boolean swapVarrockNpcs()
 	{
@@ -382,7 +404,7 @@ public interface RetroNpcConfig extends Config
 			+ "each NPC's own toggle, and needs <b>Use Converted 2005 Assets</b>, which is on by "
 			+ "default.</body></html>",
 		section = npcTogglesSection,
-		position = 22
+		position = 23
 	)
 	default boolean swapChatheads()
 	{

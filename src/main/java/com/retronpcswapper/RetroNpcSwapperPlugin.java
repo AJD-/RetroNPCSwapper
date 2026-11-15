@@ -317,15 +317,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private void migrateLegacyToggles()
 	{
 		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_HILL_GIANTS,
-			RetroNpcConfig.SWAP_GIANTS);
+			true, RetroNpcConfig.SWAP_GIANTS);
+		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_SWAP_SPIDERS,
+			true, RetroNpcConfig.SWAP_SMALL_SPIDERS, RetroNpcConfig.SWAP_GIANT_SPIDERS);
 	}
 
 	/**
 	 * Hands a retired key's saved value to the toggles that replaced it.
 	 *
 	 * <p>Renaming a config key silently resets whatever the user had chosen, so the old key is read
-	 * once and its value handed on. Only ever writes a key that has no value of its own, so a user
-	 * who has already set the new toggles is never overwritten - which also makes this safe to run
+	 * once and its value handed on. Only ever writes a key that has no value of its own or still holds
+	 * {@code newKeyDefault}, which RuneLite saves before startUp, so a user who has already set the
+	 * new toggles is never overwritten - which also makes this safe to run
 	 * on every start. The old key is cleared afterward, so the migration happens once and leaves no
 	 * orphan behind.
 	 *
@@ -333,7 +336,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 * There is no cache or client involved here, only ConfigManager calls, so that is the whole of
 	 * what the behavior needs to be checked against.
 	 */
-	static void migrateLegacyToggle(ConfigManager configManager, String legacyKey, String... newKeys)
+	static void migrateLegacyToggle(ConfigManager configManager, String legacyKey, boolean newKeyDefault,
+		String... newKeys)
 	{
 		String legacy = configManager.getConfiguration(RetroNpcConfig.GROUP, legacyKey);
 
@@ -344,7 +348,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		for (String key : newKeys)
 		{
-			if (configManager.getConfiguration(RetroNpcConfig.GROUP, key) == null)
+			String current = configManager.getConfiguration(RetroNpcConfig.GROUP, key);
+			if (current == null || current.equals(Boolean.toString(newKeyDefault)))
 			{
 				configManager.setConfiguration(RetroNpcConfig.GROUP, key, Boolean.parseBoolean(legacy));
 			}
@@ -1037,10 +1042,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case SMALL_SCORPIONS:
 				// Mesh 2968 and sequences 269-273 survive intact, so the cache path draws it
 				return config.swapScorpions();
-			case SPIDERS:
-				// Meshes 2883-2885 and 2996 and sequences 142-149 and 279-282 all survive intact, so
-				// the cache path draws them
-				return config.swapSpiders();
+			case SMALL_SPIDERS:
+				// Mesh 2996 and sequences 279-282 survive intact, so the cache path draws them
+				return config.swapSmallSpiders();
+			case GIANT_SPIDERS:
+				// Meshes 2883-2885 and sequences 142-149 survive intact, so the cache path draws them
+				return config.swapGiantSpiders();
 			case BEARS:
 				// Mesh 2966 and sequences 37-44 survive intact, so the cache path draws them
 				return config.swapBears();

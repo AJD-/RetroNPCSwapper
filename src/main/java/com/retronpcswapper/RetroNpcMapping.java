@@ -1713,7 +1713,8 @@ public class RetroNpcMapping
 
 	// The 2005 spiders are four meshes on two rigs, all of which exist in the live cache.
 	// The opcode 40 pairs below live only here. npc-mappings.json has no spider row, so
-	// applyCacheDefinitions has nothing to graft, and SPIDERS stays out of categoryUsesRecolors.
+	// applyCacheDefinitions has nothing to graft, and the spider categories stay out of
+	// categoryUsesRecolors.
 	private static final int POISON_SPIDER_BODY = 2883;
 	private static final int GIANT_SPIDER_BODY = 2884;
 	private static final int ICE_SPIDER_BODY = 2885;
@@ -1723,7 +1724,7 @@ public class RetroNpcMapping
 	private static RetroNpcData.Builder largeSpider(int mesh)
 	{
 		return RetroNpcData.builder()
-			.category(RetroNpcCategory.SPIDERS)
+			.category(RetroNpcCategory.GIANT_SPIDERS)
 			.retroModelIds(new int[]{mesh})
 			.idleAnimationId(AnimationID.GIANTSPIDER_READY)
 			.walkAnimationId(AnimationID.GIANTSPIDER_WALK)
@@ -1741,7 +1742,7 @@ public class RetroNpcMapping
 	private static RetroNpcData.Builder smallSpider(int bodyColor)
 	{
 		return RetroNpcData.builder()
-			.category(RetroNpcCategory.SPIDERS)
+			.category(RetroNpcCategory.SMALL_SPIDERS)
 			.retroModelIds(new int[]{SMALL_SPIDER_BODY})
 			.staticIdle()
 			.walkAnimationId(AnimationID.SPIDER_WALK)
