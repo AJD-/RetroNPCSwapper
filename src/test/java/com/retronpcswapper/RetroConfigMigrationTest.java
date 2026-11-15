@@ -65,8 +65,7 @@ public class RetroConfigMigrationTest
 	@Test
 	public void testOneLegacyKeyCanFeedSeveralNewOnes()
 	{
-		// Stand-in key names: no live migration splits one key across several any more, but the
-		// helper still supports it and the next toggle to be split will need it
+		// Stand-in key names, so the helper is covered apart from any one live migration
 		ConfigManager configManager = mock(ConfigManager.class);
 		when(configManager.getConfiguration(GROUP, "legacyThing")).thenReturn("true");
 		when(configManager.getConfiguration(GROUP, "newA")).thenReturn(null);
@@ -127,6 +126,24 @@ public class RetroConfigMigrationTest
 		// default over a key the user has never touched, nor unset anything
 		verify(configManager).getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS);
 		verifyNoMoreInteractions(configManager);
+	}
+
+	@Test
+	public void testSpidersOffReachesBothSpiderToggles()
+	{
+		// Both new keys already hold the default RuneLite saved before startUp
+		ConfigManager configManager = mock(ConfigManager.class);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_SPIDERS))
+			.thenReturn("false");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS)).thenReturn("true");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANT_SPIDERS)).thenReturn("true");
+
+		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_SWAP_SPIDERS,
+			true, RetroNpcConfig.SWAP_SMALL_SPIDERS, RetroNpcConfig.SWAP_GIANT_SPIDERS);
+
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS, false);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANT_SPIDERS, false);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_SPIDERS);
 	}
 
 	@Test

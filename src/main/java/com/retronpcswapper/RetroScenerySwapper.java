@@ -395,6 +395,27 @@ public class RetroScenerySwapper implements RenderCallback
 	}
 
 	/**
+	 * A scene has loaded. Picks up the restored objects that did not arrive as spawns - the ring
+	 * beyond the scene proper - and has the zones of those being drawn as 2005 rebuilt, since the
+	 * renderer may have reused zones built before they had stand-ins.
+	 */
+	public void onLoaded()
+	{
+		Set<TileObject> before = new HashSet<>(placed.keySet());
+		scanLoadedScene();
+
+		List<TileObject> added = new ArrayList<>();
+		for (Map.Entry<TileObject, Placed> entry : placed.entrySet())
+		{
+			if (!before.contains(entry.getKey()) && active.contains(entry.getValue().getScenery()))
+			{
+				added.add(entry.getKey());
+			}
+		}
+		invalidate(added);
+	}
+
+	/**
 	 * Picks up the restored objects in a scene that loaded before they could be tracked - at
 	 * startup, and as scenery is switched on. From then on the spawn events keep track.
 	 */
@@ -412,7 +433,9 @@ public class RetroScenerySwapper implements RenderCallback
 			return;
 		}
 
-		for (Tile[][] plane : scene.getTiles())
+		// The extended tiles: the GPU plugin draws a wider ring of the map than the scene proper, and
+		// objects out there never arrive as spawns
+		for (Tile[][] plane : scene.getExtendedTiles())
 		{
 			for (Tile[] column : plane)
 			{
@@ -639,21 +662,29 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	private void invalidateZones(Set<RetroScenery> scenery)
 	{
+		List<TileObject> objects = new ArrayList<>();
+		for (Map.Entry<TileObject, Placed> entry : placed.entrySet())
+		{
+			if (scenery.contains(entry.getValue().getScenery()))
+			{
+				objects.add(entry.getKey());
+			}
+		}
+		invalidate(objects);
+	}
+
+	/** Has the renderer rebuild every zone holding one of the given objects. */
+	private void invalidate(List<TileObject> objects)
+	{
 		DrawCallbacks drawCallbacks = client.getDrawCallbacks();
-		if (drawCallbacks == null || client.getGameState() != GameState.LOGGED_IN)
+		if (drawCallbacks == null || client.getGameState() != GameState.LOGGED_IN || objects.isEmpty())
 		{
 			return;
 		}
 
 		Map<Scene, Set<Integer>> invalidated = new HashMap<>();
-		for (Map.Entry<TileObject, Placed> entry : placed.entrySet())
+		for (TileObject object : objects)
 		{
-			if (!scenery.contains(entry.getValue().getScenery()))
-			{
-				continue;
-			}
-
-			TileObject object = entry.getKey();
 			WorldView worldView = object.getWorldView();
 			Scene scene = worldView == null ? null : worldView.getScene();
 			if (scene == null)
