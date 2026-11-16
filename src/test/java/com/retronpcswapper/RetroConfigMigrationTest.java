@@ -225,6 +225,7 @@ public class RetroConfigMigrationTest
 		verify(configManager).getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
 		verifyNoMoreInteractions(configManager);
 	}
+
 	@Test
 	public void testRunCarriesEveryRetiredKeyAcross()
 	{
@@ -232,6 +233,11 @@ public class RetroConfigMigrationTest
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS)).thenReturn("false");
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS)).thenReturn("false");
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_SPIDERS)).thenReturn("false");
+		// The new keys hold the defaults RuneLite saved before startUp, as they always do in the client
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("true");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA)).thenReturn(GoblinEra.RETRO_2005.name());
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS)).thenReturn("true");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANT_SPIDERS)).thenReturn("true");
 
 		RetroConfigMigrations.run(configManager);
 

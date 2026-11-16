@@ -981,13 +981,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		return category != null && category.isEnabled(config);
 	}
 
-	/**
-	 * Whether the categories that can only be drawn from the bundle are allowed to draw at all.
-	 *
-	 * <p>The config value rather than the cache's copy of it. The two are the same by the time this
-	 * decides anything: recheckLoadedNpcs hands the config value to the cache, and processNpc will
-	 * not reach here until attach() has run, which happens after that on every path.
-	 */
+	/** Whether the converted 2005 assets are on. Categories ask the config themselves; this gates the chatheads. */
 	private boolean injectionEnabled()
 	{
 		return config.useInjectionPipeline();
