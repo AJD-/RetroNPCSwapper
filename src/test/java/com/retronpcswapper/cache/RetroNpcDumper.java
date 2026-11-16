@@ -47,7 +47,8 @@ import java.util.TreeSet;
  * cache rather than two.
  *
  * <p>Run with {@code ./gradlew dumpRetroNpcDefinitions -Pnpc=guard} (ids, or a name substring),
- * and {@code -PretroDir=...} to point at a cache other than {@code retrocache/2005cache}. This
+ * and {@code -PretroDir=...} to point at a cache other than {@code retrocache/2005cache};
+ * {@code -Pcache=2006} reads the Dec-2006 cache, see {@link RetroEraCache}. This
  * class lives in the test sourceSet and is never shipped, so console output and reading files
  * outside {@code .runelite} are fine here.
  */
@@ -73,16 +74,33 @@ public class RetroNpcDumper
 			cacheArg = queries.remove(0);
 		}
 
-		File cacheDir = new File(cacheArg != null ? cacheArg : DEFAULT_CACHE_DIR);
+		File dir2005 = new File(cacheArg != null ? cacheArg : DEFAULT_CACHE_DIR);
+		File cacheDir = RetroEraCache.dir(dir2005);
 		if (!cacheDir.isDirectory())
 		{
-			System.err.println("2005 cache directory not found: " + cacheDir.getAbsolutePath());
-			System.err.println("Run from the repo root, or pass one with -PretroDir=<path>");
+			System.err.println(RetroEraCache.label() + " cache directory not found: " + cacheDir.getAbsolutePath());
+			System.err.println("Run from the repo root, or pass one with " + RetroEraCache.dirFlag() + "=<path>");
 			System.exit(1);
 			return;
 		}
 
-		Map<Integer, RetroNpcDefinition> defs = NpcMappingGenerator.decodeDefinitions(cacheDir);
+		RetroEraCache cache = RetroEraCache.open(dir2005);
+		if (cache == null)
+		{
+			System.err.println("Could not read the " + RetroEraCache.label() + " cache at " + cacheDir.getAbsolutePath());
+			System.exit(1);
+			return;
+		}
+
+		Map<Integer, RetroNpcDefinition> defs;
+		try
+		{
+			defs = cache.npcDefinitions();
+		}
+		finally
+		{
+			cache.close();
+		}
 		int maxMatches = maxMatches();
 
 		System.out.println("Cache: " + cacheDir);

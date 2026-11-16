@@ -54,8 +54,8 @@ public class RetroConfigMigrationTest
 			.thenReturn("false");
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn(null);
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		// A user who had turned hill giants off must not find giants back on
 		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS, false);
@@ -65,14 +65,13 @@ public class RetroConfigMigrationTest
 	@Test
 	public void testOneLegacyKeyCanFeedSeveralNewOnes()
 	{
-		// Stand-in key names: no live migration splits one key across several any more, but the
-		// helper still supports it and the next toggle to be split will need it
+		// Stand-in key names, so the helper is covered apart from any one live migration
 		ConfigManager configManager = mock(ConfigManager.class);
 		when(configManager.getConfiguration(GROUP, "legacyThing")).thenReturn("true");
 		when(configManager.getConfiguration(GROUP, "newA")).thenReturn(null);
 		when(configManager.getConfiguration(GROUP, "newB")).thenReturn(null);
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager, "legacyThing", "newA", "newB");
+		RetroConfigMigrations.migrateLegacyToggle(configManager, "legacyThing", true, "newA", "newB");
 
 		verify(configManager).setConfiguration(GROUP, "newA", true);
 		verify(configManager).setConfiguration(GROUP, "newB", true);
@@ -80,16 +79,32 @@ public class RetroConfigMigrationTest
 	}
 
 	@Test
+	public void testTheSavedDefaultDoesNotBlockTheMigration()
+	{
+		// RuneLite saves swapGiants' default before startUp, so it is set but was never chosen
+		ConfigManager configManager = mock(ConfigManager.class);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS))
+			.thenReturn("false");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("true");
+
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
+
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS, false);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS);
+	}
+
+	@Test
 	public void testAChoiceAlreadyMadeOnTheNewKeyIsNotOverwritten()
 	{
 		ConfigManager configManager = mock(ConfigManager.class);
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS))
-			.thenReturn("false");
-		// The user has since set the new toggle themselves
-		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("true");
+			.thenReturn("true");
+		// The user has since set the new toggle themselves; "true" would be the saved default
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("false");
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		verify(configManager, never()).setConfiguration(anyString(), anyString(), any());
 
@@ -104,13 +119,31 @@ public class RetroConfigMigrationTest
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS))
 			.thenReturn(null);
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		// This runs on every start, so the ordinary case has to be inert - it must not write a
 		// default over a key the user has never touched, nor unset anything
 		verify(configManager).getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS);
 		verifyNoMoreInteractions(configManager);
+	}
+
+	@Test
+	public void testSpidersOffReachesBothSpiderToggles()
+	{
+		// Both new keys already hold the default RuneLite saved before startUp
+		ConfigManager configManager = mock(ConfigManager.class);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_SPIDERS))
+			.thenReturn("false");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS)).thenReturn("true");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANT_SPIDERS)).thenReturn("true");
+
+		RetroConfigMigrations.migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_SWAP_SPIDERS,
+			true, RetroNpcConfig.SWAP_SMALL_SPIDERS, RetroNpcConfig.SWAP_GIANT_SPIDERS);
+
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS, false);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANT_SPIDERS, false);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_SPIDERS);
 	}
 
 	@Test
@@ -122,14 +155,98 @@ public class RetroConfigMigrationTest
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS))
 			.thenReturn(null, "false");
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
-			RetroNpcConfig.LEGACY_HILL_GIANTS, RetroNpcConfig.SWAP_GIANTS);
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
+			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		// The second start finds the legacy key gone and does nothing, so the value written by the
 		// first is never disturbed
 		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS, false);
 		verify(configManager).unsetConfiguration(eq(GROUP), eq(RetroNpcConfig.LEGACY_HILL_GIANTS));
+	}
+
+	private static ConfigManager goblinManager(String legacy, String chosen)
+	{
+		ConfigManager configManager = mock(ConfigManager.class);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS)).thenReturn(legacy);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA)).thenReturn(chosen);
+		return configManager;
+	}
+
+	private static void migrateGoblins(ConfigManager configManager)
+	{
+		RetroConfigMigrations.migrateLegacyToggleToChoice(configManager, RetroNpcConfig.LEGACY_SWAP_GOBLINS,
+			RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name(), GoblinEra.RETRO_2005.name());
+	}
+
+	@Test
+	public void testSwapGoblinsOffBecomesModern()
+	{
+		ConfigManager configManager = goblinManager("false", null);
+		migrateGoblins(configManager);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name());
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+	}
+
+	@Test
+	public void testSwapGoblinsOnBecomes2005()
+	{
+		ConfigManager configManager = goblinManager("true", null);
+		migrateGoblins(configManager);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA, GoblinEra.RETRO_2005.name());
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+	}
+
+	@Test
+	public void testTheSavedDefaultEraDoesNotBlockTheMigration()
+	{
+		// RuneLite saves goblinEra's default before startUp, so it is set but was never chosen
+		ConfigManager configManager = goblinManager("false", GoblinEra.RETRO_2005.name());
+		migrateGoblins(configManager);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name());
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+	}
+
+	@Test
+	public void testAnAlreadyChosenEraIsNotOverwritten()
+	{
+		ConfigManager configManager = goblinManager("false", GoblinEra.RETRO_2006.name());
+		migrateGoblins(configManager);
+		verify(configManager, never()).setConfiguration(anyString(), anyString(), anyString());
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+	}
+
+	@Test
+	public void testNoLegacyGoblinKeyDoesNothing()
+	{
+		ConfigManager configManager = goblinManager(null, null);
+		migrateGoblins(configManager);
+		verify(configManager).getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+		verifyNoMoreInteractions(configManager);
+	}
+
+	@Test
+	public void testRunCarriesEveryRetiredKeyAcross()
+	{
+		ConfigManager configManager = mock(ConfigManager.class);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS)).thenReturn("false");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS)).thenReturn("false");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_SPIDERS)).thenReturn("false");
+		// The new keys hold the defaults RuneLite saved before startUp, as they always do in the client
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("true");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA)).thenReturn(GoblinEra.RETRO_2005.name());
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS)).thenReturn("true");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANT_SPIDERS)).thenReturn("true");
+
+		RetroConfigMigrations.run(configManager);
+
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS, false);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name());
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS, false);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANT_SPIDERS, false);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_SPIDERS);
 	}
 }

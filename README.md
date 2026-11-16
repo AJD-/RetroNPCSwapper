@@ -10,7 +10,7 @@ are in the OSRS cache where they survived, and a bundled 2005 set where they did
 Each category can be toggled individually under **NPC Toggles** in the plugin config:
 
 - **Chickens**
-- **Goblins**
+- **Goblins** — Modern, 2004/05 (one 2005 kit) or 2006 (the variant 2006 goblins)
 - **Skeletons**
 - **Zombies**
 - **Giants**
@@ -18,7 +18,8 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Hellhounds**
 - **Giant Rats**
 - **Small Scorpions**
-- **Spiders**
+- **Giant Spiders**
+- **Small Spiders**
 - **Bears**
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
@@ -34,7 +35,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Elves**
 - **Kalphites** — KQ, Guardians, Soldiers, Workers, Larvae
 - **Knights of the Round Table** — King Arthur and his knights, Merlin, renegade knights, etc
-- **Varrock NPCs** — Aris, Romeo, Sir Prysin, King Roald, muggers and tramps
+- **Varrock NPCs** — Aris, Romeo, Sir Prysin, King Roald, muggers, and tramps
 - **Barbarians** — Barbarian Village's barbarians, Gunthor the brave, Hunding, Peksa, Litara and the Blue Moon Inn barbarian
 - **Chatheads** — Swaps chatheads for NPCs with dialogue. Follows each NPC's own toggle.
 
@@ -46,12 +47,13 @@ Under **Scenery**:
 - **Trees** — oak and magic trees
 - **Picnic benches**
 - **Dairy cows**
+- **Fishing spots** - Excluding sailing-specific spots
 
 ![config](img/retronpcswapperconfig.png)
 
 ## Requirements
 
-**The `GPU` or `117 HD` plugin must be enabled.** Models are substituted via their specific renderers, 
+**The `GPU`, `117 HD` or `Region Locker GPU` plugin must be enabled.** Models are substituted via their specific renderers,
 and the stock CPU renderer and 117 HD's optional **Legacy renderer** are not supported. The plugin will
 automatically detect this and stand down until a supported renderer holds the renderer slot.
 
@@ -100,7 +102,9 @@ the live objects around it. The Varrock retextures are not supported.
 - **The injected categories ship their assets.** Dragons, demons, imps, guards, elves, the Knights
   of the Round Table, the Varrock NPCs, the barbarians, cows, scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
   live cache, so `retro-assets.dat` (~290 KB) is bundled in the jar and carries their meshes, rigs and animation
-  clips, extracted from the February 2005 & November 2005 caches.
+  clips, extracted from the February 2005 & November 2005 & December 2006 caches. The 2006 goblin
+  bodies need no bundle (their meshes and clips are currently unchanged in the live cache); only their chathead parts
+  are bundled.
 - **Scenery is drawn by a stand-in.** Static scenery is baked into the renderer's geometry when the
   scene loads and never passes through a per-frame draw, so the plugin asks the renderer to leave
   the live object out and places a stand-in object in its spot, which the draw callback dresses in
@@ -108,7 +112,7 @@ the live objects around it. The Varrock retextures are not supported.
 - Safety settings (on by default) disable all swapping on PvP worlds and in the Wilderness.
 
 There is currently no sanctioned RuneLite API for overriding NPC models, which is why the plugin
-utilizes the GPU or 117 HD renderer's draw callbacks.
+utilizes the GPU, 117 HD or Region Locker GPU renderer's draw callbacks.
 
 </details>
 
@@ -120,6 +124,11 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
   source: https://archive.openrs2.org/caches/runescape/2572) placed in
   `retrocache/2005cache` (the cache itself is not committed - if you want to generate your own you will
   need to download it yourself).
+- The late-2006 cache (build 443, 2006-12-19, original source:
+  https://archive.openrs2.org/caches/runescape/233) goes in `retrocache/dec2006cache/`, with
+  `disk.zip` extracted flat (`main_file_cache.dat2` and the `idx` files directly inside). Pass
+  `-Pcache=2006` to `dumpRetroNpcDefinitions` and `compareRetroModels` to read it instead of the
+  2005 cache, and `-Pretro2006Dir=<path>` to point at another copy.
 - `./gradlew compareRetroModels -Pmodels=<ids> -Pfindmoved` decodes a model from both caches
   and compares vertex count, face count and palette, which settles whether an ID still holds its
   2005 asset. Byte comparison cannot: Jagex re-encoded every model for the v2/v3 format markers.
@@ -164,6 +173,17 @@ utilizes the GPU or 117 HD renderer's draw callbacks.
   guard clips reach 65-80% and are right — so reach rules out a gross mismatch rather than proving
   a fit. `RetroClipReachTest` enforces a per-clip floor against the shipped bundle.
 
+</details>
+
+<details>
+<summary>Other Model-Swapping Plugin Compatibility</summary>
+
+The **Custom Servants** plugin runs alongside this plugin, together or on its
+own. Any NPC it has a custom model for is left to it entirely: this plugin swaps neither that
+NPC's model, its animations nor its chathead. Every other NPC is swapped as usual. The
+`Fix Interact Highlight outlines` option can be on in this plugin or Custom Servants (or both): only one draws
+`Interact Highlight`'s NPC outlines at a time, each around whichever plugin's
+model is on screen.
 </details>
 
 ### If you'd like to report a bug or request a feature, please create an issue [here](https://github.com/AJD-/RetroNPCSwapper/issues)

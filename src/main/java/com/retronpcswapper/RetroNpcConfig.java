@@ -40,6 +40,16 @@ public interface RetroNpcConfig extends Config
 	 */
 	String LEGACY_HILL_GIANTS = "swapHillGiants";
 
+	String GOBLIN_ERA = "goblinEra";
+
+	/**
+	 * Retired in favor of {@link #goblinEra()}; kept only so a saved value can be carried across.
+	 */
+	String LEGACY_SWAP_GOBLINS = "swapGoblins";
+
+	/** Retired when the toggle was split into {@link #swapSmallSpiders()} and {@link #swapGiantSpiders()}. */
+	String LEGACY_SWAP_SPIDERS = "swapSpiders";
+
 	/**
 	 * {@link #SWAP_GIANTS} is written by the migration as well as the user; the other two are named
 	 * alongside it for consistency.
@@ -48,6 +58,10 @@ public interface RetroNpcConfig extends Config
 	String SWAP_DEMONS = "swapDemons";
 	String SWAP_GIANTS = "swapGiants";
 
+	/** Written by the migration as well as the user. */
+	String SWAP_SMALL_SPIDERS = "swapSmallSpiders";
+	String SWAP_GIANT_SPIDERS = "swapGiantSpiders";
+
 	/** Also written programmatically, so the key is named rather than repeated as a literal. */
 	String OVERRIDE_INTERACT_HIGHLIGHT = "overrideInteractHighlight";
 
@@ -55,16 +69,18 @@ public interface RetroNpcConfig extends Config
 
 	String INCREASE_CHICKEN_SIZE = "increaseChickenSize";
 
+	String SHOW_UPDATE_NOTES = "showUpdateNotes";
+
 	/**
 	 * Read-only notice for users, not a setting.
 	 */
 	@ConfigItem(
 		keyName = "gpuRequiredNotice",
-		name = "<html><body style='width:170px'>This plugin requires the <b>GPU</b> or <b>117 HD</b>"
-			+ " plugin to be enabled. Models are swapped as the scene is drawn, so nothing changes"
-			+ " while neither is rendering, or while 117 HD's <b>Legacy renderer</b> option is on."
-			+ "</body></html>",
-		description = "Retro models are substituted while the GPU or 117 HD plugin renders the scene, so one must be enabled.",
+		name = "<html><body style='width:170px'>This plugin requires the <b>GPU</b>, <b>117 HD</b>"
+			+ " or <b>Region Locker GPU</b> plugin to be enabled. Models are swapped as the scene is"
+			+ " drawn, so nothing changes while none of them is rendering, or while 117 HD's"
+			+ " <b>Legacy renderer</b> option is on.</body></html>",
+		description = "Retro models are substituted while the GPU, 117 HD or Region Locker GPU plugin renders the scene, so one must be enabled.",
 		position = 0
 	)
 	default void gpuRequiredNotice()
@@ -78,7 +94,7 @@ public interface RetroNpcConfig extends Config
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
 			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
 			+ "game cache. Turn it off and only Chickens, Goblins, Skeletons, Zombies, Hill Giants, "
-			+ "Ghosts, Hellhounds, Giant Rats, Spiders, Bears, and small Scorpions will swap to their retro assets. "
+			+ "Ghosts, Hellhounds, Giant Rats, Spiders, Bears, Fishing Spots, and small Scorpions will swap to their retro assets. "
             + "Hill Giants will wear a Jogre head.</body></html>",
 		position = 1
 	)
@@ -108,15 +124,15 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapGoblins",
+		keyName = GOBLIN_ERA,
 		name = "Goblins",
-		description = "Swap modern Goblin models and animations to their 2004/2005 retro variants.",
+		description = "Modern: leave goblins alone. 2004/05: the single 2005 goblin model. 2006: the variant goblins added in 2006.",
 		section = npcTogglesSection,
 		position = 2
 	)
-	default boolean swapGoblins()
+	default GoblinEra goblinEra()
 	{
-		return true;
+		return GoblinEra.RETRO_2005;
 	}
 
 	@ConfigItem(
@@ -292,13 +308,28 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "swapSpiders",
-		name = "Spiders",
-		description = "Swap modern Spider models and animations to their 2004/2005 retro variants.",
+		keyName = SWAP_GIANT_SPIDERS,
+		name = "Giant Spiders",
+		description = "<html><body style='width:170px'>Swap modern Giant, Shadow, Blessed, Deadly red, "
+			+ "Jungle, Ice, Poison and Giant crypt spider models and animations to their 2004/2005 "
+			+ "retro variants.</body></html>",
 		section = npcTogglesSection,
 		position = 16
 	)
-	default boolean swapSpiders()
+	default boolean swapGiantSpiders()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = SWAP_SMALL_SPIDERS,
+		name = "Small Spiders",
+		description = "Swap modern small Spider and Crypt spider models and animations to their "
+			+ "2004/2005 retro variants.",
+		section = npcTogglesSection,
+		position = 17
+	)
+	default boolean swapSmallSpiders()
 	{
 		return true;
 	}
@@ -310,7 +341,7 @@ public interface RetroNpcConfig extends Config
 			+ "2004/2005 retro variants.<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by "
 			+ "default. </body></html>",
 		section = npcTogglesSection,
-		position = 17
+		position = 18
 	)
 	default boolean swapElves()
 	{
@@ -322,7 +353,7 @@ public interface RetroNpcConfig extends Config
 		name = "Bears",
 		description = "Swap modern Bear models and animations to their 2004/2005 retro variants.",
 		section = npcTogglesSection,
-		position = 18
+		position = 19
 	)
 	default boolean swapBears()
 	{
@@ -336,7 +367,7 @@ public interface RetroNpcConfig extends Config
 			+ "Soldiers, Workers and Larvae to their 2004/2005 retro models and animations.<br><br>Needs "
 			+ "<b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 19
+		position = 20
 	)
 	default boolean swapKalphites()
 	{
@@ -350,7 +381,7 @@ public interface RetroNpcConfig extends Config
 			+ "Le Faye, and other Camelot-related NPCs to their 2004/2005 retro models and animations."
 			+  "<br><br>Needs <b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 20
+		position = 21
 	)
 	default boolean swapRoundTable()
 	{
@@ -364,7 +395,7 @@ public interface RetroNpcConfig extends Config
 			+ "the muggers and the tramps to their 2004/2005 retro models and animations.<br><br>Needs "
 			+ "<b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 21
+		position = 22
 	)
 	default boolean swapVarrockNpcs()
 	{
@@ -485,8 +516,8 @@ public interface RetroNpcConfig extends Config
 		name = "Anti-dragon shield",
 		description = "<html><body style='width:170px'>Restore the 2004-2007 anti-dragon shield: its "
 			+ "inventory icon, the model on the ground, and the shield worn by players.<br><br>The "
-			+ "icon swaps on any renderer. The worn shield needs the <b>GPU</b> or <b>117 HD</b> "
-			+ "plugin.</body></html>",
+			+ "icon swaps on any renderer. The worn shield needs the <b>GPU</b>, <b>117 HD</b> "
+			+ "or <b>Region Locker GPU</b> plugin.</body></html>",
 		section = itemsSection,
 		position = 1
 	)
@@ -571,6 +602,38 @@ public interface RetroNpcConfig extends Config
 		position = 6
 	)
 	default boolean swapDairyCows()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapFishingSpots",
+		name = "Fishing Spots",
+		description = "Restore the 2004/2005 fishing spot ripple in place of the Sailing-era fishing spots.",
+		section = scenerySection,
+		position = 7
+	)
+	default boolean swapFishingSpots()
+	{
+		return true;
+	}
+
+	@ConfigSection(
+			name = "Misc",
+			description = "Plugin-meta settings",
+			position = 7,
+			closedByDefault = true
+	)
+	String miscSection = "miscSection";
+
+	@ConfigItem(
+			keyName = SHOW_UPDATE_NOTES,
+			name = "Show update notes",
+			description = "Print a one-line summary in chat the first time you log in after the plugin updates.",
+			section = miscSection,
+			position = 1
+	)
+	default boolean showUpdateNotes()
 	{
 		return true;
 	}
