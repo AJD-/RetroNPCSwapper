@@ -101,24 +101,30 @@ public class NpcMappingGenerator
 
 		try
 		{
-			byte[] archiveData = reader.readFile(0, 2); // Archive 0 file 2 (config.jag)
-			if (archiveData == null)
-			{
-				throw new IOException("Failed to read config.jag from the 2005 cache");
-			}
-			Map<String, byte[]> files = reader.readArchive(archiveData);
-			byte[] npcDat = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.dat")));
-			byte[] npcIdx = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.idx")));
-			if (npcDat == null || npcIdx == null)
-			{
-				throw new IOException("config.jag does not contain npc.dat/npc.idx");
-			}
-			return RetroNpcDecoder.decodeAll(npcDat, npcIdx);
+			return decodeDefinitions(reader);
 		}
 		finally
 		{
 			reader.close();
 		}
+	}
+
+	/** As above, through a reader the caller opened and will close. */
+	static Map<Integer, RetroNpcDefinition> decodeDefinitions(RetroCacheReader reader) throws IOException
+	{
+		byte[] archiveData = reader.readFile(0, 2); // Archive 0 file 2 (config.jag)
+		if (archiveData == null)
+		{
+			throw new IOException("Failed to read config.jag from the 2005 cache");
+		}
+		Map<String, byte[]> files = reader.readArchive(archiveData);
+		byte[] npcDat = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.dat")));
+		byte[] npcIdx = files.get(String.valueOf(RetroCacheReader.hashFileName("npc.idx")));
+		if (npcDat == null || npcIdx == null)
+		{
+			throw new IOException("config.jag does not contain npc.dat/npc.idx");
+		}
+		return RetroNpcDecoder.decodeAll(npcDat, npcIdx);
 	}
 
 	/**
