@@ -93,17 +93,6 @@ public class RetroNpcMapping
 	);
 
 	/**
-	 * Categories that resolve from the registered id list only, never from a name.
-	 *
-	 * <p>Suppressed at lookup rather than by dropping the name row, because
-	 * {@link #applyCacheDefinitions} walks {@code NAME_MAPPINGS} to graft the opcode 40 pairs
-	 * onto the archetypes.
-	 */
-	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
-		Set.of(RetroNpcCategory.GUARDS, RetroNpcCategory.ELVES, RetroNpcCategory.ROUND_TABLE,
-			RetroNpcCategory.VARROCK);
-
-	/**
 	 * Ids whose registered row beats the name row even when the two disagree about the category.
 	 *
 	 * <p>For NPCs whose display name lies about what they are. {@link #get} otherwise lets the name
@@ -1512,21 +1501,27 @@ public class RetroNpcMapping
 	 */
 	private static RetroNpcData goblin(int[] models, short[] find, short[] replace, int... chathead)
 	{
-		return RetroNpcData.builder()
-			.category(RetroNpcCategory.GOBLINS)
+		return goblinBase()
 			.retroModelIds(models)
 			.chathead(chathead)
 			.chatheadKeyBase(RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE)
 			.idleAnimationId(AnimationID.GOBLIN_READY)
 			.walkAnimationId(AnimationID.GOBLIN_WALK)
+			.recolors(find, replace)
+			.build();
+	}
+
+	/** What a goblin row has in every era: the category and the combat animations. */
+	static RetroNpcData.Builder goblinBase()
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.GOBLINS)
 			.attackAnimationId(AnimationID.GOBLIN_ATTACK_UNARMED)
 			.defendAnimationId(AnimationID.GOBLIN_BLOCK)
 			.deathAnimationId(AnimationID.GOBLIN_DEATH)
-			.recolors(find, replace)
 			.modernAttackAnims(GOBLIN_MODERN_ATTACKS)
 			.modernDefendAnims(GOBLIN_MODERN_DEFENDS)
-			.modernDeathAnims(GOBLIN_MODERN_DEATHS)
-			.build();
+			.modernDeathAnims(GOBLIN_MODERN_DEATHS);
 	}
 
 	// The six 2005 goblin definitions
@@ -2126,24 +2121,7 @@ public class RetroNpcMapping
 	 */
 	public static boolean requiresInjectedGeometry(RetroNpcCategory category)
 	{
-		return category == RetroNpcCategory.ADULT_DRAGONS
-			|| category == RetroNpcCategory.BABY_DRAGONS
-			|| category == RetroNpcCategory.LESSER_DEMONS
-			|| category == RetroNpcCategory.GREATER_DEMONS
-			|| category == RetroNpcCategory.BLACK_DEMONS
-			|| category == RetroNpcCategory.IMPS
-			|| category == RetroNpcCategory.FIRE_GIANTS
-			|| category == RetroNpcCategory.ICE_GIANTS
-			|| category == RetroNpcCategory.MOSS_GIANTS
-			|| category == RetroNpcCategory.CYCLOPS
-			|| category == RetroNpcCategory.GUARDS
-			|| category == RetroNpcCategory.SKELETON_MAGES
-			|| category == RetroNpcCategory.COWS
-			|| category == RetroNpcCategory.SCORPIONS
-			|| category == RetroNpcCategory.ELVES
-			|| category == RetroNpcCategory.KALPHITES
-			|| category == RetroNpcCategory.ROUND_TABLE
-			|| category == RetroNpcCategory.VARROCK;
+		return category != null && category.requiresInjectedGeometry();
 	}
 
 	/**
@@ -2161,7 +2139,7 @@ public class RetroNpcMapping
 	 */
 	public static boolean usesInjectedGeometry(RetroNpcCategory category)
 	{
-		return requiresInjectedGeometry(category) || category == RetroNpcCategory.HILL_GIANTS;
+		return category != null && category.usesInjectedGeometry();
 	}
 
 	/**
@@ -2174,25 +2152,7 @@ public class RetroNpcMapping
 	 */
 	private static boolean categoryUsesRecolors(RetroNpcCategory category)
 	{
-		return category == RetroNpcCategory.ADULT_DRAGONS
-			|| category == RetroNpcCategory.BABY_DRAGONS
-			|| category == RetroNpcCategory.LESSER_DEMONS
-			|| category == RetroNpcCategory.GREATER_DEMONS
-			|| category == RetroNpcCategory.BLACK_DEMONS
-			// Fire, ice and moss giants are the same body mesh as the hill giant, told apart only by
-			// their 2005 opcode 40 pairs.
-			|| category == RetroNpcCategory.FIRE_GIANTS
-			|| category == RetroNpcCategory.ICE_GIANTS
-			|| category == RetroNpcCategory.MOSS_GIANTS
-			// A guard's parts are generic 2005 human kit shared with everything else that wears it,
-			// so the opcode 40 pairs are what make the kit a guard's colors rather than a
-			// townsperson's. The pairs come from the definition the parts come from.
-			|| category == RetroNpcCategory.GUARDS
-			// The skeleton mage is the same generic human kit, and its pairs are what paint it bone.
-			// There is only one 2005 definition, so no variant's colors can win by accident.
-			|| category == RetroNpcCategory.SKELETON_MAGES
-			// The undead chicken is just a recolored regular chicken
-			|| category == RetroNpcCategory.CHICKENS;
+		return category != null && category.usesDefinitionRecolors();
 	}
 
 	private static void registerMapping(RetroNpcData data, int... npcIds)
@@ -2323,7 +2283,7 @@ public class RetroNpcMapping
 		// Guards
 		NAME_MAPPINGS.put("guard", GUARD_DEFAULT);
 		registerMapping(GUARD_DEFAULT,
-			// The base rows of each family. GUARDS is in ID_ONLY_CATEGORIES, so the name no longer
+			// The base rows of each family. GUARDS is id-only, so the name no longer
 			// resolves and every guard has to be named here - including the _F and _VARIANT
 			// derivatives below, which the name lookup used to cover.
 			NpcID.GUARD1,
@@ -3108,24 +3068,51 @@ public class RetroNpcMapping
 
 	public static RetroNpcData get(int npcId, String npcName)
 	{
+		return get(npcId, npcName, GoblinEra.RETRO_2005);
+	}
+
+	public static RetroNpcData get(int npcId, String npcName, GoblinEra era)
+	{
 		// Ahead of both tables: an excluded NPC must not be reachable by name either
 		if (EXCLUDED_IDS.contains(npcId))
 		{
 			return null;
 		}
 
-		if (npcName == null)
+		String nameLower = npcName == null ? null : npcName.toLowerCase(Locale.ROOT).trim();
+		if (era == GoblinEra.RETRO_2006)
+		{
+			RetroNpcData goblin2006 = RetroGoblinMapping2006.get(npcId, nameLower);
+			if (goblin2006 != null)
+			{
+				return goblin2006;
+			}
+		}
+
+		RetroNpcData resolved = resolve(npcId, nameLower);
+		// Eras never mix: a goblin with no row in the chosen era stays modern
+		if (resolved != null && resolved.getCategory() == RetroNpcCategory.GOBLINS
+			&& era != GoblinEra.RETRO_2005)
+		{
+			return null;
+		}
+		return resolved;
+	}
+
+	private static RetroNpcData resolve(int npcId, String nameLower)
+	{
+		if (nameLower == null)
 		{
 			return ID_MAPPINGS.get(npcId);
 		}
 
-		String nameLower = npcName.toLowerCase(Locale.ROOT).trim();
 		RetroNpcData byName = NAME_MAPPINGS.get(nameLower);
 		RetroNpcData byId = ID_MAPPINGS.get(npcId);
 
-		if (byName != null && ID_ONLY_CATEGORIES.contains(byName.getCategory()))
+		if (byName != null && byName.getCategory() != null && byName.getCategory().isIdOnly())
 		{
-			// Sharing a name with the town guard is not enough to be one
+			// Sharing a name with the town guard is not enough to be one. Suppressed here rather
+			// than by dropping the name row, which applyCacheDefinitions walks for the recolors
 			byName = null;
 		}
 

@@ -24,8 +24,6 @@
  */
 package com.retronpcswapper.cache;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.zip.GZIPInputStream;
 import net.runelite.cache.IndexType;
 import net.runelite.cache.definitions.ModelDefinition;
 import net.runelite.cache.definitions.loaders.ModelLoader;
@@ -70,7 +67,7 @@ import net.runelite.cache.fs.Store;
  *
  * <p>Run with {@code ./gradlew compareRetroModels -Pmodels=2853,2854}, optionally
  * {@code -Pfindmoved} and {@code -PcacheDir=...}. Reads the untracked {@code retrocache/} 2005
- * cache alongside the live one. This class lives in the test sourceSet and is never shipped, so
+ * cache alongside the live one; {@code -Pcache=2006} reads the Dec-2006 cache instead. This class lives in the test sourceSet and is never shipped, so
  * console output and reading files outside {@code .runelite} are fine here.
  */
 public class RetroModelComparator
@@ -80,10 +77,6 @@ public class RetroModelComparator
 	private static final String FIND_MOVED_PROPERTY = "retronpcswapper.findmoved";
 	private static final String FACE_DIFF_PROPERTY = "retronpcswapper.facediff";
 	private static final String RETRO_CACHE_DIR = "retrocache/2005cache";
-
-	/** Index 1 of the RS2 cache holds models. */
-	private static final int RETRO_MODEL_INDEX = 1;
-
 	public static void main(String[] args) throws IOException
 	{
 		if (args.length == 0)
@@ -100,11 +93,13 @@ public class RetroModelComparator
 			return;
 		}
 
-		File retroDir = resolveRetroCacheDir();
-		RetroCacheReader retro = new RetroCacheReader(retroDir);
-		if (!retro.init())
+		String era = RetroEraCache.label();
+		File dir2005 = resolveRetroCacheDir();
+		File retroDir = RetroEraCache.dir(dir2005);
+		RetroEraCache retro = RetroEraCache.open(dir2005);
+		if (retro == null)
 		{
-			System.err.println("Could not read the 2005 cache at " + retroDir.getAbsolutePath()
+			System.err.println("Could not read the " + era + " cache at " + retroDir.getAbsolutePath()
 				+ " - it is untracked, so copy it in before running this.");
 			System.exit(1);
 			return;
@@ -117,7 +112,7 @@ public class RetroModelComparator
 			store.load();
 
 			System.out.println("Live cache:  " + liveDir);
-			System.out.println("2005 cache:  " + retroDir.getAbsolutePath());
+			System.out.println(era + " cache:  " + retroDir.getAbsolutePath());
 			System.out.println();
 
 			for (String arg : args)
@@ -128,7 +123,7 @@ public class RetroModelComparator
 					continue;
 				}
 
-				Geometry lost = compare(store, retro, Integer.parseInt(trimmed));
+				Geometry lost = compare(store, retro, era, Integer.parseInt(trimmed));
 				if (lost != null)
 				{
 					replaced.add(lost);
@@ -159,10 +154,10 @@ public class RetroModelComparator
 	 * Prints both versions of one model id. Returns the 2005 geometry when the asset was replaced,
 	 * so the caller can go looking for it elsewhere, else null.
 	 */
-	private static Geometry compare(Store store, RetroCacheReader retro, int modelId) throws IOException
+	private static Geometry compare(Store store, RetroEraCache retro, String era, int modelId) throws IOException
 	{
 		byte[] liveData = loadLive(store, modelId);
-		byte[] oldData = gunzipIfNeeded(retro.readFile(RETRO_MODEL_INDEX, modelId));
+		byte[] oldData = retro.modelData(modelId);
 
 		ModelDefinition liveModel = decodeModel(modelId, liveData);
 		ModelDefinition oldModel = decodeModel(modelId, oldData);
@@ -171,7 +166,7 @@ public class RetroModelComparator
 		Geometry old = describeOf(oldModel, oldData);
 
 		System.out.println("model " + modelId);
-		System.out.println("  2005  " + describe(old));
+		System.out.println("  " + era + "  " + describe(old));
 		System.out.println("  live  " + describe(live));
 		System.out.println("  ->    " + verdict(old, live));
 
@@ -538,33 +533,6 @@ public class RetroModelComparator
 			return null;
 		}
 		return archive.decompress(store.getStorage().loadArchive(archive));
-	}
-
-	/**
-	 * Some RS2 index entries are gzip wrapped and some are stored raw, so sniff rather than guess.
-	 */
-	private static byte[] gunzipIfNeeded(byte[] data)
-	{
-		if (data == null || data.length < 2 || (data[0] & 0xFF) != 0x1F || (data[1] & 0xFF) != 0x8B)
-		{
-			return data;
-		}
-
-		try (GZIPInputStream in = new GZIPInputStream(new ByteArrayInputStream(data)))
-		{
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			byte[] buffer = new byte[8192];
-			int read;
-			while ((read = in.read(buffer)) > 0)
-			{
-				out.write(buffer, 0, read);
-			}
-			return out.toByteArray();
-		}
-		catch (IOException e)
-		{
-			return data;
-		}
 	}
 
 	private static Geometry decode(int modelId, byte[] data)

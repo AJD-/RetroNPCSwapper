@@ -92,6 +92,14 @@ public class RetroNpcDecoder
 		return defs;
 	}
 
+	/**
+	 * One definition from its own file, as the JS5 caches store them. Null when it does not decode.
+	 */
+	static RetroNpcDefinition decodeNpc(int id, byte[] data)
+	{
+		return decodeNpc(id, new Buffer(data), data.length);
+	}
+
 	private static RetroNpcDefinition decodeNpc(int id, Buffer stream, int maxLen)
 	{
 		RetroNpcDefinition def = new RetroNpcDefinition();

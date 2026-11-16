@@ -2689,7 +2689,7 @@ public class RetroNpcCategoryTest
 
 		// Every category that renders without the bundle defaults to on
 		assertTrue("swapChickens must default to true", config.swapChickens());
-		assertTrue("swapGoblins must default to true", config.swapGoblins());
+		assertEquals("goblinEra must default to 2004/05", GoblinEra.RETRO_2005, config.goblinEra());
 		assertTrue("swapSkeletons must default to true", config.swapSkeletons());
 		assertTrue("swapZombies must default to true", config.swapZombies());
 		assertTrue("swapGiants must default to true", config.swapGiants());
@@ -3593,5 +3593,64 @@ public class RetroNpcCategoryTest
 		assertNotNull("no mapping for " + npcId + " / " + name, data);
 		assertArrayEquals("chathead of " + npcId + " / " + name, parts, data.getChatheadModelIds());
 		assertEquals("chathead key base of " + npcId + " / " + name, keyBase, data.getChatheadKeyBase());
+	}
+
+	@Test
+	public void testModernEraHidesEveryGoblinRow()
+	{
+		assertNull(RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.MODERN));
+		assertNull(RetroNpcMapping.get(NpcID.GOBLIN_GREENARMOUR, "Goblin", GoblinEra.MODERN));
+		// a non-goblin row is untouched by the era
+		assertNotNull(RetroNpcMapping.get(0, "Chicken", GoblinEra.MODERN));
+	}
+
+	@Test
+	public void test2005EraIsTheTwoArgLookup()
+	{
+		assertSame(RetroNpcMapping.get(NpcID.GOBLIN, "Goblin"),
+			RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.RETRO_2005));
+	}
+
+	@Test
+	public void test2006EraNeverFallsBackToA2005GoblinRow()
+	{
+		RetroNpcData d = RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.RETRO_2006);
+		assertNotSame(RetroNpcMapping.GOBLIN_DEFAULT, d);
+		assertArrayEquals(new int[]{5536, 5539, 5544, 5547}, d.getRetroModelIds());
+	}
+
+	@Test
+	public void testHobgoblinIsDef122InEveryRetroEra()
+	{
+		RetroNpcData d = RetroNpcMapping.get(0, "Hobgoblin", GoblinEra.RETRO_2006);
+		assertNotNull(d);
+		assertEquals(RetroNpcCategory.GOBLINS, d.getCategory());
+		assertArrayEquals(new int[]{2994}, d.getRetroModelIds());
+		assertEquals(128, d.getScaleXZ());
+		assertEquals(AnimationID.HOBGOBLIN_READY, d.getIdleAnimationId());
+		assertEquals(AnimationID.HOBGOBLIN_WALK, d.getWalkAnimationId());
+		assertFalse(d.hasChathead());
+
+		RetroNpcData d2005 = RetroNpcMapping.get(0, "Hobgoblin", GoblinEra.RETRO_2005);
+		assertNotNull(d2005);
+		assertEquals(RetroNpcCategory.GOBLINS, d2005.getCategory());
+		assertArrayEquals(new int[]{2994}, d2005.getRetroModelIds());
+		assertEquals(d2005.getAttackAnimationId(), d.getAttackAnimationId());
+		assertEquals(d2005.getDefendAnimationId(), d.getDefendAnimationId());
+		assertEquals(d2005.getDeathAnimationId(), d.getDeathAnimationId());
+		for (int anim : RetroNpcMapping.GOBLIN_MODERN_ATTACKS)
+		{
+			assertEquals("attack " + anim, d2005.isAttackAnimation(anim), d.isAttackAnimation(anim));
+		}
+		for (int anim : RetroNpcMapping.GOBLIN_MODERN_DEFENDS)
+		{
+			assertEquals("defend " + anim, d2005.isDefendAnimation(anim), d.isDefendAnimation(anim));
+		}
+		for (int anim : RetroNpcMapping.GOBLIN_MODERN_DEATHS)
+		{
+			assertEquals("death " + anim, d2005.isDeathAnimation(anim), d.isDeathAnimation(anim));
+		}
+
+		assertNull(RetroNpcMapping.get(0, "Hobgoblin", GoblinEra.MODERN));
 	}
 }

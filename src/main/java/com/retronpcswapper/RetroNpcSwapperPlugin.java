@@ -293,7 +293,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		log.info("Retro NPC Swapper started");
 		active = true;
-		migrateLegacyToggles();
+		RetroConfigMigrations.run(configManager);
 		loadMappings();
 		loadAssetBundle();
 		renderCallbackManager.register(scenerySwapper);
@@ -309,54 +309,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		// A partner plugin may have started first; ask which NPCs it is drawing
 		eventBus.post(ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
-	}
-
-	/**
-	 * Carries saved values across from config keys that have been replaced.
-	 */
-	private void migrateLegacyToggles()
-	{
-		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_HILL_GIANTS,
-			true, RetroNpcConfig.SWAP_GIANTS);
-		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_SWAP_SPIDERS,
-			true, RetroNpcConfig.SWAP_SMALL_SPIDERS, RetroNpcConfig.SWAP_GIANT_SPIDERS);
-	}
-
-	/**
-	 * Hands a retired key's saved value to the toggles that replaced it.
-	 *
-	 * <p>Renaming a config key silently resets whatever the user had chosen, so the old key is read
-	 * once and its value handed on. Only ever writes a key that has no value of its own or still holds
-	 * {@code newKeyDefault}, which RuneLite saves before startUp, so a user who has already set the
-	 * new toggles is never overwritten - which also makes this safe to run
-	 * on every start. The old key is cleared afterward, so the migration happens once and leaves no
-	 * orphan behind.
-	 *
-	 * <p>Takes the manager rather than reading the field so it can be driven directly from a test.
-	 * There is no cache or client involved here, only ConfigManager calls, so that is the whole of
-	 * what the behavior needs to be checked against.
-	 */
-	static void migrateLegacyToggle(ConfigManager configManager, String legacyKey, boolean newKeyDefault,
-		String... newKeys)
-	{
-		String legacy = configManager.getConfiguration(RetroNpcConfig.GROUP, legacyKey);
-
-		if (legacy == null)
-		{
-			return;
-		}
-
-		for (String key : newKeys)
-		{
-			String current = configManager.getConfiguration(RetroNpcConfig.GROUP, key);
-			if (current == null || current.equals(Boolean.toString(newKeyDefault)))
-			{
-				configManager.setConfiguration(RetroNpcConfig.GROUP, key, Boolean.parseBoolean(legacy));
-			}
-		}
-
-		configManager.unsetConfiguration(RetroNpcConfig.GROUP, legacyKey);
-		log.debug("Migrated {}={} to {}", legacyKey, legacy, String.join(", ", newKeys));
 	}
 
 	@Override
@@ -776,7 +728,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName());
+		RetroNpcData data = mappingFor(npc.getId(), npc.getName());
 		if (data == null)
 		{
 			return;
@@ -893,7 +845,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName());
+		RetroNpcData data = mappingFor(npc.getId(), npc.getName());
 
 		// Animation overrides are gated on substitution being live. Without the wrapper the
 		// model stays vanilla, and a modern-rigged model playing a 2005 sequence - which is
@@ -925,13 +877,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 		applyRetroSwap(npc, data);
 	}
 
+	/** The retro row for an NPC under the goblin era the config asks for. */
+	private RetroNpcData mappingFor(int npcId, String name)
+	{
+		return RetroNpcMapping.get(npcId, name, config.goblinEra());
+	}
+
 	/**
 	 * Whether an NPC with this mapping is drawn retro right now: the wrapper attached, no safety
 	 * setting stepping in, and its category toggled on.
 	 */
 	private boolean isSwapLive(RetroNpcData data)
 	{
-		return wrapper != null && !isSafetyDisabled() && data != null && isCategoryEnabled(data.getCategory());
+		return wrapper != null && !isSafetyDisabled() && data != null && isCategoryEnabled(data.getCategory(), config);
 	}
 
 	/**
@@ -951,7 +909,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		NPCComposition composition = client.getNpcDefinition(npcId);
-		RetroNpcData data = RetroNpcMapping.get(npcId, composition == null ? null : composition.getName());
+		RetroNpcData data = mappingFor(npcId, composition == null ? null : composition.getName());
 		if (!isSwapLive(data) || !data.hasChathead())
 		{
 			return null;
@@ -1018,111 +976,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 	/**
 	 * Checks if a specific NPC category toggle is enabled in config.
 	 */
-	private boolean isCategoryEnabled(RetroNpcCategory category)
+	static boolean isCategoryEnabled(RetroNpcCategory category, RetroNpcConfig config)
 	{
-		if (category == null)
-		{
-			return false;
-		}
-
-		switch (category)
-		{
-			case CHICKENS:
-				return config.swapChickens();
-			case COWS:
-				return config.swapCows() && injectionEnabled();
-			case HELLHOUNDS:
-				// Mesh 2997 and sequences 157-161 both survive intact, so the cache path draws it
-				return config.swapHellhounds();
-			case GIANT_RATS:
-				// Mesh 2959 and sequences 137-141 both survive intact, so the cache path draws it
-				return config.swapGiantRats();
-			case SCORPIONS:
-				// Injectionis required for large scorpions
-				return config.swapScorpions() && injectionEnabled();
-			case SMALL_SCORPIONS:
-				// Mesh 2968 and sequences 269-273 survive intact, so the cache path draws it
-				return config.swapScorpions();
-			case SMALL_SPIDERS:
-				// Mesh 2996 and sequences 279-282 survive intact, so the cache path draws them
-				return config.swapSmallSpiders();
-			case GIANT_SPIDERS:
-				// Meshes 2883-2885 and sequences 142-149 survive intact, so the cache path draws them
-				return config.swapGiantSpiders();
-			case BEARS:
-				// Mesh 2966 and sequences 37-44 survive intact, so the cache path draws them
-				return config.swapBears();
-			case FISHING_SPOTS:
-				// Mesh 1491 and sequences 447/448 survive intact, so the cache path draws it
-				return config.swapFishingSpots();
-			case KALPHITES:
-				// Meshes 3849-3854 are gone from the live cache, so only the bundle can draw them
-				return config.swapKalphites() && injectionEnabled();
-			case GOBLINS:
-				return config.swapGoblins();
-			case SKELETONS:
-				return config.swapSkeletons();
-			case SKELETON_MAGES:
-				// Shares the Skeletons toggle. The mage is human kit, half of whose parts are gone from
-				// the live cache, so like the guards it can only be drawn from the bundle
-				return config.swapSkeletons() && injectionEnabled();
-			case ZOMBIES:
-				return config.swapZombies();
-			case HILL_GIANTS:
-				// The body survives and the Jogre head stands in for the one that does not, so this
-				// one renders on either path - the injection toggle just decides which
-				return config.swapGiants();
-			case FIRE_GIANTS:
-			case ICE_GIANTS:
-			case MOSS_GIANTS:
-				// Their 2005 heads are gone from the live cache, so the cache-backed path would load
-				// unrelated geometry. Only the bundle can supply them.
-				return config.swapGiants() && injectionEnabled();
-			case CYCLOPS:
-				return config.swapCyclops() && injectionEnabled();
-			case GUARDS:
-				// Three of the nine kit parts are gone from the live cache, and the six that remain
-				// were re-bound to a different rig, so both the geometry and the animation have to
-				// come from the bundle
-				return config.swapGuards() && injectionEnabled();
-			case ELVES:
-				// The same 2005 human kit as the guards: seven of the seventeen parts were edited in
-				// live and every one was re-bound to the live rig, so only the bundle can draw them
-				return config.swapElves() && injectionEnabled();
-			case ROUND_TABLE:
-				// 2005 human kit again, with several parts and heads overwritten in live
-				return config.swapRoundTable() && injectionEnabled();
-			case VARROCK:
-				return config.swapVarrockNpcs() && injectionEnabled();
-			case GHOSTS:
-				return config.swapGhosts();
-			case ADULT_DRAGONS:
-			case BABY_DRAGONS:
-				// The adult mesh has no usable live counterpart at all - the ids resolve, but to
-				// unrelated geometry. The baby mesh survives, but both had their frames re-authored,
-				// so both need the injected path to be animated from the 2005 data
-				return config.swapDragons() && injectionEnabled();
-			case LESSER_DEMONS:
-			case GREATER_DEMONS:
-			case BLACK_DEMONS:
-				return config.swapDemons() && injectionEnabled();
-			case IMPS:
-				// The imp mesh survives, so this is not about geometry: the frames behind its
-				// sequence ids were re-authored for the modern rig, and applying the 2005 ones
-				// means skinning the model ourselves
-				return config.swapImps() && injectionEnabled();
-			default:
-				return false;
-		}
+		return category != null && category.isEnabled(config);
 	}
 
-	/**
-	 * Whether the categories that can only be drawn from the bundle are allowed to draw at all.
-	 *
-	 * <p>The config value rather than the cache's copy of it. The two are the same by the time this
-	 * decides anything: recheckLoadedNpcs hands the config value to the cache, and processNpc will
-	 * not reach here until attach() has run, which happens after that on every path.
-	 */
+	/** Whether the converted 2005 assets are on. Categories ask the config themselves; this gates the chatheads. */
 	private boolean injectionEnabled()
 	{
 		return config.useInjectionPipeline();
@@ -1195,6 +1054,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Cheap and idempotent, and this runs on every path that could have changed the setting -
 		// startup, config change, world change, a landed bundle, and attach
 		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
+		modelCache.setGoblinEra(config.goblinEra());
 		modelCache.setIncreaseChickenSize(config.increaseChickenSize());
 
 		// Ahead of the login check: the icon is drawn on the login-free paths too, and the same
