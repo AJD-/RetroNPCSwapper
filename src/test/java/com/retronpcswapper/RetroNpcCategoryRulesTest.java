@@ -145,4 +145,45 @@ public class RetroNpcCategoryRulesTest
 			FIRE_GIANTS, ICE_GIANTS, MOSS_GIANTS, CYCLOPS, GUARDS, SKELETON_MAGES, COWS, SCORPIONS,
 			ELVES, KALPHITES, ROUND_TABLE, VARROCK);
 	}
+	private static final Set<RetroNpcCategory> BUNDLE_ONLY = EnumSet.of(
+		ADULT_DRAGONS, BABY_DRAGONS, LESSER_DEMONS, GREATER_DEMONS, BLACK_DEMONS, IMPS,
+		FIRE_GIANTS, ICE_GIANTS, MOSS_GIANTS, CYCLOPS, GUARDS, SKELETON_MAGES, COWS, SCORPIONS,
+		ELVES, KALPHITES, ROUND_TABLE, VARROCK);
+
+	@Test
+	public void testTheCategoriesOnlyTheBundleCanDraw()
+	{
+		Set<RetroNpcCategory> bundlePreferred = EnumSet.copyOf(BUNDLE_ONLY);
+		bundlePreferred.add(HILL_GIANTS);
+
+		for (RetroNpcCategory category : RetroNpcCategory.values())
+		{
+			assertEquals(category.name(), BUNDLE_ONLY.contains(category), category.requiresInjectedGeometry());
+			assertEquals(category.name(), bundlePreferred.contains(category), category.usesInjectedGeometry());
+		}
+	}
+
+	@Test
+	public void testTheCategoriesTakingTheirDefinitionsRecolors()
+	{
+		Set<RetroNpcCategory> recolored = EnumSet.of(
+			ADULT_DRAGONS, BABY_DRAGONS, LESSER_DEMONS, GREATER_DEMONS, BLACK_DEMONS,
+			FIRE_GIANTS, ICE_GIANTS, MOSS_GIANTS, GUARDS, SKELETON_MAGES, CHICKENS);
+
+		for (RetroNpcCategory category : RetroNpcCategory.values())
+		{
+			assertEquals(category.name(), recolored.contains(category), category.usesDefinitionRecolors());
+		}
+	}
+
+	@Test
+	public void testTheCategoriesMatchedByIdAlone()
+	{
+		Set<RetroNpcCategory> idOnly = EnumSet.of(GUARDS, ELVES, ROUND_TABLE, VARROCK);
+
+		for (RetroNpcCategory category : RetroNpcCategory.values())
+		{
+			assertEquals(category.name(), idOnly.contains(category), category.isIdOnly());
+		}
+	}
 }
