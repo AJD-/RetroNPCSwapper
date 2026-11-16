@@ -54,7 +54,7 @@ public class RetroConfigMigrationTest
 			.thenReturn("false");
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn(null);
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
 			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		// A user who had turned hill giants off must not find giants back on
@@ -71,7 +71,7 @@ public class RetroConfigMigrationTest
 		when(configManager.getConfiguration(GROUP, "newA")).thenReturn(null);
 		when(configManager.getConfiguration(GROUP, "newB")).thenReturn(null);
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager, "legacyThing", true, "newA", "newB");
+		RetroConfigMigrations.migrateLegacyToggle(configManager, "legacyThing", true, "newA", "newB");
 
 		verify(configManager).setConfiguration(GROUP, "newA", true);
 		verify(configManager).setConfiguration(GROUP, "newB", true);
@@ -87,7 +87,7 @@ public class RetroConfigMigrationTest
 			.thenReturn("false");
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("true");
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
 			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS, false);
@@ -103,7 +103,7 @@ public class RetroConfigMigrationTest
 		// The user has since set the new toggle themselves; "true" would be the saved default
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS)).thenReturn("false");
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
 			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		verify(configManager, never()).setConfiguration(anyString(), anyString(), any());
@@ -119,7 +119,7 @@ public class RetroConfigMigrationTest
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS))
 			.thenReturn(null);
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
 			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		// This runs on every start, so the ordinary case has to be inert - it must not write a
@@ -138,7 +138,7 @@ public class RetroConfigMigrationTest
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS)).thenReturn("true");
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANT_SPIDERS)).thenReturn("true");
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_SWAP_SPIDERS,
+		RetroConfigMigrations.migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_SWAP_SPIDERS,
 			true, RetroNpcConfig.SWAP_SMALL_SPIDERS, RetroNpcConfig.SWAP_GIANT_SPIDERS);
 
 		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS, false);
@@ -155,9 +155,9 @@ public class RetroConfigMigrationTest
 		when(configManager.getConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS))
 			.thenReturn(null, "false");
 
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
 			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
-		RetroNpcSwapperPlugin.migrateLegacyToggle(configManager,
+		RetroConfigMigrations.migrateLegacyToggle(configManager,
 			RetroNpcConfig.LEGACY_HILL_GIANTS, true, RetroNpcConfig.SWAP_GIANTS);
 
 		// The second start finds the legacy key gone and does nothing, so the value written by the
@@ -176,7 +176,7 @@ public class RetroConfigMigrationTest
 
 	private static void migrateGoblins(ConfigManager configManager)
 	{
-		RetroNpcSwapperPlugin.migrateLegacyToggleToChoice(configManager, RetroNpcConfig.LEGACY_SWAP_GOBLINS,
+		RetroConfigMigrations.migrateLegacyToggleToChoice(configManager, RetroNpcConfig.LEGACY_SWAP_GOBLINS,
 			RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name(), GoblinEra.RETRO_2005.name());
 	}
 
@@ -224,5 +224,23 @@ public class RetroConfigMigrationTest
 		migrateGoblins(configManager);
 		verify(configManager).getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
 		verifyNoMoreInteractions(configManager);
+	}
+	@Test
+	public void testRunCarriesEveryRetiredKeyAcross()
+	{
+		ConfigManager configManager = mock(ConfigManager.class);
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS)).thenReturn("false");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS)).thenReturn("false");
+		when(configManager.getConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_SPIDERS)).thenReturn("false");
+
+		RetroConfigMigrations.run(configManager);
+
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANTS, false);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name());
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_SMALL_SPIDERS, false);
+		verify(configManager).setConfiguration(GROUP, RetroNpcConfig.SWAP_GIANT_SPIDERS, false);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_HILL_GIANTS);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_GOBLINS);
+		verify(configManager).unsetConfiguration(GROUP, RetroNpcConfig.LEGACY_SWAP_SPIDERS);
 	}
 }

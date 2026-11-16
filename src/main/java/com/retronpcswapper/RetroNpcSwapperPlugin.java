@@ -293,7 +293,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		log.info("Retro NPC Swapper started");
 		active = true;
-		migrateLegacyToggles();
+		RetroConfigMigrations.run(configManager);
 		loadMappings();
 		loadAssetBundle();
 		renderCallbackManager.register(scenerySwapper);
@@ -309,82 +309,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		// A partner plugin may have started first; ask which NPCs it is drawing
 		eventBus.post(ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
-	}
-
-	/**
-	 * Carries saved values across from config keys that have been replaced.
-	 */
-	private void migrateLegacyToggles()
-	{
-		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_HILL_GIANTS,
-			true, RetroNpcConfig.SWAP_GIANTS);
-		migrateLegacyToggleToChoice(configManager, RetroNpcConfig.LEGACY_SWAP_GOBLINS,
-			RetroNpcConfig.GOBLIN_ERA, GoblinEra.MODERN.name(), GoblinEra.RETRO_2005.name());
-		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_SWAP_SPIDERS,
-			true, RetroNpcConfig.SWAP_SMALL_SPIDERS, RetroNpcConfig.SWAP_GIANT_SPIDERS);
-	}
-
-	/**
-	 * Hands a retired key's saved value to the toggles that replaced it.
-	 *
-	 * <p>Renaming a config key silently resets whatever the user had chosen, so the old key is read
-	 * once and its value handed on. Only ever writes a key that has no value of its own or still holds
-	 * {@code newKeyDefault}, which RuneLite saves before startUp, so a user who has already set the
-	 * new toggles is never overwritten - which also makes this safe to run
-	 * on every start. The old key is cleared afterward, so the migration happens once and leaves no
-	 * orphan behind.
-	 *
-	 * <p>Takes the manager rather than reading the field so it can be driven directly from a test.
-	 * There is no cache or client involved here, only ConfigManager calls, so that is the whole of
-	 * what the behavior needs to be checked against.
-	 */
-	static void migrateLegacyToggle(ConfigManager configManager, String legacyKey, boolean newKeyDefault,
-		String... newKeys)
-	{
-		String legacy = configManager.getConfiguration(RetroNpcConfig.GROUP, legacyKey);
-
-		if (legacy == null)
-		{
-			return;
-		}
-
-		for (String key : newKeys)
-		{
-			String current = configManager.getConfiguration(RetroNpcConfig.GROUP, key);
-			if (current == null || current.equals(Boolean.toString(newKeyDefault)))
-			{
-				configManager.setConfiguration(RetroNpcConfig.GROUP, key, Boolean.parseBoolean(legacy));
-			}
-		}
-
-		configManager.unsetConfiguration(RetroNpcConfig.GROUP, legacyKey);
-		log.debug("Migrated {}={} to {}", legacyKey, legacy, String.join(", ", newKeys));
-	}
-
-	/**
-	 * Turns a retired boolean toggle into an enum choice. Same contract as
-	 * {@link #migrateLegacyToggle}; values are enum names because that is how RuneLite stores them.
-	 * RuneLite saves defaults before startUp, so {@code onValue}, the default, means never chosen.
-	 */
-	static void migrateLegacyToggleToChoice(ConfigManager configManager, String legacyKey, String newKey,
-		String offValue, String onValue)
-	{
-		String legacy = configManager.getConfiguration(RetroNpcConfig.GROUP, legacyKey);
-
-		if (legacy == null)
-		{
-			return;
-		}
-
-		String current = configManager.getConfiguration(RetroNpcConfig.GROUP, newKey);
-		if (current == null || current.equals(onValue))
-		{
-			configManager.setConfiguration(RetroNpcConfig.GROUP, newKey,
-				Boolean.parseBoolean(legacy) ? onValue : offValue);
-		}
-
-		configManager.unsetConfiguration(RetroNpcConfig.GROUP, legacyKey);
-		log.debug("Migrated {}={} to {}", legacyKey, legacy, newKey);
 	}
 
 	@Override
