@@ -15,6 +15,12 @@ final class TestHeads
 	/** One upright triangle, 128 wide and 128 tall, centered on the origin and facing the camera. */
 	static RetroHead triangle()
 	{
+		return triangle(0);
+	}
+
+	/** The same triangle as a head keyed at {@code keyBase}. */
+	static RetroHead triangle(int keyBase)
+	{
 		RetroMesh mesh = new RetroMesh(1, 0,
 			new float[]{-64f, 64f, 0f}, new float[]{64f, 64f, -64f}, new float[]{0f, 0f, 0f},
 			new int[]{0}, new int[]{1}, new int[]{2},
@@ -31,6 +37,6 @@ final class TestHeads
 			ModelData.DEFAULT_AMBIENT, ModelData.DEFAULT_CONTRAST,
 			ModelData.DEFAULT_X, ModelData.DEFAULT_Y, ModelData.DEFAULT_Z,
 			lit1, lit2, lit3);
-		return new RetroHead(mesh, 0, RetroAssetBundle.empty(), lit1, lit2, lit3);
+		return new RetroHead(mesh, keyBase, RetroAssetBundle.empty(), lit1, lit2, lit3);
 	}
 }

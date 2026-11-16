@@ -24,18 +24,23 @@
  */
 package com.retronpcswapper;
 
+import com.retronpcswapper.compatibility.RendererChain;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
+import java.util.function.Supplier;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.plugins.Plugin;
 import org.junit.Test;
 
 /**
  * Which slot holders the draw callbacks decorator is allowed to wrap.
- *
- * <p>117 HD is matched by class name, so it is tested with names rather than stand-in classes.
+ * <p>
+ * 117 HD and Region Locker are matched by class name, so they are tested with names rather than
+ * stand-in classes.
  * A stub declared under 117 HD's real package would sit on the {@code run} task's classpath, and
  * the Hub plugin's parent-first classloader could resolve 117 HD's own renderer to it.
  */
@@ -47,6 +52,12 @@ public class RendererHostTest
 	private static Plugin gpuPlugin()
 	{
 		return mock(Plugin.class, withSettings().extraInterfaces(DrawCallbacks.class));
+	}
+
+	private static DrawCallbacks decorate(DrawCallbacks delegate)
+	{
+		return new RetroDrawCallbacks(delegate, (renderable, vanilla) -> null, (renderable, vanilla) -> null,
+			(scene, gameObject, model, levels) -> false);
 	}
 
 	@Test
@@ -94,5 +105,44 @@ public class RendererHostTest
 		// The plugin itself never holds the slot, and a lookalike package must not slip through
 		assertFalse(RetroNpcSwapperPlugin.isHdZoneRenderer("rs117.hd.HdPlugin"));
 		assertFalse(RetroNpcSwapperPlugin.isHdZoneRenderer("rs117.hd.renderer.zoned.Renderer"));
+	}
+
+	@Test
+	public void testTheRegionLockerRendererIsRecognised()
+	{
+		assertTrue(RetroNpcSwapperPlugin.isRegionLockerRenderer("com.gpu.RegionLockerGpuPlugin$GpuPluginWrapper"));
+	}
+
+	@Test
+	public void testOtherRegionLockerClassesAreDeclined()
+	{
+		// Only the injected subclass holds the slot, and com.gpu is too generic to match by prefix
+		assertFalse(RetroNpcSwapperPlugin.isRegionLockerRenderer("com.gpu.RegionLockerGpuPlugin"));
+		assertFalse(RetroNpcSwapperPlugin.isRegionLockerRenderer("com.gpu.runelite.GpuPlugin"));
+		assertFalse(RetroNpcSwapperPlugin.isRegionLockerRenderer("com.gpu.SomeOtherRenderer"));
+	}
+
+	@Test
+	public void testTheGpuPluginBeneathAKnownDecoratorIsWrapped()
+	{
+		assertTrue(RetroNpcSwapperPlugin.isSupportedHost(decorate((DrawCallbacks) gpu), gpu));
+		assertTrue(RetroNpcSwapperPlugin.isSupportedHost(decorate(decorate((DrawCallbacks) gpu)), gpu));
+	}
+
+	@Test
+	public void testAnUnknownRendererBeneathAKnownDecoratorIsDeclined()
+	{
+		assertFalse(RetroNpcSwapperPlugin.isSupportedHost(decorate(mock(DrawCallbacks.class)), gpu));
+	}
+
+	@Test
+	public void testAnUnknownDecoratorIsNotSeenThrough()
+	{
+		// Supplies the GPU plugin, but nothing says it forwards everything else to it
+		DrawCallbacks unknown = mock(DrawCallbacks.class, withSettings().extraInterfaces(Supplier.class));
+		when(((Supplier<?>) unknown).get()).thenReturn(gpu);
+
+		assertFalse(RetroNpcSwapperPlugin.isSupportedHost(unknown, gpu));
+		assertSame(unknown, RendererChain.base(unknown));
 	}
 }

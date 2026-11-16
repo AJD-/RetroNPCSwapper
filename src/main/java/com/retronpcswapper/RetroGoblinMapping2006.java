@@ -43,20 +43,13 @@ public final class RetroGoblinMapping2006
 	private static RetroNpcData goblin2006(int[] parts, int scale, short[] find, short[] replace,
 		int stance, int walk, int... heads)
 	{
-		RetroNpcData.Builder builder = RetroNpcData.builder()
-			.category(RetroNpcCategory.GOBLINS)
+		RetroNpcData.Builder builder = RetroNpcMapping.goblinBase()
 			.retroModelIds(parts)
 			.scaleXZ(scale)
 			.scaleY(scale)
 			.recolors(find, replace)
 			.idleAnimationId(stance)
-			.walkAnimationId(walk)
-			.attackAnimationId(AnimationID.GOBLIN_ATTACK_UNARMED)
-			.defendAnimationId(AnimationID.GOBLIN_BLOCK)
-			.deathAnimationId(AnimationID.GOBLIN_DEATH)
-			.modernAttackAnims(RetroNpcMapping.GOBLIN_MODERN_ATTACKS)
-			.modernDefendAnims(RetroNpcMapping.GOBLIN_MODERN_DEFENDS)
-			.modernDeathAnims(RetroNpcMapping.GOBLIN_MODERN_DEATHS);
+			.walkAnimationId(walk);
 		if (heads.length > 0)
 		{
 			builder.chathead(heads).chatheadKeyBase(RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE);
@@ -69,6 +62,11 @@ public final class RetroGoblinMapping2006
 	{
 		return goblin2006(parts, scale, find, replace,
 			AnimationID.GOBLIN_READY, AnimationID.GOBLIN_WALK, heads);
+	}
+
+	private static RetroNpcData stand(Kit kit, int... heads)
+	{
+		return stand(kit.parts, kit.scale, kit.find, kit.replace, heads);
 	}
 
 	// Spear-and-shield stance
@@ -93,26 +91,47 @@ public final class RetroGoblinMapping2006
 		return out;
 	}
 
-	private static final int[] P2274 = p(5536, 5539, 5544, 5547);
-	private static final int[] P2275 = p(5537, 5542, 5544, 5547, 5543, 2951);
-	private static final int[] P2276 = p(5536, 5539, 5545, 2956, 5541);
-	private static final int[] P2277 = p(5538, 5539, 5545, 5548, 5541, 2951);
-	private static final int[] P2278 = p(5536, 5542, 5544, 5547, 5541);
-	private static final int[] P2279 = p(5536, 5542, 5544, 2956, 5543);
-	private static final int[] P2280 = p(2951, 5539, 5545, 5547, 5543);
-	private static final int[] P2281 = p(5536, 5542, 5545, 5548);
+	/** The look of one goblin: parts, scale and recolour pairs. */
+	private static final class Kit
+	{
+		private final int[] parts;
+		private final int scale;
+		private final short[] find;
+		private final short[] replace;
+
+		private Kit(int[] parts, int scale, short[] find, short[] replace)
+		{
+			this.parts = parts;
+			this.scale = scale;
+			this.find = find;
+			this.replace = replace;
+		}
+	}
+
+	// The Lumbridge looks, which the Dwarf Cannon goblins repeat without heads
+	private static final Kit KIT_2274 = new Kit(p(5536, 5539, 5544, 5547), 125, null, null);
+	private static final Kit KIT_2275 = new Kit(p(5537, 5542, 5544, 5547, 5543, 2951), 125, c(14238), c(16685));
+	private static final Kit KIT_2276 = new Kit(p(5536, 5539, 5545, 2956, 5541), 120,
+		c(14238, 8086), c(14121, 6038));
+	private static final Kit KIT_2277 = new Kit(p(5538, 5539, 5545, 5548, 5541, 2951), 130, c(14238), c(17839));
+	private static final Kit KIT_2278 = new Kit(p(5536, 5542, 5544, 5547, 5541), 123, c(14238), c(14656));
+	private static final Kit KIT_2279 = new Kit(p(5536, 5542, 5544, 2956, 5543), 122,
+		c(14238, 8086), c(13093, 2213));
+	private static final Kit KIT_2280 = new Kit(p(2951, 5539, 5545, 5547, 5543), 128,
+		c(14238, 8086), c(11047, 6038));
+	private static final Kit KIT_2281 = new Kit(p(5536, 5542, 5545, 5548), 124, c(14238), c(12973));
 	private static final int[] ARMED = p(2951, 2953, 2955, 2956, 2957);
 	private static final int[] HELMET = p(2952, 2953, 2955, 2956);
 
 	// Lumbridge family
-	private static final RetroNpcData DEF_2274 = stand(P2274, 125, null, null, 15551);
-	private static final RetroNpcData DEF_2275 = stand(P2275, 125, c(14238), c(16685), 142, 15550);
-	private static final RetroNpcData DEF_2276 = stand(P2276, 120, c(14238, 8086), c(14121, 6038), 15551);
-	private static final RetroNpcData DEF_2277 = stand(P2277, 130, c(14238), c(17839), 142, 15552);
-	private static final RetroNpcData DEF_2278 = stand(P2278, 123, c(14238), c(14656), 15551);
-	private static final RetroNpcData DEF_2279 = stand(P2279, 122, c(14238, 8086), c(13093, 2213), 15551);
-	private static final RetroNpcData DEF_2280 = stand(P2280, 128, c(14238, 8086), c(11047, 6038), 142);
-	private static final RetroNpcData DEF_2281 = stand(P2281, 124, c(14238), c(12973), 15551);
+	private static final RetroNpcData DEF_2274 = stand(KIT_2274, 15551);
+	private static final RetroNpcData DEF_2275 = stand(KIT_2275, 142, 15550);
+	private static final RetroNpcData DEF_2276 = stand(KIT_2276, 15551);
+	private static final RetroNpcData DEF_2277 = stand(KIT_2277, 142, 15552);
+	private static final RetroNpcData DEF_2278 = stand(KIT_2278, 15551);
+	private static final RetroNpcData DEF_2279 = stand(KIT_2279, 15551);
+	private static final RetroNpcData DEF_2280 = stand(KIT_2280, 142);
+	private static final RetroNpcData DEF_2281 = stand(KIT_2281, 15551);
 
 	// Armed, strong, armored and guard goblins
 	private static final RetroNpcData DEF_101 = stand(ARMED, 128, null, null, 142);
@@ -125,14 +144,14 @@ public final class RetroGoblinMapping2006
 	private static final RetroNpcData DEF_4261 = stand(p(2951, 2953, 2955, 5547, 5537), 128, null, null);
 	private static final RetroNpcData DEF_4262 = stand(p(2951, 5540, 5546, 5554, 5547, 5537), 128,
 		c(14238, 7079, 2974), c(15004, 9889, -24411));
-	private static final RetroNpcData DEF_4263 = stand(P2274, 125, null, null);
-	private static final RetroNpcData DEF_4264 = stand(P2275, 125, c(14238), c(16685));
-	private static final RetroNpcData DEF_4265 = stand(P2276, 120, c(14238, 8086), c(14121, 6038));
-	private static final RetroNpcData DEF_4266 = stand(P2277, 130, c(14238), c(17839));
-	private static final RetroNpcData DEF_4267 = stand(P2278, 123, c(14238), c(14656));
-	private static final RetroNpcData DEF_4268 = stand(P2279, 122, c(14238, 8086), c(13093, 2213));
-	private static final RetroNpcData DEF_4269 = stand(P2280, 128, c(14238, 8086), c(11047, 6038));
-	private static final RetroNpcData DEF_4270 = stand(P2281, 124, c(14238), c(12973));
+	private static final RetroNpcData DEF_4263 = stand(KIT_2274);
+	private static final RetroNpcData DEF_4264 = stand(KIT_2275);
+	private static final RetroNpcData DEF_4265 = stand(KIT_2276);
+	private static final RetroNpcData DEF_4266 = stand(KIT_2277);
+	private static final RetroNpcData DEF_4267 = stand(KIT_2278);
+	private static final RetroNpcData DEF_4268 = stand(KIT_2279);
+	private static final RetroNpcData DEF_4269 = stand(KIT_2280);
+	private static final RetroNpcData DEF_4270 = stand(KIT_2281);
 	private static final RetroNpcData DEF_4271 = stand(p(2951, 5542, 5544, 5548, 5538), 124,
 		c(14238, 7079, 8086, 41), c(14753, 7690, 11152, 10283));
 	private static final RetroNpcData DEF_4272 = stand(p(2951, 5540, 5546, 5547, 5538, 5543, 5553), 124,

@@ -163,12 +163,14 @@ public class ChatheadOverlay extends Overlay
 			return null;
 		}
 
-		int emote = widget.getAnimationId();
-		if (emote != animation)
+		int asked = widget.getAnimationId();
+		if (asked != animation)
 		{
-			animation = emote;
+			animation = asked;
 			startCycle = client.getGameCycle();
 		}
+		// Timed and posed by the emote the head plays, which for a goblin is not the one asked for
+		int emote = head.emoteFor(asked);
 		int frame = EmoteClock.frameAt(lengths(emote), client.getGameCycle() - startCycle);
 
 		// The head is bigger than its widget, so it is drawn over the whole dialogue around the widget
