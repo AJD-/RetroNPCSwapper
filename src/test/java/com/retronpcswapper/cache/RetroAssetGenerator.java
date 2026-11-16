@@ -303,12 +303,14 @@ public class RetroAssetGenerator
 			new int[]{2701, 819, 836, 422, 423, 424}),
 		// Barbarian Village, Feb-2005 human kit: definitions 12 Barbarian, 17 Barbarian woman, 199
 		// Gunthor and 538 Peksa. The men carry battleaxe 550 (Gunthor shield 523 too), the women
-		// spear 540, so each brings its family: 393-399 axe, 428-431 spear, 1156 shield block
+		// spear 540, so each brings its family: 393-399 axe, 428-431 spear, 1156 shield block.
+		// 315 is the bare torso Atlas wears
 		new Spec("Barbarians", Source.RETRO, Source.RETRO,
 			new int[]{219, 252, 311, 173, 176, 274, 242, 185, 550,
 				390, 469, 332, 353, 443, 361, 376, 540, 414,
 				251, 299, 523,
-				244},
+				244,
+				315},
 			new int[]{808, 813, 819, 836, 1156,
 				393, 394, 395, 396, 397, 398, 399,
 				428, 429, 430, 431}),

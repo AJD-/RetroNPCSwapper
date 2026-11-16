@@ -341,7 +341,7 @@ public class RetroClipReachTest
 		{808, 214, 249, 310, 151, 176, 275, 181},
 		{819, 214, 249, 310, 151, 176, 275, 181},
 		// Barbarian Village, Feb-2005 kit: the barbarian and Gunthor on the axe family, Gunthor's
-		// shield block, the barbarian woman on the spear family, and Peksa
+		// shield block, the barbarian woman on the spear family, Peksa, and Atlas on bare torso 315
 		{808, 219, 252, 311, 173, 176, 274, 242, 185, 550},
 		{819, 219, 252, 311, 173, 176, 274, 242, 185, 550},
 		{836, 219, 252, 311, 173, 176, 274, 242, 185, 550},
@@ -356,6 +356,8 @@ public class RetroClipReachTest
 		{430, 390, 469, 332, 353, 443, 361, 376, 540, 414},
 		{808, 219, 252, 299, 173, 176, 274, 244, 185},
 		{819, 219, 252, 299, 173, 176, 274, 244, 185},
+		{808, 219, 252, 315, 173, 176, 274, 244, 185},
+		{819, 219, 252, 315, 173, 176, 274, 244, 185},
 		// The jail mugger, Nov-2005 definition 2697, in the angry stance only that build has
 		{NOV + 2701, NOV + 230, NOV + 243, NOV + 246, NOV + 310, NOV + 167, NOV + 176, NOV + 275, NOV + 185},
 		{NOV + 819, NOV + 230, NOV + 243, NOV + 246, NOV + 310, NOV + 167, NOV + 176, NOV + 275, NOV + 185},
@@ -714,7 +716,7 @@ public class RetroClipReachTest
 			RetroNpcMapping.GYPSY_ARIS, RetroNpcMapping.ROMEO, RetroNpcMapping.SIR_PRYSIN,
 			RetroNpcMapping.KING_ROALD, RetroNpcMapping.MUGGER, RetroNpcMapping.TRAMP,
 			RetroNpcMapping.BARBARIAN, RetroNpcMapping.BARBARIAN_WOMAN, RetroNpcMapping.GUNTHOR,
-			RetroNpcMapping.PEKSA};
+			RetroNpcMapping.PEKSA, RetroNpcMapping.ATLAS};
 
 		assertEquals(NOV, RetroNpcMapping.JAIL_MUGGER.getAssetKeyBase());
 		assertResolves(bundle, RetroNpcMapping.JAIL_MUGGER, true);

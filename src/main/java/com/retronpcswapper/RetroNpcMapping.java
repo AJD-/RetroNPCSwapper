@@ -90,8 +90,8 @@ public class RetroNpcMapping
 		NpcID.FISHING_BOAT_SALTFISH, NpcID.FISHING_BOAT_MEMBERFISH, NpcID.FISHING_BOAT_RAREFISH,
 		NpcID.FISHING_BOAT_KARAMBWANFISH, NpcID.FISHING_BOAT_PISCARILIUSFISH,
 		NpcID.FISHING_BOAT_MONKFISH,
-		// Aitan, the barbarian archer
-		NpcID.FAI_BARBARIAN_13
+		// Barbarian archers
+		NpcID.FAI_BARBARIAN_14, NpcID.AKD_BARBARIAN_3
 	);
 
 	/**
@@ -1377,6 +1377,12 @@ public class RetroNpcMapping
 		new int[]{219, 252, 299, 173, 176, 274, 244, 185}, AnimationID.HUMAN_READY,
 		new short[]{25238, 61, 6798, 8741, -22464},
 		new short[]{10508, 8741, 6854, 10508, 4550}).chathead(57, 84).build();
+
+	// No 2005 definition: Peksa's kit on bare torso 315, hair in live Atlas's white
+	public static final RetroNpcData ATLAS = barbarian(
+		new int[]{219, 252, 315, 173, 176, 274, 244, 185}, AnimationID.HUMAN_READY,
+		new short[]{25238, 61, 6798, 8741, -22464},
+		new short[]{10508, 8741, 7289, 10508, 4550}).chathead(57, 84).build();
 
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
@@ -2679,18 +2685,18 @@ public class RetroNpcMapping
 		registerMapping(TRAMP, NpcID.TRAMP, NpcID.TRAMPPG);
 
 		// Barbarian Village. 2005 had one male and one female barbarian, so the crowd is uniform.
-		// The same ids also stand at Barbarian Outpost. Hunding and Litara have no 2005 definition
-		// of their own
 		registerMapping(BARBARIAN, NpcID.FAI_BARBARIAN_1, NpcID.FAI_BARBARIAN_2, NpcID.FAI_BARBARIAN_3,
 			NpcID.FAI_BARBARIAN_4, NpcID.FAI_BARBARIAN_5, NpcID.FAI_BARBARIAN_6, NpcID.FAI_BARBARIAN_7,
 			NpcID.FAI_BARBARIAN_8, NpcID.FAI_BARBARIAN_9, NpcID.FAI_BARBARIAN_10, NpcID.FAI_BARBARIAN_11,
-			NpcID.FAI_BARBARIAN_12, NpcID.FAI_BARBARIAN_14, NpcID.BARBARIAN);
-		// BARBARIANWOMAN_VARROCK is the Blue Moon Inn's
+			NpcID.FAI_BARBARIAN_12, NpcID.FAI_BARBARIAN_13, NpcID.BARBARIAN, NpcID.AKD_BARBARIAN_1,
+			NpcID.AKD_BARBARIAN_2, NpcID.AKD_BARBARIAN_WARLORD);
+		// BARBARIANWOMAN_VARROCK is in Blue Moon Inn
 		registerMapping(BARBARIAN_WOMAN, NpcID.FAI_BARBARIAN_FEMALE_1, NpcID.FAI_BARBARIAN_FEMALE_2,
 			NpcID.FAI_BARBARIAN_FEMALE_3, NpcID.FAI_BARBARIAN_FEMALE_4, NpcID.BARBARIANWOMAN_VARROCK,
-			NpcID.SOS_BARB_VISIBLE);
+			NpcID.SOS_BARB_VISIBLE, NpcID.AKD_BARBARIAN_4, NpcID.AKD_BARBARIAN_5);
 		registerMapping(GUNTHOR, NpcID.GUNTHOR_THE_BRAVE);
 		registerMapping(PEKSA, NpcID.PEKSA);
+		registerMapping(ATLAS, NpcID.BIM_ATLAS);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.

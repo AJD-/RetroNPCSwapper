@@ -976,12 +976,13 @@ public class RetroNpcCategoryTest
 			{RetroNpcMapping.BARBARIAN, new int[]{NpcID.FAI_BARBARIAN_1, NpcID.FAI_BARBARIAN_2,
 				NpcID.FAI_BARBARIAN_3, NpcID.FAI_BARBARIAN_4, NpcID.FAI_BARBARIAN_5, NpcID.FAI_BARBARIAN_6,
 				NpcID.FAI_BARBARIAN_7, NpcID.FAI_BARBARIAN_8, NpcID.FAI_BARBARIAN_9, NpcID.FAI_BARBARIAN_10,
-				NpcID.FAI_BARBARIAN_11, NpcID.FAI_BARBARIAN_12, NpcID.FAI_BARBARIAN_14, NpcID.BARBARIAN}},
+				NpcID.FAI_BARBARIAN_11, NpcID.FAI_BARBARIAN_12, NpcID.FAI_BARBARIAN_13, NpcID.BARBARIAN}},
 			{RetroNpcMapping.BARBARIAN_WOMAN, new int[]{NpcID.FAI_BARBARIAN_FEMALE_1,
 				NpcID.FAI_BARBARIAN_FEMALE_2, NpcID.FAI_BARBARIAN_FEMALE_3, NpcID.FAI_BARBARIAN_FEMALE_4,
 				NpcID.BARBARIANWOMAN_VARROCK, NpcID.SOS_BARB_VISIBLE}},
 			{RetroNpcMapping.GUNTHOR, new int[]{NpcID.GUNTHOR_THE_BRAVE}},
-			{RetroNpcMapping.PEKSA, new int[]{NpcID.PEKSA}}};
+			{RetroNpcMapping.PEKSA, new int[]{NpcID.PEKSA}},
+			{RetroNpcMapping.ATLAS, new int[]{NpcID.BIM_ATLAS}}};
 		for (Object[] row : registered)
 		{
 			RetroNpcData data = (RetroNpcData) row[0];
@@ -1003,12 +1004,24 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(0, "Peksa"));
 
 		// Aitan, the archer, keeps his bow
-		assertNull(RetroNpcMapping.get(NpcID.FAI_BARBARIAN_13, "Barbarian"));
-		for (int id : new int[]{NpcID.BARBARIAN_GUARD, NpcID.SOS_BARB, NpcID.BIM_ATLAS, NpcID.BIM_CHECKAL,
-			NpcID.CANOEING_SIGURD, NpcID.FAVOUR_TASSIE_SLIPCAST, NpcID.BRUT_BARBARIAN1})
+		assertNull(RetroNpcMapping.get(NpcID.FAI_BARBARIAN_14, "Barbarian"));
+		for (int id : new int[]{NpcID.BARBARIAN_GUARD, NpcID.SOS_BARB, NpcID.BIM_CUTSCENE_ATLAS,
+			NpcID.BIM_CHECKAL, NpcID.CANOEING_SIGURD, NpcID.FAVOUR_TASSIE_SLIPCAST, NpcID.BRUT_BARBARIAN1})
 		{
 			assertNull("npc " + id + " must not be swapped", RetroNpcMapping.get(id, null));
 		}
+
+		// Atlas is Peksa with a bare torso and white hair
+		RetroNpcData peksa = RetroNpcMapping.PEKSA;
+		RetroNpcData atlas = RetroNpcMapping.ATLAS;
+		int[] atlasParts = peksa.getInjectedModelIds();
+		atlasParts[2] = 315;
+		assertArrayEquals(atlasParts, atlas.getInjectedModelIds());
+		short[] atlasColors = peksa.getReplacementColors();
+		atlasColors[2] = 7289;
+		assertArrayEquals(peksa.getOriginalColors(), atlas.getOriginalColors());
+		assertArrayEquals(atlasColors, atlas.getReplacementColors());
+		assertEquals(peksa.getIdleAnimationId(), atlas.getIdleAnimationId());
 
 		// Each fights with what it holds: battleaxe, spear, battleaxe and shield
 		RetroNpcData man = RetroNpcMapping.BARBARIAN;
@@ -1029,7 +1042,7 @@ public class RetroNpcCategoryTest
 		assertEquals(AnimationID.HUMAN_AXE_HACK, gunthor.getAttackAnimationFor(AnimationID.BARROW_DHAROK_CRUSH));
 		assertEquals(AnimationID.HUMAN_SHIELD_DEFENCE, gunthor.getDefendAnimationId());
 
-		for (RetroNpcData data : new RetroNpcData[]{man, woman, gunthor, RetroNpcMapping.PEKSA})
+		for (RetroNpcData data : new RetroNpcData[]{man, woman, gunthor, peksa, atlas})
 		{
 			assertEquals(AnimationID.HUMAN_DEATH, data.getDeathAnimationId());
 		}
@@ -3595,6 +3608,7 @@ public class RetroNpcCategoryTest
 		assertChathead(NpcID.FAI_BARBARIAN_FEMALE_1, null, 0, 113, 101);
 		assertChathead(NpcID.GUNTHOR_THE_BRAVE, null, 0, 57, 83, 75);
 		assertChathead(NpcID.PEKSA, null, 0, 57, 84);
+		assertChathead(NpcID.BIM_ATLAS, null, 0, 57, 84);
 
 		// Ghost rows by name, from the generated JSON: the plain Ghost takes def 491's head, the
 		// Port Phasmatys townsfolk their own

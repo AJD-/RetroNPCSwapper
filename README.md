@@ -36,7 +36,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Kalphites** — KQ, Guardians, Soldiers, Workers, Larvae
 - **Knights of the Round Table** — King Arthur and his knights, Merlin, renegade knights, etc
 - **Varrock NPCs** — Aris, Romeo, Sir Prysin, King Roald, muggers, and tramps
-- **Barbarians** — Barbarian Village's barbarians, Gunthor the brave, Hunding, Peksa, Litara and the Blue Moon Inn barbarian
+- **Barbarians** — Barbarian Village's barbarians, Gunthor the brave, Hunding, Peksa, Litara, the Blue Moon Inn barbarian and Barbarian Outpost's Atlas
 - **Chatheads** — Swaps chatheads for NPCs with dialogue. Follows each NPC's own toggle.
 
 Under **Scenery**:

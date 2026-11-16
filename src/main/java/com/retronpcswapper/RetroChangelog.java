@@ -40,7 +40,9 @@ final class RetroChangelog
 	private static final List<Release> RELEASES = List.of(
 			new Release("2.8.0",
 					"Added retro fishing spot animations, Custom Servants compatibility, and a variety of bugfixes"),
-			new Release("2.8.1", "Added 2DScape compatibility, Region Locker GPU Plugin compatibility")
+			new Release("2.8.1", "Added 2DScape compatibility, Region Locker GPU Plugin compatibility"),
+			new Release("2.9.0", "Added era dropdown for Goblins;Added Barbarians;Split Spider Toggles;" +
+					"Bugfix for extended draw regions via GPU Plugin")
 	);
 
 	private final Release latest;
