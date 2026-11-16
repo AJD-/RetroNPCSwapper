@@ -1501,21 +1501,27 @@ public class RetroNpcMapping
 	 */
 	private static RetroNpcData goblin(int[] models, short[] find, short[] replace, int... chathead)
 	{
-		return RetroNpcData.builder()
-			.category(RetroNpcCategory.GOBLINS)
+		return goblinBase()
 			.retroModelIds(models)
 			.chathead(chathead)
 			.chatheadKeyBase(RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE)
 			.idleAnimationId(AnimationID.GOBLIN_READY)
 			.walkAnimationId(AnimationID.GOBLIN_WALK)
+			.recolors(find, replace)
+			.build();
+	}
+
+	/** What a goblin row has in every era: the category and the combat animations. */
+	static RetroNpcData.Builder goblinBase()
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.GOBLINS)
 			.attackAnimationId(AnimationID.GOBLIN_ATTACK_UNARMED)
 			.defendAnimationId(AnimationID.GOBLIN_BLOCK)
 			.deathAnimationId(AnimationID.GOBLIN_DEATH)
-			.recolors(find, replace)
 			.modernAttackAnims(GOBLIN_MODERN_ATTACKS)
 			.modernDefendAnims(GOBLIN_MODERN_DEFENDS)
-			.modernDeathAnims(GOBLIN_MODERN_DEATHS)
-			.build();
+			.modernDeathAnims(GOBLIN_MODERN_DEATHS);
 	}
 
 	// The six 2005 goblin definitions
