@@ -804,7 +804,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName(), config.goblinEra());
+		RetroNpcData data = mappingFor(npc.getId(), npc.getName());
 		if (data == null)
 		{
 			return;
@@ -921,7 +921,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName(), config.goblinEra());
+		RetroNpcData data = mappingFor(npc.getId(), npc.getName());
 
 		// Animation overrides are gated on substitution being live. Without the wrapper the
 		// model stays vanilla, and a modern-rigged model playing a 2005 sequence - which is
@@ -953,6 +953,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 		applyRetroSwap(npc, data);
 	}
 
+	/** The retro row for an NPC under the goblin era the config asks for. */
+	private RetroNpcData mappingFor(int npcId, String name)
+	{
+		return RetroNpcMapping.get(npcId, name, config.goblinEra());
+	}
+
 	/**
 	 * Whether an NPC with this mapping is drawn retro right now: the wrapper attached, no safety
 	 * setting stepping in, and its category toggled on.
@@ -979,8 +985,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		NPCComposition composition = client.getNpcDefinition(npcId);
-		RetroNpcData data = RetroNpcMapping.get(npcId, composition == null ? null : composition.getName(),
-			config.goblinEra());
+		RetroNpcData data = mappingFor(npcId, composition == null ? null : composition.getName());
 		if (!isSwapLive(data) || !data.hasChathead())
 		{
 			return null;
