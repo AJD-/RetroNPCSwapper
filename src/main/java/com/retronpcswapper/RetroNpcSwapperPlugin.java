@@ -959,7 +959,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private boolean isSwapLive(RetroNpcData data)
 	{
-		return wrapper != null && !isSafetyDisabled() && data != null && isCategoryEnabled(data.getCategory());
+		return wrapper != null && !isSafetyDisabled() && data != null && isCategoryEnabled(data.getCategory(), config);
 	}
 
 	/**
@@ -1047,7 +1047,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	/**
 	 * Checks if a specific NPC category toggle is enabled in config.
 	 */
-	private boolean isCategoryEnabled(RetroNpcCategory category)
+	static boolean isCategoryEnabled(RetroNpcCategory category, RetroNpcConfig config)
 	{
 		if (category == null)
 		{
@@ -1059,7 +1059,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case CHICKENS:
 				return config.swapChickens();
 			case COWS:
-				return config.swapCows() && injectionEnabled();
+				return config.swapCows() && config.useInjectionPipeline();
 			case HELLHOUNDS:
 				// Mesh 2997 and sequences 157-161 both survive intact, so the cache path draws it
 				return config.swapHellhounds();
@@ -1068,7 +1068,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return config.swapGiantRats();
 			case SCORPIONS:
 				// Injectionis required for large scorpions
-				return config.swapScorpions() && injectionEnabled();
+				return config.swapScorpions() && config.useInjectionPipeline();
 			case SMALL_SCORPIONS:
 				// Mesh 2968 and sequences 269-273 survive intact, so the cache path draws it
 				return config.swapScorpions();
@@ -1086,7 +1086,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 				return config.swapFishingSpots();
 			case KALPHITES:
 				// Meshes 3849-3854 are gone from the live cache, so only the bundle can draw them
-				return config.swapKalphites() && injectionEnabled();
+				return config.swapKalphites() && config.useInjectionPipeline();
 			case GOBLINS:
 				return config.goblinEra() != GoblinEra.MODERN;
 			case SKELETONS:
@@ -1094,7 +1094,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case SKELETON_MAGES:
 				// Shares the Skeletons toggle. The mage is human kit, half of whose parts are gone from
 				// the live cache, so like the guards it can only be drawn from the bundle
-				return config.swapSkeletons() && injectionEnabled();
+				return config.swapSkeletons() && config.useInjectionPipeline();
 			case ZOMBIES:
 				return config.swapZombies();
 			case HILL_GIANTS:
@@ -1106,23 +1106,23 @@ public class RetroNpcSwapperPlugin extends Plugin
 			case MOSS_GIANTS:
 				// Their 2005 heads are gone from the live cache, so the cache-backed path would load
 				// unrelated geometry. Only the bundle can supply them.
-				return config.swapGiants() && injectionEnabled();
+				return config.swapGiants() && config.useInjectionPipeline();
 			case CYCLOPS:
-				return config.swapCyclops() && injectionEnabled();
+				return config.swapCyclops() && config.useInjectionPipeline();
 			case GUARDS:
 				// Three of the nine kit parts are gone from the live cache, and the six that remain
 				// were re-bound to a different rig, so both the geometry and the animation have to
 				// come from the bundle
-				return config.swapGuards() && injectionEnabled();
+				return config.swapGuards() && config.useInjectionPipeline();
 			case ELVES:
 				// The same 2005 human kit as the guards: seven of the seventeen parts were edited in
 				// live and every one was re-bound to the live rig, so only the bundle can draw them
-				return config.swapElves() && injectionEnabled();
+				return config.swapElves() && config.useInjectionPipeline();
 			case ROUND_TABLE:
 				// 2005 human kit again, with several parts and heads overwritten in live
-				return config.swapRoundTable() && injectionEnabled();
+				return config.swapRoundTable() && config.useInjectionPipeline();
 			case VARROCK:
-				return config.swapVarrockNpcs() && injectionEnabled();
+				return config.swapVarrockNpcs() && config.useInjectionPipeline();
 			case GHOSTS:
 				return config.swapGhosts();
 			case ADULT_DRAGONS:
@@ -1130,16 +1130,16 @@ public class RetroNpcSwapperPlugin extends Plugin
 				// The adult mesh has no usable live counterpart at all - the ids resolve, but to
 				// unrelated geometry. The baby mesh survives, but both had their frames re-authored,
 				// so both need the injected path to be animated from the 2005 data
-				return config.swapDragons() && injectionEnabled();
+				return config.swapDragons() && config.useInjectionPipeline();
 			case LESSER_DEMONS:
 			case GREATER_DEMONS:
 			case BLACK_DEMONS:
-				return config.swapDemons() && injectionEnabled();
+				return config.swapDemons() && config.useInjectionPipeline();
 			case IMPS:
 				// The imp mesh survives, so this is not about geometry: the frames behind its
 				// sequence ids were re-authored for the modern rig, and applying the 2005 ones
 				// means skinning the model ourselves
-				return config.swapImps() && injectionEnabled();
+				return config.swapImps() && config.useInjectionPipeline();
 			default:
 				return false;
 		}
