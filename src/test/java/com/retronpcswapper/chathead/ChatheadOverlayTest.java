@@ -2,12 +2,16 @@ package com.retronpcswapper.chathead;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import com.retronpcswapper.inject.RetroAssetBundle;
 import net.runelite.api.Animation;
 import net.runelite.api.Client;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import org.junit.Before;
@@ -39,6 +43,7 @@ public class ChatheadOverlayTest
 	private final CountingRenderer renderer = new CountingRenderer();
 	private final Graphics2D graphics = mock(Graphics2D.class);
 	private Widget widget;
+	private Client client;
 	private ChatheadOverlay overlay;
 
 	@Before
@@ -54,7 +59,7 @@ public class ChatheadOverlayTest
 		Animation emote = mock(Animation.class);
 		when(emote.getFrameLengths()).thenReturn(new int[]{5, 5});
 
-		Client client = mock(Client.class);
+		client = mock(Client.class);
 		when(client.getWidget(InterfaceID.ChatLeft.HEAD)).thenReturn(widget);
 		when(client.getGameCycle()).thenAnswer(call -> cycle[0]);
 		when(client.loadAnimation(EMOTE)).thenReturn(emote);
@@ -101,5 +106,17 @@ public class ChatheadOverlayTest
 		overlay.render(graphics);
 
 		assertEquals(0, renderer.renders);
+	}
+	@Test
+	public void testAGoblinHeadIsTimedByTheEmoteItPlays()
+	{
+		// The dialogue asks a goblin for a human emote; its own is a different length
+		when(widget.getAnimationId()).thenReturn(AnimationID.CHATHAP3);
+		overlay.show(TestHeads.triangle(RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE), 0);
+
+		overlay.render(graphics);
+
+		verify(client).loadAnimation(AnimationID.CHATGOBLIN3);
+		verify(client, never()).loadAnimation(AnimationID.CHATHAP3);
 	}
 }
