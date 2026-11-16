@@ -67,6 +67,7 @@ public enum RetroNpcCategory
 	KALPHITES(RetroNpcConfig::swapKalphites, Geometry.BUNDLE_ONLY),
 	ROUND_TABLE(RetroNpcConfig::swapRoundTable, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
 	VARROCK(RetroNpcConfig::swapVarrockNpcs, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
+	BARBARIANS(RetroNpcConfig::swapBarbarians, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
 	FISHING_SPOTS(RetroNpcConfig::swapFishingSpots, Geometry.CACHE);
 
 	/** Where a category's 2005 geometry and clips come from. */
