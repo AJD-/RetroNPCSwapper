@@ -1049,6 +1049,117 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testSheepCategory()
+	{
+		int[] shorn = {3783, 3786, 3787};
+		int[] woolly = {3786, 3784, 3787};
+		short blue = (short) 43069;
+
+		// archetype, kit, find, replace, scale, live ids
+		Object[][] rows = {
+			{RetroNpcMapping.SHEEP_SHORN_BLACK, shorn, new short[]{10297}, new short[]{20}, 128,
+				new int[]{1178, 1301, 1304, 5845}},
+			{RetroNpcMapping.SHEEP_WOOLLY_BLACK, woolly, new short[]{10297}, new short[]{20}, 128,
+				new int[]{2693, 2696, 2699, 5843}},
+			{RetroNpcMapping.SHEEP_SHORN_GREY, shorn, new short[]{10297}, new short[]{10275}, 128,
+				new int[]{1299, 1302, 1308}},
+			{RetroNpcMapping.SHEEP_WOOLLY_GREY, woolly, new short[]{10297}, new short[]{10275}, 128,
+				new int[]{2694, 2697, 2786}},
+			{RetroNpcMapping.SHEEP_SHORN, shorn, new short[0], new short[0], 128,
+				new int[]{1300, 1303, 1309, 5846, 2691, 2692}},
+			{RetroNpcMapping.SHEEP_WOOLLY, woolly, new short[0], new short[0], 128,
+				new int[]{2695, 2698, 2787, 5844, 2788, 2789}},
+			{RetroNpcMapping.SHEEP_CASTLE_WARS, woolly, new short[]{10297}, new short[]{20}, 108,
+				new int[]{5726}},
+			{RetroNpcMapping.GOLDEN_SHEEP_SHORN, shorn, new short[]{7283, 10297}, new short[]{8666, 10698}, 128,
+				new int[]{804, 805}},
+			{RetroNpcMapping.GOLDEN_SHEEP_WOOLLY, woolly, new short[]{10351, 10297}, new short[]{8666, 10698}, 128,
+				new int[]{806, 807}},
+			{RetroNpcMapping.PLAGUE_SHEEP_RED, woolly, new short[]{10297, 10351}, new short[]{194, 11489}, 128,
+				new int[]{3986}},
+			{RetroNpcMapping.PLAGUE_SHEEP_GREEN, woolly, new short[]{10297, 10351}, new short[]{21704, 11489}, 128,
+				new int[]{3987}},
+			{RetroNpcMapping.PLAGUE_SHEEP_BLUE, woolly, new short[]{10297, 10351}, new short[]{blue, 11489}, 128,
+				new int[]{3988}},
+			{RetroNpcMapping.PLAGUE_SHEEP_YELLOW, woolly, new short[]{10297, 10351}, new short[]{11179, 11489}, 128,
+				new int[]{3989}},
+			{RetroNpcMapping.DYED_SHEEP_RED, woolly, new short[]{10297, 10351}, new short[]{194, 2512}, 128,
+				new int[]{5305}},
+			{RetroNpcMapping.DYED_SHEEP_GREEN, woolly, new short[]{10351, 10297}, new short[]{19656, 21704}, 128,
+				new int[]{5306}},
+			{RetroNpcMapping.DYED_SHEEP_BLUE, woolly, new short[]{10351, 10297}, new short[]{29881, blue}, 128,
+				new int[]{5307}},
+			{RetroNpcMapping.DYED_SHEEP_YELLOW, woolly, new short[]{10351, 10297}, new short[]{10809, 11179}, 128,
+				new int[]{5308}}};
+
+		int registered = 0;
+		for (Object[] row : rows)
+		{
+			RetroNpcData data = (RetroNpcData) row[0];
+			assertEquals(RetroNpcCategory.SHEEP, data.getCategory());
+			assertArrayEquals((int[]) row[1], data.getInjectedModelIds());
+			assertArrayEquals((short[]) row[2], data.getOriginalColors());
+			assertArrayEquals((short[]) row[3], data.getReplacementColors());
+			assertEquals((int) row[4], data.getScaleXZ());
+			assertEquals((int) row[4], data.getScaleY());
+
+			assertEquals(252, data.getIdleAnimationId());
+			assertEquals(249, data.getWalkAnimationId());
+			assertEquals(250, data.getAttackAnimationFor(AnimationID.SHEEP_UPDATE_ATTACK));
+			assertEquals(250, data.getAttackAnimationFor(AnimationID.GOAT_UPDATE_ATTACK));
+			assertEquals(251, data.getDefendAnimationId());
+			assertTrue(data.isDefendAnimation(AnimationID.SHEEP_UPDATE_DEFEND));
+			assertTrue(data.isDefendAnimation(AnimationID.GOAT_UPDATE_DEFEND));
+			assertTrue(data.isDefendAnimation(AnimationID.SHEEP_UPDATE_SHAGGY_DEFEND));
+			assertEquals(253, data.getDeathAnimationId());
+			assertTrue(data.isDeathAnimation(AnimationID.SHEEP_UPDATE_DEATH));
+			assertTrue(data.isDeathAnimation(AnimationID.GOAT_UPDATE_DEATH));
+
+			// The 2005 clips themselves are left to play
+			for (int retro = 249; retro <= 253; retro++)
+			{
+				assertFalse(data.isAttackAnimation(retro));
+				assertFalse(data.isDefendAnimation(retro));
+				assertFalse(data.isDeathAnimation(retro));
+				assertFalse(data.isMiscAnimation(retro));
+			}
+
+			for (int id : (int[]) row[5])
+			{
+				assertSame("npc " + id, data, RetroNpcMapping.get(id, "Sheep"));
+				registered++;
+			}
+		}
+		assertEquals(39, registered);
+
+		// The Thing wears its Dec-2006 model, def 3579
+		RetroNpcData thing = RetroNpcMapping.THE_THING;
+		assertSame(thing, RetroNpcMapping.get(731, "Sheep"));
+		assertEquals(RetroNpcCategory.SHEEP, thing.getCategory());
+		assertArrayEquals(new int[]{14084, 14085}, thing.getInjectedModelIds());
+		assertFalse(thing.hasRecolors());
+		assertEquals(128, thing.getScaleXZ());
+		assertEquals(AnimationID.THE_THING_READY, thing.getIdleAnimationId());
+		assertEquals(AnimationID.THE_THING_WALK, thing.getWalkAnimationId());
+		assertFalse(thing.isMiscAnimation(AnimationID.THE_THING_SHEAR));
+
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SHEEP));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SHEEP));
+
+		// By registered id only
+		assertNull(RetroNpcMapping.get(0, "Sheep"));
+		assertNull(RetroNpcMapping.get(0, "Golden sheep"));
+
+		// Rams already wear their 2006 model; lambs and the monkey's sheep have no 2005 counterpart
+		for (int id : new int[]{1261, 1262, 1263, 1264, 1265, 1176, 1177, 10594})
+		{
+			assertNull("npc " + id + " must not be swapped", RetroNpcMapping.get(id, null));
+		}
+		assertNull(RetroNpcMapping.get(1261, "Ram"));
+		assertNull(RetroNpcMapping.get(10594, "Sheep"));
+	}
+
+	@Test
 	public void testPrifddinasCitizensWearTheirClanColors()
 	{
 		short[] find = {9137, 9152, 8792, 16701, 8652, 7595, 8741};
@@ -2798,6 +2909,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapRoundTable must default to true", config.swapRoundTable());
 		assertTrue("swapVarrockNpcs must default to true", config.swapVarrockNpcs());
 		assertTrue("swapBarbarians must default to true", config.swapBarbarians());
+		assertTrue("swapSheep must default to true", config.swapSheep());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());

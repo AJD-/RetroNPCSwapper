@@ -249,6 +249,53 @@ public class RetroCacheTest
 		}
 	}
 
+	private static final Object[][] SHEEP_FEB_DEFINITIONS = {
+		{42, RetroNpcMapping.SHEEP_SHORN}, {43, RetroNpcMapping.SHEEP_WOOLLY},
+		{1529, RetroNpcMapping.SHEEP_CASTLE_WARS},
+		{1271, RetroNpcMapping.GOLDEN_SHEEP_SHORN}, {1272, RetroNpcMapping.GOLDEN_SHEEP_WOOLLY},
+		{292, RetroNpcMapping.PLAGUE_SHEEP_RED}, {293, RetroNpcMapping.PLAGUE_SHEEP_GREEN},
+		{294, RetroNpcMapping.PLAGUE_SHEEP_BLUE}, {295, RetroNpcMapping.PLAGUE_SHEEP_YELLOW}};
+
+	private static final Object[][] SHEEP_NOV_DEFINITIONS = {
+		{1762, RetroNpcMapping.SHEEP_SHORN_BLACK}, {1763, RetroNpcMapping.SHEEP_WOOLLY_BLACK},
+		{1764, RetroNpcMapping.SHEEP_SHORN_GREY}, {1765, RetroNpcMapping.SHEEP_WOOLLY_GREY},
+		{2377, RetroNpcMapping.DYED_SHEEP_RED}, {2378, RetroNpcMapping.DYED_SHEEP_GREEN},
+		{2379, RetroNpcMapping.DYED_SHEEP_BLUE}, {2380, RetroNpcMapping.DYED_SHEEP_YELLOW}};
+
+	/** Every sheep is its own 2005 definition; the face shades and the dyed sheep are Nov's. */
+	@Test
+	public void testSheepArchetypesAreTheir2005Definitions() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
+		assumeTrue("Nov-2005 cache not present at " + NOV_CACHE_DIR, NOV_CACHE_DIR.exists());
+
+		Map<Integer, RetroNpcDefinition> feb = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
+		for (Object[] row : SHEEP_FEB_DEFINITIONS)
+		{
+			assertSheepDefinition(feb.get((int) row[0]), (RetroNpcData) row[1]);
+		}
+
+		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
+		for (Object[] row : SHEEP_NOV_DEFINITIONS)
+		{
+			assertSheepDefinition(nov.get((int) row[0]), (RetroNpcData) row[1]);
+		}
+	}
+
+	private static void assertSheepDefinition(RetroNpcDefinition def, RetroNpcData data)
+	{
+		String label = def.getId() + " " + def.getName();
+		short[] find = def.getOriginalColors() == null ? new short[0] : def.getOriginalColors();
+		short[] replace = def.getReplacementColors() == null ? new short[0] : def.getReplacementColors();
+		assertArrayEquals(label, def.getModels(), data.getRetroModelIds());
+		assertArrayEquals(label, find, data.getOriginalColors());
+		assertArrayEquals(label, replace, data.getReplacementColors());
+		assertEquals(label, def.getStanceAnimation(), data.getIdleAnimationId());
+		assertEquals(label, def.getWalkAnimation(), data.getWalkAnimationId());
+		assertEquals(label, def.getScaleXZ(), data.getScaleXZ());
+		assertEquals(label, def.getScaleY(), data.getScaleY());
+	}
+
 	private static void assertDefinition(RetroNpcDefinition def, RetroNpcData data)
 	{
 		String label = def.getId() + " " + def.getName();

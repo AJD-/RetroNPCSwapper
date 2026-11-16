@@ -184,6 +184,14 @@ public class RetroAssetGenerator
 		// animated faces are bound to their neighbours; the other 10 are a detached 8-face cluster on
 		// top of the head, joined to nothing that moves, so they stay static and cannot tear.
 		new Spec("Undead cows", Source.RETRO, Source.RETRO, new int[]{5237}, new int[]{58, 59, 60, 61, 62}),
+		// Sheep are the cow case: 3783, 3784 and 3787 survive in live with renumbered groups, and
+		// head 3786 was redrawn
+		new Spec("Sheep", Source.RETRO, Source.RETRO, new int[]{3783, 3784, 3786, 3787},
+			new int[]{249, 250, 251, 252, 253}),
+		// The Thing's Dec-2006 kit; live replaced both meshes at the same ids. Clips stay LIVE:
+		// their frames are the 2006 ones, and live framemap 347 only adds groups the kit lacks
+		new Spec("The Thing", Source.RETRO_2006, Source.LIVE, new int[]{14084, 14085},
+			new int[]{AnimationID.THE_THING_WALK, AnimationID.THE_THING_READY, AnimationID.THE_THING_SHEAR}),
 		// Guards are the first subject needing 2005 clips for a reason other than re-authored frames:
 		// the human meshes are byte-identical in both caches but their vertex groups were RENUMBERED.
 		// 2005 bindings all sit in [0..34]; live framemap 0 is a 218-group rig. Live clips would drive

@@ -1384,6 +1384,89 @@ public class RetroNpcMapping
 		new short[]{25238, 61, 6798, 8741, -22464},
 		new short[]{10508, 8741, 7289, 10508, 4550}).chathead(57, 84).build();
 
+	// Live shorn sheep stand on the goat set
+	public static final Set<Integer> SHEEP_MODERN_ATTACKS = Set.of(
+		AnimationID.SHEEP_UPDATE_ATTACK, AnimationID.GOAT_UPDATE_ATTACK);
+	public static final Set<Integer> SHEEP_MODERN_DEFENDS = Set.of(
+		AnimationID.SHEEP_UPDATE_DEFEND, AnimationID.GOAT_UPDATE_DEFEND, AnimationID.SHEEP_UPDATE_SHAGGY_DEFEND);
+	public static final Set<Integer> SHEEP_MODERN_DEATHS = Set.of(
+		AnimationID.SHEEP_UPDATE_DEATH, AnimationID.GOAT_UPDATE_DEATH);
+
+	// Feb-2005 kits: 3786 head, 3787 legs, 3783 shorn body or 3784 fleece
+	private static final int[] SHEEP_SHORN_KIT = {3783, 3786, 3787};
+	private static final int[] SHEEP_WOOLLY_KIT = {3786, 3784, 3787};
+	private static final short SHEEP_SKIN = 10297;
+	private static final short SHEEP_FLEECE = 10351;
+	private static final short SHEEP_SHORN_BODY = 7283;
+
+	private static RetroNpcData.Builder sheep(int[] kit)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.SHEEP)
+			.retroModelIds(kit)
+			.idleAnimationId(AnimationID.SHEEP_READY)
+			.walkAnimationId(AnimationID.SHEEP_WALK)
+			.attackAnimationId(AnimationID.SHEEP_ATTACK)
+			.defendAnimationId(AnimationID.SHEEP_BLOCK)
+			.deathAnimationId(AnimationID.SHEEP_DEATH)
+			.modernAttackAnims(SHEEP_MODERN_ATTACKS)
+			.modernDefendAnims(SHEEP_MODERN_DEFENDS)
+			.modernDeathAnims(SHEEP_MODERN_DEATHS);
+	}
+
+	/** Feb-2005 definitions 42 and 43, the light face. */
+	public static final RetroNpcData SHEEP_SHORN = sheep(SHEEP_SHORN_KIT).build();
+	public static final RetroNpcData SHEEP_WOOLLY = sheep(SHEEP_WOOLLY_KIT).build();
+
+	/** Nov-2005 definitions 1762 and 1763, the black face. */
+	public static final RetroNpcData SHEEP_SHORN_BLACK = sheep(SHEEP_SHORN_KIT).recolor(SHEEP_SKIN, 20).build();
+	public static final RetroNpcData SHEEP_WOOLLY_BLACK = sheep(SHEEP_WOOLLY_KIT).recolor(SHEEP_SKIN, 20).build();
+
+	/** Nov-2005 definitions 1764 and 1765, the dark grey face. */
+	public static final RetroNpcData SHEEP_SHORN_GREY = sheep(SHEEP_SHORN_KIT).recolor(SHEEP_SKIN, 10275).build();
+	public static final RetroNpcData SHEEP_WOOLLY_GREY = sheep(SHEEP_WOOLLY_KIT).recolor(SHEEP_SKIN, 10275).build();
+
+	/** Feb-2005 definition 1529. */
+	public static final RetroNpcData SHEEP_CASTLE_WARS = sheep(SHEEP_WOOLLY_KIT)
+		.recolor(SHEEP_SKIN, 20).scaleXZ(108).scaleY(108).build();
+
+	/** Feb-2005 definitions 1271 and 1272. */
+	public static final RetroNpcData GOLDEN_SHEEP_SHORN = sheep(SHEEP_SHORN_KIT)
+		.recolors(new short[]{SHEEP_SHORN_BODY, SHEEP_SKIN}, new short[]{8666, 10698}).build();
+	public static final RetroNpcData GOLDEN_SHEEP_WOOLLY = sheep(SHEEP_WOOLLY_KIT)
+		.recolors(new short[]{SHEEP_FLEECE, SHEEP_SKIN}, new short[]{8666, 10698}).build();
+
+	/** Sheep Herder: tinted skin under a sickly fleece. */
+	private static RetroNpcData plagueSheep(int skin)
+	{
+		return sheep(SHEEP_WOOLLY_KIT)
+			.recolors(new short[]{SHEEP_SKIN, SHEEP_FLEECE}, new short[]{(short) skin, 11489}).build();
+	}
+
+	/** Feb-2005 definitions 292-295. */
+	public static final RetroNpcData PLAGUE_SHEEP_RED = plagueSheep(194);
+	public static final RetroNpcData PLAGUE_SHEEP_GREEN = plagueSheep(21704);
+	public static final RetroNpcData PLAGUE_SHEEP_BLUE = plagueSheep(43069);
+	public static final RetroNpcData PLAGUE_SHEEP_YELLOW = plagueSheep(11179);
+
+	/** Mourning's End Part I, Nov-2005 definitions 2377-2380: the fleece is dyed as well. */
+	public static final RetroNpcData DYED_SHEEP_RED = sheep(SHEEP_WOOLLY_KIT)
+		.recolors(new short[]{SHEEP_SKIN, SHEEP_FLEECE}, new short[]{194, 2512}).build();
+	public static final RetroNpcData DYED_SHEEP_GREEN = sheep(SHEEP_WOOLLY_KIT)
+		.recolors(new short[]{SHEEP_FLEECE, SHEEP_SKIN}, new short[]{19656, 21704}).build();
+	public static final RetroNpcData DYED_SHEEP_BLUE = sheep(SHEEP_WOOLLY_KIT)
+		.recolors(new short[]{SHEEP_FLEECE, SHEEP_SKIN}, new short[]{29881, (short) 43069}).build();
+	public static final RetroNpcData DYED_SHEEP_YELLOW = sheep(SHEEP_WOOLLY_KIT)
+		.recolors(new short[]{SHEEP_FLEECE, SHEEP_SKIN}, new short[]{10809, 11179}).build();
+
+	/** Dec-2006 definition 3579. Live replaced both meshes at the same ids; its clips survive. */
+	public static final RetroNpcData THE_THING = RetroNpcData.builder()
+		.category(RetroNpcCategory.SHEEP)
+		.retroModelIds(new int[]{14084, 14085})
+		.idleAnimationId(AnimationID.THE_THING_READY)
+		.walkAnimationId(AnimationID.THE_THING_WALK)
+		.build();
+
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
 	 * vertices in both, 355 faces against 347 - so the cache-backed path can still load it.
@@ -2697,6 +2780,32 @@ public class RetroNpcMapping
 		registerMapping(GUNTHOR, NpcID.GUNTHOR_THE_BRAVE);
 		registerMapping(PEKSA, NpcID.PEKSA);
 		registerMapping(ATLAS, NpcID.BIM_ATLAS);
+
+		// Sheep, by face: live's black, grey (G) and light (W). The shaggy ones have no 2005 look.
+		// Rams are left alone: live still draws their 2006 model
+		registerMapping(SHEEP_SHORN_BLACK, NpcID.SHEEPSHEERED, NpcID.SHEEPSHEERED2, NpcID.SHEEPSHEERED3,
+			NpcID.FAIRY_SHEEPSHEERED);
+		registerMapping(SHEEP_WOOLLY_BLACK, NpcID.SHEEPUNSHEERED, NpcID.SHEEPUNSHEERED2, NpcID.SHEEPUNSHEERED3,
+			NpcID.FAIRY_SHEEP);
+		registerMapping(SHEEP_SHORN_GREY, NpcID.SHEEPSHEEREDG, NpcID.SHEEPSHEERED2G, NpcID.SHEEPSHEERED3G);
+		registerMapping(SHEEP_WOOLLY_GREY, NpcID.SHEEPUNSHEEREDG, NpcID.SHEEPUNSHEERED2G, NpcID.SHEEPUNSHEERED3G);
+		registerMapping(SHEEP_SHORN, NpcID.SHEEPSHEEREDW, NpcID.SHEEPSHEERED2W, NpcID.SHEEPSHEERED3W,
+			NpcID.FAIRY_SHEEPSHEERED2, NpcID.SHEEPSHEEREDSHAGGY, NpcID.SHEEPSHEEREDSHAGGY2);
+		registerMapping(SHEEP_WOOLLY, NpcID.SHEEPUNSHEEREDW, NpcID.SHEEPUNSHEERED2W, NpcID.SHEEPUNSHEERED3W,
+			NpcID.FAIRY_SHEEP2, NpcID.SHEEPUNSHEEREDSHAGGY, NpcID.SHEEPUNSHEEREDSHAGGY2);
+		registerMapping(SHEEP_CASTLE_WARS, NpcID.CASTLEWARS_SHEEP);
+		registerMapping(GOLDEN_SHEEP_SHORN, NpcID.VIKING_GOLDEN_SHEEPSHEERED, NpcID.VIKING_GOLDEN_SHEEPSHEERED2);
+		registerMapping(GOLDEN_SHEEP_WOOLLY, NpcID.VIKING_GOLDEN_SHEEPUNSHEERED,
+			NpcID.VIKING_GOLDEN_SHEEPUNSHEERED2);
+		registerMapping(PLAGUE_SHEEP_RED, NpcID.HERDER_PLAGUESHEEP_1);
+		registerMapping(PLAGUE_SHEEP_GREEN, NpcID.HERDER_PLAGUESHEEP_2);
+		registerMapping(PLAGUE_SHEEP_BLUE, NpcID.HERDER_PLAGUESHEEP_3);
+		registerMapping(PLAGUE_SHEEP_YELLOW, NpcID.HERDER_PLAGUESHEEP_4);
+		registerMapping(DYED_SHEEP_RED, NpcID.MOURNING_PLAGUESHEEP_1);
+		registerMapping(DYED_SHEEP_GREEN, NpcID.MOURNING_PLAGUESHEEP_2);
+		registerMapping(DYED_SHEEP_BLUE, NpcID.MOURNING_PLAGUESHEEP_3);
+		registerMapping(DYED_SHEEP_YELLOW, NpcID.MOURNING_PLAGUESHEEP_4);
+		registerMapping(THE_THING, NpcID.SHEEP_SHEARER_THE_THING);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.

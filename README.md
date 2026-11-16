@@ -37,6 +37,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Knights of the Round Table** — King Arthur and his knights, Merlin, renegade knights, etc
 - **Varrock NPCs** — Aris, Romeo, Sir Prysin, King Roald, muggers, and tramps
 - **Barbarians** — Barbarian Village's barbarians, Gunthor the brave, Hunding, Peksa, Litara, the Blue Moon Inn barbarian and Barbarian Outpost's Atlas
+- **Sheep** — sheep, golden sheep, Sheep Herder's plague sheep and Mourning's End's dyed sheep; The Thing takes its 2006 model. Rams are untouched: they already wear theirs
 - **Chatheads** — Swaps chatheads for NPCs with dialogue. Follows each NPC's own toggle.
 
 Under **Scenery**:
@@ -100,8 +101,8 @@ the live objects around it. The Varrock retextures are not supported.
   numeric model and animation IDs, and every asset it displays already comes from the live game
   cache.
 - **The injected categories ship their assets.** Dragons, demons, imps, guards, elves, the Knights
-  of the Round Table, the Varrock NPCs, the barbarians, cows, scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
-  live cache, so `retro-assets.dat` (~290 KB) is bundled in the jar and carries their meshes, rigs and animation
+  of the Round Table, the Varrock NPCs, the barbarians, sheep, cows, scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
+  live cache, so `retro-assets.dat` (~295 KB) is bundled in the jar and carries their meshes, rigs and animation
   clips, extracted from the February 2005 & November 2005 & December 2006 caches. The 2006 goblin
   bodies need no bundle (their meshes and clips are currently unchanged in the live cache); only their chathead parts
   are bundled.

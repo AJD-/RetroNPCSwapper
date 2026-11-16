@@ -417,6 +417,20 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "swapSheep",
+		name = "Sheep",
+		description = "<html><body style='width:170px'>Swap sheep, golden sheep and the dyed and plague "
+			+ "sheep to their 2004/2005 retro models and animations, and The Thing to its 2006 model.<br><br>"
+			+ "Needs <b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
+		section = npcTogglesSection,
+		position = 23
+	)
+	default boolean swapSheep()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "swapChatheads",
 		name = "Chatheads",
 		description = "<html><body style='width:170px'>Show a swapped NPC's 2004/2005 dialogue head in "
@@ -425,7 +439,7 @@ public interface RetroNpcConfig extends Config
 			+ "others.<br><br>Follows each NPC's own toggle, and needs <b>Use Converted 2005 Assets</b>, "
 			+ "which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 23
+		position = 24
 	)
 	default boolean swapChatheads()
 	{
