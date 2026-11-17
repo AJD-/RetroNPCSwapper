@@ -25,6 +25,7 @@
 package com.retronpcswapper;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -36,6 +37,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.retronpcswapper.inject.RetroAssetBundle;
@@ -53,6 +56,7 @@ import net.runelite.api.ModelData;
 import net.runelite.api.NPC;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 public class RetroModelCacheSmoothingTest
 {
@@ -231,7 +235,8 @@ public class RetroModelCacheSmoothingTest
 	}
 
 	/** Swaps in a one-mesh bundle and builds the NPC down the injected path, idling on POSE_ID. */
-	private void installInjected()
+	/** A two-vertex mesh whose clip translates it 10 along x on frame 1. */
+	private static RetroAssetBundle bundle()
 	{
 		RetroMesh mesh = new RetroMesh(MODEL_ID, 0,
 			new float[]{0f, 100f}, new float[]{0f, 0f}, new float[]{0f, 0f},
@@ -245,15 +250,41 @@ public class RetroModelCacheSmoothingTest
 			new int[][]{{0, 0}, {0, 10}},
 			new int[][]{{0, 0}, {0, 0}},
 			new int[][]{{0, 0}, {0, 0}});
+		return new RetroAssetBundle(Collections.singletonMap(MODEL_ID, mesh),
+			Collections.singletonMap(2, rig), Collections.singletonMap(POSE_ID, clip));
+	}
 
+	private void installInjected()
+	{
 		cache.setUseInjectionPipeline(true);
-		cache.setBundle(new RetroAssetBundle(Collections.singletonMap(MODEL_ID, mesh),
-			Collections.singletonMap(2, rig), Collections.singletonMap(POSE_ID, clip)));
+		cache.setBundle(bundle());
 		RetroNpcData npcData = RetroNpcData.builder()
 			.category(RetroNpcCategory.COWS)
 			.retroModelIds(new int[]{MODEL_ID})
 			.build();
 		assertTrue(cache.ensureBuilt(NPC_ID, npcData));
+	}
+
+	/** Cache-backed NPC whose bundle mesh matches the client's, so the skinning check can run. */
+	private void installCacheBackedWithBundle()
+	{
+		when(base.getVerticesCount()).thenReturn(2);
+		cache.setBundle(bundle());
+		RetroNpcData npcData = RetroNpcData.builder()
+			.category(RetroNpcCategory.GOBLINS)
+			.retroModelIds(new int[]{MODEL_ID})
+			.build();
+		assertTrue(cache.ensureBuilt(NPC_ID, npcData));
+	}
+
+	private static Model posedModel(float[] x)
+	{
+		Model model = mock(Model.class);
+		when(model.getVerticesCount()).thenReturn(x.length);
+		when(model.getVerticesX()).thenReturn(x);
+		when(model.getVerticesY()).thenReturn(new float[x.length]);
+		when(model.getVerticesZ()).thenReturn(new float[x.length]);
+		return model;
 	}
 
 	@Test
@@ -293,5 +324,53 @@ public class RetroModelCacheSmoothingTest
 
 		assertArrayEquals(new float[]{0f, 100f}, plain, 0.01f);
 		assertArrayEquals(new float[]{5f, 105f}, blended, 0.01f);
+	}
+
+	@Test
+	public void testInjectedPoseAsksTheFilterOncePerDraw()
+	{
+		int[] calls = {0};
+		when(client.getAnimationInterpolationFilter()).thenReturn((IntPredicate) id -> {
+			calls[0]++;
+			return true;
+		});
+		installInjected();
+		smoothing.setEnabled(true);
+		Animation twoFrames = animation(POSE_ID, 2, 4);
+		when(client.loadAnimation(POSE_ID)).thenReturn(twoFrames);
+
+		assertNotNull(cache.pose(npc(-1, -1, POSE_ID, 0)));
+
+		assertEquals(1, calls[0]);
+	}
+
+	@Test
+	public void testSkinningCheckStillRunsOnceWhileSmoothing()
+	{
+		installCacheBackedWithBundle();
+		smoothing.setEnabled(true);
+		Animation twoFrames = animation(POSE_ID, 2, 4);
+		when(client.loadAnimation(POSE_ID)).thenReturn(twoFrames);
+		// The client's plain frame 1 is what the skinner must match: x moved 10
+		Model plain = posedModel(new float[]{10f, 110f});
+		when(client.applyTransformations(base, twoFrames, 1, null, 0)).thenReturn(plain);
+		NPC npc = npc(-1, -1, POSE_ID, 1);
+
+		Logger logger = (Logger) LoggerFactory.getLogger(RetroModelCache.class);
+		Level level = logger.getLevel();
+		logger.setLevel(Level.DEBUG);
+		try
+		{
+			cache.pose(npc);
+			cache.pose(npc);
+		}
+		finally
+		{
+			logger.setLevel(level);
+		}
+
+		// One plain call for the one-shot comparison, then only packed calls
+		verify(client).applyTransformations(base, twoFrames, 1, null, 0);
+		verify(client, times(2)).applyTransformations(base, twoFrames, RetroFrameTiming.pack(1, 0, true), null, 0);
 	}
 }

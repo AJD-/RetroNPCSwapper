@@ -50,7 +50,7 @@ public class RetroAnimationSmoothing
 
 	public boolean blends(int animationId)
 	{
-		return blends(enabled, client.getAnimationInterpolationFilter(), animationId);
+		return enabled && blends(true, client.getAnimationInterpolationFilter(), animationId);
 	}
 
 	static boolean blends(boolean enabled, IntPredicate filter, int animationId)
@@ -60,7 +60,7 @@ public class RetroAnimationSmoothing
 
 	public boolean blends(Animation animation)
 	{
-		return animation != null && !animation.isMayaAnim() && animation.getFrameLengths() != null
+		return enabled && animation != null && !animation.isMayaAnim() && animation.getFrameLengths() != null
 			&& blends(animation.getId());
 	}
 }

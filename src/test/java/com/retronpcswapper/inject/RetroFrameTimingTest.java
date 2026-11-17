@@ -95,4 +95,12 @@ public class RetroFrameTimingTest
 		assertEquals(10f, RetroFrameTiming.lerp(10, 20, 0, 4), 0f);
 		assertEquals(5f, RetroFrameTiming.lerp(0, 10, 2, 4), 0f);
 	}
+
+	@Test
+	public void testNextFrameStepPastStartFallsBackToLoop()
+	{
+		// A frameStep that overshoots the start is how SequenceClock ends up at 0
+		assertEquals(0, RetroFrameTiming.nextFrame(4, 5, 9, true));
+		assertEquals(-1, RetroFrameTiming.nextFrame(4, 5, 9, false));
+	}
 }

@@ -129,4 +129,11 @@ public class RetroBlendTest
 		assertFalse(b.compute(clip(), -1, 1, L, -1, false));
 		assertEquals(-1, b.next);
 	}
+
+	@Test
+	public void testFrameStepPastStartLoops()
+	{
+		assertTrue(b.compute(clip(), 3, 1, L3, 9, true));
+		assertEquals(0, b.next);
+	}
 }

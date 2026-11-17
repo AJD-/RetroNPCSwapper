@@ -85,11 +85,6 @@ final class SequenceClock
 		return Math.max(elapsedTicks - 1, 0);
 	}
 
-	int getLength()
-	{
-		return getFrameCount() == 0 ? 0 : frameLengths[frame];
-	}
-
 	int[] getLengths()
 	{
 		return frameLengths;

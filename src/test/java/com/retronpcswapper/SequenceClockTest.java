@@ -80,7 +80,6 @@ public class SequenceClockTest
 		clock.tick(1);
 		assertEquals(1, clock.getFrame());
 		assertEquals(0, clock.getElapsed());
-		assertEquals(2, clock.getLength());
 	}
 
 	@Test
@@ -99,7 +98,6 @@ public class SequenceClockTest
 		clock.tick(10);
 		assertEquals(0, clock.getFrame());
 		assertEquals(0, clock.getElapsed());
-		assertEquals(0, clock.getLength());
 		assertEquals(0, clock.getFrameCount());
 	}
 

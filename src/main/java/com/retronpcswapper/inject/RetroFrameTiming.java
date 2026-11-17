@@ -30,6 +30,9 @@ public final class RetroFrameTiming
 	/** Packed-frame flag marking a looping animation. */
 	public static final int LOOPING = 0x40000000;
 
+	/** Rotation deltas are 0..255; the trig tables index 0..2047. */
+	public static final int ROTATION_SHIFT = 8;
+
 	private RetroFrameTiming()
 	{
 	}
@@ -49,8 +52,12 @@ public final class RetroFrameTiming
 		if (frameStep > 0)
 		{
 			n -= frameStep;
-			return n >= 0 && n < frameCount ? n : -1;
+			if (n >= 0 && n < frameCount)
+			{
+				return n;
+			}
 		}
+		// A step past the start lands a looping clock on 0, as SequenceClock does
 		return loop ? 0 : -1;
 	}
 
@@ -76,6 +83,6 @@ public final class RetroFrameTiming
 		{
 			d -= 256;
 		}
-		return Math.round((c + d * t / interval) * 8) & 0x7FF;
+		return Math.round((c + d * t / interval) * ROTATION_SHIFT) & 0x7FF;
 	}
 }

@@ -477,7 +477,7 @@ public class RetroScenerySwapper implements RenderCallback
 			int frame = clock.getFrame();
 			int quarterTurns = carrier.getQuarterTurns();
 			// The clock loops, so the blend does too
-			if (smoothing != null && smoothing.blends(clock.getAnimationId())
+			if (smoothing.blends(clock.getAnimationId())
 				&& blend.compute(posable.getClip(), frame, clock.getElapsed(), clock.getLengths(), clock.getFrameStep(), true))
 			{
 				pose(posable, frame, blend.next, blend.t, blend.interval, quarterTurns, model);

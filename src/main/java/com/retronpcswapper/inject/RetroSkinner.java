@@ -51,7 +51,7 @@ public final class RetroSkinner
 	 * step an animation can express is 1/256 of a turn. Anything authored against this rig has to
 	 * be quantized to that.
 	 */
-	private static final int ROTATION_SHIFT = 8;
+	private static final int ROTATION_SHIFT = RetroFrameTiming.ROTATION_SHIFT;
 
 	/** {@link Perspective#SINE} and {@code COSINE} are fixed point with 16 fractional bits. */
 	private static final float TRIG_SCALE = 65536f;
@@ -76,18 +76,7 @@ public final class RetroSkinner
 	public boolean pose(RetroMesh mesh, RetroRig rig, RetroClip clip, int frame,
 		float[] outX, float[] outY, float[] outZ)
 	{
-		int count = mesh.getVerticesCount();
-		System.arraycopy(mesh.getVerticesX(), 0, outX, 0, count);
-		System.arraycopy(mesh.getVerticesY(), 0, outY, 0, count);
-		System.arraycopy(mesh.getVerticesZ(), 0, outZ, 0, count);
-
-		if (rig == null || clip == null || !clip.hasFrame(frame) || !mesh.isRigged())
-		{
-			return false;
-		}
-
-		apply(mesh, rig, clip, frame, outX, outY, outZ);
-		return true;
+		return pose(mesh, rig, clip, frame, -1, 0f, 0, outX, outY, outZ);
 	}
 
 	/** Poses between frame and next, t cycles into an interval of interval cycles. */

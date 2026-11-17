@@ -345,6 +345,11 @@ public class RetroModelCache
 		Model posed;
 		if (!layered && smoothing.blends(single) && frame >= 0 && frame < single.getFrameLengths().length)
 		{
+			if (skinningCheckWanted(npc))
+			{
+				// The one-shot comparison needs the client's plain frame, which the blend never shows
+				verifySkinning(npc, client.applyTransformations(base, single, frame, null, 0));
+			}
 			// One animation only: the client does not blend when handed two
 			FrameClock clock = acting ? clocks(npc).action : clocks(npc).pose;
 			int elapsed = clock.elapsed(single.getId(), frame, client.getGameCycle(), single.getFrameLengths()[frame]);
@@ -709,7 +714,7 @@ public class RetroModelCache
 		Animation live = clip != null && rig != null && smoothing.blends(liveId) ? animation(liveId) : null;
 		int[] lengths = live == null ? null : live.getFrameLengths();
 		boolean blended = false;
-		if (lengths != null && frame >= 0 && frame < lengths.length && smoothing.blends(live))
+		if (lengths != null && frame >= 0 && frame < lengths.length && !live.isMayaAnim())
 		{
 			FrameClock clock = acting ? clocks(npc).action : clocks(npc).pose;
 			int elapsed = clock.elapsed(liveId, frame, client.getGameCycle(), lengths[frame]);
@@ -808,33 +813,16 @@ public class RetroModelCache
 	 */
 	private void verifySkinning(NPC npc, Model posed)
 	{
-		// Nothing but a debug line comes of this, and it runs per NPC per frame, so it does not run
-		// at all unless someone is reading. Tested before the one-shot flag, so enabling debug
-		// mid-session still gets a comparison rather than finding the shot already spent.
-		if (!log.isDebugEnabled() || skinningVerified || posed == null || npc.getAnimation() != -1)
+		// Re-asked so the plain two-animation caller needs no gate of its own
+		if (posed == null || !skinningCheckWanted(npc))
 		{
 			return;
 		}
 
-		Integer meshId = meshIds.get(npc.getId());
-		if (meshId == null)
-		{
-			return;
-		}
-
-		RetroMesh mesh = bundle.getMesh(meshId);
+		RetroMesh mesh = bundle.getMesh(meshIds.get(npc.getId()));
 		RetroClip clip = bundle.getClip(npc.getPoseAnimation());
-		if (mesh == null || clip == null)
-		{
-			return;
-		}
-
 		RetroRig rig = bundle.getRig(clip.getRigId());
 		int frame = npc.getPoseAnimationFrame();
-		if (rig == null || !clip.hasFrame(frame))
-		{
-			return;
-		}
 
 		try
 		{
@@ -850,6 +838,36 @@ public class RetroModelCache
 			skinningVerified = true;
 			log.debug("Skinning comparison failed", ex);
 		}
+	}
+
+	/**
+	 * Whether {@link #verifySkinning} has a comparison to make for this NPC.
+	 * <p>
+	 * Nothing but a debug line comes of it, and it is asked per NPC per frame, so it is off unless
+	 * someone is reading. Tested before the one-shot flag, so enabling debug mid-session still gets
+	 * a comparison rather than finding the shot already spent.
+	 */
+	private boolean skinningCheckWanted(NPC npc)
+	{
+		if (!log.isDebugEnabled() || skinningVerified || npc.getAnimation() != -1)
+		{
+			return false;
+		}
+
+		Integer meshId = meshIds.get(npc.getId());
+		if (meshId == null)
+		{
+			return false;
+		}
+
+		RetroMesh mesh = bundle.getMesh(meshId);
+		RetroClip clip = bundle.getClip(npc.getPoseAnimation());
+		if (mesh == null || clip == null)
+		{
+			return false;
+		}
+
+		return bundle.getRig(clip.getRigId()) != null && clip.hasFrame(npc.getPoseAnimationFrame());
 	}
 
 	/** Returns whether the comparison actually ran, so a skip does not consume the one shot. */
