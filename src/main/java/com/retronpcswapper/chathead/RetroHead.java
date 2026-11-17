@@ -65,6 +65,15 @@ public final class RetroHead
 		return sequenceId < 0 ? null : source.getClip(keyBase + sequenceId);
 	}
 
+	/**
+	 * The emote this head plays for the one the dialogue asks for. The live game asks goblins for
+	 * the human emotes, which the goblin head rig has no clips for.
+	 */
+	public int emoteFor(int sequenceId)
+	{
+		return keyBase == RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE ? ChatEmotes.goblinFor(sequenceId) : sequenceId;
+	}
+
 	/** The rig a clip of this head's moves, or null for no clip. */
 	public RetroRig rig(RetroClip clip)
 	{

@@ -43,7 +43,7 @@ public final class RendererChain
 {
 	/** Decorators known to forward everything but {@code drawTemp} and to supply their delegate. */
 	static final Set<String> KNOWN_DECORATORS =
-			Set.of("com.customnpcmodels.CustomDrawCallbacks", "com.customservants.ServantDrawCallbacks",
+			Set.of("com.kierenboal.npcsnap.occlusion.BillboardSceneVisibility$Observer", "com.customnpcmodels.CustomDrawCallbacks", "com.customservants.ServantDrawCallbacks",
 				"com.retronpcswapper.RetroDrawCallbacks");
 
 	/** More than the known decorators could ever stack; stops a pathological chain. */

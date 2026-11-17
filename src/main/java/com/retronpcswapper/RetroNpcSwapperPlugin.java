@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.inject.Inject;
 
@@ -59,6 +61,7 @@ import com.retronpcswapper.compatibility.RetroSceneryOutliner;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.Actor;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Model;
@@ -66,7 +69,9 @@ import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
 import net.runelite.api.Player;
 import net.runelite.api.Renderable;
+import net.runelite.api.RuneLiteObjectController;
 import net.runelite.api.TileItem;
+import net.runelite.api.TileObject;
 import net.runelite.api.WorldType;
 import net.runelite.api.WorldView;
 import net.runelite.api.events.AnimationChanged;
@@ -89,6 +94,10 @@ import net.runelite.api.events.WorldChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.callback.RenderCallbackManager;
+import net.runelite.client.chat.ChatColorType;
+import net.runelite.client.chat.ChatMessageBuilder;
+import net.runelite.client.chat.ChatMessageManager;
+import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -198,6 +207,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	private static final String HD_PLUGIN_CLASS = "rs117.hd.HdPlugin";
 
+	/** Region Locker's copy of the GPU plugin, as it sits in the slot. */
+	private static final String REGION_LOCKER_RENDERER_CLASS = "com.gpu.RegionLockerGpuPlugin$GpuPluginWrapper";
+
+	private static final String REGION_LOCKER_GPU_PLUGIN_CLASS = "com.gpu.RegionLockerGpuPlugin";
+
 	/** Another Hub plugin, so recognized by class name alone like 117 HD. */
 	private static final String CUSTOM_PLUGIN_CLASS = "com.customnpcmodels.CustomNpcModelsPlugin";
 
@@ -233,6 +247,24 @@ public class RetroNpcSwapperPlugin extends Plugin
 				? partnerOutlines.pose(ModelSwapProtocol.SOURCE_CUSTOM_SERVANTS, npc)
 				: partnerClaims.isClaimed(npc.getId()) ? null : modelCache.pose(npc);
 
+	// The player as drawn, for capture consumers: null unless the equipped anti-dragon shield is swapped. Composing
+	// writes the buffer the draw hands to the renderer, so never off the client thread.
+	private final BiFunction<Player, Model, Model> playerModel =
+		(player, vanilla) -> this.active && wrapper != null && player != null && vanilla != null
+			&& client.isClientThread() ? shieldSwapper.substitute(player, vanilla) : null;
+
+	// Handed to capture consumers with outlinePoser. The active check keeps a stopped plugin from
+	// answering before they hear the providers were withdrawn; the swapper's own active set is
+	// already empty while no renderer is wrapped.
+	private final Function<TileObject, List<RuneLiteObjectController>> sceneryStandIns =
+		object -> !this.active ? Collections.emptyList()
+			: Collections.unmodifiableList(scenerySwapper.getStandIns(object));
+
+	// A consumer may still hold a controller this plugin has since removed
+	private final Function<RuneLiteObjectController, Model> sceneryModel =
+		standIn -> this.active && client.isRuneLiteObjectRegistered(standIn)
+			? scenerySwapper.getDrawnModel(standIn) : null;
+
 	/**
 	 * The in-flight bundle read, so shutDown can cancel it.
 	 *
@@ -250,12 +282,21 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private volatile boolean active;
 
+	/** Ticks to wait after login, so the note lands below the welcome message. */
+	private static final int CHANGELOG_DELAY_TICKS = 5;
+
+	@Inject
+	private ChatMessageManager chatMessageManager;
+
+	private final RetroChangelog changelog = new RetroChangelog();
+	private int changelogDelayTicks;
+
 	@Override
 	protected void startUp() throws Exception
 	{
 		log.info("Retro NPC Swapper started");
 		active = true;
-		migrateLegacyToggles();
+		RetroConfigMigrations.run(configManager);
 		loadMappings();
 		loadAssetBundle();
 		renderCallbackManager.register(scenerySwapper);
@@ -263,6 +304,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		overlayManager.add(chatheadOverlay);
 		clientThread.invoke(() ->
 		{
+			requestChangelogCheck();
 			scenerySwapper.scanLoadedScene();
 			recheckLoadedNpcs();
 			attach();
@@ -270,49 +312,6 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		// A partner plugin may have started first; ask which NPCs it is drawing
 		eventBus.post(ModelSwapProtocol.synMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER));
-	}
-
-	/**
-	 * Carries saved values across from config keys that have been replaced.
-	 */
-	private void migrateLegacyToggles()
-	{
-		migrateLegacyToggle(configManager, RetroNpcConfig.LEGACY_HILL_GIANTS,
-			RetroNpcConfig.SWAP_GIANTS);
-	}
-
-	/**
-	 * Hands a retired key's saved value to the toggles that replaced it.
-	 *
-	 * <p>Renaming a config key silently resets whatever the user had chosen, so the old key is read
-	 * once and its value handed on. Only ever writes a key that has no value of its own, so a user
-	 * who has already set the new toggles is never overwritten - which also makes this safe to run
-	 * on every start. The old key is cleared afterward, so the migration happens once and leaves no
-	 * orphan behind.
-	 *
-	 * <p>Takes the manager rather than reading the field so it can be driven directly from a test.
-	 * There is no cache or client involved here, only ConfigManager calls, so that is the whole of
-	 * what the behavior needs to be checked against.
-	 */
-	static void migrateLegacyToggle(ConfigManager configManager, String legacyKey, String... newKeys)
-	{
-		String legacy = configManager.getConfiguration(RetroNpcConfig.GROUP, legacyKey);
-
-		if (legacy == null)
-		{
-			return;
-		}
-
-		for (String key : newKeys)
-		{
-			if (configManager.getConfiguration(RetroNpcConfig.GROUP, key) == null)
-			{
-				configManager.setConfiguration(RetroNpcConfig.GROUP, key, Boolean.parseBoolean(legacy));
-			}
-		}
-
-		configManager.unsetConfiguration(RetroNpcConfig.GROUP, legacyKey);
-		log.debug("Migrated {}={} to {}", legacyKey, legacy, String.join(", ", newKeys));
 	}
 
 	@Override
@@ -347,6 +346,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			scenerySwapper.shutDown();
 			detach();
 			withdrawOutlines();
+			withdrawModels();
 			resetAllModifiedNpcs();
 			shieldSwapper.shutDown();
 			// Ahead of the clear, so the dialogue head is put back before the heads it drew go
@@ -420,6 +420,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
+		if (RetroChangelog.LAST_SEEN_VERSION_KEY.equals(event.getKey())
+			|| RetroNpcConfig.SHOW_UPDATE_NOTES.equals(event.getKey()))
+		{
+			// Neither changes what is drawn
+			return;
+		}
+
 		// Refresh active NPC visual overrides when configuration options change
 		clientThread.invoke(() ->
 		{
@@ -431,6 +438,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 	@Subscribe
 	public void onPluginMessage(PluginMessage event)
 	{
+		if (ModelSwapProtocol.modelsRequestSource(event) != null)
+		{
+			clientThread.invoke(this::publishModels);
+			return;
+		}
 		if (ModelSwapProtocol.partnerSource(event, ModelSwapProtocol.SYN) != null)
 		{
 			// A partner plugin has just started and knows nothing of our outlines state yet
@@ -504,6 +516,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	public void onGameTick(GameTick event)
 	{
 		targetTracker.onGameTick();
+		checkChangelog();
 
 		// Cheap guard: the GPU plugin and 117 HD set and clear the draw callbacks slot
 		// unconditionally, so re-take it whenever we have lost it. Covers orderings PluginChanged
@@ -570,7 +583,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 				});
 			}
 		}
-		else if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin()))
+		else if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin())
+			|| isRegionLockerGpuPlugin(event.getPlugin()))
 		{
 			// attach() declines on its own when no supported renderer is holding the slot. 117 HD
 			// installs its renderer asynchronously once GL is up, so the per-tick guard is what
@@ -584,6 +598,32 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 	}
 
+	private void requestChangelogCheck()
+	{
+		changelog.requestCheck();
+		changelogDelayTicks = CHANGELOG_DELAY_TICKS;
+	}
+
+	private void checkChangelog()
+	{
+		if (!changelog.isPending() || client.getGameState() != GameState.LOGGED_IN || changelogDelayTicks-- > 0)
+		{
+			return;
+		}
+
+		changelog.check(config.showUpdateNotes(),
+			() -> configManager.getConfiguration(RetroNpcConfig.GROUP, RetroChangelog.LAST_SEEN_VERSION_KEY),
+			message -> chatMessageManager.queue(QueuedMessage.builder()
+				.type(ChatMessageType.CONSOLE)
+				.runeLiteFormattedMessage(new ChatMessageBuilder()
+					.append(ChatColorType.HIGHLIGHT)
+					.append(message)
+					.build())
+				.build()),
+			version -> configManager.setConfiguration(RetroNpcConfig.GROUP,
+				RetroChangelog.LAST_SEEN_VERSION_KEY, version));
+	}
+
 	@Subscribe
 	public void onProfileChanged(ProfileChanged event)
 	{
@@ -593,6 +633,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// that would put its outlines back while ours were still drawing.
 		clientThread.invoke(() ->
 		{
+			// Each profile keeps its own last seen version
+			requestChangelogCheck();
+
 			interactHighlight.forget();
 			overlayManager.remove(interactHighlightOverlay);
 			outliner.clear();
@@ -689,7 +732,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName());
+		RetroNpcData data = mappingFor(npc.getId(), npc.getName());
 		if (data == null)
 		{
 			return;
@@ -761,6 +804,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		else if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
 		{
 			clientThread.invoke(this::recheckLoadedNpcs);
+			clientThread.invoke(scenerySwapper::onLoaded);
 		}
 	}
 
@@ -806,7 +850,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
-		RetroNpcData data = RetroNpcMapping.get(npc.getId(), npc.getName());
+		RetroNpcData data = mappingFor(npc.getId(), npc.getName());
 
 		// Animation overrides are gated on substitution being live. Without the wrapper the
 		// model stays vanilla, and a modern-rigged model playing a 2005 sequence - which is
@@ -838,13 +882,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 		applyRetroSwap(npc, data);
 	}
 
+	/** The retro row for an NPC under the goblin era the config asks for. */
+	private RetroNpcData mappingFor(int npcId, String name)
+	{
+		return RetroNpcMapping.get(npcId, name, config.goblinEra());
+	}
+
 	/**
 	 * Whether an NPC with this mapping is drawn retro right now: the wrapper attached, no safety
 	 * setting stepping in, and its category toggled on.
 	 */
 	private boolean isSwapLive(RetroNpcData data)
 	{
-		return wrapper != null && !isSafetyDisabled() && data != null && isCategoryEnabled(data.getCategory());
+		return wrapper != null && !isSafetyDisabled() && data != null && isCategoryEnabled(data.getCategory(), config);
 	}
 
 	/**
@@ -864,7 +914,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		NPCComposition composition = client.getNpcDefinition(npcId);
-		RetroNpcData data = RetroNpcMapping.get(npcId, composition == null ? null : composition.getName());
+		RetroNpcData data = mappingFor(npcId, composition == null ? null : composition.getName());
 		if (!isSwapLive(data) || !data.hasChathead())
 		{
 			return null;
@@ -931,109 +981,12 @@ public class RetroNpcSwapperPlugin extends Plugin
 	/**
 	 * Checks if a specific NPC category toggle is enabled in config.
 	 */
-	private boolean isCategoryEnabled(RetroNpcCategory category)
+	static boolean isCategoryEnabled(RetroNpcCategory category, RetroNpcConfig config)
 	{
-		if (category == null)
-		{
-			return false;
-		}
-
-		switch (category)
-		{
-			case CHICKENS:
-				return config.swapChickens();
-			case COWS:
-				return config.swapCows() && injectionEnabled();
-			case HELLHOUNDS:
-				// Mesh 2997 and sequences 157-161 both survive intact, so the cache path draws it
-				return config.swapHellhounds();
-			case GIANT_RATS:
-				// Mesh 2959 and sequences 137-141 both survive intact, so the cache path draws it
-				return config.swapGiantRats();
-			case SCORPIONS:
-				// Injectionis required for large scorpions
-				return config.swapScorpions() && injectionEnabled();
-			case SMALL_SCORPIONS:
-				// Mesh 2968 and sequences 269-273 survive intact, so the cache path draws it
-				return config.swapScorpions();
-			case SPIDERS:
-				// Meshes 2883-2885 and 2996 and sequences 142-149 and 279-282 all survive intact, so
-				// the cache path draws them
-				return config.swapSpiders();
-			case BEARS:
-				// Mesh 2966 and sequences 37-44 survive intact, so the cache path draws them
-				return config.swapBears();
-			case FISHING_SPOTS:
-				// Mesh 1491 and sequences 447/448 survive intact, so the cache path draws it
-				return config.swapFishingSpots();
-			case KALPHITES:
-				// Meshes 3849-3854 are gone from the live cache, so only the bundle can draw them
-				return config.swapKalphites() && injectionEnabled();
-			case GOBLINS:
-				return config.swapGoblins();
-			case SKELETONS:
-				return config.swapSkeletons();
-			case SKELETON_MAGES:
-				// Shares the Skeletons toggle. The mage is human kit, half of whose parts are gone from
-				// the live cache, so like the guards it can only be drawn from the bundle
-				return config.swapSkeletons() && injectionEnabled();
-			case ZOMBIES:
-				return config.swapZombies();
-			case HILL_GIANTS:
-				// The body survives and the Jogre head stands in for the one that does not, so this
-				// one renders on either path - the injection toggle just decides which
-				return config.swapGiants();
-			case FIRE_GIANTS:
-			case ICE_GIANTS:
-			case MOSS_GIANTS:
-				// Their 2005 heads are gone from the live cache, so the cache-backed path would load
-				// unrelated geometry. Only the bundle can supply them.
-				return config.swapGiants() && injectionEnabled();
-			case CYCLOPS:
-				return config.swapCyclops() && injectionEnabled();
-			case GUARDS:
-				// Three of the nine kit parts are gone from the live cache, and the six that remain
-				// were re-bound to a different rig, so both the geometry and the animation have to
-				// come from the bundle
-				return config.swapGuards() && injectionEnabled();
-			case ELVES:
-				// The same 2005 human kit as the guards: seven of the seventeen parts were edited in
-				// live and every one was re-bound to the live rig, so only the bundle can draw them
-				return config.swapElves() && injectionEnabled();
-			case ROUND_TABLE:
-				// 2005 human kit again, with several parts and heads overwritten in live
-				return config.swapRoundTable() && injectionEnabled();
-			case VARROCK:
-				return config.swapVarrockNpcs() && injectionEnabled();
-			case GHOSTS:
-				return config.swapGhosts();
-			case ADULT_DRAGONS:
-			case BABY_DRAGONS:
-				// The adult mesh has no usable live counterpart at all - the ids resolve, but to
-				// unrelated geometry. The baby mesh survives, but both had their frames re-authored,
-				// so both need the injected path to be animated from the 2005 data
-				return config.swapDragons() && injectionEnabled();
-			case LESSER_DEMONS:
-			case GREATER_DEMONS:
-			case BLACK_DEMONS:
-				return config.swapDemons() && injectionEnabled();
-			case IMPS:
-				// The imp mesh survives, so this is not about geometry: the frames behind its
-				// sequence ids were re-authored for the modern rig, and applying the 2005 ones
-				// means skinning the model ourselves
-				return config.swapImps() && injectionEnabled();
-			default:
-				return false;
-		}
+		return category != null && category.isEnabled(config);
 	}
 
-	/**
-	 * Whether the categories that can only be drawn from the bundle are allowed to draw at all.
-	 *
-	 * <p>The config value rather than the cache's copy of it. The two are the same by the time this
-	 * decides anything: recheckLoadedNpcs hands the config value to the cache, and processNpc will
-	 * not reach here until attach() has run, which happens after that on every path.
-	 */
+	/** Whether the converted 2005 assets are on. Categories ask the config themselves; this gates the chatheads. */
 	private boolean injectionEnabled()
 	{
 		return config.useInjectionPipeline();
@@ -1106,6 +1059,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		// Cheap and idempotent, and this runs on every path that could have changed the setting -
 		// startup, config change, world change, a landed bundle, and attach
 		modelCache.setUseInjectionPipeline(config.useInjectionPipeline());
+		modelCache.setGoblinEra(config.goblinEra());
 		modelCache.setIncreaseChickenSize(config.increaseChickenSize());
 		smoothing.setEnabled(config.smoothRetroAnimations());
 
@@ -1145,6 +1099,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		shieldSwapper.refresh(shield, shield);
 		// Likewise the scenery
 		scenerySwapper.refresh(allowed && wrapper != null ? wantedScenery(config) : EnumSet.noneOf(RetroScenery.class));
+		publishModels();
 	}
 
 	/**
@@ -1297,12 +1252,18 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 * <p>117 HD is a Plugin Hub plugin loaded in its own classloader, so it is recognized by class
 	 * name alone - there is no compile or runtime dependency on it, and with it absent nothing here
 	 * matches. The zone renderer package is allowlisted rather than the legacy one denylisted, so a
-	 * renderer 117 HD adds or renames later is declined instead of wrapped blind.
+	 * renderer 117 HD adds or renames later is declined instead of wrapped blind. Region Locker's
+	 * GPU renderer is matched by its exact class name for the same reason.
 	 */
 	static boolean isSupportedHost(DrawCallbacks current, Plugin gpu)
 	{
 		DrawCallbacks renderer = RendererChain.base(current);
-		return renderer != null && (renderer == gpu || isHdZoneRenderer(renderer.getClass().getName()));
+		if (renderer == null)
+		{
+			return false;
+		}
+		String name = renderer.getClass().getName();
+		return renderer == gpu || isHdZoneRenderer(name) || isRegionLockerRenderer(name);
 	}
 
 	static boolean isHdZoneRenderer(String className)
@@ -1310,9 +1271,19 @@ public class RetroNpcSwapperPlugin extends Plugin
 		return className.startsWith(HD_ZONE_RENDERER_PACKAGE);
 	}
 
+	static boolean isRegionLockerRenderer(String className)
+	{
+		return REGION_LOCKER_RENDERER_CLASS.equals(className);
+	}
+
 	private static boolean isHdPlugin(Plugin plugin)
 	{
 		return plugin != null && HD_PLUGIN_CLASS.equals(plugin.getClass().getName());
+	}
+
+	private static boolean isRegionLockerGpuPlugin(Plugin plugin)
+	{
+		return plugin != null && REGION_LOCKER_GPU_PLUGIN_CLASS.equals(plugin.getClass().getName());
 	}
 
 	private static boolean isCustomPlugin(Plugin plugin)
@@ -1473,6 +1444,24 @@ public class RetroNpcSwapperPlugin extends Plugin
 		{
 			interactHighlight.restoreStaleStash();
 		}
+	}
+
+	/**
+	 * Tells the capture consumers how to pose our NPCs and players and find our scenery stand-ins.
+	 * The providers read live state, so this is posted once at startup and on request; it is posted
+	 * again when the scenery swaps are refreshed because 2DScape rescans the stand-ins on each.
+	 */
+	private void publishModels()
+	{
+		eventBus.post(ModelSwapProtocol.modelsMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER,
+			outlinePoser, playerModel, sceneryStandIns, sceneryModel));
+	}
+
+	/** Tells the capture consumers the providers are gone, as the plugin stops. */
+	private void withdrawModels()
+	{
+		eventBus.post(ModelSwapProtocol.modelsMessage(ModelSwapProtocol.SOURCE_RETRO_NPC_SWAPPER,
+			null, null, null, null));
 	}
 
 	/**

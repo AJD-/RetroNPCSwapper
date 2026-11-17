@@ -970,6 +970,85 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testBarbariansCategory()
+	{
+		Object[][] registered = {
+			{RetroNpcMapping.BARBARIAN, new int[]{NpcID.FAI_BARBARIAN_1, NpcID.FAI_BARBARIAN_2,
+				NpcID.FAI_BARBARIAN_3, NpcID.FAI_BARBARIAN_4, NpcID.FAI_BARBARIAN_5, NpcID.FAI_BARBARIAN_6,
+				NpcID.FAI_BARBARIAN_7, NpcID.FAI_BARBARIAN_8, NpcID.FAI_BARBARIAN_9, NpcID.FAI_BARBARIAN_10,
+				NpcID.FAI_BARBARIAN_11, NpcID.FAI_BARBARIAN_12, NpcID.FAI_BARBARIAN_13, NpcID.BARBARIAN}},
+			{RetroNpcMapping.BARBARIAN_WOMAN, new int[]{NpcID.FAI_BARBARIAN_FEMALE_1,
+				NpcID.FAI_BARBARIAN_FEMALE_2, NpcID.FAI_BARBARIAN_FEMALE_3, NpcID.FAI_BARBARIAN_FEMALE_4,
+				NpcID.BARBARIANWOMAN_VARROCK, NpcID.SOS_BARB_VISIBLE}},
+			{RetroNpcMapping.GUNTHOR, new int[]{NpcID.GUNTHOR_THE_BRAVE}},
+			{RetroNpcMapping.PEKSA, new int[]{NpcID.PEKSA}},
+			{RetroNpcMapping.ATLAS, new int[]{NpcID.BIM_ATLAS}}};
+		for (Object[] row : registered)
+		{
+			RetroNpcData data = (RetroNpcData) row[0];
+			assertEquals(RetroNpcCategory.BARBARIANS, data.getCategory());
+			assertEquals(0, data.getAssetKeyBase());
+			assertTrue(data.hasChathead());
+			for (int id : (int[]) row[1])
+			{
+				assertSame("npc " + id, data, RetroNpcMapping.get(id, null));
+			}
+		}
+
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.BARBARIANS));
+		assertTrue(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.BARBARIANS));
+
+		// By registered id only: Barbarian Assault and the Brut barbarians share the name
+		assertNull(RetroNpcMapping.get(0, "Barbarian"));
+		assertNull(RetroNpcMapping.get(0, "Gunthor the brave"));
+		assertNull(RetroNpcMapping.get(0, "Peksa"));
+
+		// Aitan, the archer, keeps his bow
+		assertNull(RetroNpcMapping.get(NpcID.FAI_BARBARIAN_14, "Barbarian"));
+		for (int id : new int[]{NpcID.BARBARIAN_GUARD, NpcID.SOS_BARB, NpcID.BIM_CUTSCENE_ATLAS,
+			NpcID.BIM_CHECKAL, NpcID.CANOEING_SIGURD, NpcID.FAVOUR_TASSIE_SLIPCAST, NpcID.BRUT_BARBARIAN1})
+		{
+			assertNull("npc " + id + " must not be swapped", RetroNpcMapping.get(id, null));
+		}
+
+		// Atlas is Peksa with a bare torso and white hair
+		RetroNpcData peksa = RetroNpcMapping.PEKSA;
+		RetroNpcData atlas = RetroNpcMapping.ATLAS;
+		int[] atlasParts = peksa.getInjectedModelIds();
+		atlasParts[2] = 315;
+		assertArrayEquals(atlasParts, atlas.getInjectedModelIds());
+		short[] atlasColors = peksa.getReplacementColors();
+		atlasColors[2] = 7289;
+		assertArrayEquals(peksa.getOriginalColors(), atlas.getOriginalColors());
+		assertArrayEquals(atlasColors, atlas.getReplacementColors());
+		assertEquals(peksa.getIdleAnimationId(), atlas.getIdleAnimationId());
+
+		// Each fights with what it holds: battleaxe, spear, battleaxe and shield
+		RetroNpcData man = RetroNpcMapping.BARBARIAN;
+		assertEquals(AnimationID.HUMAN_READY, man.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_AXE_HACK, man.getAttackAnimationFor(AnimationID.BARROW_DHAROK_SLASH));
+		assertEquals(AnimationID.HUMAN_AXE_HACK, man.getAttackAnimationFor(AnimationID.HUMAN_DHSWORD_CHOP));
+		assertTrue(man.isDefendAnimation(AnimationID.BARBARIAN_BLUNT_BLOCK));
+		assertEquals(AnimationID.HUMAN_AXE_BLOCK, man.getDefendAnimationId());
+
+		RetroNpcData woman = RetroNpcMapping.BARBARIAN_WOMAN;
+		assertEquals(AnimationID.HUMAN_STAFFREADY, woman.getIdleAnimationId());
+		assertEquals(AnimationID.HUMAN_WALK_F, woman.getWalkAnimationId());
+		assertEquals(AnimationID.HUMAN_SPEAR_LUNGE, woman.getAttackAnimationFor(AnimationID.HUMAN_SCYTHE_SWEEP));
+		assertTrue(woman.isDefendAnimation(AnimationID.BARBARIAN_UNARMEDBLOCK));
+		assertEquals(AnimationID.HUMAN_SPEAR_BLOCK, woman.getDefendAnimationId());
+
+		RetroNpcData gunthor = RetroNpcMapping.GUNTHOR;
+		assertEquals(AnimationID.HUMAN_AXE_HACK, gunthor.getAttackAnimationFor(AnimationID.BARROW_DHAROK_CRUSH));
+		assertEquals(AnimationID.HUMAN_SHIELD_DEFENCE, gunthor.getDefendAnimationId());
+
+		for (RetroNpcData data : new RetroNpcData[]{man, woman, gunthor, peksa, atlas})
+		{
+			assertEquals(AnimationID.HUMAN_DEATH, data.getDeathAnimationId());
+		}
+	}
+
+	@Test
 	public void testPrifddinasCitizensWearTheirClanColors()
 	{
 		short[] find = {9137, 9152, 8792, 16701, 8652, 7595, 8741};
@@ -2533,7 +2612,7 @@ public class RetroNpcCategoryTest
 		// A bare "giant" substring would sweep all of these into the giant family. The giant rat and
 		// giant spider are mapped, but to their own categories
 		assertEquals(RetroNpcCategory.GIANT_RATS, RetroNpcMapping.get(0, "Giant rat").getCategory());
-		assertEquals(RetroNpcCategory.SPIDERS, RetroNpcMapping.get(0, "Giant spider").getCategory());
+		assertEquals(RetroNpcCategory.GIANT_SPIDERS, RetroNpcMapping.get(0, "Giant spider").getCategory());
 		assertNull(RetroNpcMapping.get(0, "Giant frog"));
 		assertNull(RetroNpcMapping.get(0, "Giant bat"));
 
@@ -2689,7 +2768,7 @@ public class RetroNpcCategoryTest
 
 		// Every category that renders without the bundle defaults to on
 		assertTrue("swapChickens must default to true", config.swapChickens());
-		assertTrue("swapGoblins must default to true", config.swapGoblins());
+		assertEquals("goblinEra must default to 2004/05", GoblinEra.RETRO_2005, config.goblinEra());
 		assertTrue("swapSkeletons must default to true", config.swapSkeletons());
 		assertTrue("swapZombies must default to true", config.swapZombies());
 		assertTrue("swapGiants must default to true", config.swapGiants());
@@ -2697,7 +2776,8 @@ public class RetroNpcCategoryTest
 		assertTrue("swapHellhounds must default to true", config.swapHellhounds());
 		assertTrue("swapGiantRats must default to true", config.swapGiantRats());
 		assertTrue("swapScorpions must default to true", config.swapScorpions());
-		assertTrue("swapSpiders must default to true", config.swapSpiders());
+		assertTrue("swapSmallSpiders must default to true", config.swapSmallSpiders());
+		assertTrue("swapGiantSpiders must default to true", config.swapGiantSpiders());
 		assertTrue("swapBears must default to true", config.swapBears());
 		assertTrue("swapFishingSpots must default to true", config.swapFishingSpots());
 
@@ -2717,6 +2797,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapKalphites must default to true", config.swapKalphites());
 		assertTrue("swapRoundTable must default to true", config.swapRoundTable());
 		assertTrue("swapVarrockNpcs must default to true", config.swapVarrockNpcs());
+		assertTrue("swapBarbarians must default to true", config.swapBarbarians());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
@@ -3019,7 +3100,7 @@ public class RetroNpcCategoryTest
 
 	/**
 	 * The 2005 spiders are meshes 2883-2885 on sequences 142-146 and the small spider 2996 on
-	 * 279-282, all preserved - a cache-path category. The variants differ only by recolour and size.
+	 * 279-282, all preserved - two cache-path categories. The variants differ only by recolour and size.
 	 */
 	@Test
 	public void testSpiders()
@@ -3053,7 +3134,8 @@ public class RetroNpcCategoryTest
 		{
 			int id = (Integer) c[0];
 			RetroNpcData spider = RetroNpcMapping.get(id, (String) c[1]);
-			assertSpider(id, spider, (Integer) c[2], (short[]) c[3], (short[]) c[4], (Integer) c[5]);
+			assertSpider(id, spider, RetroNpcCategory.GIANT_SPIDERS, (Integer) c[2], (short[]) c[3],
+				(short[]) c[4], (Integer) c[5]);
 			assertFalse(spider.hasStaticIdle());
 			assertEquals(AnimationID.GIANTSPIDER_READY, spider.getIdleAnimationId());
 			assertEquals(AnimationID.GIANTSPIDER_ATTACK, spider.getAttackAnimationId());
@@ -3098,7 +3180,7 @@ public class RetroNpcCategoryTest
 		{
 			int id = (Integer) c[0];
 			RetroNpcData spider = RetroNpcMapping.get(id, (String) c[1]);
-			assertSpider(id, spider, 2996, new short[]{7591},
+			assertSpider(id, spider, RetroNpcCategory.SMALL_SPIDERS, 2996, new short[]{7591},
 				new short[]{(short) (int) (Integer) c[2]}, (Integer) c[3]);
 
 			// No 2005 stand sequence exists, so the modern idle is cleared rather than kept
@@ -3111,8 +3193,10 @@ public class RetroNpcCategoryTest
 		}
 
 		// Cache path: the meshes and rigs all survive
-		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SPIDERS));
-		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SPIDERS));
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.SMALL_SPIDERS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.SMALL_SPIDERS));
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.GIANT_SPIDERS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.GIANT_SPIDERS));
 
 		// The Hallowed Sepulchre spiders are excluded, and the families outside the list are left alone
 		assertNull(RetroNpcMapping.get(NpcID.HALLOWED_SPIDER_01, "Spider"));
@@ -3123,11 +3207,11 @@ public class RetroNpcCategoryTest
 		assertNull(RetroNpcMapping.get(NpcID.VENENATIS_SPIDERLING, "Venenatis spiderling"));
 	}
 
-	private static void assertSpider(int id, RetroNpcData spider, int mesh, short[] find, short[] replace,
-		int scale)
+	private static void assertSpider(int id, RetroNpcData spider, RetroNpcCategory category, int mesh,
+		short[] find, short[] replace, int scale)
 	{
 		assertNotNull("Spider " + id + " must be mapped", spider);
-		assertEquals(RetroNpcCategory.SPIDERS, spider.getCategory());
+		assertEquals(category, spider.getCategory());
 		assertArrayEquals(new int[]{mesh}, spider.getRetroModelIds());
 		assertEquals(scale, spider.getScaleXZ());
 		assertEquals(scale, spider.getScaleY());
@@ -3520,6 +3604,11 @@ public class RetroNpcCategoryTest
 		assertChathead(NpcID.SIR_PRYSIN, null, 0, 56);
 		assertChathead(NpcID.KING_ROALD, null, 0, 53, 35);
 		assertChathead(NpcID.TRAMPPG, null, 0, 52, 81);
+		assertChathead(NpcID.FAI_BARBARIAN_9, null, 0, 57, 84, 75);
+		assertChathead(NpcID.FAI_BARBARIAN_FEMALE_1, null, 0, 113, 101);
+		assertChathead(NpcID.GUNTHOR_THE_BRAVE, null, 0, 57, 83, 75);
+		assertChathead(NpcID.PEKSA, null, 0, 57, 84);
+		assertChathead(NpcID.BIM_ATLAS, null, 0, 57, 84);
 
 		// Ghost rows by name, from the generated JSON: the plain Ghost takes def 491's head, the
 		// Port Phasmatys townsfolk their own
@@ -3589,5 +3678,64 @@ public class RetroNpcCategoryTest
 		assertNotNull("no mapping for " + npcId + " / " + name, data);
 		assertArrayEquals("chathead of " + npcId + " / " + name, parts, data.getChatheadModelIds());
 		assertEquals("chathead key base of " + npcId + " / " + name, keyBase, data.getChatheadKeyBase());
+	}
+
+	@Test
+	public void testModernEraHidesEveryGoblinRow()
+	{
+		assertNull(RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.MODERN));
+		assertNull(RetroNpcMapping.get(NpcID.GOBLIN_GREENARMOUR, "Goblin", GoblinEra.MODERN));
+		// a non-goblin row is untouched by the era
+		assertNotNull(RetroNpcMapping.get(0, "Chicken", GoblinEra.MODERN));
+	}
+
+	@Test
+	public void test2005EraIsTheTwoArgLookup()
+	{
+		assertSame(RetroNpcMapping.get(NpcID.GOBLIN, "Goblin"),
+			RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.RETRO_2005));
+	}
+
+	@Test
+	public void test2006EraNeverFallsBackToA2005GoblinRow()
+	{
+		RetroNpcData d = RetroNpcMapping.get(NpcID.GOBLIN, "Goblin", GoblinEra.RETRO_2006);
+		assertNotSame(RetroNpcMapping.GOBLIN_DEFAULT, d);
+		assertArrayEquals(new int[]{5536, 5539, 5544, 5547}, d.getRetroModelIds());
+	}
+
+	@Test
+	public void testHobgoblinIsDef122InEveryRetroEra()
+	{
+		RetroNpcData d = RetroNpcMapping.get(0, "Hobgoblin", GoblinEra.RETRO_2006);
+		assertNotNull(d);
+		assertEquals(RetroNpcCategory.GOBLINS, d.getCategory());
+		assertArrayEquals(new int[]{2994}, d.getRetroModelIds());
+		assertEquals(128, d.getScaleXZ());
+		assertEquals(AnimationID.HOBGOBLIN_READY, d.getIdleAnimationId());
+		assertEquals(AnimationID.HOBGOBLIN_WALK, d.getWalkAnimationId());
+		assertFalse(d.hasChathead());
+
+		RetroNpcData d2005 = RetroNpcMapping.get(0, "Hobgoblin", GoblinEra.RETRO_2005);
+		assertNotNull(d2005);
+		assertEquals(RetroNpcCategory.GOBLINS, d2005.getCategory());
+		assertArrayEquals(new int[]{2994}, d2005.getRetroModelIds());
+		assertEquals(d2005.getAttackAnimationId(), d.getAttackAnimationId());
+		assertEquals(d2005.getDefendAnimationId(), d.getDefendAnimationId());
+		assertEquals(d2005.getDeathAnimationId(), d.getDeathAnimationId());
+		for (int anim : RetroNpcMapping.GOBLIN_MODERN_ATTACKS)
+		{
+			assertEquals("attack " + anim, d2005.isAttackAnimation(anim), d.isAttackAnimation(anim));
+		}
+		for (int anim : RetroNpcMapping.GOBLIN_MODERN_DEFENDS)
+		{
+			assertEquals("defend " + anim, d2005.isDefendAnimation(anim), d.isDefendAnimation(anim));
+		}
+		for (int anim : RetroNpcMapping.GOBLIN_MODERN_DEATHS)
+		{
+			assertEquals("death " + anim, d2005.isDeathAnimation(anim), d.isDeathAnimation(anim));
+		}
+
+		assertNull(RetroNpcMapping.get(0, "Hobgoblin", GoblinEra.MODERN));
 	}
 }

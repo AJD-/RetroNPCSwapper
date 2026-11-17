@@ -58,6 +58,20 @@ public class RendererChainTest
 			(scene, gameObject, model, levels) -> false);
 	}
 
+	private static final String BILLBOARD = "com.kierenboal.npcsnap.occlusion.BillboardSceneVisibility$Observer";
+
+	@Test
+	public void test2DScapeIsSeenThroughWhenItSuppliesItsDelegate()
+	{
+		assertTrue(RendererChain.canUnwrap(BILLBOARD, mock(DrawCallbacks.class, withSettings().extraInterfaces(Supplier.class))));
+	}
+
+	@Test
+	public void test2DScapeWithoutADelegateIsNotSeenThrough()
+	{
+		assertFalse(RendererChain.canUnwrap(BILLBOARD, mock(DrawCallbacks.class)));
+	}
+
 	@Test
 	public void testCustomNpcModelsIsSeenThroughWhenItSuppliesItsDelegate()
 	{

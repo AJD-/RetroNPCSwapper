@@ -89,19 +89,10 @@ public class RetroNpcMapping
 		// Sailing's 5x5 boat spots never had a pre-Sailing form
 		NpcID.FISHING_BOAT_SALTFISH, NpcID.FISHING_BOAT_MEMBERFISH, NpcID.FISHING_BOAT_RAREFISH,
 		NpcID.FISHING_BOAT_KARAMBWANFISH, NpcID.FISHING_BOAT_PISCARILIUSFISH,
-		NpcID.FISHING_BOAT_MONKFISH
+		NpcID.FISHING_BOAT_MONKFISH,
+		// Barbarian archers
+		NpcID.FAI_BARBARIAN_14, NpcID.AKD_BARBARIAN_3
 	);
-
-	/**
-	 * Categories that resolve from the registered id list only, never from a name.
-	 *
-	 * <p>Suppressed at lookup rather than by dropping the name row, because
-	 * {@link #applyCacheDefinitions} walks {@code NAME_MAPPINGS} to graft the opcode 40 pairs
-	 * onto the archetypes.
-	 */
-	private static final Set<RetroNpcCategory> ID_ONLY_CATEGORIES =
-		Set.of(RetroNpcCategory.GUARDS, RetroNpcCategory.ELVES, RetroNpcCategory.ROUND_TABLE,
-			RetroNpcCategory.VARROCK);
 
 	/**
 	 * Ids whose registered row beats the name row even when the two disagree about the category.
@@ -1319,6 +1310,80 @@ public class RetroNpcMapping
 		new short[]{25238, 6798},
 		new short[]{5652, 4913}).chathead(52, 81).build();
 
+	// Seeded from gameval names around the live stances
+	public static final Set<Integer> BARBARIAN_MODERN_ATTACKS = Set.of(
+		AnimationID.BARROW_DHAROK_SLASH, AnimationID.BARROW_DHAROK_CRUSH,
+		AnimationID.HUMAN_DHSWORD_STAB, AnimationID.HUMAN_DHSWORD_CHOP, AnimationID.HUMAN_DHSWORD_SLASH,
+		AnimationID.HUMAN_DHSWORD_LUNGE, AnimationID.HUMAN_2H_AXE_ATTACK,
+		AnimationID.HUMAN_BLUNT_SPIKE, AnimationID.HUMAN_BLUNT_POUND, AnimationID.HUMAN_BLUNT_PUMMEL);
+	public static final Set<Integer> BARBARIAN_MODERN_DEFENDS = Set.of(
+		AnimationID.BARBARIAN_UNARMEDBLOCK, AnimationID.BARBARIAN_SWORD_BLOCK, AnimationID.BARBARIAN_BLUNT_BLOCK,
+		AnimationID.HUMAN_DHSWORD_BLOCK, AnimationID.HUMAN_2H_AXE_DEFEND, AnimationID.HUMAN_BLUNT_BLOCK);
+	public static final Set<Integer> BARBARIAN_WOMAN_MODERN_ATTACKS = Set.of(
+		AnimationID.HUMAN_SCYTHE_SLASH, AnimationID.HUMAN_SCYTHE_LUNGE, AnimationID.HUMAN_SCYTHE_SPIN,
+		AnimationID.HUMAN_SCYTHE_SWEEP, AnimationID.BARROWS_WAR_SPEAR_STAB, AnimationID.BARROWS_WAR_SPEAR_SLASH,
+		AnimationID.BARROWS_WAR_SPEAR_CRUSH);
+	public static final Set<Integer> BARBARIAN_WOMAN_MODERN_DEFENDS = Set.of(
+		AnimationID.BARBARIAN_UNARMEDBLOCK, AnimationID.BARBARIAN_SWORD_BLOCK, AnimationID.BARBARIAN_BLUNT_BLOCK,
+		AnimationID.HUMAN_SCYTHE_BLOCK);
+
+	/** Barbarian Village: plain Feb-2005 human kit, each its own 2005 definition. */
+	private static RetroNpcData.Builder barbarian(int[] parts, int idle, short[] find, short[] replace)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.BARBARIANS)
+			.retroModelIds(parts)
+			.idleAnimationId(idle)
+			.walkAnimationId(AnimationID.HUMAN_WALK_F)
+			.deathAnimationId(AnimationID.HUMAN_DEATH)
+			.recolors(find, replace);
+	}
+
+	/** Battleaxe 550. */
+	private static RetroNpcData.Builder axeBarbarian(int[] parts, short[] replace)
+	{
+		return barbarian(parts, AnimationID.HUMAN_READY, new short[]{25238, 926, 6798, 8741}, replace)
+			.attackAnimationId(AnimationID.HUMAN_AXE_HACK)
+			.defendAnimationId(AnimationID.HUMAN_AXE_BLOCK)
+			.modernAttackAnims(BARBARIAN_MODERN_ATTACKS)
+			.modernDefendAnims(BARBARIAN_MODERN_DEFENDS);
+	}
+
+	/** Feb-2005 definition 12, the one male barbarian. */
+	public static final RetroNpcData BARBARIAN = axeBarbarian(
+		new int[]{219, 252, 311, 173, 176, 274, 242, 185, 550},
+		new short[]{5652, 61, 6854, 4769}).chathead(57, 84, 75).build();
+
+	/** Feb-2005 definition 17. Spear 540. */
+	public static final RetroNpcData BARBARIAN_WOMAN = barbarian(
+		new int[]{390, 469, 332, 353, 443, 361, 376, 540, 414}, AnimationID.HUMAN_STAFFREADY,
+		new short[]{926, 8741, 6798},
+		new short[]{8078, 8078, 6854})
+		.attackAnimationId(AnimationID.HUMAN_SPEAR_LUNGE)
+		.defendAnimationId(AnimationID.HUMAN_SPEAR_BLOCK)
+		.modernAttackAnims(BARBARIAN_WOMAN_MODERN_ATTACKS)
+		.modernDefendAnims(BARBARIAN_WOMAN_MODERN_DEFENDS)
+		.chathead(113, 101).build();
+
+	/** Feb-2005 definition 199. Battleaxe 550 and shield 523. */
+	public static final RetroNpcData GUNTHOR = axeBarbarian(
+		new int[]{219, 251, 299, 173, 176, 274, 242, 185, 550, 523},
+		new short[]{5652, 61, 6854, 4913})
+		.defendAnimationId(AnimationID.HUMAN_SHIELD_DEFENCE)
+		.chathead(57, 83, 75).build();
+
+	/** Feb-2005 definition 538. */
+	public static final RetroNpcData PEKSA = barbarian(
+		new int[]{219, 252, 299, 173, 176, 274, 244, 185}, AnimationID.HUMAN_READY,
+		new short[]{25238, 61, 6798, 8741, -22464},
+		new short[]{10508, 8741, 6854, 10508, 4550}).chathead(57, 84).build();
+
+	// No 2005 definition: Peksa's kit on bare torso 315, hair in live Atlas's white
+	public static final RetroNpcData ATLAS = barbarian(
+		new int[]{219, 252, 315, 173, 176, 274, 244, 185}, AnimationID.HUMAN_READY,
+		new short[]{25238, 61, 6798, 8741, -22464},
+		new short[]{10508, 8741, 7289, 10508, 4550}).chathead(57, 84).build();
+
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
 	 * vertices in both, 355 faces against 347 - so the cache-backed path can still load it.
@@ -1512,21 +1577,27 @@ public class RetroNpcMapping
 	 */
 	private static RetroNpcData goblin(int[] models, short[] find, short[] replace, int... chathead)
 	{
-		return RetroNpcData.builder()
-			.category(RetroNpcCategory.GOBLINS)
+		return goblinBase()
 			.retroModelIds(models)
 			.chathead(chathead)
 			.chatheadKeyBase(RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE)
 			.idleAnimationId(AnimationID.GOBLIN_READY)
 			.walkAnimationId(AnimationID.GOBLIN_WALK)
+			.recolors(find, replace)
+			.build();
+	}
+
+	/** What a goblin row has in every era: the category and the combat animations. */
+	static RetroNpcData.Builder goblinBase()
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.GOBLINS)
 			.attackAnimationId(AnimationID.GOBLIN_ATTACK_UNARMED)
 			.defendAnimationId(AnimationID.GOBLIN_BLOCK)
 			.deathAnimationId(AnimationID.GOBLIN_DEATH)
-			.recolors(find, replace)
 			.modernAttackAnims(GOBLIN_MODERN_ATTACKS)
 			.modernDefendAnims(GOBLIN_MODERN_DEFENDS)
-			.modernDeathAnims(GOBLIN_MODERN_DEATHS)
-			.build();
+			.modernDeathAnims(GOBLIN_MODERN_DEATHS);
 	}
 
 	// The six 2005 goblin definitions
@@ -1713,7 +1784,8 @@ public class RetroNpcMapping
 
 	// The 2005 spiders are four meshes on two rigs, all of which exist in the live cache.
 	// The opcode 40 pairs below live only here. npc-mappings.json has no spider row, so
-	// applyCacheDefinitions has nothing to graft, and SPIDERS stays out of categoryUsesRecolors.
+	// applyCacheDefinitions has nothing to graft, and the spider categories stay out of
+	// categoryUsesRecolors.
 	private static final int POISON_SPIDER_BODY = 2883;
 	private static final int GIANT_SPIDER_BODY = 2884;
 	private static final int ICE_SPIDER_BODY = 2885;
@@ -1723,7 +1795,7 @@ public class RetroNpcMapping
 	private static RetroNpcData.Builder largeSpider(int mesh)
 	{
 		return RetroNpcData.builder()
-			.category(RetroNpcCategory.SPIDERS)
+			.category(RetroNpcCategory.GIANT_SPIDERS)
 			.retroModelIds(new int[]{mesh})
 			.idleAnimationId(AnimationID.GIANTSPIDER_READY)
 			.walkAnimationId(AnimationID.GIANTSPIDER_WALK)
@@ -1741,7 +1813,7 @@ public class RetroNpcMapping
 	private static RetroNpcData.Builder smallSpider(int bodyColor)
 	{
 		return RetroNpcData.builder()
-			.category(RetroNpcCategory.SPIDERS)
+			.category(RetroNpcCategory.SMALL_SPIDERS)
 			.retroModelIds(new int[]{SMALL_SPIDER_BODY})
 			.staticIdle()
 			.walkAnimationId(AnimationID.SPIDER_WALK)
@@ -2125,24 +2197,7 @@ public class RetroNpcMapping
 	 */
 	public static boolean requiresInjectedGeometry(RetroNpcCategory category)
 	{
-		return category == RetroNpcCategory.ADULT_DRAGONS
-			|| category == RetroNpcCategory.BABY_DRAGONS
-			|| category == RetroNpcCategory.LESSER_DEMONS
-			|| category == RetroNpcCategory.GREATER_DEMONS
-			|| category == RetroNpcCategory.BLACK_DEMONS
-			|| category == RetroNpcCategory.IMPS
-			|| category == RetroNpcCategory.FIRE_GIANTS
-			|| category == RetroNpcCategory.ICE_GIANTS
-			|| category == RetroNpcCategory.MOSS_GIANTS
-			|| category == RetroNpcCategory.CYCLOPS
-			|| category == RetroNpcCategory.GUARDS
-			|| category == RetroNpcCategory.SKELETON_MAGES
-			|| category == RetroNpcCategory.COWS
-			|| category == RetroNpcCategory.SCORPIONS
-			|| category == RetroNpcCategory.ELVES
-			|| category == RetroNpcCategory.KALPHITES
-			|| category == RetroNpcCategory.ROUND_TABLE
-			|| category == RetroNpcCategory.VARROCK;
+		return category != null && category.requiresInjectedGeometry();
 	}
 
 	/**
@@ -2160,7 +2215,7 @@ public class RetroNpcMapping
 	 */
 	public static boolean usesInjectedGeometry(RetroNpcCategory category)
 	{
-		return requiresInjectedGeometry(category) || category == RetroNpcCategory.HILL_GIANTS;
+		return category != null && category.usesInjectedGeometry();
 	}
 
 	/**
@@ -2173,25 +2228,7 @@ public class RetroNpcMapping
 	 */
 	private static boolean categoryUsesRecolors(RetroNpcCategory category)
 	{
-		return category == RetroNpcCategory.ADULT_DRAGONS
-			|| category == RetroNpcCategory.BABY_DRAGONS
-			|| category == RetroNpcCategory.LESSER_DEMONS
-			|| category == RetroNpcCategory.GREATER_DEMONS
-			|| category == RetroNpcCategory.BLACK_DEMONS
-			// Fire, ice and moss giants are the same body mesh as the hill giant, told apart only by
-			// their 2005 opcode 40 pairs.
-			|| category == RetroNpcCategory.FIRE_GIANTS
-			|| category == RetroNpcCategory.ICE_GIANTS
-			|| category == RetroNpcCategory.MOSS_GIANTS
-			// A guard's parts are generic 2005 human kit shared with everything else that wears it,
-			// so the opcode 40 pairs are what make the kit a guard's colors rather than a
-			// townsperson's. The pairs come from the definition the parts come from.
-			|| category == RetroNpcCategory.GUARDS
-			// The skeleton mage is the same generic human kit, and its pairs are what paint it bone.
-			// There is only one 2005 definition, so no variant's colors can win by accident.
-			|| category == RetroNpcCategory.SKELETON_MAGES
-			// The undead chicken is just a recolored regular chicken
-			|| category == RetroNpcCategory.CHICKENS;
+		return category != null && category.usesDefinitionRecolors();
 	}
 
 	private static void registerMapping(RetroNpcData data, int... npcIds)
@@ -2322,7 +2359,7 @@ public class RetroNpcMapping
 		// Guards
 		NAME_MAPPINGS.put("guard", GUARD_DEFAULT);
 		registerMapping(GUARD_DEFAULT,
-			// The base rows of each family. GUARDS is in ID_ONLY_CATEGORIES, so the name no longer
+			// The base rows of each family. GUARDS is id-only, so the name no longer
 			// resolves and every guard has to be named here - including the _F and _VARIANT
 			// derivatives below, which the name lookup used to cover.
 			NpcID.GUARD1,
@@ -2646,6 +2683,20 @@ public class RetroNpcMapping
 		registerMapping(MUGGER, NpcID.MUGGER, NpcID.ZEAH_MUGGER);
 		registerMapping(JAIL_MUGGER, NpcID.JAIL_MUGGER);
 		registerMapping(TRAMP, NpcID.TRAMP, NpcID.TRAMPPG);
+
+		// Barbarian Village. 2005 had one male and one female barbarian, so the crowd is uniform.
+		registerMapping(BARBARIAN, NpcID.FAI_BARBARIAN_1, NpcID.FAI_BARBARIAN_2, NpcID.FAI_BARBARIAN_3,
+			NpcID.FAI_BARBARIAN_4, NpcID.FAI_BARBARIAN_5, NpcID.FAI_BARBARIAN_6, NpcID.FAI_BARBARIAN_7,
+			NpcID.FAI_BARBARIAN_8, NpcID.FAI_BARBARIAN_9, NpcID.FAI_BARBARIAN_10, NpcID.FAI_BARBARIAN_11,
+			NpcID.FAI_BARBARIAN_12, NpcID.FAI_BARBARIAN_13, NpcID.BARBARIAN, NpcID.AKD_BARBARIAN_1,
+			NpcID.AKD_BARBARIAN_2, NpcID.AKD_BARBARIAN_WARLORD);
+		// BARBARIANWOMAN_VARROCK is in Blue Moon Inn
+		registerMapping(BARBARIAN_WOMAN, NpcID.FAI_BARBARIAN_FEMALE_1, NpcID.FAI_BARBARIAN_FEMALE_2,
+			NpcID.FAI_BARBARIAN_FEMALE_3, NpcID.FAI_BARBARIAN_FEMALE_4, NpcID.BARBARIANWOMAN_VARROCK,
+			NpcID.SOS_BARB_VISIBLE, NpcID.AKD_BARBARIAN_4, NpcID.AKD_BARBARIAN_5);
+		registerMapping(GUNTHOR, NpcID.GUNTHOR_THE_BRAVE);
+		registerMapping(PEKSA, NpcID.PEKSA);
+		registerMapping(ATLAS, NpcID.BIM_ATLAS);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.
@@ -3107,24 +3158,51 @@ public class RetroNpcMapping
 
 	public static RetroNpcData get(int npcId, String npcName)
 	{
+		return get(npcId, npcName, GoblinEra.RETRO_2005);
+	}
+
+	public static RetroNpcData get(int npcId, String npcName, GoblinEra era)
+	{
 		// Ahead of both tables: an excluded NPC must not be reachable by name either
 		if (EXCLUDED_IDS.contains(npcId))
 		{
 			return null;
 		}
 
-		if (npcName == null)
+		String nameLower = npcName == null ? null : npcName.toLowerCase(Locale.ROOT).trim();
+		if (era == GoblinEra.RETRO_2006)
+		{
+			RetroNpcData goblin2006 = RetroGoblinMapping2006.get(npcId, nameLower);
+			if (goblin2006 != null)
+			{
+				return goblin2006;
+			}
+		}
+
+		RetroNpcData resolved = resolve(npcId, nameLower);
+		// Eras never mix: a goblin with no row in the chosen era stays modern
+		if (resolved != null && resolved.getCategory() == RetroNpcCategory.GOBLINS
+			&& era != GoblinEra.RETRO_2005)
+		{
+			return null;
+		}
+		return resolved;
+	}
+
+	private static RetroNpcData resolve(int npcId, String nameLower)
+	{
+		if (nameLower == null)
 		{
 			return ID_MAPPINGS.get(npcId);
 		}
 
-		String nameLower = npcName.toLowerCase(Locale.ROOT).trim();
 		RetroNpcData byName = NAME_MAPPINGS.get(nameLower);
 		RetroNpcData byId = ID_MAPPINGS.get(npcId);
 
-		if (byName != null && ID_ONLY_CATEGORIES.contains(byName.getCategory()))
+		if (byName != null && byName.getCategory() != null && byName.getCategory().isIdOnly())
 		{
-			// Sharing a name with the town guard is not enough to be one
+			// Sharing a name with the town guard is not enough to be one. Suppressed here rather
+			// than by dropping the name row, which applyCacheDefinitions walks for the recolors
 			byName = null;
 		}
 
