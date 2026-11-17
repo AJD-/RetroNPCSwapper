@@ -29,6 +29,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import net.runelite.cache.IndexType;
 import net.runelite.cache.definitions.ModelDefinition;
 import net.runelite.cache.definitions.loaders.ModelLoader;
@@ -109,25 +110,93 @@ public class Retro2006CacheTest
 			store.load();
 			for (int id : ids)
 			{
-				Archive archive = store.getIndex(IndexType.MODELS).getArchive(id);
-				assertNotNull("live archive " + id, archive);
-				ModelDefinition live = new ModelLoader().load(id, archive.decompress(store.getStorage().loadArchive(archive)));
-				ModelDefinition retro = reader.model(id);
-				assertNotNull("2006 model " + id, retro);
-				assertEquals("vertices " + id, retro.vertexCount, live.vertexCount);
-				assertEquals("faces " + id, retro.faceCount, live.faceCount);
-				assertArrayEquals("colours " + id, sorted(retro.faceColors), sorted(live.faceColors));
-				assertArrayEquals("x " + id, retro.vertexX, live.vertexX);
-				assertArrayEquals("y " + id, retro.vertexY, live.vertexY);
-				assertArrayEquals("z " + id, retro.vertexZ, live.vertexZ);
-				assertArrayEquals("face a " + id, retro.faceIndices1, live.faceIndices1);
-				assertArrayEquals("face b " + id, retro.faceIndices2, live.faceIndices2);
-				assertArrayEquals("face c " + id, retro.faceIndices3, live.faceIndices3);
-				// load() nulls packedVertexGroups, so the rig is read unpacked
-				assertNotNull("rig " + id, retro.getVertexGroups());
-				assertArrayEquals("rig " + id, retro.getVertexGroups(), live.getVertexGroups());
+				assertIdenticalInLive(store, id);
 			}
 		}
+	}
+
+	/** The 2006 rams are the kits live 1261-1265 still draw, so there is nothing to swap. */
+	@Test
+	public void testRamsAreAlreadyTheir2006Models() throws Exception
+	{
+		Map<Integer, RetroNpcDefinition> defs = reader.npcDefinitions();
+		int[][] kits = {{20283, 20289, 20287}, {20292, 20295, 20294}, {20292, 20295, 20294},
+			{20292, 20295, 20294}, {20282, 20288, 20286}};
+		int[] ids = {3672, 3673, 5168, 5169, 5170};
+		Set<Integer> meshes = new TreeSet<>();
+		for (int i = 0; i < ids.length; i++)
+		{
+			RetroNpcDefinition ram = defs.get(ids[i]);
+			assertEquals("Ram", ram.getName());
+			assertArrayEquals(kits[i], ram.getModels());
+			for (int mesh : kits[i])
+			{
+				meshes.add(mesh);
+			}
+		}
+		assertEquals(9, meshes.size());
+
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not found", liveDir != null);
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+			for (int id : meshes)
+			{
+				assertIdenticalInLive(store, id);
+			}
+		}
+	}
+
+	/** The Thing, def 3579: the kit live replaced at the same ids. */
+	@Test
+	public void testTheThingDefinition() throws Exception
+	{
+		RetroNpcDefinition thing = reader.npcDefinitions().get(3579);
+		assertEquals("Sheep", thing.getName());
+		assertArrayEquals(new int[]{14084, 14085}, thing.getModels());
+		assertEquals(3569, thing.getStanceAnimation());
+		assertEquals(3568, thing.getWalkAnimation());
+		assertEquals(128, thing.getScaleXZ());
+		assertEquals(128, thing.getScaleY());
+		assertEquals(0, thing.getOriginalColors() == null ? 0 : thing.getOriginalColors().length);
+
+		assertEquals(242, reader.model(14084).vertexCount);
+		assertEquals(109, reader.model(14085).vertexCount);
+
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not found", liveDir != null);
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+			for (int id : new int[]{14084, 14085})
+			{
+				Archive archive = store.getIndex(IndexType.MODELS).getArchive(id);
+				ModelDefinition live = new ModelLoader().load(id, archive.decompress(store.getStorage().loadArchive(archive)));
+				assertNotEquals("live " + id + " is a later model", reader.model(id).vertexCount, live.vertexCount);
+			}
+		}
+	}
+
+	private void assertIdenticalInLive(Store store, int id) throws Exception
+	{
+		Archive archive = store.getIndex(IndexType.MODELS).getArchive(id);
+		assertNotNull("live archive " + id, archive);
+		ModelDefinition live = new ModelLoader().load(id, archive.decompress(store.getStorage().loadArchive(archive)));
+		ModelDefinition retro = reader.model(id);
+		assertNotNull("2006 model " + id, retro);
+		assertEquals("vertices " + id, retro.vertexCount, live.vertexCount);
+		assertEquals("faces " + id, retro.faceCount, live.faceCount);
+		assertArrayEquals("colours " + id, sorted(retro.faceColors), sorted(live.faceColors));
+		assertArrayEquals("x " + id, retro.vertexX, live.vertexX);
+		assertArrayEquals("y " + id, retro.vertexY, live.vertexY);
+		assertArrayEquals("z " + id, retro.vertexZ, live.vertexZ);
+		assertArrayEquals("face a " + id, retro.faceIndices1, live.faceIndices1);
+		assertArrayEquals("face b " + id, retro.faceIndices2, live.faceIndices2);
+		assertArrayEquals("face c " + id, retro.faceIndices3, live.faceIndices3);
+		// load() nulls packedVertexGroups, so the rig is read unpacked
+		assertNotNull("rig " + id, retro.getVertexGroups());
+		assertArrayEquals("rig " + id, retro.getVertexGroups(), live.getVertexGroups());
 	}
 
 	private static short[] sorted(short[] colors)

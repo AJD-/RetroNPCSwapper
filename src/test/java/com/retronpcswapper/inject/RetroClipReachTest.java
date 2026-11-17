@@ -161,6 +161,13 @@ public class RetroClipReachTest
 		// shift of a few units against a 128-unit tile.
 		{58, 3341, 3342}, {59, 3341, 3342}, {60, 3341, 3342},
 		{61, 3341, 3342}, {62, 3341, 3342},
+		// Sheep: shorn kit, then woolly
+		{249, 3783, 3786, 3787}, {250, 3783, 3786, 3787}, {251, 3783, 3786, 3787},
+		{252, 3783, 3786, 3787}, {253, 3783, 3786, 3787},
+		{249, 3786, 3784, 3787}, {250, 3786, 3784, 3787}, {251, 3786, 3784, 3787},
+		{252, 3786, 3784, 3787}, {253, 3786, 3784, 3787},
+		// The Thing, Dec-2006
+		{3568, 14084, 14085}, {3569, 14084, 14085}, {3570, 14084, 14085},
 		{58, 5237}, {59, 5237}, {60, 5237}, {61, 5237}, {62, 5237},
 		// The November 2005 dairy cow, body and stool, on the live chewing clip that is still its
 		// own (DairyCowFramesTest). It reaches 95%: the 90 ops that miss are the ones the live rig

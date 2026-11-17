@@ -50,7 +50,7 @@ public class RetroNpcCategoryRulesTest
 		RetroNpcConfig::swapGiantRats, RetroNpcConfig::swapScorpions, RetroNpcConfig::swapGiantSpiders,
 		RetroNpcConfig::swapSmallSpiders, RetroNpcConfig::swapElves, RetroNpcConfig::swapBears,
 		RetroNpcConfig::swapKalphites, RetroNpcConfig::swapRoundTable, RetroNpcConfig::swapVarrockNpcs,
-		RetroNpcConfig::swapFishingSpots, RetroNpcConfig::swapBarbarians);
+		RetroNpcConfig::swapFishingSpots, RetroNpcConfig::swapBarbarians, RetroNpcConfig::swapSheep);
 
 	/** Every toggle stubbed on: a bare mock answers false, and a null era reads as not Modern. */
 	private static RetroNpcConfig allOn()
@@ -124,6 +124,7 @@ public class RetroNpcCategoryRulesTest
 		assertOwns(RetroNpcConfig::swapRoundTable, ROUND_TABLE);
 		assertOwns(RetroNpcConfig::swapVarrockNpcs, VARROCK);
 		assertOwns(RetroNpcConfig::swapBarbarians, BARBARIANS);
+		assertOwns(RetroNpcConfig::swapSheep, SHEEP);
 		assertOwns(RetroNpcConfig::swapFishingSpots, FISHING_SPOTS);
 	}
 
@@ -144,12 +145,12 @@ public class RetroNpcCategoryRulesTest
 		assertOwns(RetroNpcConfig::useInjectionPipeline,
 			ADULT_DRAGONS, BABY_DRAGONS, LESSER_DEMONS, GREATER_DEMONS, BLACK_DEMONS, IMPS,
 			FIRE_GIANTS, ICE_GIANTS, MOSS_GIANTS, CYCLOPS, GUARDS, SKELETON_MAGES, COWS, SCORPIONS,
-			ELVES, KALPHITES, ROUND_TABLE, VARROCK, BARBARIANS);
+			ELVES, KALPHITES, ROUND_TABLE, VARROCK, BARBARIANS, SHEEP);
 	}
 	private static final Set<RetroNpcCategory> BUNDLE_ONLY = EnumSet.of(
 		ADULT_DRAGONS, BABY_DRAGONS, LESSER_DEMONS, GREATER_DEMONS, BLACK_DEMONS, IMPS,
 		FIRE_GIANTS, ICE_GIANTS, MOSS_GIANTS, CYCLOPS, GUARDS, SKELETON_MAGES, COWS, SCORPIONS,
-		ELVES, KALPHITES, ROUND_TABLE, VARROCK, BARBARIANS);
+		ELVES, KALPHITES, ROUND_TABLE, VARROCK, BARBARIANS, SHEEP);
 
 	@Test
 	public void testTheCategoriesOnlyTheBundleCanDraw()
@@ -180,7 +181,7 @@ public class RetroNpcCategoryRulesTest
 	@Test
 	public void testTheCategoriesMatchedByIdAlone()
 	{
-		Set<RetroNpcCategory> idOnly = EnumSet.of(GUARDS, ELVES, ROUND_TABLE, VARROCK, BARBARIANS);
+		Set<RetroNpcCategory> idOnly = EnumSet.of(GUARDS, ELVES, ROUND_TABLE, VARROCK, BARBARIANS, SHEEP);
 
 		for (RetroNpcCategory category : RetroNpcCategory.values())
 		{
