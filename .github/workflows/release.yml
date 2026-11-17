@@ -1,0 +1,39 @@
+name: Release jar
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build and attach the jar to
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '11'
+          cache: gradle
+
+      - name: Build jar
+        run: |
+          VERSION="${TAG#[vV]}"
+          ./gradlew jar --no-daemon -Pversion="$VERSION"
+
+      - name: Attach jar to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" build/libs/*.jar --clobber
