@@ -175,6 +175,47 @@ public class RetroGoblinMapping2006Test
 	}
 
 	@Test
+	public void testGeneralsAreDefs4493And4494()
+	{
+		RetroNpcData bentnoze = row(NpcID.GENERAL_BENTNOZE_RED);
+		assertArrayEquals(new int[]{5535, 16426, 16425, 5551, 5548, 15485}, bentnoze.getRetroModelIds());
+		assertArrayEquals(new short[]{14238, 8086, 2974}, bentnoze.getOriginalColors());
+		assertArrayEquals(new short[]{10782, 8732, 916}, bentnoze.getReplacementColors());
+		assertEquals(148, bentnoze.getScaleXZ());
+		assertEquals(AnimationID.GOBLIN_READY, bentnoze.getIdleAnimationId());
+		assertArrayEquals(new int[]{15551}, bentnoze.getChatheadModelIds());
+		assertSame(bentnoze, row(NpcID.SLICE_CUTSCENE_BENTNOZE));
+		assertSame(bentnoze, row(NpcID.GENERAL_BENTNOZE_RED_NOOP));
+
+		RetroNpcData wartface = row(NpcID.GENERAL_WARTFACE_GREEN);
+		assertArrayEquals(new int[]{2951, 16426, 16425, 5549, 5548, 15483}, wartface.getRetroModelIds());
+		assertArrayEquals(new short[]{14238, 8086, 2974, 916}, wartface.getOriginalColors());
+		assertArrayEquals(new short[]{10782, 8732, 25121, 22414}, wartface.getReplacementColors());
+		assertEquals(148, wartface.getScaleY());
+		assertArrayEquals(new int[]{144}, wartface.getChatheadModelIds());
+		assertSame(wartface, row(NpcID.SLICE_CUTSCENE_WARTFACE));
+
+		// Seated at the Recipe for Disaster feast
+		RetroNpcData seated = row(NpcID._100_GENERAL_WARTFACE);
+		assertArrayEquals(new int[]{2951, 16426, 16425, 5548}, seated.getRetroModelIds());
+		assertEquals(132, seated.getScaleXZ());
+		assertEquals(AnimationID._100_GOBTWO_SIT, seated.getIdleAnimationId());
+		assertEquals(AnimationID._100_GOB_SIT, row(NpcID._100_GENERAL_BENTNOZE).getIdleAnimationId());
+	}
+
+	/** Live still draws these from Dec-2006 defs 3407-3412 and 296/297. */
+	@Test
+	public void testGeneralsLiveAlreadyDrawsAsIn2006HaveNoRow()
+	{
+		for (int id : new int[]{NpcID.HUNDRED_GOBLIN_1, NpcID.HUNDRED_GOBLIN_2,
+			NpcID.HUNDRED_GOBLIN_1_FROZEN_BASE, NpcID.HUNDRED_GOBLIN_2_FROZEN_BASE,
+			NpcID.GENERAL_BENTNOZE, NpcID.GENERAL_WARTFACE})
+		{
+			assertNull("npc " + id, RetroNpcMapping.get(id, "General", GoblinEra.RETRO_2006));
+		}
+	}
+
+	@Test
 	public void testExcludedIdsStayExcluded()
 	{
 		assertNull(RetroNpcMapping.get(NpcID.PATTERN_GOBLIN1_DESK, "Goblin", GoblinEra.RETRO_2006));
@@ -219,6 +260,12 @@ public class RetroGoblinMapping2006Test
 			NpcID.GOBLIN_ARMED_MELEE_2, NpcID.GOBLIN_ARMED_MELEE_3, NpcID.GOBLIN_ARMED_MELEE_4,
 			NpcID.MCANNON_GOBLIN1, NpcID.GOBLIN_UNARMED_MCANNON_1, NpcID.GOBLIN_UNARMED_MCANNON_9,
 			NpcID.OBSERVATORY_GOBLIN_PATROL1, NpcID.OBSERVATORY_GOBLIN_PATROL2,
+			NpcID.GENERAL_BENTNOZE_RED, NpcID.SLICE_CUTSCENE_BENTNOZE, NpcID.GENERAL_BENTNOZE_RED_NOOP,
+			NpcID.GENERAL_WARTFACE_GREEN, NpcID.SLICE_CUTSCENE_WARTFACE, NpcID.GENERAL_WARTFACE_GREEN_NOOP,
+			NpcID._100_GENERAL_BENTNOZE, NpcID._100_GENERAL_WARTFACE,
+			NpcID.CATWALK_GOBLIN_BROWN, NpcID.CATWALK_GOBLIN_ORANGE, NpcID.CATWALK_GOBLIN_BLUE,
+			NpcID.CATWALK_GOBLIN_BROWN_NOOP, NpcID.CATWALK_GOBLIN_ORANGE_NOOP, NpcID.CATWALK_GOBLIN_BLUE_NOOP,
+			NpcID.SLICE_CUTSCENE_GRUBFOOT, NpcID.LOTG_GRUBFOOT, NpcID.LOTG_GRUBFOOT_FOLLOWER,
 		};
 		for (int id : ids)
 		{
@@ -233,7 +280,8 @@ public class RetroGoblinMapping2006Test
 	public void testModelIdsAreTheSpikeSet()
 	{
 		Set<Integer> expected = new HashSet<>();
-		for (int id : new int[]{2951, 2952, 2953, 2955, 2956, 2957, 2994, 142, 144, 15550, 15551, 15552})
+		for (int id : new int[]{2951, 2952, 2953, 2955, 2956, 2957, 2994, 142, 144, 15550, 15551, 15552,
+			15483, 15485, 16425, 16426})
 		{
 			expected.add(id);
 		}
@@ -241,7 +289,7 @@ public class RetroGoblinMapping2006Test
 		{
 			expected.add(id);
 		}
-		assertEquals(32, expected.size());
+		assertEquals(36, expected.size());
 		assertEquals(expected, RetroGoblinMapping2006.modelIds());
 	}
 

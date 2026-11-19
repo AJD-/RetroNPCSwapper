@@ -445,9 +445,9 @@ public class RetroAssetGenerator
 			new int[]{4011, 4012, 4013, 8257, 8258, 8259, 8260, 8261, 41},
 			HUMAN_CHAT_EMOTES),
 		// The armoured goblins' heads, 298 green (142) and 299 red (144), which the Goblin guard 489
-		// shares. Their own rig and emotes, so a namespace of their own
+		// shares, and General Bentnoze's 145. Their own rig and emotes, so a namespace of their own
 		Spec.keyed("Goblin chatheads", RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE,
-			Source.RETRO, Source.RETRO, new int[]{142, 144}, GOBLIN_CHAT_EMOTES),
+			Source.RETRO, Source.RETRO, new int[]{142, 144, 145}, GOBLIN_CHAT_EMOTES),
 		// The 2006 goblins' extra head parts, on the same head rig, so posed by the Feb emotes above
 		Spec.keyed("Goblin chatheads (2006)", RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE,
 			Source.RETRO_2006, Source.RETRO_2006, new int[]{15550, 15551, 15552}, new int[]{})

@@ -143,6 +143,8 @@ public class RetroCacheTest
 		assertChathead(feb, 299, RetroNpcMapping.GOBLIN_RED);
 		assertChathead(feb, 489, RetroNpcMapping.GOBLIN_GUARD_DEFAULT);
 		assertChathead(feb, 100, RetroNpcMapping.GOBLIN_DEFAULT);
+		assertChathead(feb, 296, RetroNpcMapping.GENERAL_BENTNOZE);
+		assertChathead(feb, 297, RetroNpcMapping.GENERAL_WARTFACE);
 		assertChathead(feb, 887, RetroNpcMapping.CARNILLEAN_GUARD_DEFAULT);
 		for (Object[] row : ROUND_TABLE_DEFINITIONS)
 		{

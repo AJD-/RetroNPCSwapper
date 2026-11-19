@@ -1718,6 +1718,22 @@ public class RetroNpcMapping
 			.build();
 	}
 
+	/** A goblin row with its own scale and stance. */
+	private static RetroNpcData goblinPosed(int[] models, short[] find, short[] replace, int scale,
+		int stance, int walk, int... chathead)
+	{
+		return goblinBase()
+			.retroModelIds(models)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.chathead(chathead)
+			.chatheadKeyBase(RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE)
+			.idleAnimationId(stance)
+			.walkAnimationId(walk)
+			.recolors(find, replace)
+			.build();
+	}
+
 	/** What a goblin row has in every era: the category and the combat animations. */
 	static RetroNpcData.Builder goblinBase()
 	{
@@ -1761,6 +1777,38 @@ public class RetroNpcMapping
 	public static final RetroNpcData ANGRY_GOBLIN = goblin(
 		new int[]{5535, 5542, 5544, 5554, 5547, 5541},
 		new short[]{41, 14238, 8086, -22237, 935}, new short[]{4824, 1730, 3024, 970, 127});
+
+	// Defs 296 and 297, the generals. Bentnoze's skin pair also catches the 12 faces of live 2953
+	// that drifted to 14238
+	private static final short[] BENTNOZE_FIND = {916, 61, 14238};
+	private static final short[] BENTNOZE_REPLACE = {933, 933, 11158};
+	private static final short[] WARTFACE_FIND = {916, 61};
+	private static final short[] WARTFACE_REPLACE = {22443, 22443};
+
+	public static final RetroNpcData GENERAL_BENTNOZE = bentnoze(AnimationID.GOBLIN_READY, AnimationID.GOBLIN_WALK);
+	public static final RetroNpcData GENERAL_WARTFACE = wartface(AnimationID.GOBLIN_READY, AnimationID.GOBLIN_WALK);
+
+	private static RetroNpcData bentnoze(int stance, int walk)
+	{
+		return goblinPosed(GOBLIN_STRONG_PARTS, BENTNOZE_FIND, BENTNOZE_REPLACE, 128, stance, walk, 145);
+	}
+
+	private static RetroNpcData wartface(int stance, int walk)
+	{
+		return goblinPosed(GOBLIN_PARTS, WARTFACE_FIND, WARTFACE_REPLACE, 128, stance, walk, 144);
+	}
+
+	// Dec-2006 defs 4496-4498. No 2005 cache has a Grubfoot, so these rows serve both eras
+	private static final int[] GRUBFOOT_PARTS = {2951, 2953, 2955, 5548, 5538, 5541};
+	public static final RetroNpcData GRUBFOOT_BROWN = grubfoot(6798);
+	public static final RetroNpcData GRUBFOOT_ORANGE = grubfoot(4932);
+	public static final RetroNpcData GRUBFOOT_BLUE = grubfoot(-21604);
+
+	private static RetroNpcData grubfoot(int armour)
+	{
+		return goblinPosed(GRUBFOOT_PARTS, new short[]{916}, new short[]{(short) armour}, 108,
+			AnimationID.GOBLIN_READY, AnimationID.GOBLIN_WALK, 142, 15552);
+	}
 
 	// The 2005 hellhound is def 49: mesh 2997, no opcode 40 data, no resize. Found in the live cache.
 	private static final int HELLHOUND_BODY = 2997;
@@ -2985,6 +3033,32 @@ public class RetroNpcMapping
 
 		// A Soul's Bane
 		registerMapping(ANGRY_GOBLIN, NpcID.SOULBANE_ANGER_GOBLIN, NpcID.SOULBANE_GOBLIN);
+
+		// The generals. Deliberately left out: GENERAL_BENTNOZE and GENERAL_WARTFACE, which live
+		// still draws from defs 296 and 297
+		registerMapping(GENERAL_BENTNOZE, NpcID.GENERAL_BENTNOZE_RED, NpcID.SLICE_CUTSCENE_BENTNOZE,
+			NpcID.GENERAL_BENTNOZE_RED_NOOP);
+		registerMapping(GENERAL_WARTFACE, NpcID.GENERAL_WARTFACE_GREEN, NpcID.SLICE_CUTSCENE_WARTFACE,
+			NpcID.GENERAL_WARTFACE_GREEN_NOOP);
+		// Recipe for Disaster keeps each general's seated or frozen pose
+		registerMapping(bentnoze(AnimationID._100_GOB_SIT, AnimationID._100_GOB_SIT),
+			NpcID._100_GENERAL_BENTNOZE);
+		registerMapping(bentnoze(AnimationID._100_GOBTWO_SIT, AnimationID._100_GOBTWO_SIT),
+			NpcID.HUNDRED_GOBLIN_2);
+		registerMapping(bentnoze(AnimationID._100_GOBTWO_FROZE, AnimationID._100_GOBTWO_FROZE),
+			NpcID.HUNDRED_GOBLIN_2_FROZEN_BASE);
+		registerMapping(wartface(AnimationID._100_GOBTWO_SIT, AnimationID._100_GOBTWO_SIT),
+			NpcID._100_GENERAL_WARTFACE);
+		registerMapping(wartface(AnimationID._100_GOB_SIT, AnimationID._100_GOB_SIT),
+			NpcID.HUNDRED_GOBLIN_1);
+		registerMapping(wartface(AnimationID._100_GOB_FROZE, AnimationID._100_GOB_FROZE),
+			NpcID.HUNDRED_GOBLIN_1_FROZEN_BASE);
+
+		// Grubfoot, by armour colour
+		registerMapping(GRUBFOOT_BROWN, NpcID.CATWALK_GOBLIN_BROWN, NpcID.CATWALK_GOBLIN_BROWN_NOOP,
+			NpcID.SLICE_CUTSCENE_GRUBFOOT, NpcID.LOTG_GRUBFOOT, NpcID.LOTG_GRUBFOOT_FOLLOWER);
+		registerMapping(GRUBFOOT_ORANGE, NpcID.CATWALK_GOBLIN_ORANGE, NpcID.CATWALK_GOBLIN_ORANGE_NOOP);
+		registerMapping(GRUBFOOT_BLUE, NpcID.CATWALK_GOBLIN_BLUE, NpcID.CATWALK_GOBLIN_BLUE_NOOP);
 
 		// Hellhounds
 		// Deliberately not registered:

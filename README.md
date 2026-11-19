@@ -10,7 +10,7 @@ are in the OSRS cache where they survived, and a bundled 2005 set where they did
 Each category can be toggled individually under **NPC Toggles** in the plugin config:
 
 - **Chickens**
-- **Goblins** — Modern, 2004/05 (one 2005 kit) or 2006 (the variant 2006 goblins)
+- **Goblins** — Modern, 2004/05 (one 2005 kit) or 2006 (the variant 2006 goblins); includes Generals Bentnoze and Wartface, and Grubfoot
 - **Skeletons**
 - **Zombies**
 - **Giants**

@@ -53,7 +53,7 @@ public class RetroChatheadReachTest
 		{0, 57, 84, 75}, {0, 57, 83, 75}, {0, 57, 84}, {0, 113, 101},
 		{NOV, 4011}, {NOV, 4012}, {NOV, 4013}, {NOV, 8257, 41}, {NOV, 8258}, {NOV, 8259}, {NOV, 8260},
 		{NOV, 8261},
-		{GOBLIN, 142}, {GOBLIN, 144}, {GOBLIN, 15550}, {GOBLIN, 15551}, {GOBLIN, 15552},
+		{GOBLIN, 142}, {GOBLIN, 144}, {GOBLIN, 145}, {GOBLIN, 15550}, {GOBLIN, 15551}, {GOBLIN, 15552},
 		{GOBLIN, 142, 15550}, {GOBLIN, 142, 15552}};
 
 	/** The heads that move whole or not at all, which only have to be in the bundle. */
