@@ -302,6 +302,44 @@ public class RetroCacheTest
 		}
 	}
 
+	private static final Object[][] CAVE_GOBLIN_NOV_DEFINITIONS = {
+		{1822, RetroNpcMapping.CAVE_GOBLINS.get(0)}, {1823, RetroNpcMapping.CAVE_GOBLINS.get(1)},
+		{1824, RetroNpcMapping.CAVE_GOBLINS.get(2)}, {1825, RetroNpcMapping.CAVE_GOBLINS.get(3)},
+		{2069, RetroNpcMapping.CAVE_GOBLIN_MINERS.get(0)}, {2070, RetroNpcMapping.CAVE_GOBLIN_MINERS.get(1)},
+		{2071, RetroNpcMapping.CAVE_GOBLIN_MINERS.get(2)}, {2072, RetroNpcMapping.CAVE_GOBLIN_MINERS.get(3)},
+		{2075, RetroNpcMapping.CAVE_GOBLIN_MINERS_MINING.get(0)},
+		{2076, RetroNpcMapping.CAVE_GOBLIN_MINERS_MINING.get(1)},
+		{2077, RetroNpcMapping.CAVE_GOBLIN_MINERS_MINING.get(2)},
+		{2078, RetroNpcMapping.CAVE_GOBLIN_MINERS_MINING.get(3)},
+		{2073, RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR}, {2074, RetroNpcMapping.CAVE_GOBLIN_GUARD_CLUB},
+		{2086, RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR},
+		{2084, RetroNpcMapping.MISTAG}, {2089, RetroNpcMapping.MISTAG_CUTSCENE},
+		{2087, RetroNpcMapping.UR_TAG}};
+
+	/** The cave goblins first appear in Nov-2005; the guards pair with live by combat level. */
+	@Test
+	public void testCaveGoblinArchetypesAreTheirNov2005Definitions() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
+		assumeTrue("Nov-2005 cache not present at " + NOV_CACHE_DIR, NOV_CACHE_DIR.exists());
+
+		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
+		for (Object[] row : CAVE_GOBLIN_NOV_DEFINITIONS)
+		{
+			assertSheepDefinition(nov.get((int) row[0]), (RetroNpcData) row[1]);
+			assertChathead(nov, (int) row[0], (RetroNpcData) row[1]);
+		}
+		assertEquals(26, nov.get(2073).getCombatLevel());
+		assertEquals(24, nov.get(2074).getCombatLevel());
+
+		// February has none of them
+		for (RetroNpcDefinition def : NpcMappingGenerator.decodeDefinitions(CACHE_DIR).values())
+		{
+			String name = def.getName() == null ? "" : def.getName().toLowerCase();
+			assertFalse(name, name.contains("cave goblin") || name.equals("mistag") || name.equals("ur-tag"));
+		}
+	}
+
 	private static void assertSheepDefinition(RetroNpcDefinition def, RetroNpcData data)
 	{
 		String label = def.getId() + " " + def.getName();

@@ -42,7 +42,7 @@ final class RetroChangelog
 					"Added retro fishing spot animations, Custom Servants compatibility, and a variety of bugfixes"),
 			new Release("2.8.1", "Added 2DScape compatibility, Region Locker GPU Plugin compatibility"),
 			new Release("2.9.0", "Added 'era' dropdown for Goblins, Added Barbarians, and split Spider Toggles"),
-			new Release("2.9.1", "Added Sheep, Unicorns, Souls Bane NPC overrides, Goblin Generals and Grubfoot")
+			new Release("2.9.1", "Added Sheep, Unicorns, Souls Bane NPC overrides, and Cave Goblins")
 	);
 
 	private final Release latest;

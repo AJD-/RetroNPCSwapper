@@ -191,6 +191,11 @@ public class RetroAssetGenerator
 		// The unicorn was remodelled and re-rigged in place by Dec-2006, clips 288-292 with it
 		new Spec("Unicorns", Source.RETRO, Source.RETRO, new int[]{2933},
 			new int[]{288, 289, 290, 291, 292}),
+		// The Lost Tribe cave goblins. Live keeps every mesh but re-bound two neck vertices that
+		// live framemap 33 no longer moves with the body, so meshes and clips are both Nov-2005
+		Spec.keyed("Cave goblins", RetroAssetBundle.NOV_HUMAN_KEY_BASE, Source.RETRO_NOV, Source.RETRO_NOV,
+			new int[]{5781, 5782, 5783, 5784, 6933, 6934, 6935, 6936, 6937, 6938, 6939, 6940, 6941, 6942, 6943},
+			new int[]{1783, 1784, 1785, 1786, 1787, 2118, 2119, 2120, 2121, 2123, 2124}),
 		// The Thing's Dec-2006 kit; live replaced both meshes at the same ids. Clips stay LIVE:
 		// their frames are the 2006 ones, and live framemap 347 only adds groups the kit lacks
 		new Spec("The Thing", Source.RETRO_2006, Source.LIVE, new int[]{14084, 14085},
@@ -439,10 +444,11 @@ public class RetroAssetGenerator
 			HUMAN_CHAT_EMOTES),
 		// The Lletya elves' heads. Nov re-authored the human rig, heads included, so these and their
 		// emotes sit in the Nov namespace beside the bodies. 41 is Gethin's chef's hat, the second
-		// part of his head
+		// part of his head. 5798 and 6954-6957 are the cave goblins', which bind the human head's
+		// groups rather than the goblin's
 		Spec.keyed("Chatheads (Nov 2005)", RetroAssetBundle.NOV_HUMAN_KEY_BASE,
 			Source.RETRO_NOV, Source.RETRO_NOV,
-			new int[]{4011, 4012, 4013, 8257, 8258, 8259, 8260, 8261, 41},
+			new int[]{4011, 4012, 4013, 8257, 8258, 8259, 8260, 8261, 41, 5798, 6954, 6955, 6956, 6957},
 			HUMAN_CHAT_EMOTES),
 		// The armoured goblins' heads, 298 green (142) and 299 red (144), which the Goblin guard 489
 		// shares, and General Bentnoze's 145. Their own rig and emotes, so a namespace of their own

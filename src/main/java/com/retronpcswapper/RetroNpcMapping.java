@@ -1810,6 +1810,93 @@ public class RetroNpcMapping
 			AnimationID.GOBLIN_READY, AnimationID.GOBLIN_WALK, 142, 15552);
 	}
 
+	// Live cave goblins are expected to fight on the Dorgesh-Kaan set; the 2005 ids are listed too
+	public static final Set<Integer> CAVE_GOBLIN_MODERN_ATTACKS = Set.of(
+		AnimationID.DORGESH_GOBLIN_UNARMED_ATTACK, AnimationID.DORGESH_GOBLIN_CLUB_ATTACK,
+		AnimationID.CAVE_GOBLIN_ATTACK, AnimationID.CAVE_GOBLIN_BONE_SPEAR_ATTACK,
+		AnimationID.CAVE_GOBLIN_BONE_CLUB_ATTACK);
+	public static final Set<Integer> CAVE_GOBLIN_MODERN_DEFENDS = Set.of(
+		AnimationID.DORGESH_GOBLIN_UNARMED_DEFEND, AnimationID.DORGESH_GOBLIN_SPEAR_BLOCK,
+		AnimationID.CAVE_GOBLIN_DEFEND, AnimationID.CAVE_GOBLIN_BONE_SPEAR_BLOCK);
+	public static final Set<Integer> CAVE_GOBLIN_MODERN_DEATHS = Set.of(
+		AnimationID.DORGESH_GOBLIN_DEATH, AnimationID.CAVE_GOBLIN_DEATH);
+
+	// Nov-2005 kits: 5781 head, 5782 torso, 5783 legs, 5784 arms; 6942 pickaxe, 6943 spear, 6941 club
+	private static final int[] CAVE_GOBLIN_KIT = {5781, 5782, 5783, 5784};
+	private static final int[] CAVE_GOBLIN_MINER_KIT = {6936, 5782, 5783, 5784, 6942};
+	// The four colourways defs 1822-1825, 2069-2072 and 2075-2078 each repeat
+	private static final short[][] CAVE_GOBLIN_FIND = {
+		{10894, 14990}, {10894, 14990, 12942}, {10894, 14990, 12942, 8976},
+		{10894, 14990, 12942, 8976, 8609}};
+	private static final short[][] CAVE_GOBLIN_REPLACE = {
+		{8976, 12942}, {8976, 12467, 12463}, {12480, 12467, 12463, 12484},
+		{12480, 12467, 12463, 12484, 12488}};
+
+	private static RetroNpcData.Builder caveGoblin(int[] kit, int head, int colourway, int stance, int walk)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.CAVE_GOBLINS)
+			.retroModelIds(kit)
+			.assetKeyBase(RetroAssetBundle.NOV_HUMAN_KEY_BASE)
+			.chathead(head)
+			.recolors(CAVE_GOBLIN_FIND[colourway], CAVE_GOBLIN_REPLACE[colourway])
+			.idleAnimationId(stance)
+			.walkAnimationId(walk)
+			.attackAnimationId(AnimationID.CAVE_GOBLIN_ATTACK)
+			.defendAnimationId(AnimationID.CAVE_GOBLIN_DEFEND)
+			.deathAnimationId(AnimationID.CAVE_GOBLIN_DEATH)
+			.modernAttackAnims(CAVE_GOBLIN_MODERN_ATTACKS)
+			.modernDefendAnims(CAVE_GOBLIN_MODERN_DEFENDS)
+			.modernDeathAnims(CAVE_GOBLIN_MODERN_DEATHS);
+	}
+
+	private static List<RetroNpcData> caveGoblins(int[] kit, int head, int stance)
+	{
+		List<RetroNpcData> rows = new ArrayList<>();
+		for (int colourway = 0; colourway < CAVE_GOBLIN_FIND.length; colourway++)
+		{
+			rows.add(caveGoblin(kit, head, colourway, stance, AnimationID.CAVE_GOBLIN_WALK).build());
+		}
+		return Collections.unmodifiableList(rows);
+	}
+
+	/** Nov-2005 definitions 1822-1825. */
+	public static final List<RetroNpcData> CAVE_GOBLINS = caveGoblins(CAVE_GOBLIN_KIT, 5798,
+		AnimationID.CAVE_GOBLIN_READY);
+
+	/** Nov-2005 definitions 2069-2072, and 2075-2078 at work. */
+	public static final List<RetroNpcData> CAVE_GOBLIN_MINERS =
+		caveGoblins(CAVE_GOBLIN_MINER_KIT, 6957, AnimationID.CAVE_GOBLIN_READY);
+	public static final List<RetroNpcData> CAVE_GOBLIN_MINERS_MINING =
+		caveGoblins(CAVE_GOBLIN_MINER_KIT, 6957, AnimationID.CAVE_GOBLIN_MINING);
+
+	private static RetroNpcData caveGoblinGuard(int weapon, int attack)
+	{
+		return caveGoblin(new int[]{6934, 6937, 5783, 5784, weapon}, 6955, 0,
+			AnimationID.CAVE_GOBLIN_BONE_SPEAR_READY, AnimationID.CAVE_GOBLIN_BONE_SPEAR_WALK)
+			.attackAnimationId(attack)
+			.defendAnimationId(AnimationID.CAVE_GOBLIN_BONE_SPEAR_BLOCK)
+			.build();
+	}
+
+	/** Nov-2005 definition 2073, level 26, which Kazgar (2086) repeats. */
+	public static final RetroNpcData CAVE_GOBLIN_GUARD_SPEAR =
+		caveGoblinGuard(6943, AnimationID.CAVE_GOBLIN_BONE_SPEAR_ATTACK);
+
+	/** Nov-2005 definition 2074, level 24. */
+	public static final RetroNpcData CAVE_GOBLIN_GUARD_CLUB =
+		caveGoblinGuard(6941, AnimationID.CAVE_GOBLIN_BONE_CLUB_ATTACK);
+
+	/** Nov-2005 definitions 2084, and 2089 in the cutscene. */
+	public static final RetroNpcData MISTAG = caveGoblin(new int[]{6933, 6938, 6940, 5784}, 6954, 0,
+		AnimationID.CAVE_GOBLIN_READY, AnimationID.CAVE_GOBLIN_WALK).build();
+	public static final RetroNpcData MISTAG_CUTSCENE = caveGoblin(new int[]{5781, 6938, 6940, 5784}, 5798, 0,
+		AnimationID.CAVE_GOBLIN_READY, AnimationID.CAVE_GOBLIN_WALK).build();
+
+	/** Nov-2005 definition 2087. */
+	public static final RetroNpcData UR_TAG = caveGoblin(new int[]{6935, 6939, 5784}, 6956, 0,
+		AnimationID.CAVE_GOBLIN_READY, AnimationID.CAVE_GOBLIN_WALK).build();
+
 	// The 2005 hellhound is def 49: mesh 2997, no opcode 40 data, no resize. Found in the live cache.
 	private static final int HELLHOUND_BODY = 2997;
 
@@ -3059,6 +3146,27 @@ public class RetroNpcMapping
 			NpcID.SLICE_CUTSCENE_GRUBFOOT, NpcID.LOTG_GRUBFOOT, NpcID.LOTG_GRUBFOOT_FOLLOWER);
 		registerMapping(GRUBFOOT_ORANGE, NpcID.CATWALK_GOBLIN_ORANGE, NpcID.CATWALK_GOBLIN_ORANGE_NOOP);
 		registerMapping(GRUBFOOT_BLUE, NpcID.CATWALK_GOBLIN_BLUE, NpcID.CATWALK_GOBLIN_BLUE_NOOP);
+
+		// The Lost Tribe cave goblins, in id order over each def run; guards by combat level.
+		// Deliberately left out: Dorgesh-Kaan and its citizens, which no 2005 or 2006 cache defines
+		int[] caveGoblins = {NpcID.CAVE_GOBLIN, NpcID.CAVE_GOBLIN2, NpcID.CAVE_GOBLIN3, NpcID.CAVE_GOBLIN4};
+		int[] miners = {NpcID.CAVE_GOBLIN_MINER, NpcID.CAVE_GOBLIN_MINER2, NpcID.CAVE_GOBLIN_MINER3,
+			NpcID.CAVE_GOBLIN_MINER4};
+		int[] mining = {NpcID.CAVE_GOBLIN_MINER_MINING, NpcID.CAVE_GOBLIN_MINER2_MINING,
+			NpcID.CAVE_GOBLIN_MINER3_MINING, NpcID.CAVE_GOBLIN_MINER4_MINING};
+		for (int i = 0; i < caveGoblins.length; i++)
+		{
+			registerMapping(CAVE_GOBLINS.get(i), caveGoblins[i]);
+			registerMapping(CAVE_GOBLIN_MINERS.get(i), miners[i]);
+			registerMapping(CAVE_GOBLIN_MINERS_MINING.get(i), mining[i]);
+		}
+		registerMapping(CAVE_GOBLIN_GUARD_SPEAR, NpcID.CAVE_GOBLIN_GUARD1,
+			NpcID.LOST_TRIBE_GUIDE_2OPS, NpcID.LOST_TRIBE_GUIDE_3OPS);
+		registerMapping(CAVE_GOBLIN_GUARD_CLUB, NpcID.CAVE_GOBLIN_GUARD2);
+		registerMapping(MISTAG, NpcID.LOST_TRIBE_MISTAG_1OP, NpcID.LOST_TRIBE_MISTAG_2OPS,
+			NpcID.LOST_TRIBE_MISTAG_3OPS);
+		registerMapping(MISTAG_CUTSCENE, NpcID.LOST_TRIBE_CUTSCENE_MISTAG);
+		registerMapping(UR_TAG, NpcID.LOST_TRIBE_CUTSCENE_URTAG);
 
 		// Hellhounds
 		// Deliberately not registered:

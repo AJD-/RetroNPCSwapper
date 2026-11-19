@@ -1351,6 +1351,71 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testLostTribeCaveGoblinsResolveInBothEras()
+	{
+		Object[][] rows = {
+			{NpcID.CAVE_GOBLIN, RetroNpcMapping.CAVE_GOBLINS.get(0)},
+			{NpcID.CAVE_GOBLIN4, RetroNpcMapping.CAVE_GOBLINS.get(3)},
+			{NpcID.CAVE_GOBLIN_MINER2, RetroNpcMapping.CAVE_GOBLIN_MINERS.get(1)},
+			{NpcID.CAVE_GOBLIN_MINER3_MINING, RetroNpcMapping.CAVE_GOBLIN_MINERS_MINING.get(2)},
+			{NpcID.CAVE_GOBLIN_GUARD1, RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR},
+			{NpcID.CAVE_GOBLIN_GUARD2, RetroNpcMapping.CAVE_GOBLIN_GUARD_CLUB},
+			{NpcID.LOST_TRIBE_GUIDE_2OPS, RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR},
+			{NpcID.LOST_TRIBE_GUIDE_3OPS, RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR},
+			{NpcID.LOST_TRIBE_MISTAG_1OP, RetroNpcMapping.MISTAG},
+			{NpcID.LOST_TRIBE_MISTAG_2OPS, RetroNpcMapping.MISTAG},
+			{NpcID.LOST_TRIBE_MISTAG_3OPS, RetroNpcMapping.MISTAG},
+			{NpcID.LOST_TRIBE_CUTSCENE_MISTAG, RetroNpcMapping.MISTAG_CUTSCENE},
+			{NpcID.LOST_TRIBE_CUTSCENE_URTAG, RetroNpcMapping.UR_TAG}};
+		for (Object[] row : rows)
+		{
+			int id = (int) row[0];
+			RetroNpcData data = (RetroNpcData) row[1];
+			assertEquals(RetroNpcCategory.CAVE_GOBLINS, data.getCategory());
+			// One Nov-2005 row for both eras; the Modern era is the category's toggle, not the lookup's
+			assertSame("npc " + id, data, RetroNpcMapping.get(id, "Cave goblin", GoblinEra.RETRO_2005));
+			assertSame("npc " + id, data, RetroNpcMapping.get(id, "Cave goblin", GoblinEra.RETRO_2006));
+		}
+
+		RetroNpcData spear = RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR;
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_SPEAR_READY, spear.getIdleAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_SPEAR_WALK, spear.getWalkAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_SPEAR_ATTACK, spear.getAttackAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_SPEAR_BLOCK, spear.getDefendAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_CLUB_ATTACK,
+			RetroNpcMapping.CAVE_GOBLIN_GUARD_CLUB.getAttackAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_MINING,
+			RetroNpcMapping.CAVE_GOBLIN_MINERS_MINING.get(0).getIdleAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_DEATH, RetroNpcMapping.CAVE_GOBLINS.get(0).getDeathAnimationId());
+	}
+
+	/** No cache defines Dorgesh-Kaan's cave goblins, so nothing by that name resolves. */
+	@Test
+	public void testDorgeshKaanStaysModern()
+	{
+		int[] ids = {
+			NpcID.DORGESH_MALE_1, NpcID.DORGESH_MALE_9, NpcID.DORGESH_FEMALE_1, NpcID.DORGESH_FEMALE_9,
+			NpcID.DORGESH_FEMALE_PATROL1, NpcID.DORGESH_MALE_PATROL2,
+			NpcID.SLICE_CAVE_GOBLIN1, NpcID.SLICE_CAVE_GOBLIN6,
+			NpcID.WGS_CAVE_GOBLIN_1_VIS, NpcID.WGS_CAVE_GOBLIN_2_VIS,
+			NpcID.DORGESH_URTAQ, NpcID.SLICE_URTAG_CUTSCENE, NpcID.DORGESH_ZANIK_THERE,
+			// The transform parents: their children are what resolves
+			NpcID.LOST_TRIBE_MISTAG, NpcID.LOST_TRIBE_GUIDE};
+		for (GoblinEra era : new GoblinEra[]{GoblinEra.RETRO_2005, GoblinEra.RETRO_2006})
+		{
+			for (int id : ids)
+			{
+				assertNull("npc " + id, RetroNpcMapping.get(id, "Cave goblin", era));
+				assertNull("npc " + id, RetroNpcMapping.get(id, "Ur-tag", era));
+			}
+			assertNull(RetroNpcMapping.get(0, "Cave goblin", era));
+			assertNull(RetroNpcMapping.get(0, "Cave goblin miner", era));
+			assertNull(RetroNpcMapping.get(0, "Cave goblin guard", era));
+			assertNull(RetroNpcMapping.get(0, "Mistag", era));
+		}
+	}
+
+	@Test
 	public void testPrifddinasCitizensWearTheirClanColors()
 	{
 		short[] find = {9137, 9152, 8792, 16701, 8652, 7595, 8741};
@@ -3900,6 +3965,11 @@ public class RetroNpcCategoryTest
 		assertChathead(NpcID.GENERAL_BENTNOZE_RED, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 145);
 		assertChathead(NpcID.GENERAL_WARTFACE_GREEN, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 144);
 		assertChathead(NpcID.CATWALK_GOBLIN_BROWN, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 142, 15552);
+		assertChathead(NpcID.CAVE_GOBLIN, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 5798);
+		assertChathead(NpcID.CAVE_GOBLIN_MINER, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 6957);
+		assertChathead(NpcID.CAVE_GOBLIN_GUARD1, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 6955);
+		assertChathead(NpcID.LOST_TRIBE_MISTAG_1OP, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 6954);
+		assertChathead(NpcID.LOST_TRIBE_CUTSCENE_URTAG, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 6956);
 		assertChathead(NpcID.GUARD_CARNILLEAN_VIS, null, 0, 60);
 		assertChathead(NpcID.KING_ARTHUR, null, 0, 53, 84, 43);
 		assertChathead(NpcID.KR_KEEP_KNIGHT, null, 0, 65);
