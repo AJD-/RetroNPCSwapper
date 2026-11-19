@@ -1467,6 +1467,54 @@ public class RetroNpcMapping
 		.walkAnimationId(AnimationID.THE_THING_WALK)
 		.build();
 
+	public static final Set<Integer> UNICORN_MODERN_ATTACKS = Set.of(AnimationID.UNICORN_REWORK_ATTACK);
+	public static final Set<Integer> UNICORN_MODERN_DEFENDS = Set.of(AnimationID.UNICORN_REWORK_DEFEND);
+	public static final Set<Integer> UNICORN_MODERN_DEATHS = Set.of(AnimationID.UNICORN_REWORK_DEATH);
+
+	// Remodelled in place by Dec-2006: the bundle holds the Feb-2005 mesh, the live cache the 2006 one
+	private static final int UNICORN_BODY = 2933;
+	private static final int ANGER_AURA = 14288;
+	private static final short[] BLACK_UNICORN_FIND = {7289, 8666, 6241, 115};
+	private static final short[] BLACK_UNICORN_REPLACE = {8, 652, 138, 26};
+
+	private static RetroNpcData.Builder unicorn(RetroNpcCategory category, int... kit)
+	{
+		return RetroNpcData.builder()
+			.category(category)
+			.retroModelIds(kit)
+			.idleAnimationId(AnimationID.UNICORN_READY)
+			.walkAnimationId(AnimationID.UNICORN_WALK)
+			.attackAnimationId(AnimationID.UNICORN_ATTACK)
+			.defendAnimationId(AnimationID.UNICORN_BLOCK)
+			.deathAnimationId(AnimationID.UNICORN_DEATH)
+			.modernAttackAnims(UNICORN_MODERN_ATTACKS)
+			.modernDefendAnims(UNICORN_MODERN_DEFENDS)
+			.modernDeathAnims(UNICORN_MODERN_DEATHS);
+	}
+
+	/** Feb-2005 definitions 89 and 987. */
+	public static final RetroNpcData UNICORN = unicorn(RetroNpcCategory.UNICORNS, UNICORN_BODY).build();
+
+	/** Feb-2005 definition 1328. */
+	public static final RetroNpcData UNICORN_FOAL = unicorn(RetroNpcCategory.UNICORNS, UNICORN_BODY)
+		.recolors(new short[]{7289, 8666, 115}, new short[]{9445, 8906, 86})
+		.scaleXZ(96).scaleY(96).build();
+
+	/** Feb-2005 definition 133. */
+	public static final RetroNpcData BLACK_UNICORN = unicorn(RetroNpcCategory.UNICORNS, UNICORN_BODY)
+		.recolors(BLACK_UNICORN_FIND, BLACK_UNICORN_REPLACE).build();
+
+	/** Feb-2005 definition 1329. */
+	public static final RetroNpcData BLACK_UNICORN_FOAL = unicorn(RetroNpcCategory.UNICORNS, UNICORN_BODY)
+		.recolors(BLACK_UNICORN_FIND, BLACK_UNICORN_REPLACE)
+		.scaleXZ(96).scaleY(96).build();
+
+	/** Dec-2006 definitions 3646 and 3661, on the 2006 mesh. */
+	public static final RetroNpcData ANGRY_UNICORN = unicorn(RetroNpcCategory.ANGRY_UNICORNS,
+		UNICORN_BODY, ANGER_AURA)
+		.recolors(new short[]{7289, 6241, 115, 7244, 0}, new short[]{728, 1730, 11740, 970, 127})
+		.build();
+
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
 	 * vertices in both, 355 faces against 347 - so the cache-backed path can still load it.
@@ -1708,6 +1756,11 @@ public class RetroNpcMapping
 	// goblin's head 142
 	public static final RetroNpcData GOBLIN_GUARD_DEFAULT = goblin(
 		GOBLIN_ARMED_PARTS, GOBLIN_WEAPON_DRIFT_FIND, GOBLIN_WEAPON_DRIFT_REPLACE, 142);
+
+	/** Dec-2006 definitions 3648 and 3663. No 2005 goblin was angry, so this row serves both eras. */
+	public static final RetroNpcData ANGRY_GOBLIN = goblin(
+		new int[]{5535, 5542, 5544, 5554, 5547, 5541},
+		new short[]{41, 14238, 8086, -22237, 935}, new short[]{4824, 1730, 3024, 970, 127});
 
 	// The 2005 hellhound is def 49: mesh 2997, no opcode 40 data, no resize. Found in the live cache.
 	private static final int HELLHOUND_BODY = 2997;
@@ -2807,6 +2860,13 @@ public class RetroNpcMapping
 		registerMapping(DYED_SHEEP_YELLOW, NpcID.MOURNING_PLAGUESHEEP_4);
 		registerMapping(THE_THING, NpcID.SHEEP_SHEARER_THE_THING);
 
+		// Unicorns
+		registerMapping(UNICORN, NpcID.UNICORN, NpcID.UNICORN_LOWWANDER, NpcID.UNICORN_UPASS_VIS);
+		registerMapping(UNICORN_FOAL, NpcID.UNICORN_FOAL_1);
+		registerMapping(BLACK_UNICORN, NpcID.BLACK_UNICORN);
+		registerMapping(BLACK_UNICORN_FOAL, NpcID.BLACK_UNICORN_FOAL);
+		registerMapping(ANGRY_UNICORN, NpcID.SOULBANE_ANGER_UNICORN, NpcID.SOULBANE_UNICORN);
+
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.
 		NAME_MAPPINGS.put("hill giant", HILL_GIANT_DEFAULT);
@@ -2923,6 +2983,9 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("goblin guard", GOBLIN_GUARD_DEFAULT);
 		registerMapping(GOBLIN_GUARD_DEFAULT, NpcID.GOBLIN_GUARD);
 
+		// A Soul's Bane
+		registerMapping(ANGRY_GOBLIN, NpcID.SOULBANE_ANGER_GOBLIN, NpcID.SOULBANE_GOBLIN);
+
 		// Hellhounds
 		// Deliberately not registered:
 		// revenant hellhounds, the reanimated hellhound, the scarred hellhounds (DT2, their own mesh),
@@ -2969,9 +3032,8 @@ public class RetroNpcMapping
 		);
 
 		// Giant rats. The three Lumbridge gray variants need the ids registered for the recolor.
-		// Deliberately not registered: the angry giant rats (Soul's Bane), which were introduced after
-		// the cutoff for the cache the plugin is based off of
-		// TODO: Update the 2005 cache to December of 2005 to address this?
+		// Deliberately not registered: the angry giant rats (Soul's Bane). Live still draws their
+		// 2006 model
 		NAME_MAPPINGS.put("giant rat", GIANT_RAT_DEFAULT);
 		registerMapping(GIANT_RAT_DEFAULT,
 			NpcID.GIANTRAT, NpcID.GIANTRAT2, NpcID.GIANTRAT3,

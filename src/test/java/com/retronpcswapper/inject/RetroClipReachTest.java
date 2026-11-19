@@ -166,6 +166,8 @@ public class RetroClipReachTest
 		{252, 3783, 3786, 3787}, {253, 3783, 3786, 3787},
 		{249, 3786, 3784, 3787}, {250, 3786, 3784, 3787}, {251, 3786, 3784, 3787},
 		{252, 3786, 3784, 3787}, {253, 3786, 3784, 3787},
+		// The Feb-2005 unicorn
+		{288, 2933}, {289, 2933}, {290, 2933}, {291, 2933}, {292, 2933},
 		// The Thing, Dec-2006
 		{3568, 14084, 14085}, {3569, 14084, 14085}, {3570, 14084, 14085},
 		{58, 5237}, {59, 5237}, {60, 5237}, {61, 5237}, {62, 5237},
@@ -737,6 +739,42 @@ public class RetroClipReachTest
 			assertEquals(0, elf.getAssetKeyBase());
 			assertResolves(bundle, elf, false);
 		}
+	}
+
+	/** Nine Feb-2005 frames under a 17-frame live sequence: the death plays once, then holds. */
+	@Test
+	public void testTheUnicornDeathPlaysOnceAndHolds() throws Exception
+	{
+		RetroClip death = loadBundle().getClip(292);
+		assertNotNull(death);
+		assertEquals(17, death.getFrameCount());
+		for (int frame = 0; frame < 8; frame++)
+		{
+			assertFalse("frame " + frame + " repeats", sameFrame(death, frame, frame + 1));
+		}
+		for (int frame = 9; frame < 17; frame++)
+		{
+			assertTrue("frame " + frame + " leaves the corpse", sameFrame(death, frame, 8));
+		}
+	}
+
+	private static boolean sameFrame(RetroClip clip, int a, int b)
+	{
+		if (clip.getOpCount(a) != clip.getOpCount(b))
+		{
+			return false;
+		}
+		for (int op = 0; op < clip.getOpCount(a); op++)
+		{
+			if (clip.getTransform(a, op) != clip.getTransform(b, op)
+				|| clip.getDx(a, op) != clip.getDx(b, op)
+				|| clip.getDy(a, op) != clip.getDy(b, op)
+				|| clip.getDz(a, op) != clip.getDz(b, op))
+			{
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static void assertResolves(RetroAssetBundle bundle, RetroNpcData data, boolean nov)

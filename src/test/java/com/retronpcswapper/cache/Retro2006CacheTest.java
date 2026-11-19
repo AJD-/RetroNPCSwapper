@@ -25,6 +25,8 @@
 package com.retronpcswapper.cache;
 
 import com.retronpcswapper.RetroGoblinMapping2006;
+import com.retronpcswapper.RetroNpcData;
+import com.retronpcswapper.RetroNpcMapping;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
@@ -174,6 +176,81 @@ public class Retro2006CacheTest
 				Archive archive = store.getIndex(IndexType.MODELS).getArchive(id);
 				ModelDefinition live = new ModelLoader().load(id, archive.decompress(store.getStorage().loadArchive(archive)));
 				assertNotEquals("live " + id + " is a later model", reader.model(id).vertexCount, live.vertexCount);
+			}
+		}
+	}
+
+	/** A Soul's Bane: the goblin and unicorn kits live replaced, on meshes it still holds. */
+	@Test
+	public void testAngryGoblinAndUnicornDefinitions() throws Exception
+	{
+		Map<Integer, RetroNpcDefinition> defs = reader.npcDefinitions();
+		Object[][] rows = {
+			{3648, "Angry goblin", RetroNpcMapping.ANGRY_GOBLIN},
+			{3663, "Angry goblin", RetroNpcMapping.ANGRY_GOBLIN},
+			{3646, "Angry unicorn", RetroNpcMapping.ANGRY_UNICORN},
+			{3661, "Angry unicorn", RetroNpcMapping.ANGRY_UNICORN}};
+		for (Object[] row : rows)
+		{
+			RetroNpcDefinition def = defs.get((int) row[0]);
+			RetroNpcData data = (RetroNpcData) row[2];
+			String label = "def " + row[0];
+			assertEquals(label, row[1], def.getName());
+			assertArrayEquals(label, data.getRetroModelIds(), def.getModels());
+			assertArrayEquals(label, data.getOriginalColors(), def.getOriginalColors());
+			assertArrayEquals(label, data.getReplacementColors(), def.getReplacementColors());
+			assertEquals(label, data.getIdleAnimationId(), def.getStanceAnimation());
+			assertEquals(label, data.getWalkAnimationId(), def.getWalkAnimation());
+			assertEquals(label, data.getScaleXZ(), def.getScaleXZ());
+			assertEquals(label, data.getScaleY(), def.getScaleY());
+		}
+
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not found", liveDir != null);
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+			// The goblin parts are covered by the 2006 goblin set
+			for (int id : RetroNpcMapping.ANGRY_UNICORN.getRetroModelIds())
+			{
+				assertIdenticalInLive(store, id);
+			}
+		}
+	}
+
+	/** The 2006 angry bears and giant rats are the kits live still draws, so there is nothing to swap. */
+	@Test
+	public void testAngryBearsAndRatsAreAlreadyTheir2006Models() throws Exception
+	{
+		Map<Integer, RetroNpcDefinition> defs = reader.npcDefinitions();
+		int[] bear = {18882, 14288};
+		int[] rat = {18891, 18889, 18894, 18887};
+		int[] rat2 = {18892, 18890, 18895, 18887};
+		// def, name, kit; live 1060, 4692, 1062, 4689, 4690 in order
+		Object[][] rows = {
+			{3645, "Angry bear", bear}, {3664, "Angry bear", bear},
+			{3647, "Angry giant rat", rat}, {3662, "Angry giant rat", rat}, {4940, "Angry giant rat", rat2}};
+		Set<Integer> meshes = new TreeSet<>();
+		for (Object[] row : rows)
+		{
+			RetroNpcDefinition def = defs.get((int) row[0]);
+			assertEquals(row[1], def.getName());
+			assertArrayEquals((int[]) row[2], def.getModels());
+			for (int mesh : (int[]) row[2])
+			{
+				meshes.add(mesh);
+			}
+		}
+		assertEquals(9, meshes.size());
+
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not found", liveDir != null);
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+			for (int id : meshes)
+			{
+				assertIdenticalInLive(store, id);
 			}
 		}
 	}
