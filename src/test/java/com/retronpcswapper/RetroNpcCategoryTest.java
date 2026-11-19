@@ -349,6 +349,111 @@ public class RetroNpcCategoryTest
 	}
 
 	/**
+	 * Brutal dragons postdate the 2005 cache, so each wears the chromatic mesh of its colour, told
+	 * apart from the plain dragon by saturation - or, for black, by a saturated accent.
+	 */
+	@Test
+	public void testBrutalDragonsCategory()
+	{
+		String[] colors = {"green", "blue", "red", "black"};
+		int[][] ids = {
+			{NpcID.BRUT_GREEN_DRAGON, NpcID.DS2_BRUT_GREEN_DRAGON},
+			{NpcID.KOUREND_BLUE_DRAGON, NpcID.BRUTAL_BLUE_DRAGON_TAPOYAUIK},
+			{NpcID.KOUREND_RED_DRAGON, NpcID.DS2_BRUT_RED_DRAGON},
+			{NpcID.KOUREND_BLACK_DRAGON, NpcID.DS2_BRUT_BLACK_DRAGON_CUTSCENE, NpcID.DS2_BRUT_BLACK_DRAGON},
+		};
+
+		Set<List<Short>> palettes = new HashSet<>();
+		for (int i = 0; i < colors.length; i++)
+		{
+			String name = "Brutal " + colors[i] + " dragon";
+			RetroNpcData brutal = RetroNpcMapping.get(ids[i][0], name);
+			assertNotNull(name + " mapping must exist", brutal);
+			assertEquals(RetroNpcCategory.ADULT_DRAGONS, brutal.getCategory());
+			assertArrayEquals(name + " wears the chromatic mesh",
+				new int[]{2853, 2854}, brutal.getInjectedModelIds());
+			assertEquals(128, brutal.getScaleXZ());
+			assertEquals(128, brutal.getScaleY());
+
+			for (int id : ids[i])
+			{
+				assertSame(name + " variant " + id, brutal, RetroNpcMapping.get(id, name));
+			}
+
+			assertEquals(AnimationID.DRAGON_READY, brutal.getIdleAnimationId());
+			assertEquals(AnimationID.DRAGON_WALK, brutal.getWalkAnimationId());
+			assertEquals(AnimationID.DRAGON_ATTACK, brutal.getAttackAnimationId());
+			assertEquals(AnimationID.DRAGON_FIREBREATH_ALL_ATTACK,
+				brutal.getAttackAnimationFor(AnimationID.BRUT_DRAGON_CASTING));
+			assertEquals(AnimationID.DRAGON_ATTACK,
+				brutal.getAttackAnimationFor(AnimationID.DRAGON_RANGED_ATTACKS));
+			for (int retroNative : new int[]{80, 81, 82, 83, 84, 91})
+			{
+				assertFalse("sequence " + retroNative + " is already the retro one",
+					brutal.isAttackAnimation(retroNative));
+			}
+			assertEquals(AnimationID.DRAGON_BLOCK, brutal.getDefendAnimationId());
+			assertEquals(-1, brutal.getDeathAnimationId());
+
+			String plainName = Character.toUpperCase(colors[i].charAt(0)) + colors[i].substring(1) + " dragon";
+			RetroNpcData plain = RetroNpcMapping.get(-1, plainName);
+			assertNotNull(plainName + " mapping must exist", plain);
+			assertArrayEquals(new short[]{61}, plain.getOriginalColors());
+			short plainBody = plain.getReplacementColors()[0];
+
+			assertEquals(61, brutal.getOriginalColors()[0]);
+			short body = brutal.getReplacementColors()[0];
+			if (colors[i].equals("black"))
+			{
+				// Black has no hue to saturate, so the body is shared and the accent carries it
+				assertEquals(plainBody, body);
+				assertArrayEquals(new short[]{61, 41, 127}, brutal.getOriginalColors());
+				assertTrue("the wing accent must be saturated", saturation(brutal.getReplacementColors()[1]) > 0);
+				assertTrue("the trim accent must be saturated", saturation(brutal.getReplacementColors()[2]) > 0);
+			}
+			else
+			{
+				assertEquals(name + " keeps its counterpart's hue", hue(plainBody), hue(body));
+				assertEquals(name + " keeps its counterpart's lightness", lightness(plainBody), lightness(body));
+				assertTrue(name + " must be more saturated than " + plainName,
+					saturation(body) > saturation(plainBody));
+			}
+
+			assertTrue(name + " must not share a palette", palettes.add(palette(brutal)));
+			assertTrue(plainName + " must not share a palette", palettes.add(palette(plain)));
+		}
+
+		// Named BRUT_ in gameval, but a mithril dragon
+		assertSame(RetroNpcMapping.MITHRIL_DRAGON,
+			RetroNpcMapping.get(NpcID.BRUT_MITHRIL_DRAGON, "Mithril dragon"));
+	}
+
+	private static List<Short> palette(RetroNpcData data)
+	{
+		List<Short> palette = new ArrayList<>();
+		for (short color : data.getReplacementColors())
+		{
+			palette.add(color);
+		}
+		return palette;
+	}
+
+	private static int hue(short hsl)
+	{
+		return (hsl >> 10) & 63;
+	}
+
+	private static int saturation(short hsl)
+	{
+		return (hsl >> 7) & 7;
+	}
+
+	private static int lightness(short hsl)
+	{
+		return hsl & 127;
+	}
+
+	/**
 	 * The King Black Dragon reaches the category the same way every other adult dragon does -
 	 * by name, off the generated row, with no id registration anywhere.
 	 */
