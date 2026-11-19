@@ -41,6 +41,8 @@ public enum RetroNpcCategory
 	ADULT_DRAGONS(RetroNpcConfig::swapDragons, Geometry.BUNDLE_ONLY, Trait.DEFINITION_RECOLORS),
 	BABY_DRAGONS(RetroNpcConfig::swapDragons, Geometry.BUNDLE_ONLY, Trait.DEFINITION_RECOLORS),
 	GOBLINS(config -> config.goblinEra() != GoblinEra.MODERN, Geometry.CACHE),
+	// Shares the Goblins dropdown; the same rows in both eras
+	CAVE_GOBLINS(config -> config.goblinEra() != GoblinEra.MODERN, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
 	GUARDS(RetroNpcConfig::swapGuards, Geometry.BUNDLE_ONLY, Trait.DEFINITION_RECOLORS, Trait.ID_ONLY),
 	IMPS(RetroNpcConfig::swapImps, Geometry.BUNDLE_ONLY),
 	SKELETONS(RetroNpcConfig::swapSkeletons, Geometry.CACHE),

@@ -93,7 +93,7 @@ public interface RetroNpcConfig extends Config
 		description = "<html><body style='width:170px'>Draw swapped NPCs through geometry this "
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
 			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
-			+ "game cache. Turn it off and only Chickens, Goblins, Skeletons, Zombies, Hill Giants, "
+			+ "game cache. Turn it off and only Chickens, Goblins (not cave goblins), Skeletons, Zombies, Hill Giants, "
 			+ "Ghosts, Hellhounds, Giant Rats, Spiders, Bears, Fishing Spots, and small Scorpions will swap to their retro assets. "
             + "Hill Giants will wear a Jogre head.</body></html>",
 		position = 1
@@ -126,7 +126,8 @@ public interface RetroNpcConfig extends Config
 	@ConfigItem(
 		keyName = GOBLIN_ERA,
 		name = "Goblins",
-		description = "Modern: leave goblins alone. 2004/05: the single 2005 goblin model. 2006: the variant goblins added in 2006.",
+		description = "Modern: leave goblins alone. 2004/05: the single 2005 goblin model. 2006: the variant goblins added in 2006. Covers the Goblin Village generals and Grubfoot. "
+			+ "The Lost Tribe cave goblins take their 2005 look in both eras, and need Use Converted 2005 Assets.",
 		section = npcTogglesSection,
 		position = 2
 	)
@@ -449,7 +450,7 @@ public interface RetroNpcConfig extends Config
 		name = "Chatheads",
 		description = "<html><body style='width:170px'>Show a swapped NPC's 2004/2005 dialogue head in "
 			+ "place of its modern one, where its 2005 definition had one: Elves, Elena, the Knights "
-			+ "of the Round Table, Varrock NPCs, barbarians, Goblin Village goblins, guards, and "
+			+ "of the Round Table, Varrock NPCs, barbarians, Goblin Village goblins, cave goblins, guards, and "
 			+ "others.<br><br>Follows each NPC's own toggle, and needs <b>Use Converted 2005 Assets</b>, "
 			+ "which is on by default.</body></html>",
 		section = npcTogglesSection,

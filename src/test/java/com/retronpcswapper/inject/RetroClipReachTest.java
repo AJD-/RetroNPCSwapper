@@ -113,6 +113,10 @@ public class RetroClipReachTest
 			CLIP_FLOORS.put(NOV + humanClip, 60);
 		}
 		CLIP_FLOORS.put(NOV + 819, 55);
+		// The cave goblin stance and walk. Every legged kit reaches 100%; Mistag and Ur-tag wear a robe
+		// with no legs mesh, so the leg ops land on nothing: Mistag 83% and 87%, Ur-tag 66% and 74%
+		CLIP_FLOORS.put(NOV + 1783, 65);
+		CLIP_FLOORS.put(NOV + 1784, 70);
 	}
 
 	/**
@@ -168,6 +172,41 @@ public class RetroClipReachTest
 		{252, 3786, 3784, 3787}, {253, 3786, 3784, 3787},
 		// The Feb-2005 unicorn
 		{288, 2933}, {289, 2933}, {290, 2933}, {291, 2933}, {292, 2933},
+		// The Lost Tribe cave goblins, Nov-2005, a kit at a time
+		// cave goblin
+		{NOV + 1783, NOV + 5781, NOV + 5782, NOV + 5783, NOV + 5784},
+		{NOV + 1784, NOV + 5781, NOV + 5782, NOV + 5783, NOV + 5784},
+		{NOV + 1785, NOV + 5781, NOV + 5782, NOV + 5783, NOV + 5784},
+		{NOV + 1786, NOV + 5781, NOV + 5782, NOV + 5783, NOV + 5784},
+		{NOV + 1787, NOV + 5781, NOV + 5782, NOV + 5783, NOV + 5784},
+		// miner
+		{NOV + 1783, NOV + 6936, NOV + 5782, NOV + 5783, NOV + 5784, NOV + 6942},
+		{NOV + 1784, NOV + 6936, NOV + 5782, NOV + 5783, NOV + 5784, NOV + 6942},
+		{NOV + 1785, NOV + 6936, NOV + 5782, NOV + 5783, NOV + 5784, NOV + 6942},
+		{NOV + 1786, NOV + 6936, NOV + 5782, NOV + 5783, NOV + 5784, NOV + 6942},
+		{NOV + 1787, NOV + 6936, NOV + 5782, NOV + 5783, NOV + 5784, NOV + 6942},
+		{NOV + 2118, NOV + 6936, NOV + 5782, NOV + 5783, NOV + 5784, NOV + 6942},
+		// spear guard and Kazgar
+		{NOV + 2124, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6943},
+		{NOV + 2119, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6943},
+		{NOV + 2120, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6943},
+		{NOV + 2121, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6943},
+		{NOV + 1787, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6943},
+		// club guard
+		{NOV + 2124, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6941},
+		{NOV + 2119, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6941},
+		{NOV + 2123, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6941},
+		{NOV + 2121, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6941},
+		{NOV + 1787, NOV + 6934, NOV + 6937, NOV + 5783, NOV + 5784, NOV + 6941},
+		// Mistag
+		{NOV + 1783, NOV + 6933, NOV + 6938, NOV + 6940, NOV + 5784},
+		{NOV + 1784, NOV + 6933, NOV + 6938, NOV + 6940, NOV + 5784},
+		// Mistag in the cutscene
+		{NOV + 1783, NOV + 5781, NOV + 6938, NOV + 6940, NOV + 5784},
+		{NOV + 1784, NOV + 5781, NOV + 6938, NOV + 6940, NOV + 5784},
+		// Ur-tag
+		{NOV + 1783, NOV + 6935, NOV + 6939, NOV + 5784},
+		{NOV + 1784, NOV + 6935, NOV + 6939, NOV + 5784},
 		// The Thing, Dec-2006
 		{3568, 14084, 14085}, {3569, 14084, 14085}, {3570, 14084, 14085},
 		{58, 5237}, {59, 5237}, {60, 5237}, {61, 5237}, {62, 5237},

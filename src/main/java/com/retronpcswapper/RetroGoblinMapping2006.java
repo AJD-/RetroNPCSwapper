@@ -213,6 +213,22 @@ public final class RetroGoblinMapping2006
 	private static final RetroNpcData DEF_4492 = spear(p(5535, 5540, 5546, 5548, 2957), 124,
 		c(14238, 8086, 2974), c(14656, 8732, 22414), 15551);
 
+	// The generals; 3391 and 3392 are seated at the Recipe for Disaster feast
+	private static final short[] GENERAL_RED_FIND = c(14238, 8086, 2974);
+	private static final short[] GENERAL_RED_REPLACE = c(10782, 8732, 916);
+	private static final short[] GENERAL_GREEN_FIND = c(14238, 8086, 2974, 916);
+	private static final short[] GENERAL_GREEN_REPLACE = c(10782, 8732, 25121, 22414);
+	private static final RetroNpcData DEF_4493 = stand(p(5535, 16426, 16425, 5551, 5548, 15485), 148,
+		GENERAL_RED_FIND, GENERAL_RED_REPLACE, 15551);
+	private static final RetroNpcData DEF_4494 = stand(p(2951, 16426, 16425, 5549, 5548, 15483), 148,
+		GENERAL_GREEN_FIND, GENERAL_GREEN_REPLACE, 144);
+	private static final RetroNpcData DEF_3391 = goblin2006(p(2951, 16426, 16425, 5548), 132,
+		GENERAL_GREEN_FIND, GENERAL_GREEN_REPLACE,
+		AnimationID._100_GOBTWO_SIT, AnimationID._100_GOBTWO_SIT, 144);
+	private static final RetroNpcData DEF_3392 = goblin2006(p(5535, 16426, 16425, 5547), 132,
+		GENERAL_RED_FIND, GENERAL_RED_REPLACE,
+		AnimationID._100_GOB_SIT, AnimationID._100_GOB_SIT, 15551);
+
 	// Hobgoblin, no head
 	private static final RetroNpcData DEF_122 = goblin2006(p(2994), 128, null, null,
 		AnimationID.HOBGOBLIN_READY, AnimationID.HOBGOBLIN_WALK);
@@ -307,6 +323,21 @@ public final class RetroGoblinMapping2006
 
 		// A Soul's Bane, defs 3648 and 3663
 		register(RetroNpcMapping.ANGRY_GOBLIN, NpcID.SOULBANE_ANGER_GOBLIN, NpcID.SOULBANE_GOBLIN);
+
+		// The generals. Deliberately left out: the HUNDRED_GOBLIN ids, which live still draws from
+		// defs 3407-3412
+		register(DEF_4493, NpcID.GENERAL_BENTNOZE_RED, NpcID.SLICE_CUTSCENE_BENTNOZE,
+			NpcID.GENERAL_BENTNOZE_RED_NOOP);
+		register(DEF_4494, NpcID.GENERAL_WARTFACE_GREEN, NpcID.SLICE_CUTSCENE_WARTFACE,
+			NpcID.GENERAL_WARTFACE_GREEN_NOOP);
+		register(DEF_3391, NpcID._100_GENERAL_WARTFACE);
+		register(DEF_3392, NpcID._100_GENERAL_BENTNOZE);
+
+		// Grubfoot, defs 4496-4498
+		register(RetroNpcMapping.GRUBFOOT_BROWN, NpcID.CATWALK_GOBLIN_BROWN, NpcID.CATWALK_GOBLIN_BROWN_NOOP,
+			NpcID.SLICE_CUTSCENE_GRUBFOOT, NpcID.LOTG_GRUBFOOT, NpcID.LOTG_GRUBFOOT_FOLLOWER);
+		register(RetroNpcMapping.GRUBFOOT_ORANGE, NpcID.CATWALK_GOBLIN_ORANGE, NpcID.CATWALK_GOBLIN_ORANGE_NOOP);
+		register(RetroNpcMapping.GRUBFOOT_BLUE, NpcID.CATWALK_GOBLIN_BLUE, NpcID.CATWALK_GOBLIN_BLUE_NOOP);
 	}
 
 	private RetroGoblinMapping2006()

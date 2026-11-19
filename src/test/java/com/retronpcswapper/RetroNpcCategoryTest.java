@@ -1261,6 +1261,161 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testTheGeneralsWearDefs296And297In2005()
+	{
+		RetroNpcData bentnoze = RetroNpcMapping.GENERAL_BENTNOZE;
+		assertEquals(RetroNpcCategory.GOBLINS, bentnoze.getCategory());
+		assertArrayEquals(new int[]{2952, 2953, 2955, 2956}, bentnoze.getRetroModelIds());
+		assertArrayEquals(new short[]{916, 61, 14238}, bentnoze.getOriginalColors());
+		assertArrayEquals(new short[]{933, 933, 11158}, bentnoze.getReplacementColors());
+		assertEquals(128, bentnoze.getScaleXZ());
+		assertEquals(AnimationID.GOBLIN_READY, bentnoze.getIdleAnimationId());
+		assertEquals(AnimationID.GOBLIN_WALK, bentnoze.getWalkAnimationId());
+
+		RetroNpcData wartface = RetroNpcMapping.GENERAL_WARTFACE;
+		assertArrayEquals(new int[]{2951, 2953, 2955, 2956}, wartface.getRetroModelIds());
+		assertArrayEquals(new short[]{916, 61}, wartface.getOriginalColors());
+		assertArrayEquals(new short[]{22443, 22443}, wartface.getReplacementColors());
+
+		for (int id : new int[]{NpcID.GENERAL_BENTNOZE_RED, NpcID.SLICE_CUTSCENE_BENTNOZE,
+			NpcID.GENERAL_BENTNOZE_RED_NOOP})
+		{
+			assertSame(bentnoze, RetroNpcMapping.get(id, "General Bentnoze", GoblinEra.RETRO_2005));
+			assertNotSame(bentnoze, RetroNpcMapping.get(id, "General Bentnoze", GoblinEra.RETRO_2006));
+			assertNull(RetroNpcMapping.get(id, "General Bentnoze", GoblinEra.MODERN));
+		}
+		for (int id : new int[]{NpcID.GENERAL_WARTFACE_GREEN, NpcID.SLICE_CUTSCENE_WARTFACE,
+			NpcID.GENERAL_WARTFACE_GREEN_NOOP})
+		{
+			assertSame(wartface, RetroNpcMapping.get(id, "General Wartface", GoblinEra.RETRO_2005));
+			assertNull(RetroNpcMapping.get(id, "General Wartface", GoblinEra.MODERN));
+		}
+		// Id-only, and the two live still draws from defs 296 and 297 are left alone
+		assertNull(RetroNpcMapping.get(0, "General Bentnoze", GoblinEra.RETRO_2005));
+		assertNull(RetroNpcMapping.get(NpcID.GENERAL_BENTNOZE, "General Bentnoze", GoblinEra.RETRO_2005));
+		assertNull(RetroNpcMapping.get(NpcID.GENERAL_WARTFACE, "General Wartface", GoblinEra.RETRO_2005));
+	}
+
+	@Test
+	public void testRecipeForDisasterGeneralsKeepTheirPoseIn2005()
+	{
+		int[][] rows = {
+			{NpcID._100_GENERAL_BENTNOZE, AnimationID._100_GOB_SIT, 2952},
+			{NpcID.HUNDRED_GOBLIN_2, AnimationID._100_GOBTWO_SIT, 2952},
+			{NpcID.HUNDRED_GOBLIN_2_FROZEN_BASE, AnimationID._100_GOBTWO_FROZE, 2952},
+			{NpcID._100_GENERAL_WARTFACE, AnimationID._100_GOBTWO_SIT, 2951},
+			{NpcID.HUNDRED_GOBLIN_1, AnimationID._100_GOB_SIT, 2951},
+			{NpcID.HUNDRED_GOBLIN_1_FROZEN_BASE, AnimationID._100_GOB_FROZE, 2951}};
+		for (int[] row : rows)
+		{
+			RetroNpcData d = RetroNpcMapping.get(row[0], "General", GoblinEra.RETRO_2005);
+			assertNotNull("npc " + row[0], d);
+			assertEquals("npc " + row[0], row[1], d.getIdleAnimationId());
+			assertEquals("npc " + row[0], row[1], d.getWalkAnimationId());
+			assertArrayEquals(new int[]{row[2], 2953, 2955, 2956}, d.getRetroModelIds());
+			assertNull(RetroNpcMapping.get(row[0], "General", GoblinEra.MODERN));
+		}
+	}
+
+	@Test
+	public void testGrubfootWearsHis2006ModelInBothEras()
+	{
+		// Dec-2006 defs 4496-4498
+		RetroNpcData brown = RetroNpcMapping.GRUBFOOT_BROWN;
+		assertEquals(RetroNpcCategory.GOBLINS, brown.getCategory());
+		assertArrayEquals(new int[]{2951, 2953, 2955, 5548, 5538, 5541}, brown.getRetroModelIds());
+		assertArrayEquals(new short[]{916}, brown.getOriginalColors());
+		assertArrayEquals(new short[]{6798}, brown.getReplacementColors());
+		assertArrayEquals(new short[]{4932}, RetroNpcMapping.GRUBFOOT_ORANGE.getReplacementColors());
+		assertArrayEquals(new short[]{-21604}, RetroNpcMapping.GRUBFOOT_BLUE.getReplacementColors());
+		assertEquals(108, brown.getScaleXZ());
+		assertEquals(108, brown.getScaleY());
+
+		Object[][] rows = {
+			{brown, new int[]{NpcID.CATWALK_GOBLIN_BROWN, NpcID.CATWALK_GOBLIN_BROWN_NOOP,
+				NpcID.SLICE_CUTSCENE_GRUBFOOT, NpcID.LOTG_GRUBFOOT, NpcID.LOTG_GRUBFOOT_FOLLOWER}},
+			{RetroNpcMapping.GRUBFOOT_ORANGE,
+				new int[]{NpcID.CATWALK_GOBLIN_ORANGE, NpcID.CATWALK_GOBLIN_ORANGE_NOOP}},
+			{RetroNpcMapping.GRUBFOOT_BLUE,
+				new int[]{NpcID.CATWALK_GOBLIN_BLUE, NpcID.CATWALK_GOBLIN_BLUE_NOOP}}};
+		for (Object[] row : rows)
+		{
+			for (int id : (int[]) row[1])
+			{
+				assertSame(row[0], RetroNpcMapping.get(id, "Grubfoot", GoblinEra.RETRO_2005));
+				assertSame(row[0], RetroNpcMapping.get(id, "Grubfoot", GoblinEra.RETRO_2006));
+				assertNull(RetroNpcMapping.get(id, "Grubfoot", GoblinEra.MODERN));
+			}
+		}
+		assertNull(RetroNpcMapping.get(0, "Grubfoot", GoblinEra.RETRO_2005));
+	}
+
+	@Test
+	public void testLostTribeCaveGoblinsResolveInBothEras()
+	{
+		Object[][] rows = {
+			{NpcID.CAVE_GOBLIN, RetroNpcMapping.CAVE_GOBLINS.get(0)},
+			{NpcID.CAVE_GOBLIN4, RetroNpcMapping.CAVE_GOBLINS.get(3)},
+			{NpcID.CAVE_GOBLIN_MINER2, RetroNpcMapping.CAVE_GOBLIN_MINERS.get(1)},
+			{NpcID.CAVE_GOBLIN_MINER3_MINING, RetroNpcMapping.CAVE_GOBLIN_MINERS_MINING.get(2)},
+			{NpcID.CAVE_GOBLIN_GUARD1, RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR},
+			{NpcID.CAVE_GOBLIN_GUARD2, RetroNpcMapping.CAVE_GOBLIN_GUARD_CLUB},
+			{NpcID.LOST_TRIBE_GUIDE_2OPS, RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR},
+			{NpcID.LOST_TRIBE_GUIDE_3OPS, RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR},
+			{NpcID.LOST_TRIBE_MISTAG_1OP, RetroNpcMapping.MISTAG},
+			{NpcID.LOST_TRIBE_MISTAG_2OPS, RetroNpcMapping.MISTAG},
+			{NpcID.LOST_TRIBE_MISTAG_3OPS, RetroNpcMapping.MISTAG},
+			{NpcID.LOST_TRIBE_CUTSCENE_MISTAG, RetroNpcMapping.MISTAG_CUTSCENE},
+			{NpcID.LOST_TRIBE_CUTSCENE_URTAG, RetroNpcMapping.UR_TAG}};
+		for (Object[] row : rows)
+		{
+			int id = (int) row[0];
+			RetroNpcData data = (RetroNpcData) row[1];
+			assertEquals(RetroNpcCategory.CAVE_GOBLINS, data.getCategory());
+			// One Nov-2005 row for both eras; the Modern era is the category's toggle, not the lookup's
+			assertSame("npc " + id, data, RetroNpcMapping.get(id, "Cave goblin", GoblinEra.RETRO_2005));
+			assertSame("npc " + id, data, RetroNpcMapping.get(id, "Cave goblin", GoblinEra.RETRO_2006));
+		}
+
+		RetroNpcData spear = RetroNpcMapping.CAVE_GOBLIN_GUARD_SPEAR;
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_SPEAR_READY, spear.getIdleAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_SPEAR_WALK, spear.getWalkAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_SPEAR_ATTACK, spear.getAttackAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_SPEAR_BLOCK, spear.getDefendAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_BONE_CLUB_ATTACK,
+			RetroNpcMapping.CAVE_GOBLIN_GUARD_CLUB.getAttackAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_MINING,
+			RetroNpcMapping.CAVE_GOBLIN_MINERS_MINING.get(0).getIdleAnimationId());
+		assertEquals(AnimationID.CAVE_GOBLIN_DEATH, RetroNpcMapping.CAVE_GOBLINS.get(0).getDeathAnimationId());
+	}
+
+	/** No cache defines Dorgesh-Kaan's cave goblins, so nothing by that name resolves. */
+	@Test
+	public void testDorgeshKaanStaysModern()
+	{
+		int[] ids = {
+			NpcID.DORGESH_MALE_1, NpcID.DORGESH_MALE_9, NpcID.DORGESH_FEMALE_1, NpcID.DORGESH_FEMALE_9,
+			NpcID.DORGESH_FEMALE_PATROL1, NpcID.DORGESH_MALE_PATROL2,
+			NpcID.SLICE_CAVE_GOBLIN1, NpcID.SLICE_CAVE_GOBLIN6,
+			NpcID.WGS_CAVE_GOBLIN_1_VIS, NpcID.WGS_CAVE_GOBLIN_2_VIS,
+			NpcID.DORGESH_URTAQ, NpcID.SLICE_URTAG_CUTSCENE, NpcID.DORGESH_ZANIK_THERE,
+			// The transform parents: their children are what resolves
+			NpcID.LOST_TRIBE_MISTAG, NpcID.LOST_TRIBE_GUIDE};
+		for (GoblinEra era : new GoblinEra[]{GoblinEra.RETRO_2005, GoblinEra.RETRO_2006})
+		{
+			for (int id : ids)
+			{
+				assertNull("npc " + id, RetroNpcMapping.get(id, "Cave goblin", era));
+				assertNull("npc " + id, RetroNpcMapping.get(id, "Ur-tag", era));
+			}
+			assertNull(RetroNpcMapping.get(0, "Cave goblin", era));
+			assertNull(RetroNpcMapping.get(0, "Cave goblin miner", era));
+			assertNull(RetroNpcMapping.get(0, "Cave goblin guard", era));
+			assertNull(RetroNpcMapping.get(0, "Mistag", era));
+		}
+	}
+
+	@Test
 	public void testPrifddinasCitizensWearTheirClanColors()
 	{
 		short[] find = {9137, 9152, 8792, 16701, 8652, 7595, 8741};
@@ -3807,6 +3962,14 @@ public class RetroNpcCategoryTest
 		assertChathead(NpcID.GOBLIN_GREENARMOUR, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 142);
 		assertChathead(NpcID.GOBLIN_REDARMOUR, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 144);
 		assertChathead(NpcID.GOBLIN_GUARD, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 142);
+		assertChathead(NpcID.GENERAL_BENTNOZE_RED, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 145);
+		assertChathead(NpcID.GENERAL_WARTFACE_GREEN, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 144);
+		assertChathead(NpcID.CATWALK_GOBLIN_BROWN, null, RetroAssetBundle.GOBLIN_CHATHEAD_KEY_BASE, 142, 15552);
+		assertChathead(NpcID.CAVE_GOBLIN, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 5798);
+		assertChathead(NpcID.CAVE_GOBLIN_MINER, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 6957);
+		assertChathead(NpcID.CAVE_GOBLIN_GUARD1, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 6955);
+		assertChathead(NpcID.LOST_TRIBE_MISTAG_1OP, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 6954);
+		assertChathead(NpcID.LOST_TRIBE_CUTSCENE_URTAG, null, RetroAssetBundle.NOV_HUMAN_KEY_BASE, 6956);
 		assertChathead(NpcID.GUARD_CARNILLEAN_VIS, null, 0, 60);
 		assertChathead(NpcID.KING_ARTHUR, null, 0, 53, 84, 43);
 		assertChathead(NpcID.KR_KEEP_KNIGHT, null, 0, 65);

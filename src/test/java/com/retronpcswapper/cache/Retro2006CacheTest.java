@@ -24,6 +24,7 @@
  */
 package com.retronpcswapper.cache;
 
+import com.retronpcswapper.GoblinEra;
 import com.retronpcswapper.RetroGoblinMapping2006;
 import com.retronpcswapper.RetroNpcData;
 import com.retronpcswapper.RetroNpcMapping;
@@ -32,8 +33,11 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.cache.IndexType;
+import net.runelite.cache.NpcManager;
 import net.runelite.cache.definitions.ModelDefinition;
+import net.runelite.cache.definitions.NpcDefinition;
 import net.runelite.cache.definitions.loaders.ModelLoader;
 import net.runelite.cache.fs.Archive;
 import net.runelite.cache.fs.Store;
@@ -106,7 +110,7 @@ public class Retro2006CacheTest
 		assumeTrue("live cache not found", liveDir != null);
 
 		Set<Integer> ids = RetroGoblinMapping2006.modelIds();
-		assertEquals(32, ids.size());
+		assertEquals(36, ids.size());
 		try (Store store = new Store(liveDir))
 		{
 			store.load();
@@ -214,6 +218,70 @@ public class Retro2006CacheTest
 			for (int id : RetroNpcMapping.ANGRY_UNICORN.getRetroModelIds())
 			{
 				assertIdenticalInLive(store, id);
+			}
+		}
+	}
+
+	/** The generals and Grubfoot, by the live id each def is paired with. */
+	@Test
+	public void testGeneralAndGrubfootDefinitions()
+	{
+		Map<Integer, RetroNpcDefinition> defs = reader.npcDefinitions();
+		Object[][] rows = {
+			{4493, "General Bentnoze", NpcID.GENERAL_BENTNOZE_RED, new int[]{15551}},
+			{4494, "General Wartface", NpcID.GENERAL_WARTFACE_GREEN, new int[]{144}},
+			{3392, "General Bentnoze", NpcID._100_GENERAL_BENTNOZE, new int[]{15551}},
+			{3391, "General Wartface", NpcID._100_GENERAL_WARTFACE, new int[]{144}},
+			{4496, "Grubfoot", NpcID.CATWALK_GOBLIN_BROWN, new int[]{142, 15552}},
+			{4497, "Grubfoot", NpcID.CATWALK_GOBLIN_ORANGE, new int[]{142, 15552}},
+			{4498, "Grubfoot", NpcID.CATWALK_GOBLIN_BLUE, new int[]{142, 15552}}};
+		for (Object[] row : rows)
+		{
+			RetroNpcDefinition def = defs.get((int) row[0]);
+			RetroNpcData data = RetroNpcMapping.get((int) row[2], (String) row[1], GoblinEra.RETRO_2006);
+			String label = "def " + row[0];
+			assertNotNull(label, data);
+			assertEquals(label, row[1], def.getName());
+			assertArrayEquals(label, data.getRetroModelIds(), def.getModels());
+			assertArrayEquals(label, data.getOriginalColors(), def.getOriginalColors());
+			assertArrayEquals(label, data.getReplacementColors(), def.getReplacementColors());
+			assertEquals(label, data.getIdleAnimationId(), def.getStanceAnimation());
+			assertEquals(label, data.getWalkAnimationId(), def.getWalkAnimation());
+			assertEquals(label, data.getScaleXZ(), def.getScaleXZ());
+			assertEquals(label, data.getScaleY(), def.getScaleY());
+			assertArrayEquals(label, (int[]) row[3], def.getAdditionalModels());
+			assertArrayEquals(label, (int[]) row[3], data.getChatheadModelIds());
+		}
+	}
+
+	/** Live still draws the Recipe for Disaster generals from defs 3407-3412, so 2006 has nothing to swap. */
+	@Test
+	public void testRecipeForDisasterGeneralsAreAlreadyTheir2006Definitions() throws Exception
+	{
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not found", liveDir != null);
+
+		Map<Integer, RetroNpcDefinition> defs = reader.npcDefinitions();
+		int[][] pairs = {
+			{NpcID.HUNDRED_GOBLIN_1, 3407}, {NpcID.HUNDRED_GOBLIN_2, 3408},
+			{NpcID.HUNDRED_GOBLIN_1_FROZEN_BASE, 3410}, {NpcID.HUNDRED_GOBLIN_2_FROZEN_BASE, 3412}};
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+			NpcManager npcs = new NpcManager(store);
+			npcs.load();
+			for (int[] pair : pairs)
+			{
+				NpcDefinition live = npcs.get(pair[0]);
+				RetroNpcDefinition def = defs.get(pair[1]);
+				String label = "live " + pair[0] + " / def " + pair[1];
+				assertEquals(label, def.getName(), live.name);
+				assertArrayEquals(label, def.getModels(), live.models);
+				assertArrayEquals(label, def.getOriginalColors(), live.recolorToFind);
+				assertArrayEquals(label, def.getReplacementColors(), live.recolorToReplace);
+				assertEquals(label, def.getStanceAnimation(), live.standingAnimation);
+				assertEquals(label, def.getScaleXZ(), live.widthScale);
+				assertEquals(label, def.getScaleY(), live.heightScale);
 			}
 		}
 	}

@@ -10,7 +10,7 @@ are in the OSRS cache where they survived, and a bundled 2005 set where they did
 Each category can be toggled individually under **NPC Toggles** in the plugin config:
 
 - **Chickens**
-- **Goblins** — Modern, 2004/05 (one 2005 kit) or 2006 (the variant 2006 goblins)
+- **Goblins** — Modern, 2004/05 (one 2005 kit) or 2006 (the variant 2006 goblins); includes Generals Bentnoze and Wartface, Grubfoot, and the Lost Tribe cave goblins (same 2005 look in both eras)
 - **Skeletons**
 - **Zombies**
 - **Giants**
@@ -102,8 +102,8 @@ the live objects around it. The Varrock retextures are not supported.
   numeric model and animation IDs, and every asset it displays already comes from the live game
   cache.
 - **The injected categories ship their assets.** Dragons, demons, imps, guards, elves, the Knights
-  of the Round Table, the Varrock NPCs, the barbarians, sheep, unicorns, cows, scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
-  live cache, so `retro-assets.dat` (~299 KB) is bundled in the jar and carries their meshes, rigs and animation
+  of the Round Table, the Varrock NPCs, the barbarians, sheep, unicorns, the cave goblins, cows, scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
+  live cache, so `retro-assets.dat` (~321 KB) is bundled in the jar and carries their meshes, rigs and animation
   clips, extracted from the February 2005 & November 2005 & December 2006 caches. The 2006 goblin
   bodies need no bundle (their meshes and clips are currently unchanged in the live cache); only their chathead parts
   are bundled.

@@ -135,7 +135,7 @@ public class RetroNpcCategoryRulesTest
 	{
 		RetroNpcConfig config = allOn();
 		when(config.goblinEra()).thenReturn(GoblinEra.MODERN);
-		assertOnlyOff(config, GOBLINS);
+		assertOnlyOff(config, GOBLINS, CAVE_GOBLINS);
 
 		when(config.goblinEra()).thenReturn(GoblinEra.RETRO_2006);
 		assertOnlyOff(config);
@@ -147,12 +147,12 @@ public class RetroNpcCategoryRulesTest
 		assertOwns(RetroNpcConfig::useInjectionPipeline,
 			ADULT_DRAGONS, BABY_DRAGONS, LESSER_DEMONS, GREATER_DEMONS, BLACK_DEMONS, IMPS,
 			FIRE_GIANTS, ICE_GIANTS, MOSS_GIANTS, CYCLOPS, GUARDS, SKELETON_MAGES, COWS, SCORPIONS,
-			ELVES, KALPHITES, ROUND_TABLE, VARROCK, BARBARIANS, SHEEP, UNICORNS);
+			ELVES, KALPHITES, ROUND_TABLE, VARROCK, BARBARIANS, SHEEP, UNICORNS, CAVE_GOBLINS);
 	}
 	private static final Set<RetroNpcCategory> BUNDLE_ONLY = EnumSet.of(
 		ADULT_DRAGONS, BABY_DRAGONS, LESSER_DEMONS, GREATER_DEMONS, BLACK_DEMONS, IMPS,
 		FIRE_GIANTS, ICE_GIANTS, MOSS_GIANTS, CYCLOPS, GUARDS, SKELETON_MAGES, COWS, SCORPIONS,
-		ELVES, KALPHITES, ROUND_TABLE, VARROCK, BARBARIANS, SHEEP, UNICORNS);
+		ELVES, KALPHITES, ROUND_TABLE, VARROCK, BARBARIANS, SHEEP, UNICORNS, CAVE_GOBLINS);
 
 	@Test
 	public void testTheCategoriesOnlyTheBundleCanDraw()
@@ -184,7 +184,7 @@ public class RetroNpcCategoryRulesTest
 	public void testTheCategoriesMatchedByIdAlone()
 	{
 		Set<RetroNpcCategory> idOnly = EnumSet.of(GUARDS, ELVES, ROUND_TABLE, VARROCK, BARBARIANS, SHEEP,
-			UNICORNS, ANGRY_UNICORNS);
+			UNICORNS, ANGRY_UNICORNS, CAVE_GOBLINS);
 
 		for (RetroNpcCategory category : RetroNpcCategory.values())
 		{
