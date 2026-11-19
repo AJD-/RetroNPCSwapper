@@ -282,6 +282,24 @@ public class RetroCacheTest
 		}
 	}
 
+	private static final Object[][] UNICORN_FEB_DEFINITIONS = {
+		{89, RetroNpcMapping.UNICORN}, {987, RetroNpcMapping.UNICORN},
+		{133, RetroNpcMapping.BLACK_UNICORN},
+		{1328, RetroNpcMapping.UNICORN_FOAL}, {1329, RetroNpcMapping.BLACK_UNICORN_FOAL}};
+
+	/** Every plain unicorn is its own Feb-2005 definition; 987 is the caged one. */
+	@Test
+	public void testUnicornArchetypesAreTheir2005Definitions() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
+
+		Map<Integer, RetroNpcDefinition> feb = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
+		for (Object[] row : UNICORN_FEB_DEFINITIONS)
+		{
+			assertSheepDefinition(feb.get((int) row[0]), (RetroNpcData) row[1]);
+		}
+	}
+
 	private static void assertSheepDefinition(RetroNpcDefinition def, RetroNpcData data)
 	{
 		String label = def.getId() + " " + def.getName();

@@ -1160,6 +1160,107 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testUnicorns()
+	{
+		short[] blackFind = {7289, 8666, 6241, 115};
+		short[] blackReplace = {8, 652, 138, 26};
+
+		// archetype, category, kit, find, replace, scale, live ids, live name
+		Object[][] rows = {
+			{RetroNpcMapping.UNICORN, RetroNpcCategory.UNICORNS, new int[]{2933}, new short[0], new short[0], 128,
+				new int[]{NpcID.UNICORN, NpcID.UNICORN_LOWWANDER, NpcID.UNICORN_UPASS_VIS}, "Unicorn"},
+			{RetroNpcMapping.UNICORN_FOAL, RetroNpcCategory.UNICORNS, new int[]{2933},
+				new short[]{7289, 8666, 115}, new short[]{9445, 8906, 86}, 96,
+				new int[]{NpcID.UNICORN_FOAL_1}, "Unicorn Foal"},
+			{RetroNpcMapping.BLACK_UNICORN, RetroNpcCategory.UNICORNS, new int[]{2933}, blackFind, blackReplace, 128,
+				new int[]{NpcID.BLACK_UNICORN}, "Black unicorn"},
+			{RetroNpcMapping.BLACK_UNICORN_FOAL, RetroNpcCategory.UNICORNS, new int[]{2933}, blackFind, blackReplace,
+				96, new int[]{NpcID.BLACK_UNICORN_FOAL}, "Black unicorn Foal"},
+			// Dec-2006 defs 3646 and 3661
+			{RetroNpcMapping.ANGRY_UNICORN, RetroNpcCategory.ANGRY_UNICORNS, new int[]{2933, 14288},
+				new short[]{7289, 6241, 115, 7244, 0}, new short[]{728, 1730, 11740, 970, 127}, 128,
+				new int[]{NpcID.SOULBANE_ANGER_UNICORN, NpcID.SOULBANE_UNICORN}, "Angry unicorn"}};
+
+		int registered = 0;
+		for (Object[] row : rows)
+		{
+			RetroNpcData data = (RetroNpcData) row[0];
+			assertEquals(row[1], data.getCategory());
+			assertArrayEquals((int[]) row[2], data.getRetroModelIds());
+			assertArrayEquals((short[]) row[3], data.getOriginalColors());
+			assertArrayEquals((short[]) row[4], data.getReplacementColors());
+			assertEquals((int) row[5], data.getScaleXZ());
+			assertEquals((int) row[5], data.getScaleY());
+
+			assertEquals(AnimationID.UNICORN_READY, data.getIdleAnimationId());
+			assertEquals(AnimationID.UNICORN_WALK, data.getWalkAnimationId());
+			assertEquals(AnimationID.UNICORN_ATTACK, data.getAttackAnimationFor(AnimationID.UNICORN_REWORK_ATTACK));
+			assertEquals(AnimationID.UNICORN_BLOCK, data.getDefendAnimationId());
+			assertTrue(data.isDefendAnimation(AnimationID.UNICORN_REWORK_DEFEND));
+			assertEquals(AnimationID.UNICORN_DEATH, data.getDeathAnimationId());
+			assertTrue(data.isDeathAnimation(AnimationID.UNICORN_REWORK_DEATH));
+
+			// The retro clips themselves are left to play
+			for (int retro = AnimationID.UNICORN_WALK; retro <= AnimationID.UNICORN_DEATH; retro++)
+			{
+				assertFalse(data.isAttackAnimation(retro));
+				assertFalse(data.isDefendAnimation(retro));
+				assertFalse(data.isDeathAnimation(retro));
+				assertFalse(data.isMiscAnimation(retro));
+			}
+
+			for (int id : (int[]) row[6])
+			{
+				assertSame("npc " + id, data, RetroNpcMapping.get(id, (String) row[7]));
+				registered++;
+			}
+		}
+		assertEquals(8, registered);
+
+		// The 2005 mesh is only in the bundle; the Angry unicorn's 2006 mesh is what live 2933 holds
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.UNICORNS));
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.ANGRY_UNICORNS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.ANGRY_UNICORNS));
+
+		// By registered id only
+		assertNull(RetroNpcMapping.get(0, "Unicorn"));
+		assertNull(RetroNpcMapping.get(0, "Black unicorn"));
+		assertNull(RetroNpcMapping.get(0, "Angry unicorn"));
+
+		// Unlisted unicorns keep their modern look
+		assertNull(RetroNpcMapping.get(NpcID.ARCEUUS_REANIMATED_UNICORN, "Reanimated unicorn"));
+		assertNull(RetroNpcMapping.get(NpcID.GODWARS_SARADOMIN_UNICORN, "Starlight"));
+		assertNull(RetroNpcMapping.get(NpcID.OSB8_UNICORN, "Monkey on unicorn"));
+		assertNull(RetroNpcMapping.get(NpcID.CRYSTAL_UNICORN, "Crystalline Unicorn"));
+		assertNull(RetroNpcMapping.get(NpcID.UNICORN_UPASS, null));
+	}
+
+	@Test
+	public void testTheAngryGoblinWearsIts2006ModelInBothEras()
+	{
+		// Dec-2006 defs 3648 and 3663
+		RetroNpcData angry = RetroNpcMapping.ANGRY_GOBLIN;
+		assertEquals(RetroNpcCategory.GOBLINS, angry.getCategory());
+		assertArrayEquals(new int[]{5535, 5542, 5544, 5554, 5547, 5541}, angry.getRetroModelIds());
+		assertArrayEquals(new short[]{41, 14238, 8086, -22237, 935}, angry.getOriginalColors());
+		assertArrayEquals(new short[]{4824, 1730, 3024, 970, 127}, angry.getReplacementColors());
+		assertEquals(128, angry.getScaleXZ());
+		assertEquals(128, angry.getScaleY());
+		assertEquals(AnimationID.GOBLIN_READY, angry.getIdleAnimationId());
+		assertEquals(AnimationID.GOBLIN_WALK, angry.getWalkAnimationId());
+		assertFalse(angry.hasChathead());
+
+		for (int id : new int[]{NpcID.SOULBANE_ANGER_GOBLIN, NpcID.SOULBANE_GOBLIN})
+		{
+			assertSame(angry, RetroNpcMapping.get(id, "Angry goblin", GoblinEra.RETRO_2005));
+			assertSame(angry, RetroNpcMapping.get(id, "Angry goblin", GoblinEra.RETRO_2006));
+			assertNull(RetroNpcMapping.get(id, "Angry goblin", GoblinEra.MODERN));
+		}
+		assertNull(RetroNpcMapping.get(0, "Angry goblin", GoblinEra.RETRO_2005));
+		assertNull(RetroNpcMapping.get(0, "Angry goblin", GoblinEra.RETRO_2006));
+	}
+
+	@Test
 	public void testPrifddinasCitizensWearTheirClanColors()
 	{
 		short[] find = {9137, 9152, 8792, 16701, 8652, 7595, 8741};
@@ -2910,6 +3011,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapVarrockNpcs must default to true", config.swapVarrockNpcs());
 		assertTrue("swapBarbarians must default to true", config.swapBarbarians());
 		assertTrue("swapSheep must default to true", config.swapSheep());
+		assertTrue("swapUnicorns must default to true", config.swapUnicorns());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
@@ -3204,7 +3306,7 @@ public class RetroNpcCategoryTest
 		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.GIANT_RATS));
 		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.GIANT_RATS));
 
-		// The angry giant rats have no 2005 counterpart and are left alone
+		// The angry giant rats already wear their 2006 model and are left alone
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_ANGER_RAT, "Angry giant rat"));
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_RAT, "Angry giant rat"));
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_RAT2, "Angry giant rat"));
@@ -3428,7 +3530,7 @@ public class RetroNpcCategoryTest
 		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.BEARS));
 		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.BEARS));
 
-		// The bears outside the list are left alone
+		// The bears outside the list are left alone; the angry ones already wear their 2006 model
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_ANGER_BEAR, "Angry bear"));
 		assertNull(RetroNpcMapping.get(NpcID.SOULBANE_BEAR, "Angry bear"));
 		assertNull(RetroNpcMapping.get(NpcID.ARCEUUS_REANIMATED_BEAR, "Reanimated bear"));

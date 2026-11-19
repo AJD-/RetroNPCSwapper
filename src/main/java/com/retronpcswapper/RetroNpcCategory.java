@@ -69,6 +69,9 @@ public enum RetroNpcCategory
 	VARROCK(RetroNpcConfig::swapVarrockNpcs, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
 	BARBARIANS(RetroNpcConfig::swapBarbarians, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
 	SHEEP(RetroNpcConfig::swapSheep, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
+	UNICORNS(RetroNpcConfig::swapUnicorns, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
+	// Shares the Unicorns toggle
+	ANGRY_UNICORNS(RetroNpcConfig::swapUnicorns, Geometry.CACHE, Trait.ID_ONLY),
 	FISHING_SPOTS(RetroNpcConfig::swapFishingSpots, Geometry.CACHE);
 
 	/** Where a category's 2005 geometry and clips come from. */

@@ -188,6 +188,9 @@ public class RetroAssetGenerator
 		// head 3786 was redrawn
 		new Spec("Sheep", Source.RETRO, Source.RETRO, new int[]{3783, 3784, 3786, 3787},
 			new int[]{249, 250, 251, 252, 253}),
+		// The unicorn was remodelled and re-rigged in place by Dec-2006, clips 288-292 with it
+		new Spec("Unicorns", Source.RETRO, Source.RETRO, new int[]{2933},
+			new int[]{288, 289, 290, 291, 292}),
 		// The Thing's Dec-2006 kit; live replaced both meshes at the same ids. Clips stay LIVE:
 		// their frames are the 2006 ones, and live framemap 347 only adds groups the kit lacks
 		new Spec("The Thing", Source.RETRO_2006, Source.LIVE, new int[]{14084, 14085},

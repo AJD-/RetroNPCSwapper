@@ -304,6 +304,9 @@ public final class RetroGoblinMapping2006
 		register(DEF_4490, NpcID.GOBLIN_GREEN_SOLDIER_5);
 		register(DEF_4491, NpcID.GOBLIN_GREEN_SOLDIER_6);
 		register(DEF_4492, NpcID.GOBLIN_GREEN_SOLDIER_7);
+
+		// A Soul's Bane, defs 3648 and 3663
+		register(RetroNpcMapping.ANGRY_GOBLIN, NpcID.SOULBANE_ANGER_GOBLIN, NpcID.SOULBANE_GOBLIN);
 	}
 
 	private RetroGoblinMapping2006()
