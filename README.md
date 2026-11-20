@@ -21,6 +21,7 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 - **Giant Spiders**
 - **Small Spiders**
 - **Bears**
+- **Misc Birds** — Entrana firebird, Desert Phoenix, gulls, seagulls, crows, jungle birds and the Hunter birds
 
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 
@@ -39,6 +40,7 @@ Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 - **Barbarians**
 - **Sheep**
 - **Unicorns** — unicorns, black unicorns and foals
+- **Misc Birds** — ducks and ducklings
 - **Chatheads** — Swaps chatheads for NPCs with dialogue. Follows each NPC's own toggle.
 
 Under **Scenery**:
@@ -102,8 +104,8 @@ the live objects around it. The Varrock retextures are not supported.
   numeric model and animation IDs, and every asset it displays already comes from the live game
   cache.
 - **The injected categories ship their assets.** Dragons, demons, imps, guards, elves, the Knights
-  of the Round Table, the Varrock NPCs, the barbarians, sheep, unicorns, the cave goblins, cows, scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
-  live cache, so `retro-assets.dat` (~321 KB) is bundled in the jar and carries their meshes, rigs and animation
+  of the Round Table, the Varrock NPCs, the barbarians, sheep, unicorns, the cave goblins, ducks, cows, scorpions, cyclops and the fire, ice and moss giant heads have no usable 2005 asset left in the
+  live cache, so `retro-assets.dat` (~322 KB) is bundled in the jar and carries their meshes, rigs and animation
   clips, extracted from the February 2005 & November 2005 & December 2006 caches. The 2006 goblin
   bodies need no bundle (their meshes and clips are currently unchanged in the live cache); only their chathead parts
   are bundled.

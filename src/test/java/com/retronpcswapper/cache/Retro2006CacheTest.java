@@ -222,6 +222,40 @@ public class Retro2006CacheTest
 		}
 	}
 
+	/** The Hunter birds arrived in Nov-2006 as recolours of the 2005 gull, which live still holds. */
+	@Test
+	public void testHunterBirdDefinitions() throws Exception
+	{
+		Map<Integer, RetroNpcDefinition> defs = reader.npcDefinitions();
+		Object[][] rows = {
+			{5073, "Crimson swift", RetroNpcMapping.CRIMSON_SWIFT},
+			{5075, "Golden warbler", RetroNpcMapping.GOLDEN_WARBLER},
+			{5076, "Copper longtail", RetroNpcMapping.COPPER_LONGTAIL}};
+		for (Object[] row : rows)
+		{
+			RetroNpcDefinition def = defs.get((int) row[0]);
+			RetroNpcData data = (RetroNpcData) row[2];
+			String label = "def " + row[0];
+			assertEquals(label, row[1], def.getName());
+			assertArrayEquals(label, data.getRetroModelIds(), def.getModels());
+			assertArrayEquals(label, data.getOriginalColors(),
+				def.getOriginalColors() == null ? new short[0] : def.getOriginalColors());
+			assertArrayEquals(label, data.getReplacementColors(),
+				def.getReplacementColors() == null ? new short[0] : def.getReplacementColors());
+			assertEquals(label, data.getIdleAnimationId(), def.getStanceAnimation());
+			assertEquals(label, data.getWalkAnimationId(), def.getWalkAnimation());
+			assertEquals(label, data.getScaleXZ(), def.getScaleXZ());
+		}
+
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not found", liveDir != null);
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+			assertIdenticalInLive(store, 2850);
+		}
+	}
+
 	/** The generals and Grubfoot, by the live id each def is paired with. */
 	@Test
 	public void testGeneralAndGrubfootDefinitions()

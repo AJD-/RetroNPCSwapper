@@ -217,6 +217,8 @@ public class RetroClipReachTest
 		// The large scorpion, keyed by the modern SCORPION_UPDATE sequences its 2005 frames
 		// (244-248) were bundled under
 		{6252, 2967}, {6253, 2967}, {6254, 2967}, {6255, 2967}, {6256, 2967},
+		// The Feb-2005 duck, keyed by the modern ids its seqs 7-9 were bundled under
+		{6819, 2847}, {3467, 2847}, {1014, 2847}, {3468, 2847},
 		// The Kalphites, keyed by the modern KALPHITE_UPDATE sequences their 2005 frames fill. The
 		// ground family rides 2005 rig 100282 at 100% on the soldier, guardian and crawling queen.
 		// The worker lands at 88-92% - its smaller body has no slice for a few of the rig's ops,

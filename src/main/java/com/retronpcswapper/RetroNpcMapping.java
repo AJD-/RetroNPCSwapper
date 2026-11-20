@@ -1550,6 +1550,188 @@ public class RetroNpcMapping
 		.recolors(new short[]{7289, 6241, 115, 7244, 0}, new short[]{728, 1730, 11740, 970, 127})
 		.build();
 
+	// Misc Birds. Every 2005 mesh but the duck survives in live, with its clips frame-identical
+
+	public static final Set<Integer> FIREBIRD_MODERN_ATTACKS = Set.of(AnimationID.FIREBIRD_UPDATE_ATTACK);
+	public static final Set<Integer> FIREBIRD_MODERN_DEFENDS = Set.of(AnimationID.FIREBIRD_UPDATE_DEFEND);
+	public static final Set<Integer> FIREBIRD_MODERN_DEATHS = Set.of(AnimationID.FIREBIRD_UPDATE_DEATH);
+
+	private static RetroNpcData.Builder firebird(int mesh)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.MISC_BIRDS)
+			.retroModelIds(new int[]{mesh})
+			.idleAnimationId(AnimationID.FIREBIRD_READY)
+			.walkAnimationId(AnimationID.FIREBIRD_WALK)
+			.attackAnimationId(AnimationID.FIREBIRD_ATTACK)
+			.defendAnimationId(AnimationID.FIREBIRD_BLOCK)
+			.deathAnimationId(AnimationID.FIREBIRD_DEATH)
+			.modernAttackAnims(FIREBIRD_MODERN_ATTACKS)
+			.modernDefendAnims(FIREBIRD_MODERN_DEFENDS)
+			.modernDeathAnims(FIREBIRD_MODERN_DEATHS);
+	}
+
+	/** Feb-2005 definition 139. */
+	public static final RetroNpcData ENTRANA_FIREBIRD = firebird(2861).build();
+
+	/** Nov-2005 definition 1911. */
+	public static final RetroNpcData DESERT_PHOENIX = firebird(6205)
+		.recolors(new short[]{926, 941, 953}, new short[]{4750, 6057, 7112}).build();
+
+	// The duck and seagull reworks share one rig
+	public static final Set<Integer> SEAGULL_MODERN_ATTACKS = Set.of(AnimationID.SEAGULL_ATTACK);
+	public static final Set<Integer> SEAGULL_MODERN_DEFENDS = Set.of(AnimationID.SEAGULL_DEFEND);
+	public static final Set<Integer> SEAGULL_MODERN_DEATHS = Set.of(
+		AnimationID.SEAGULL_DEATH, AnimationID.DUCK_REWORK_DEATH);
+	public static final Set<Integer> SEAGULL_MODERN_MISC = Set.of(
+		AnimationID.SEAGULL_READY_AND_FLY_TEST, AnimationID.DUCK_REWORK_LAND_READY_EXTRA,
+		AnimationID.DUCK_REWORK_LAND_READY_AND_EXTRA);
+
+	// Nov-2005 Port Sarim seagull: mesh 9462 on the chicken rig. Combat on 55-57 is inferred
+	private static RetroNpcData seagull(int scale)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.MISC_BIRDS)
+			.retroModelIds(new int[]{9462})
+			.idleAnimationId(AnimationID.CHICKEN_READY)
+			.walkAnimationId(AnimationID.CHICKEN_WALK)
+			.attackAnimationId(AnimationID.CHICKEN_ATTACK)
+			.defendAnimationId(AnimationID.CHICKEN_BLOCK)
+			.deathAnimationId(AnimationID.CHICKEN_DEATH)
+			.miscAnimationId(AnimationID.CHICKEN_READY)
+			.modernAttackAnims(SEAGULL_MODERN_ATTACKS)
+			.modernDefendAnims(SEAGULL_MODERN_DEFENDS)
+			.modernDeathAnims(SEAGULL_MODERN_DEATHS)
+			.modernMiscAnims(SEAGULL_MODERN_MISC)
+			.scaleXZ(scale)
+			.scaleY(scale)
+			.build();
+	}
+
+	/** Nov-2005 definitions 2693 and 2694. */
+	public static final RetroNpcData SEAGULL = seagull(128);
+	public static final RetroNpcData SEAGULL_BIG = seagull(170);
+
+	public static final Set<Integer> CROW_MODERN_MISC = Set.of(
+		AnimationID.HW24_CROW_IDLE, AnimationID.HW24_CROW_LAUNCH);
+
+	private static RetroNpcData crow(int idle)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.MISC_BIRDS)
+			.retroModelIds(new int[]{5443})
+			.idleAnimationId(idle)
+			.walkAnimationId(AnimationID.CROW_WALK)
+			.miscAnimationId(idle)
+			.modernMiscAnims(CROW_MODERN_MISC)
+			.build();
+	}
+
+	/** Nov-2005 definitions 1751-1753, one per idle. */
+	public static final RetroNpcData CROW = crow(AnimationID.CROW_READY);
+	public static final RetroNpcData CROW_2 = crow(AnimationID.CROW_READY2);
+	public static final RetroNpcData CROW_3 = crow(AnimationID.CROW_READY3);
+
+	public static final Set<Integer> FLYING_BIRD_MODERN_ATTACKS = Set.of(
+		AnimationID.BIRD_FLYING_UPDATE_ATTACK, AnimationID.BIRD_FLYING_UPDATE_ATTACK_MERGE);
+	public static final Set<Integer> FLYING_BIRD_MODERN_DEFENDS = Set.of(AnimationID.BIRD_FLYING_UPDATE_DEFEND);
+	public static final Set<Integer> FLYING_BIRD_MODERN_DEATHS = Set.of(
+		AnimationID.BIRD_FLYING_UPDATE_DEATH, AnimationID.BIRD_FLYING_UPDATE_DEATH_LARGE_BIRD,
+		AnimationID.BIRD_FLYING_UPDATE_DEATH_MEDIUM_BIRD);
+	// Snare landings have no 2005 clip; the caught states are locs
+	public static final Set<Integer> FLYING_BIRD_MODERN_MISC = Set.of(
+		AnimationID.BIRD_FLYING_UPDATE_READY_AND_EXTRA,
+		AnimationID.BIRD_FLYING_UPDATE_READY_AND_EXTRA_TOUCAN_AND_CORMARANT,
+		AnimationID.BIRD_LANDONTRAP, AnimationID.BIRD_LEAVETRAP,
+		AnimationID.BIRD_LANDS_ON_TRAP, AnimationID.BIRD_GETS_CAUGHT_IN_TRAP,
+		AnimationID.BIRD_CAUGHT_IN_TRAP_READY, AnimationID.BIRD_LANDS_ON_TRAP_AND_FLIES_OFF);
+
+	private static RetroNpcData.Builder flyingBird(int mesh, int idle)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.MISC_BIRDS)
+			.retroModelIds(new int[]{mesh})
+			.idleAnimationId(idle)
+			.walkAnimationId(AnimationID.BIRD_WALK)
+			.attackAnimationId(AnimationID.BIRD_ATTACK)
+			.defendAnimationId(AnimationID.BIRD_BLOCK)
+			.deathAnimationId(AnimationID.BIRD_DEATH)
+			.miscAnimationId(idle)
+			.modernAttackAnims(FLYING_BIRD_MODERN_ATTACKS)
+			.modernDefendAnims(FLYING_BIRD_MODERN_DEFENDS)
+			.modernDeathAnims(FLYING_BIRD_MODERN_DEATHS)
+			.modernMiscAnims(FLYING_BIRD_MODERN_MISC);
+	}
+
+	private static final int GULL_BODY = 2850;
+	private static final int JUNGLE_BIRD_BODY = 4836;
+
+	/** Feb-2005 definition 146. */
+	public static final RetroNpcData GULL = flyingBird(GULL_BODY, AnimationID.BIRD_READY).build();
+
+	/** Feb-2005 definition 149. */
+	public static final RetroNpcData GULL_DARK = flyingBird(GULL_BODY, AnimationID.BIRD_READY)
+		.recolors(new short[]{7070, 11200}, new short[]{82, -30175}).build();
+
+	/** Nov-2005 definition 2726; every 2005 size-1 gull is this brown. */
+	public static final RetroNpcData GULL_BROWN = flyingBird(GULL_BODY, AnimationID.BIRD_READY)
+		.recolors(new short[]{7070, 9123, 11200}, new short[]{10361, 14433, 7101}).build();
+
+	/** Definitions 1475 and 1476, with Nov's flapping idle. */
+	public static final RetroNpcData JUNGLE_BIRD_GREEN = flyingBird(JUNGLE_BIRD_BODY, AnimationID.BIRD_WALK)
+		.recolors(new short[]{7070, 9123}, new short[]{18107, 6845}).scaleXZ(64).scaleY(64).build();
+	public static final RetroNpcData JUNGLE_BIRD_BLUE = flyingBird(JUNGLE_BIRD_BODY, AnimationID.BIRD_WALK)
+		.recolors(new short[]{7070, 9123}, new short[]{-25770, 9166}).scaleXZ(64).scaleY(64).build();
+
+	/** Dec-2006 definitions 5073, 5075 and 5076. */
+	public static final RetroNpcData CRIMSON_SWIFT = flyingBird(GULL_BODY, AnimationID.BIRD_READY)
+		.recolors(new short[]{7070, 9123}, new short[]{929, 960}).build();
+	public static final RetroNpcData GOLDEN_WARBLER = flyingBird(GULL_BODY, AnimationID.BIRD_READY)
+		.recolors(new short[]{7070, 9123}, new short[]{5056, 127}).build();
+	public static final RetroNpcData COPPER_LONGTAIL = flyingBird(GULL_BODY, AnimationID.BIRD_READY).build();
+
+	// 2005 seqs 7-9 were reused, so the bundle keys their frames under these modern ids
+	public static final Set<Integer> DUCK_MODERN_ATTACKS = Set.of(AnimationID.SEAGULL_ATTACK);
+	public static final Set<Integer> DUCK_MODERN_DEFENDS = Set.of(AnimationID.SEAGULL_DEFEND);
+	public static final Set<Integer> DUCK_MODERN_DEATHS = Set.of(
+		AnimationID.DUCK_REWORK_DEATH, AnimationID.SEAGULL_DEATH);
+	public static final Set<Integer> DUCK_MODERN_MISC = Set.of(
+		AnimationID.DUCK_REWORK_READY, AnimationID.DUCK_REWORK_LAND_READY, AnimationID.DUCK_REWORK_LAND_READY_EXTRA,
+		AnimationID.DUCK_REWORK_LAND_READY_AND_EXTRA, AnimationID.DUCK_REWORK_READY_EXTRA,
+		AnimationID.DUCK_REWORK_SWIM, AnimationID.DUCK_REWORK_UNDERWATER_READY_AND_EXTRA,
+		AnimationID.DUCKLING_REWORK_SWIM, AnimationID.DUCKLINGS_REWORK_READY,
+		AnimationID.DUCKLINGS_REWORK_SWIM);
+
+	private static final short[] DUCK_FIND = {17694, 66, 86};
+
+	// Seq 7 was both stand and walk, as here. Seq 8 serves attack and block (inferred)
+	private static RetroNpcData.Builder duck()
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.MISC_BIRD_DUCKS)
+			.retroModelIds(new int[]{2847})
+			.idleAnimationId(AnimationID.DUCK_REWORK_WALK)
+			.walkAnimationId(AnimationID.DUCK_REWORK_WALK)
+			.attackAnimationId(AnimationID.SEAGULL_ATTACK)
+			.defendAnimationId(AnimationID.SEAGULL_DEFEND)
+			.deathAnimationId(AnimationID.DUCK_REWORK_DEATH)
+			.miscAnimationId(AnimationID.DUCK_REWORK_WALK)
+			.modernAttackAnims(DUCK_MODERN_ATTACKS)
+			.modernDefendAnims(DUCK_MODERN_DEFENDS)
+			.modernDeathAnims(DUCK_MODERN_DEATHS)
+			.modernMiscAnims(DUCK_MODERN_MISC);
+	}
+
+	/** Feb-2005 definitions 44, 45 and 46. */
+	public static final RetroNpcData DUCK = duck().build();
+	public static final RetroNpcData DUCK_FEMALE = duck()
+		.recolors(DUCK_FIND, new short[]{5667, 5660, 5910}).build();
+	// Without the white ripple faces
+	public static final RetroNpcData DUCK_ON_LAND = duck()
+		.recolors(DUCK_FIND, new short[]{5667, 5660, 5910}).hideColor(127).build();
+	public static final RetroNpcData DUCKLING = duck()
+		.recolors(DUCK_FIND, new short[]{5838, 5838, 5910}).scaleXZ(64).scaleY(64).build();
+
 	/**
 	 * The 2005 body every giant and the cyclops is built on. Preserved in the live cache - 177
 	 * vertices in both, 355 faces against 347 - so the cache-backed path can still load it.
@@ -3042,6 +3224,29 @@ public class RetroNpcMapping
 		registerMapping(BLACK_UNICORN, NpcID.BLACK_UNICORN);
 		registerMapping(BLACK_UNICORN_FOAL, NpcID.BLACK_UNICORN_FOAL);
 		registerMapping(ANGRY_UNICORN, NpcID.SOULBANE_ANGER_UNICORN, NpcID.SOULBANE_UNICORN);
+
+		// Misc Birds
+		registerMapping(ENTRANA_FIREBIRD, NpcID.FIRE_BIRD);
+		registerMapping(DESERT_PHOENIX, NpcID.GOLEM_PHOENIX);
+		registerMapping(SEAGULL, NpcID.SARIM_SEAGULL_PIER, NpcID.AKD_SEAGULL_NOOP);
+		registerMapping(SEAGULL_BIG, NpcID.SARIM_SEAGULL_PIER_BIG, NpcID.SARIM_SEAGULL_PIER_BIG_OUTDOORS,
+			NpcID.IG_SEAGULL);
+		registerMapping(CROW, NpcID.CROW, NpcID.CROW4, NpcID.CROW_LUMB_PATROL, NpcID.CROW_LUMB_PATROL4,
+			NpcID.HW24_CROW);
+		registerMapping(CROW_2, NpcID.CROW2, NpcID.CROW5, NpcID.CROW_LUMB_PATROL2, NpcID.CROW_LUMB_PATROL5);
+		registerMapping(CROW_3, NpcID.CROW3, NpcID.CROW6, NpcID.CROW_LUMB_PATROL3, NpcID.CROW_LUMB_PATROL6);
+		registerMapping(JUNGLE_BIRD_GREEN, NpcID.MM_JUNGLE_BIRD_GREEN);
+		registerMapping(JUNGLE_BIRD_BLUE, NpcID.MM_JUNGLE_BIRD_BLUE, NpcID.SW_BIRD_BLUE);
+		registerMapping(GULL, NpcID.SEABIRD1, NpcID.GULL2, NpcID.NAUGHTYSEABIRD);
+		registerMapping(GULL_DARK, NpcID.GULL1, NpcID.TRAWLER_GULL);
+		registerMapping(GULL_BROWN, NpcID.FEVER_SEAGULL, NpcID.SEAGULL);
+		registerMapping(CRIMSON_SWIFT, NpcID.HUNTING_BIRD_JUNGLE);
+		registerMapping(GOLDEN_WARBLER, NpcID.HUNTING_BIRD_DESERT);
+		registerMapping(COPPER_LONGTAIL, NpcID.HUNTING_BIRD_WOODLAND);
+		registerMapping(DUCK, NpcID.DUCK, NpcID.KW_DUCK_GUY, NpcID.DUCK_NOOP);
+		registerMapping(DUCK_FEMALE, NpcID.DUCK_FEMALE, NpcID.DUCK_FEMALE_NOOP);
+		registerMapping(DUCK_ON_LAND, NpcID.DUCK_UPDATE_ON_LAND_DUCK);
+		registerMapping(DUCKLING, NpcID.DUCKLING, NpcID.DUCK_UPDATE_DUCKLINGS);
 
 		// The giant family. All five are the same 2005 body with a variant head, so they share the
 		// animations and differ only in their parts and their 2005 recolor pairs.

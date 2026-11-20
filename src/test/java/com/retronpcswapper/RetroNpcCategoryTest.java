@@ -1341,6 +1341,164 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testMiscBirds()
+	{
+		RetroNpcCategory birds = RetroNpcCategory.MISC_BIRDS;
+		short[] duckFind = {17694, 66, 86};
+
+		// archetype, category, mesh, find, replace, scale, idle, walk, live ids, live name
+		Object[][] rows = {
+			{RetroNpcMapping.ENTRANA_FIREBIRD, birds, 2861, new short[0], new short[0], 128,
+				AnimationID.FIREBIRD_READY, AnimationID.FIREBIRD_WALK, new int[]{NpcID.FIRE_BIRD}, "Entrana firebird"},
+			{RetroNpcMapping.DESERT_PHOENIX, birds, 6205, new short[]{926, 941, 953}, new short[]{4750, 6057, 7112},
+				128, AnimationID.FIREBIRD_READY, AnimationID.FIREBIRD_WALK, new int[]{NpcID.GOLEM_PHOENIX},
+				"Desert Phoenix"},
+			{RetroNpcMapping.SEAGULL, birds, 9462, new short[0], new short[0], 128,
+				AnimationID.CHICKEN_READY, AnimationID.CHICKEN_WALK,
+				new int[]{NpcID.SARIM_SEAGULL_PIER, NpcID.AKD_SEAGULL_NOOP}, "Seagull"},
+			{RetroNpcMapping.SEAGULL_BIG, birds, 9462, new short[0], new short[0], 170,
+				AnimationID.CHICKEN_READY, AnimationID.CHICKEN_WALK, new int[]{NpcID.SARIM_SEAGULL_PIER_BIG,
+				NpcID.SARIM_SEAGULL_PIER_BIG_OUTDOORS, NpcID.IG_SEAGULL}, "Seagull"},
+			{RetroNpcMapping.CROW, birds, 5443, new short[0], new short[0], 128,
+				AnimationID.CROW_READY, AnimationID.CROW_WALK, new int[]{NpcID.CROW, NpcID.CROW4,
+				NpcID.CROW_LUMB_PATROL, NpcID.CROW_LUMB_PATROL4, NpcID.HW24_CROW}, "Crow"},
+			{RetroNpcMapping.CROW_2, birds, 5443, new short[0], new short[0], 128,
+				AnimationID.CROW_READY2, AnimationID.CROW_WALK, new int[]{NpcID.CROW2, NpcID.CROW5,
+				NpcID.CROW_LUMB_PATROL2, NpcID.CROW_LUMB_PATROL5}, "Crow"},
+			{RetroNpcMapping.CROW_3, birds, 5443, new short[0], new short[0], 128,
+				AnimationID.CROW_READY3, AnimationID.CROW_WALK, new int[]{NpcID.CROW3, NpcID.CROW6,
+				NpcID.CROW_LUMB_PATROL3, NpcID.CROW_LUMB_PATROL6}, "Crow"},
+			{RetroNpcMapping.JUNGLE_BIRD_GREEN, birds, 4836, new short[]{7070, 9123}, new short[]{18107, 6845}, 64,
+				AnimationID.BIRD_WALK, AnimationID.BIRD_WALK, new int[]{NpcID.MM_JUNGLE_BIRD_GREEN}, "Bird"},
+			{RetroNpcMapping.JUNGLE_BIRD_BLUE, birds, 4836, new short[]{7070, 9123}, new short[]{-25770, 9166}, 64,
+				AnimationID.BIRD_WALK, AnimationID.BIRD_WALK,
+				new int[]{NpcID.MM_JUNGLE_BIRD_BLUE, NpcID.SW_BIRD_BLUE}, "Bird"},
+			{RetroNpcMapping.GULL, birds, 2850, new short[0], new short[0], 128,
+				AnimationID.BIRD_READY, AnimationID.BIRD_WALK,
+				new int[]{NpcID.SEABIRD1, NpcID.GULL2, NpcID.NAUGHTYSEABIRD}, "Gull"},
+			{RetroNpcMapping.GULL_DARK, birds, 2850, new short[]{7070, 11200}, new short[]{82, -30175}, 128,
+				AnimationID.BIRD_READY, AnimationID.BIRD_WALK, new int[]{NpcID.GULL1, NpcID.TRAWLER_GULL}, "Gull"},
+			{RetroNpcMapping.GULL_BROWN, birds, 2850, new short[]{7070, 9123, 11200},
+				new short[]{10361, 14433, 7101}, 128, AnimationID.BIRD_READY, AnimationID.BIRD_WALK,
+				new int[]{NpcID.FEVER_SEAGULL, NpcID.SEAGULL}, "Gull"},
+			{RetroNpcMapping.CRIMSON_SWIFT, birds, 2850, new short[]{7070, 9123}, new short[]{929, 960}, 128,
+				AnimationID.BIRD_READY, AnimationID.BIRD_WALK, new int[]{NpcID.HUNTING_BIRD_JUNGLE}, "Crimson swift"},
+			{RetroNpcMapping.GOLDEN_WARBLER, birds, 2850, new short[]{7070, 9123}, new short[]{5056, 127}, 128,
+				AnimationID.BIRD_READY, AnimationID.BIRD_WALK, new int[]{NpcID.HUNTING_BIRD_DESERT}, "Golden warbler"},
+			{RetroNpcMapping.COPPER_LONGTAIL, birds, 2850, new short[0], new short[0], 128,
+				AnimationID.BIRD_READY, AnimationID.BIRD_WALK, new int[]{NpcID.HUNTING_BIRD_WOODLAND},
+				"Copper longtail"},
+			{RetroNpcMapping.DUCK, RetroNpcCategory.MISC_BIRD_DUCKS, 2847, new short[0], new short[0], 128,
+				AnimationID.DUCK_REWORK_WALK, AnimationID.DUCK_REWORK_WALK,
+				new int[]{NpcID.DUCK, NpcID.KW_DUCK_GUY, NpcID.DUCK_NOOP}, "Duck"},
+			{RetroNpcMapping.DUCK_FEMALE, RetroNpcCategory.MISC_BIRD_DUCKS, 2847, duckFind,
+				new short[]{5667, 5660, 5910}, 128, AnimationID.DUCK_REWORK_WALK, AnimationID.DUCK_REWORK_WALK,
+				new int[]{NpcID.DUCK_FEMALE, NpcID.DUCK_FEMALE_NOOP}, "Duck"},
+			{RetroNpcMapping.DUCK_ON_LAND, RetroNpcCategory.MISC_BIRD_DUCKS, 2847, duckFind,
+				new short[]{5667, 5660, 5910}, 128, AnimationID.DUCK_REWORK_WALK, AnimationID.DUCK_REWORK_WALK,
+				new int[]{NpcID.DUCK_UPDATE_ON_LAND_DUCK}, "Duck"},
+			{RetroNpcMapping.DUCKLING, RetroNpcCategory.MISC_BIRD_DUCKS, 2847, duckFind,
+				new short[]{5838, 5838, 5910}, 64, AnimationID.DUCK_REWORK_WALK, AnimationID.DUCK_REWORK_WALK,
+				new int[]{NpcID.DUCKLING, NpcID.DUCK_UPDATE_DUCKLINGS}, "Duckling"}};
+
+		int registered = 0;
+		for (Object[] row : rows)
+		{
+			RetroNpcData data = (RetroNpcData) row[0];
+			assertEquals(row[1], data.getCategory());
+			assertArrayEquals(new int[]{(int) row[2]}, data.getRetroModelIds());
+			assertArrayEquals((short[]) row[3], data.getOriginalColors());
+			assertArrayEquals((short[]) row[4], data.getReplacementColors());
+			assertEquals((int) row[5], data.getScaleXZ());
+			assertEquals((int) row[5], data.getScaleY());
+			assertEquals((int) row[6], data.getIdleAnimationId());
+			assertEquals((int) row[7], data.getWalkAnimationId());
+
+			for (int id : (int[]) row[8])
+			{
+				assertSame("npc " + id, data, RetroNpcMapping.get(id, (String) row[9]));
+				registered++;
+			}
+		}
+		assertEquals(41, registered);
+
+		// Only the land duck drops the water ripples
+		assertArrayEquals(new short[]{127}, RetroNpcMapping.DUCK_ON_LAND.getHiddenColors());
+		assertArrayEquals(new short[0], RetroNpcMapping.DUCK_FEMALE.getHiddenColors());
+		assertArrayEquals(new short[0], RetroNpcMapping.DUCK.getHiddenColors());
+		assertArrayEquals(new short[0], RetroNpcMapping.DUCKLING.getHiddenColors());
+
+		RetroNpcData firebird = RetroNpcMapping.ENTRANA_FIREBIRD;
+		assertEquals(AnimationID.FIREBIRD_ATTACK, firebird.getAttackAnimationFor(AnimationID.FIREBIRD_UPDATE_ATTACK));
+		assertTrue(firebird.isDefendAnimation(AnimationID.FIREBIRD_UPDATE_DEFEND));
+		assertEquals(AnimationID.FIREBIRD_BLOCK, firebird.getDefendAnimationId());
+		assertTrue(firebird.isDeathAnimation(AnimationID.FIREBIRD_UPDATE_DEATH));
+		assertEquals(AnimationID.FIREBIRD_DEATH, firebird.getDeathAnimationId());
+
+		RetroNpcData seagull = RetroNpcMapping.SEAGULL;
+		assertEquals(AnimationID.CHICKEN_ATTACK, seagull.getAttackAnimationFor(AnimationID.SEAGULL_ATTACK));
+		assertTrue(seagull.isDefendAnimation(AnimationID.SEAGULL_DEFEND));
+		assertEquals(AnimationID.CHICKEN_BLOCK, seagull.getDefendAnimationId());
+		assertTrue(seagull.isDeathAnimation(AnimationID.SEAGULL_DEATH));
+		assertEquals(AnimationID.CHICKEN_DEATH, seagull.getDeathAnimationId());
+		assertTrue(seagull.isMiscAnimation(AnimationID.SEAGULL_READY_AND_FLY_TEST));
+
+		RetroNpcData gull = RetroNpcMapping.GULL;
+		assertEquals(AnimationID.BIRD_ATTACK, gull.getAttackAnimationFor(AnimationID.BIRD_FLYING_UPDATE_ATTACK));
+		assertEquals(AnimationID.BIRD_ATTACK, gull.getAttackAnimationFor(AnimationID.BIRD_FLYING_UPDATE_ATTACK_MERGE));
+		assertTrue(gull.isDefendAnimation(AnimationID.BIRD_FLYING_UPDATE_DEFEND));
+		assertEquals(AnimationID.BIRD_BLOCK, gull.getDefendAnimationId());
+		for (int death : new int[]{AnimationID.BIRD_FLYING_UPDATE_DEATH, AnimationID.BIRD_FLYING_UPDATE_DEATH_LARGE_BIRD,
+			AnimationID.BIRD_FLYING_UPDATE_DEATH_MEDIUM_BIRD})
+		{
+			assertTrue(gull.isDeathAnimation(death));
+		}
+		assertEquals(AnimationID.BIRD_DEATH, gull.getDeathAnimationId());
+
+		// Snare landings fall back to the idle
+		RetroNpcData swift = RetroNpcMapping.CRIMSON_SWIFT;
+		for (int trap : new int[]{AnimationID.BIRD_LANDONTRAP, AnimationID.BIRD_LEAVETRAP,
+			AnimationID.BIRD_LANDS_ON_TRAP, AnimationID.BIRD_LANDS_ON_TRAP_AND_FLIES_OFF})
+		{
+			assertTrue(swift.isMiscAnimation(trap));
+		}
+		assertEquals(AnimationID.BIRD_READY, swift.getMiscAnimationId());
+		assertEquals(AnimationID.BIRD_WALK, RetroNpcMapping.JUNGLE_BIRD_GREEN.getMiscAnimationId());
+		assertEquals(AnimationID.CROW_READY2, RetroNpcMapping.CROW_2.getMiscAnimationId());
+
+		// The duck plays bundle clips keyed under the modern ids it intercepts
+		RetroNpcData duck = RetroNpcMapping.DUCK;
+		assertEquals(AnimationID.SEAGULL_ATTACK, duck.getAttackAnimationFor(AnimationID.SEAGULL_ATTACK));
+		assertEquals(AnimationID.SEAGULL_DEFEND, duck.getDefendAnimationId());
+		assertEquals(AnimationID.DUCK_REWORK_DEATH, duck.getDeathAnimationId());
+		assertTrue(duck.isDeathAnimation(AnimationID.SEAGULL_DEATH));
+		assertEquals(AnimationID.DUCK_REWORK_WALK, duck.getMiscAnimationId());
+		assertTrue(duck.isMiscAnimation(AnimationID.DUCK_REWORK_READY));
+		assertTrue(duck.isMiscAnimation(AnimationID.DUCK_REWORK_UNDERWATER_READY_AND_EXTRA));
+		assertFalse(duck.isMiscAnimation(AnimationID.DUCK_REWORK_WALK));
+
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(birds));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(birds));
+		assertTrue(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.MISC_BIRD_DUCKS));
+
+		// By registered id only
+		for (String name : new String[]{"Duck", "Duckling", "Ducklings", "Gull", "Seagull", "Crow", "Bird",
+			"Phoenix", "Desert Phoenix", "Entrana firebird", "Crimson swift"})
+		{
+			assertNull(name, RetroNpcMapping.get(0, name));
+		}
+
+		// Unlisted families keep their modern look
+		assertNull(RetroNpcMapping.get(NpcID.POH_PHOENIX_PET_GREEN, "Phoenix"));
+		assertNull(RetroNpcMapping.get(NpcID.POH_PHOENIX_PET, "Phoenix"));
+		assertNull(RetroNpcMapping.get(NpcID.GRYPHONBOSS_PET, "Gull"));
+		assertNull(RetroNpcMapping.get(NpcID.CURRENT_DUCK_ON_LAND, "Duck"));
+		assertNull(RetroNpcMapping.get(NpcID.SAILING_CHARTING_CURRENT_DUCK_MOVING, "Current duck"));
+		assertNull(RetroNpcMapping.get(NpcID.CASTLE_DRAKAN_CROW, "Webbed-winged Crow"));
+		assertNull(RetroNpcMapping.get(NpcID.SAILING_FRIGATEBIRD, "Frigatebird"));
+	}
+
+	@Test
 	public void testTheAngryGoblinWearsIts2006ModelInBothEras()
 	{
 		// Dec-2006 defs 3648 and 3663

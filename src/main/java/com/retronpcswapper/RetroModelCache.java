@@ -388,7 +388,8 @@ public class RetroModelCache
 		// Recolor before lighting, not after: lit colors are baked once and never recomputed, so
 		// a recolor applied afterward would have nothing left to bite on. Retro dragon meshes are
 		// greyscale ramps, so this is what separates a red dragon from a black one.
-		short[] colors = recolored(mesh.getFaceColors(), data);
+		short[] baseColors = mesh.getFaceColors();
+		short[] colors = recolored(baseColors, data);
 
 		mesh = scaled(mesh, colors, data.getScaleXZ(), data.getScaleY(), data.getOffsetZ());
 
@@ -412,6 +413,7 @@ public class RetroModelCache
 			ModelData.DEFAULT_AMBIENT, ModelData.DEFAULT_CONTRAST,
 			ModelData.DEFAULT_X, ModelData.DEFAULT_Y, ModelData.DEFAULT_Z,
 			colors1, colors2, colors3);
+		hideColors(baseColors, data.getHiddenColors(), colors3);
 
 		InjectedModel injectedModel = new InjectedModel(mesh, keyBase);
 		injectedModel.model.bind(mesh, colors1, colors2, colors3);
@@ -424,6 +426,22 @@ public class RetroModelCache
 			}
 		}
 		return injectedModel;
+	}
+
+	/** Hides each face whose unrecoloured colour is one of {@code hidden}. */
+	static void hideColors(short[] baseColors, short[] hidden, int[] colors3)
+	{
+		for (int face = 0; face < colors3.length; face++)
+		{
+			for (short color : hidden)
+			{
+				if (baseColors[face] == color)
+				{
+					colors3[face] = RetroLighter.HIDDEN;
+					break;
+				}
+			}
+		}
 	}
 
 	/** Where each part's faces begin in the merged mesh, which keeps them in part order. */
