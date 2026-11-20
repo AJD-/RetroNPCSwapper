@@ -557,6 +557,41 @@ public class RetroNpcMapping
 	public static final RetroNpcData ADAMANT_DRAGON = metalDragon(ADAMANT_DRAGON_COLORS, 128);
 	public static final RetroNpcData RUNE_DRAGON = metalDragon(RUNE_DRAGON_COLORS, 128);
 
+	// Brutal dragons postdate the 2005 cache: the chromatic mesh of their color, body at full saturation
+	private static final int FULL_SATURATION = 0x380;
+
+	// Black has no hue to saturate, so it keeps the body and takes the live brutal's red as an accent
+	// 41 is the wing undersides, 127 the lighter body trim
+	private static final short[] BRUTAL_BLACK_SLOTS = {DRAGON_BODY_GREY, 41, 127};
+	private static final short[] BRUTAL_BLACK_COLORS = {DRAGON_BLACK, 920, 920};
+
+	private static RetroNpcData brutalDragon(int bodyColor)
+	{
+		return brutalDragon(new short[]{DRAGON_BODY_GREY}, new short[]{(short) (bodyColor | FULL_SATURATION)});
+	}
+
+	private static RetroNpcData brutalDragon(short[] slots, short[] colors)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.ADULT_DRAGONS)
+			.retroModelIds(new int[]{2853, 2854})
+			.idleAnimationId(AnimationID.DRAGON_READY)
+			.walkAnimationId(AnimationID.DRAGON_WALK)
+			.attackAnimationId(AnimationID.DRAGON_ATTACK)
+			.defendAnimationId(AnimationID.DRAGON_BLOCK)
+			.recolors(slots, colors)
+			.modernAttackAnims(DRAGON_MODERN_ATTACKS)
+			.modernDefendAnims(DRAGON_MODERN_DEFENDS)
+			.modernDeathAnims(DRAGON_MODERN_DEATHS)
+			.attackAnimationOverride(AnimationID.DRAGON_FIREBREATH_ALL_ATTACK, AnimationID.BRUT_DRAGON_CASTING)
+			.build();
+	}
+
+	public static final RetroNpcData BRUTAL_GREEN_DRAGON = brutalDragon(DRAGON_GREEN);
+	public static final RetroNpcData BRUTAL_BLUE_DRAGON = brutalDragon(DRAGON_BLUE);
+	public static final RetroNpcData BRUTAL_RED_DRAGON = brutalDragon(DRAGON_RED);
+	public static final RetroNpcData BRUTAL_BLACK_DRAGON = brutalDragon(BRUTAL_BLACK_SLOTS, BRUTAL_BLACK_COLORS);
+
 	public static final RetroNpcData IMP_DEFAULT = RetroNpcData.builder()
 		.category(RetroNpcCategory.IMPS)
 		.retroModelIds(new int[]{2887})
@@ -2574,10 +2609,16 @@ public class RetroNpcMapping
 			NpcID.BABY_BLACK_DRAGON_NOHUNT
 		);
 
-		// The metals past steel, by name the way bronze, iron and steel resolve
+		// The metallic dragons past steel, by name
 		NAME_MAPPINGS.put("mithril dragon", MITHRIL_DRAGON);
 		NAME_MAPPINGS.put("adamant dragon", ADAMANT_DRAGON);
 		NAME_MAPPINGS.put("rune dragon", RUNE_DRAGON);
+
+		// Brutal dragons, by name like the metallic ones
+		NAME_MAPPINGS.put("brutal green dragon", BRUTAL_GREEN_DRAGON);
+		NAME_MAPPINGS.put("brutal blue dragon", BRUTAL_BLUE_DRAGON);
+		NAME_MAPPINGS.put("brutal red dragon", BRUTAL_RED_DRAGON);
+		NAME_MAPPINGS.put("brutal black dragon", BRUTAL_BLACK_DRAGON);
 
 		NAME_MAPPINGS.put("skeleton", SKELETON_UNARMED);
 		registerMapping(SKELETON_UNARMED,

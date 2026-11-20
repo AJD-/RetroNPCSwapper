@@ -25,7 +25,7 @@ Each category can be toggled individually under **NPC Toggles** in the plugin co
 Also in **NPC Toggles**, gated behind *Use Converted 2005 Assets*:
 
 - **Giants** — Fire, Ice and Moss Giants
-- **Dragons** — chromatic/metallic, KBD
+- **Dragons** — chromatic/metallic/brutal, KBD
 - **Demons**
 - **Imps**
 - **Cyclopes**
