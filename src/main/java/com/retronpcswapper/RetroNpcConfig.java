@@ -94,7 +94,7 @@ public interface RetroNpcConfig extends Config
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
 			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
 			+ "game cache. Turn it off and only Chickens, Goblins (not cave goblins), Skeletons, Zombies, Hill Giants, "
-			+ "Ghosts, Hellhounds, Giant Rats, Spiders, Bears, Fishing Spots, and small Scorpions will swap to their retro assets. "
+			+ "Ghosts, Hellhounds, Giant Rats, Spiders, Bears, Terrorbirds, Fishing Spots, and small Scorpions will swap to their retro assets. "
             + "Hill Giants will wear a Jogre head.</body></html>",
 		position = 1
 	)
@@ -446,6 +446,19 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "swapTerrorbirds",
+		name = "Terrorbirds",
+		description = "<html><body style='width:170px'>Swap terrorbirds and mounted terrorbird gnomes "
+			+ "to their 2004/2005 retro models and animations</body></html>",
+		section = npcTogglesSection,
+		position = 25
+	)
+	default boolean swapTerrorbirds()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "swapChatheads",
 		name = "Chatheads",
 		description = "<html><body style='width:170px'>Show a swapped NPC's 2004/2005 dialogue head in "
@@ -454,7 +467,7 @@ public interface RetroNpcConfig extends Config
 			+ "others.<br><br>Follows each NPC's own toggle, and needs <b>Use Converted 2005 Assets</b>, "
 			+ "which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 25
+		position = 26
 	)
 	default boolean swapChatheads()
 	{

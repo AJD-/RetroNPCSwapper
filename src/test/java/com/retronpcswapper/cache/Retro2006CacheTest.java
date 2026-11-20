@@ -222,6 +222,44 @@ public class Retro2006CacheTest
 		}
 	}
 
+	/**
+	 * The mounted terrorchick gnome first appears here, on meshes live still holds; the 2005
+	 * terrorbird meshes it shares clips with are pinned alongside.
+	 */
+	@Test
+	public void testTerrorchickDefinitionAndTerrorbirdMeshes() throws Exception
+	{
+		Map<Integer, RetroNpcDefinition> defs = reader.npcDefinitions();
+		RetroNpcDefinition def = defs.get(4570);
+		RetroNpcData data = RetroNpcMapping.TERRORCHICK_MOUNTED;
+		assertEquals("Mounted terrorchick gnome", def.getName());
+		assertArrayEquals(data.getRetroModelIds(), def.getModels());
+		assertNull(def.getOriginalColors());
+		assertFalse(data.hasRecolors());
+		assertEquals(data.getIdleAnimationId(), def.getStanceAnimation());
+		assertEquals(data.getWalkAnimationId(), def.getWalkAnimation());
+		assertEquals(data.getScaleXZ(), def.getScaleXZ());
+		assertEquals(data.getScaleY(), def.getScaleY());
+		assertArrayEquals(new int[]{16970}, def.getAdditionalModels());
+
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not found", liveDir != null);
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+			NpcManager npcs = new NpcManager(store);
+			npcs.load();
+			// Live already talks with the 2006 head, so the row carries none
+			assertArrayEquals(def.getAdditionalModels(), npcs.get(NpcID.ALUFT_DELIVERY_MOUNTED_TERRORCHIC).chatheadModels);
+			assertFalse(data.hasChathead());
+
+			for (int id : new int[]{17161, 17160, 3011, 3012, 3013})
+			{
+				assertIdenticalInLive(store, id);
+			}
+		}
+	}
+
 	/** The generals and Grubfoot, by the live id each def is paired with. */
 	@Test
 	public void testGeneralAndGrubfootDefinitions()
