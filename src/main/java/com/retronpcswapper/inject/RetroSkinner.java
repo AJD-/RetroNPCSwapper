@@ -51,7 +51,7 @@ public final class RetroSkinner
 	 * step an animation can express is 1/256 of a turn. Anything authored against this rig has to
 	 * be quantized to that.
 	 */
-	private static final int ROTATION_SHIFT = 8;
+	private static final int ROTATION_SHIFT = RetroFrameTiming.ROTATION_SHIFT;
 
 	/** {@link Perspective#SINE} and {@code COSINE} are fixed point with 16 fractional bits. */
 	private static final float TRIG_SCALE = 65536f;
@@ -76,6 +76,13 @@ public final class RetroSkinner
 	public boolean pose(RetroMesh mesh, RetroRig rig, RetroClip clip, int frame,
 		float[] outX, float[] outY, float[] outZ)
 	{
+		return pose(mesh, rig, clip, frame, -1, 0f, 0, outX, outY, outZ);
+	}
+
+	/** Poses between frame and next, t cycles into an interval of interval cycles. */
+	public boolean pose(RetroMesh mesh, RetroRig rig, RetroClip clip, int frame, int next,
+		float t, int interval, float[] outX, float[] outY, float[] outZ)
+	{
 		int count = mesh.getVerticesCount();
 		System.arraycopy(mesh.getVerticesX(), 0, outX, 0, count);
 		System.arraycopy(mesh.getVerticesY(), 0, outY, 0, count);
@@ -86,7 +93,14 @@ public final class RetroSkinner
 			return false;
 		}
 
-		apply(mesh, rig, clip, frame, outX, outY, outZ);
+		if (next < 0 || t <= 0 || interval <= 0 || !clip.hasFrame(next))
+		{
+			apply(mesh, rig, clip, frame, outX, outY, outZ);
+		}
+		else
+		{
+			applyBetween(mesh, rig, clip, frame, next, t, interval, outX, outY, outZ);
+		}
 		return true;
 	}
 
@@ -145,7 +159,8 @@ public final class RetroSkinner
 					translate(mesh, groups, dx, dy, dz, outX, outY, outZ);
 					break;
 				case TYPE_ROTATE:
-					rotate(mesh, groups, dx, dy, dz, outX, outY, outZ);
+					rotate(mesh, groups, (dx & 0xFF) * ROTATION_SHIFT, (dy & 0xFF) * ROTATION_SHIFT,
+						(dz & 0xFF) * ROTATION_SHIFT, outX, outY, outZ);
 					break;
 				case TYPE_SCALE:
 					scale(mesh, groups, dx, dy, dz, outX, outY, outZ);
@@ -153,6 +168,75 @@ public final class RetroSkinner
 				default:
 					// Type 5 animates face transparency, which this does not carry; anything else is
 					// unknown. Skipping leaves the vertices where they are, which is the safe result.
+					break;
+			}
+		}
+	}
+
+	private void applyBetween(RetroMesh mesh, RetroRig rig, RetroClip clip, int frame, int next,
+		float t, int interval, float[] outX, float[] outY, float[] outZ)
+	{
+		pivotX = 0f;
+		pivotY = 0f;
+		pivotZ = 0f;
+
+		// Merge both frames' ops by transform index; an op absent from one side blends with identity
+		int opsA = clip.getOpCount(frame);
+		int opsB = clip.getOpCount(next);
+		int i = 0;
+		int j = 0;
+		while (i < opsA || j < opsB)
+		{
+			int ti = i < opsA ? clip.getTransform(frame, i) : Integer.MAX_VALUE;
+			int tj = j < opsB ? clip.getTransform(next, j) : Integer.MAX_VALUE;
+			int transform = Math.min(ti, tj);
+			int opA = i < opsA && ti == transform ? i++ : -1;
+			int opB = j < opsB && tj == transform ? j++ : -1;
+
+			if (transform < 0 || transform >= rig.getTransformCount())
+			{
+				continue;
+			}
+
+			int[] groups = rig.getGroups(transform);
+			if (groups == null)
+			{
+				continue;
+			}
+
+			int type = rig.getType(transform);
+			int identity = type == TYPE_SCALE ? (int) SCALE_UNIT : 0;
+			int curX = opA >= 0 ? clip.getDx(frame, opA) : identity;
+			int curY = opA >= 0 ? clip.getDy(frame, opA) : identity;
+			int curZ = opA >= 0 ? clip.getDz(frame, opA) : identity;
+			int nextX = opB >= 0 ? clip.getDx(next, opB) : identity;
+			int nextY = opB >= 0 ? clip.getDy(next, opB) : identity;
+			int nextZ = opB >= 0 ? clip.getDz(next, opB) : identity;
+
+			switch (type)
+			{
+				case TYPE_PIVOT:
+					setPivot(mesh, groups, RetroFrameTiming.lerp(curX, nextX, t, interval),
+						RetroFrameTiming.lerp(curY, nextY, t, interval),
+						RetroFrameTiming.lerp(curZ, nextZ, t, interval), outX, outY, outZ);
+					break;
+				case TYPE_TRANSLATE:
+					translate(mesh, groups, RetroFrameTiming.lerp(curX, nextX, t, interval),
+						RetroFrameTiming.lerp(curY, nextY, t, interval),
+						RetroFrameTiming.lerp(curZ, nextZ, t, interval), outX, outY, outZ);
+					break;
+				case TYPE_ROTATE:
+					rotate(mesh, groups, RetroFrameTiming.rotation(curX, nextX, t, interval),
+						RetroFrameTiming.rotation(curY, nextY, t, interval),
+						RetroFrameTiming.rotation(curZ, nextZ, t, interval), outX, outY, outZ);
+					break;
+				case TYPE_SCALE:
+					scale(mesh, groups, RetroFrameTiming.lerp(curX, nextX, t, interval),
+						RetroFrameTiming.lerp(curY, nextY, t, interval),
+						RetroFrameTiming.lerp(curZ, nextZ, t, interval), outX, outY, outZ);
+					break;
+				default:
+					// Type 5 transparency and unknown types, as in apply
 					break;
 			}
 		}
@@ -166,7 +250,7 @@ public final class RetroSkinner
 	 * already applied this frame - which is how a limb ends up rotating about its parent's current
 	 * position rather than its resting one.
 	 */
-	private void setPivot(RetroMesh mesh, int[] groups, int dx, int dy, int dz,
+	private void setPivot(RetroMesh mesh, int[] groups, float dx, float dy, float dz,
 		float[] outX, float[] outY, float[] outZ)
 	{
 		float sumX = 0f;
@@ -199,7 +283,7 @@ public final class RetroSkinner
 		}
 	}
 
-	private void translate(RetroMesh mesh, int[] groups, int dx, int dy, int dz,
+	private void translate(RetroMesh mesh, int[] groups, float dx, float dy, float dz,
 		float[] outX, float[] outY, float[] outZ)
 	{
 		for (int group : groups)
@@ -213,13 +297,10 @@ public final class RetroSkinner
 		}
 	}
 
-	private void rotate(RetroMesh mesh, int[] groups, int dx, int dy, int dz,
+	/** Angles are trig-table indices, 0..2047. */
+	private void rotate(RetroMesh mesh, int[] groups, int angleX, int angleY, int angleZ,
 		float[] outX, float[] outY, float[] outZ)
 	{
-		int angleX = (dx & 0xFF) * ROTATION_SHIFT;
-		int angleY = (dy & 0xFF) * ROTATION_SHIFT;
-		int angleZ = (dz & 0xFF) * ROTATION_SHIFT;
-
 		for (int group : groups)
 		{
 			for (int vertex : mesh.getVertexGroup(group))
@@ -264,7 +345,7 @@ public final class RetroSkinner
 		}
 	}
 
-	private void scale(RetroMesh mesh, int[] groups, int dx, int dy, int dz,
+	private void scale(RetroMesh mesh, int[] groups, float dx, float dy, float dz,
 		float[] outX, float[] outY, float[] outZ)
 	{
 		for (int group : groups)

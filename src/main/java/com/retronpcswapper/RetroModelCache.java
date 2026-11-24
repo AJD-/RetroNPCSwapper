@@ -26,8 +26,10 @@ package com.retronpcswapper;
 
 import com.retronpcswapper.chathead.RetroHead;
 import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroBlend;
 import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroDecals;
+import com.retronpcswapper.inject.RetroFrameTiming;
 import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
 import com.retronpcswapper.inject.RetroMeshMerger;
@@ -38,6 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -63,6 +66,12 @@ public class RetroModelCache
 {
 	@Inject
 	private Client client;
+
+	@Inject
+	private RetroAnimationSmoothing smoothing;
+
+	/** Per-NPC frame clocks for smoothing, keyed by instance: same-id NPCs sit on different frames. */
+	private final Map<NPC, NpcClocks> clocks = new IdentityHashMap<>();
 
 	/** Unposed, lit retro models keyed by NPC id. */
 	private final Map<Integer, Model> baseModels = new HashMap<>();
@@ -125,6 +134,9 @@ public class RetroModelCache
 	private final Set<Integer> headless = new HashSet<>();
 
 	private final RetroSkinner skinner = new RetroSkinner();
+
+	/** Scratch blend for the injected path, reused per draw. */
+	private final RetroBlend blend = new RetroBlend();
 
 	/** Scratch pose buffers for the skinner comparison, grown to whatever mesh needs them. */
 	private float[] skinnedX = new float[0];
@@ -319,10 +331,32 @@ public class RetroModelCache
 
 		Animation action = animation(npc.getAnimation());
 		Animation pose = animation(npc.getPoseAnimation());
-		Model posed = client.applyTransformations(base, action, npc.getAnimationFrame(), pose,
-			npc.getPoseAnimationFrame());
+		int actionFrame = npc.getAnimationFrame();
+		int poseFrame = npc.getPoseAnimationFrame();
+		boolean acting = acting(action, actionFrame);
+		Animation single = acting ? action : pose;
+		int frame = acting ? actionFrame : poseFrame;
+		// The client keeps a non-idle pose under an action, interleaved and never blended
+		boolean layered = acting && npc.getPoseAnimation() != npc.getIdlePoseAnimation();
 
-		verifySkinning(npc, posed);
+		Model posed;
+		if (!layered && smoothing.blends(single) && frame >= 0 && frame < single.getFrameLengths().length)
+		{
+			if (skinningCheckWanted(npc))
+			{
+				// The one-shot comparison needs the client's plain frame, which the blend never shows
+				verifySkinning(npc, client.applyTransformations(base, single, frame, null, 0));
+			}
+			// One animation only: the client does not blend when handed two
+			FrameClock clock = acting ? clocks(npc).action : clocks(npc).pose;
+			int elapsed = clock.elapsed(single.getId(), frame, client.getGameCycle(), single.getFrameLengths()[frame]);
+			posed = client.applyTransformations(base, single, RetroFrameTiming.pack(frame, elapsed, !acting), null, 0);
+		}
+		else
+		{
+			posed = client.applyTransformations(base, action, actionFrame, pose, poseFrame);
+			verifySkinning(npc, posed);
+		}
 
 		if (posed == null || !useInjectionPipeline)
 		{
@@ -334,6 +368,28 @@ public class RetroModelCache
 		// than at the consumer.
 		injected.copyFrom(posed);
 		return injected;
+	}
+
+	private NpcClocks clocks(NPC npc)
+	{
+		return clocks.computeIfAbsent(npc, k -> new NpcClocks());
+	}
+
+	/** Drops a despawned NPC's frame clocks. */
+	public void forget(NPC npc)
+	{
+		clocks.remove(npc);
+	}
+
+	public void clearClocks()
+	{
+		clocks.clear();
+	}
+
+	/** Whether the action channel is showing, as the client decides it. */
+	static boolean acting(Animation action, int frame)
+	{
+		return action != null && frame >= 0 && frame < action.getNumFrames();
 	}
 
 	/**
@@ -639,19 +695,41 @@ public class RetroModelCache
 			reportAction(npc.getId(), action, frame, clip);
 		}
 
+		boolean acting = true;
 		if (clip == null || !clip.hasFrame(frame))
 		{
 			int pose = npc.getPoseAnimation();
 			clip = pose == -1 ? null : bundle.getClip(keyBase + pose);
 			frame = npc.getPoseAnimationFrame();
+			acting = false;
 		}
 
 		RetroRig rig = clip == null ? null : bundle.getRig(clip.getRigId());
 
+		// Clocks follow the live animation id, not the bundle key; the id gate keeps smoothing-off free
+		int liveId = acting ? action : npc.getPoseAnimation();
+		Animation live = clip != null && rig != null && smoothing.blends(liveId) ? animation(liveId) : null;
+		int[] lengths = live == null ? null : live.getFrameLengths();
+		boolean blended = false;
+		if (lengths != null && frame >= 0 && frame < lengths.length && !live.isMayaAnim())
+		{
+			FrameClock clock = acting ? clocks(npc).action : clocks(npc).pose;
+			int elapsed = clock.elapsed(liveId, frame, client.getGameCycle(), lengths[frame]);
+			blended = blend.compute(clip, frame, elapsed, lengths, live.getFrameStep(), !acting);
+		}
+
 		// A missing clip is not a failure - it leaves the mesh in its rest pose, which is far better
 		// than not drawing the NPC at all
-		skinner.pose(mesh, rig, clip, frame,
-			model.getVerticesX(), model.getVerticesY(), model.getVerticesZ());
+		if (blended)
+		{
+			skinner.pose(mesh, rig, clip, frame, blend.next, blend.t, blend.interval,
+				model.getVerticesX(), model.getVerticesY(), model.getVerticesZ());
+		}
+		else
+		{
+			skinner.pose(mesh, rig, clip, frame,
+				model.getVerticesX(), model.getVerticesY(), model.getVerticesZ());
+		}
 		model.calculateBoundsCylinder();
 
 		return model;
@@ -711,6 +789,13 @@ public class RetroModelCache
 		}
 	}
 
+	/** One NPC's action and pose frame clocks. */
+	private static final class NpcClocks
+	{
+		final FrameClock action = new FrameClock();
+		final FrameClock pose = new FrameClock();
+	}
+
 	/**
 	 * Checks {@link RetroSkinner} against the client's own animation for the same mesh and frame.
 	 * <p>
@@ -725,33 +810,16 @@ public class RetroModelCache
 	 */
 	private void verifySkinning(NPC npc, Model posed)
 	{
-		// Nothing but a debug line comes of this, and it runs per NPC per frame, so it does not run
-		// at all unless someone is reading. Tested before the one-shot flag, so enabling debug
-		// mid-session still gets a comparison rather than finding the shot already spent.
-		if (!log.isDebugEnabled() || skinningVerified || posed == null || npc.getAnimation() != -1)
+		// Re-asked so the plain two-animation caller needs no gate of its own
+		if (posed == null || !skinningCheckWanted(npc))
 		{
 			return;
 		}
 
-		Integer meshId = meshIds.get(npc.getId());
-		if (meshId == null)
-		{
-			return;
-		}
-
-		RetroMesh mesh = bundle.getMesh(meshId);
+		RetroMesh mesh = bundle.getMesh(meshIds.get(npc.getId()));
 		RetroClip clip = bundle.getClip(npc.getPoseAnimation());
-		if (mesh == null || clip == null)
-		{
-			return;
-		}
-
 		RetroRig rig = bundle.getRig(clip.getRigId());
 		int frame = npc.getPoseAnimationFrame();
-		if (rig == null || !clip.hasFrame(frame))
-		{
-			return;
-		}
 
 		try
 		{
@@ -767,6 +835,36 @@ public class RetroModelCache
 			skinningVerified = true;
 			log.debug("Skinning comparison failed", ex);
 		}
+	}
+
+	/**
+	 * Whether {@link #verifySkinning} has a comparison to make for this NPC.
+	 * <p>
+	 * Nothing but a debug line comes of it, and it is asked per NPC per frame, so it is off unless
+	 * someone is reading. Tested before the one-shot flag, so enabling debug mid-session still gets
+	 * a comparison rather than finding the shot already spent.
+	 */
+	private boolean skinningCheckWanted(NPC npc)
+	{
+		if (!log.isDebugEnabled() || skinningVerified || npc.getAnimation() != -1)
+		{
+			return false;
+		}
+
+		Integer meshId = meshIds.get(npc.getId());
+		if (meshId == null)
+		{
+			return false;
+		}
+
+		RetroMesh mesh = bundle.getMesh(meshId);
+		RetroClip clip = bundle.getClip(npc.getPoseAnimation());
+		if (mesh == null || clip == null)
+		{
+			return false;
+		}
+
+		return bundle.getRig(clip.getRigId()) != null && clip.hasFrame(npc.getPoseAnimationFrame());
 	}
 
 	/** Returns whether the comparison actually ran, so a skip does not consume the one shot. */
@@ -913,6 +1011,7 @@ public class RetroModelCache
 		unbuildable.clear();
 		heads.clear();
 		headless.clear();
+		clocks.clear();
 	}
 
 	private Model build(RetroNpcData data)
