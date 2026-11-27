@@ -43,7 +43,7 @@ final class RetroChangelog
 			new Release("2.8.1", "Added 2DScape compatibility, Region Locker GPU Plugin compatibility"),
 			new Release("2.9.0", "Added 'era' dropdown for Goblins, Added Barbarians, and split Spider Toggles"),
 			new Release("2.9.1", "Added Sheep, Unicorns, Souls Bane NPC overrides, Cave Goblins, and Brutal Dragons"),
-			new Release("2.9.2", "Added Terrorbirds")
+			new Release("2.9.2", "Added Terrorbirds, Misc Birds, GPU (Experimental) plugin compatibility, and animation smoothing")
 	);
 
 	private final Release latest;

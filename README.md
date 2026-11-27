@@ -194,6 +194,10 @@ NPC's model, its animations nor its chathead. Every other NPC is swapped as usua
 `Fix Interact Highlight outlines` option can be on in this plugin or Custom Servants (or both): only one draws
 `Interact Highlight`'s NPC outlines at a time, each around whichever plugin's
 model is on screen.
+
+The **Personal Space** plugin _does not_ run alongside this plugin as it takes over the renderer slot that this
+plugin must hook into in order to swap the models. The maintainer of that plugin will need to create a compatibility
+patch in order for these plugins to work together.
 </details>
 
 ### If you'd like to report a bug or request a feature, please create an issue [here](https://github.com/AJD-/RetroNPCSwapper/issues)
