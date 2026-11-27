@@ -675,6 +675,18 @@ public interface RetroNpcConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = "swapStoneCircle",
+		name = "Stone circle",
+		description = "Restore the 2005 stone circle south of Varrock.",
+		section = scenerySection,
+		position = 8
+	)
+	default boolean swapStoneCircle()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 			name = "Misc",
 			description = "Plugin-meta settings",

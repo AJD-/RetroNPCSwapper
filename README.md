@@ -51,6 +51,7 @@ Under **Scenery**:
 - **Picnic benches**
 - **Dairy cows**
 - **Fishing spots** - Excluding sailing-specific spots
+- **Stone circle** — the henges and dolmen south of Varrock
 
 ![config](img/retronpcswapperconfig.png)
 
