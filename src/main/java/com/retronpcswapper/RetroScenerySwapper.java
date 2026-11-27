@@ -351,8 +351,12 @@ public class RetroScenerySwapper implements RenderCallback
 		else
 		{
 			GameObject gameObject = (GameObject) object;
-			int quarterTurns = ObjectPlacement.orientation(gameObject.getConfig());
-			if (scenery.isAnimated())
+			int quarterTurns = (ObjectPlacement.orientation(gameObject.getConfig()) + scenery.turn.quarters()) % QUARTER_TURNS;
+			if (scenery.isHideOnly())
+			{
+				// Tracked with no stand-ins, so its zone is still rebuilt as it switches
+			}
+			else if (scenery.isAnimated())
 			{
 				RetroGameObjectController controller = animatedStandIn(scenery, quarterTurns, gameObject);
 				if (controller == null)
@@ -756,7 +760,7 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	private boolean isReady(RetroScenery scenery)
 	{
-		return scenery.source == RetroScenery.Source.LIVE_CACHE || replacements.containsKey(scenery);
+		return scenery.source != RetroScenery.Source.BUNDLE || replacements.containsKey(scenery);
 	}
 
 	/**
@@ -765,6 +769,10 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	private boolean canCarry(RetroScenery scenery)
 	{
+		if (scenery.isHideOnly())
+		{
+			return true;
+		}
 		return scenery.isAnimated()
 			? client.loadModelData(scenery.meshId) != null
 			: carrier(scenery, 0) != null;

@@ -1136,6 +1136,13 @@ public class RetroNpcSwapperPlugin extends Plugin
 			wanted.add(RetroScenery.DAIRY_COW);
 			wanted.add(RetroScenery.FAIRY_DAIRY_COW);
 		}
+		if (config.swapStoneCircle())
+		{
+			wanted.add(RetroScenery.STONE_CIRCLE_HENGE);
+			wanted.add(RetroScenery.STONE_CIRCLE_CORNER_HENGE);
+			wanted.add(RetroScenery.STONE_CIRCLE_DOLMEN);
+			wanted.add(RetroScenery.STONE_CIRCLE_UPPER);
+		}
 		return wanted;
 	}
 
