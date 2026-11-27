@@ -51,7 +51,7 @@ public class RetroNpcCategoryRulesTest
 		RetroNpcConfig::swapSmallSpiders, RetroNpcConfig::swapElves, RetroNpcConfig::swapBears,
 		RetroNpcConfig::swapKalphites, RetroNpcConfig::swapRoundTable, RetroNpcConfig::swapVarrockNpcs,
 		RetroNpcConfig::swapFishingSpots, RetroNpcConfig::swapBarbarians, RetroNpcConfig::swapSheep,
-		RetroNpcConfig::swapUnicorns);
+		RetroNpcConfig::swapUnicorns, RetroNpcConfig::swapTerrorbirds);
 
 	/** Every toggle stubbed on: a bare mock answers false, and a null era reads as not Modern. */
 	private static RetroNpcConfig allOn()
@@ -128,6 +128,7 @@ public class RetroNpcCategoryRulesTest
 		assertOwns(RetroNpcConfig::swapSheep, SHEEP);
 		assertOwns(RetroNpcConfig::swapUnicorns, UNICORNS, ANGRY_UNICORNS);
 		assertOwns(RetroNpcConfig::swapFishingSpots, FISHING_SPOTS);
+		assertOwns(RetroNpcConfig::swapTerrorbirds, TERRORBIRDS);
 	}
 
 	@Test
@@ -184,7 +185,7 @@ public class RetroNpcCategoryRulesTest
 	public void testTheCategoriesMatchedByIdAlone()
 	{
 		Set<RetroNpcCategory> idOnly = EnumSet.of(GUARDS, ELVES, ROUND_TABLE, VARROCK, BARBARIANS, SHEEP,
-			UNICORNS, ANGRY_UNICORNS, CAVE_GOBLINS);
+			UNICORNS, ANGRY_UNICORNS, CAVE_GOBLINS, TERRORBIRDS);
 
 		for (RetroNpcCategory category : RetroNpcCategory.values())
 		{
