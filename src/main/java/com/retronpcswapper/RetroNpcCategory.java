@@ -77,7 +77,8 @@ public enum RetroNpcCategory
 	MISC_BIRDS(RetroNpcConfig::swapMiscBirds, Geometry.CACHE, Trait.ID_ONLY),
 	// Shares the Misc Birds toggle
 	MISC_BIRD_DUCKS(RetroNpcConfig::swapMiscBirds, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
-	FISHING_SPOTS(RetroNpcConfig::swapFishingSpots, Geometry.CACHE);
+	FISHING_SPOTS(RetroNpcConfig::swapFishingSpots, Geometry.CACHE),
+	TERRORBIRDS(RetroNpcConfig::swapTerrorbirds, Geometry.CACHE, Trait.ID_ONLY);
 
 	/** Where a category's 2005 geometry and clips come from. */
 	enum Geometry

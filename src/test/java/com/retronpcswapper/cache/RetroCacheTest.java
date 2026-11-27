@@ -352,6 +352,33 @@ public class RetroCacheTest
 		}
 	}
 
+	/** Defs 136-138: no recolours, no resize, one fused mesh each. */
+	@Test
+	public void testTerrorbirdArchetypesAreTheir2005Definitions() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
+
+		Map<Integer, RetroNpcDefinition> feb = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
+		Object[][] rows = {
+			{136, "Terrorbird", 28, RetroNpcMapping.TERRORBIRD},
+			{137, "Mounted terrorbird gnome", 31, RetroNpcMapping.TERRORBIRD_MOUNTED},
+			{138, "Mounted terrorbird gnome", 49, RetroNpcMapping.TERRORBIRD_MOUNTED_SPEAR}};
+		for (Object[] row : rows)
+		{
+			RetroNpcDefinition def = feb.get((int) row[0]);
+			assertEquals(row[1], def.getName());
+			assertEquals((int) row[2], def.getCombatLevel());
+			assertSheepDefinition(def, (RetroNpcData) row[3]);
+		}
+
+		// The terrorchick is a 2006 addition
+		for (RetroNpcDefinition def : feb.values())
+		{
+			String name = def.getName() == null ? "" : def.getName().toLowerCase();
+			assertFalse(name, name.contains("terrorchick"));
+		}
+	}
+
 	private static final Object[][] CAVE_GOBLIN_NOV_DEFINITIONS = {
 		{1822, RetroNpcMapping.CAVE_GOBLINS.get(0)}, {1823, RetroNpcMapping.CAVE_GOBLINS.get(1)},
 		{1824, RetroNpcMapping.CAVE_GOBLINS.get(2)}, {1825, RetroNpcMapping.CAVE_GOBLINS.get(3)},

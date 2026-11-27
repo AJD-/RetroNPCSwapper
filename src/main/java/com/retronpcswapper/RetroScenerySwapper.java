@@ -25,6 +25,7 @@
 package com.retronpcswapper;
 
 import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroBlend;
 import com.retronpcswapper.inject.RetroClip;
 import com.retronpcswapper.inject.RetroDecals;
 import com.retronpcswapper.inject.RetroLighter;
@@ -50,7 +51,6 @@ import javax.inject.Singleton;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Animation;
-import net.runelite.api.AnimationController;
 import net.runelite.api.Client;
 import net.runelite.api.Constants;
 import net.runelite.api.DecorativeObject;
@@ -116,6 +116,12 @@ public class RetroScenerySwapper implements RenderCallback
 	@Inject
 	private Client client;
 
+	@Inject
+	private RetroAnimationSmoothing smoothing;
+
+	/** Scratch blend, reused per draw. */
+	private final RetroBlend blend = new RetroBlend();
+
 	/**
 	 * The scenery being hidden and drawn as 2005. Replaced whole, never modified in place.
 	 * <p>
@@ -166,7 +172,7 @@ public class RetroScenerySwapper implements RenderCallback
 	{
 		RetroScenery scenery;
 		int quarterTurns;
-		AnimationController animation;
+		SequenceClock animation;
 	}
 
 	/**
@@ -345,8 +351,12 @@ public class RetroScenerySwapper implements RenderCallback
 		else
 		{
 			GameObject gameObject = (GameObject) object;
-			int quarterTurns = ObjectPlacement.orientation(gameObject.getConfig());
-			if (scenery.isAnimated())
+			int quarterTurns = (ObjectPlacement.orientation(gameObject.getConfig()) + scenery.turn.quarters()) % QUARTER_TURNS;
+			if (scenery.isHideOnly())
+			{
+				// Tracked with no stand-ins, so its zone is still rebuilt as it switches
+			}
+			else if (scenery.isAnimated())
 			{
 				RetroGameObjectController controller = animatedStandIn(scenery, quarterTurns, gameObject);
 				if (controller == null)
@@ -488,9 +498,21 @@ public class RetroScenerySwapper implements RenderCallback
 
 		RetroModel model = turned[carrier.getQuarterTurns()];
 		Posable posable = posables.get(carrier.getScenery());
-		if (posable != null && carrier.getAnimation() != null)
+		SequenceClock clock = carrier.getAnimation();
+		if (posable != null && clock != null)
 		{
-			pose(posable, carrier.getAnimation().getFrame(), carrier.getQuarterTurns(), model);
+			int frame = clock.getFrame();
+			int quarterTurns = carrier.getQuarterTurns();
+			// The clock loops, so the blend does too
+			if (smoothing.blends(clock.getAnimationId())
+				&& blend.compute(posable.getClip(), frame, clock.getElapsed(), clock.getLengths(), clock.getFrameStep(), true))
+			{
+				pose(posable, frame, blend.next, blend.t, blend.interval, quarterTurns, model);
+			}
+			else
+			{
+				pose(posable, frame, quarterTurns, model);
+			}
 		}
 		return model;
 	}
@@ -506,10 +528,16 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	void pose(Posable posable, int frame, int quarterTurns, RetroModel into)
 	{
+		pose(posable, frame, -1, 0, 0, quarterTurns, into);
+	}
+
+	/** As above, blended {@code t} cycles of {@code interval} of the way from the frame to {@code next}. */
+	void pose(Posable posable, int frame, int next, float t, int interval, int quarterTurns, RetroModel into)
+	{
 		RetroMesh mesh = posable.getMesh();
 		float[] x = into.getVerticesX();
 		float[] z = into.getVerticesZ();
-		skinner.pose(mesh, posable.getRig(), posable.getClip(), frame, x, into.getVerticesY(), z);
+		skinner.pose(mesh, posable.getRig(), posable.getClip(), frame, next, t, interval, x, into.getVerticesY(), z);
 		ObjectPlacement.turn(x, z, mesh.getVerticesCount(), quarterTurns);
 		into.calculateBoundsCylinder();
 	}
@@ -732,7 +760,7 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	private boolean isReady(RetroScenery scenery)
 	{
-		return scenery.source == RetroScenery.Source.LIVE_CACHE || replacements.containsKey(scenery);
+		return scenery.source != RetroScenery.Source.BUNDLE || replacements.containsKey(scenery);
 	}
 
 	/**
@@ -741,6 +769,10 @@ public class RetroScenerySwapper implements RenderCallback
 	 */
 	private boolean canCarry(RetroScenery scenery)
 	{
+		if (scenery.isHideOnly())
+		{
+			return true;
+		}
 		return scenery.isAnimated()
 			? client.loadModelData(scenery.meshId) != null
 			: carrier(scenery, 0) != null;
@@ -760,7 +792,7 @@ public class RetroScenerySwapper implements RenderCallback
 			return null;
 		}
 
-		AnimationController animation = new AnimationController(client, sequence);
+		SequenceClock animation = new SequenceClock(scenery.animationId, sequence.getFrameLengths(), sequence.getFrameStep());
 		if (sequence.getFrameStep() != -1 && sequence.getNumFrames() > 0)
 		{
 			animation.setFrame(ThreadLocalRandom.current().nextInt(sequence.getNumFrames()));

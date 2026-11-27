@@ -117,7 +117,26 @@ enum RetroScenery
 	 * own.
 	 */
 	FAIRY_DAIRY_COW(Source.BUNDLE, Placement.GAME_OBJECT, new int[]{8237, 8239}, 20, 20, AnimationID.COW_CHEWS_GRASS,
-		new short[]{26, 30, 7566}, new short[]{142, 142, 142}, ObjectID.FAIRY_FAT_COW);
+		new short[]{26, 30, 7566}, new short[]{142, 142, 142}, ObjectID.FAIRY_FAT_COW),
+
+	/** 2005 def 407 "Henge", mesh 1416: the Varrock stone circle's four cardinal stones. */
+	STONE_CIRCLE_HENGE(Source.LIVE_CACHE, Placement.GAME_OBJECT, 1416, 0, 0, Turn.QUARTER,
+		ObjectID.QIP_DS_STONE_WALL_SMALL),
+
+	/** 2005 def 408 "Henge", mesh 1422: its four diagonal stones. */
+	STONE_CIRCLE_CORNER_HENGE(Source.LIVE_CACHE, Placement.GAME_OBJECT, 1422, 0, 0, Turn.HALF,
+		ObjectID.QIP_DS_STONE_WALL_LARGE),
+
+	/** 2005 def 413 "Dolmen", mesh 1470. 2005 had no quest states, so every live table state takes it. */
+	STONE_CIRCLE_DOLMEN(Source.LIVE_CACHE, Placement.GAME_OBJECT, 1470, 0, 0, Turn.THREE_QUARTERS,
+		ObjectID.QIP_DS_STONE_TABLE, ObjectID.QIP_DS_STONE_TABLE_INTACT, ObjectID.QIP_DS_STONE_TABLE_EXPLOSION,
+		ObjectID.QIP_DS_STONE_TABLE_SUMMONING, ObjectID.QIP_DS_STONE_TABLE_DESTROYED),
+
+	/** The live circle's upper storey, which 2005 did not have. */
+	STONE_CIRCLE_UPPER(Source.NONE, Placement.GAME_OBJECT, -1, 0, 0,
+		ObjectID.QIP_DS_STONE_WALL_LARGE_TOP, ObjectID.QIP_DS_STONE_WALL_TOP_DOME,
+		ObjectID.QIP_DS_STONE_WALL_LARGE_TOP_DOME2, ObjectID.QIP_DS_STONE_WALL_SMALL_TOP,
+		ObjectID.QIP_DS_STONE_WALL_SMALL_TOP_DOME);
 
 	/** Where the 2005 mesh comes from. */
 	enum Source
@@ -125,7 +144,20 @@ enum RetroScenery
 		/** The bundle, under its 2005 model id - the live cache no longer has it. */
 		BUNDLE,
 		/** The live cache, at its 2005 model id, which still holds it unchanged. */
-		LIVE_CACHE
+		LIVE_CACHE,
+		/** Nowhere: the live object is hidden and nothing stands in for it. */
+		NONE
+	}
+
+	/** Quarter turns from the live object's orientation to the 2005 one's. */
+	enum Turn
+	{
+		NONE, QUARTER, HALF, THREE_QUARTERS;
+
+		int quarters()
+		{
+			return ordinal();
+		}
 	}
 
 	/** How a scenery object sits in the scene, which decides how its stand-in is placed. */
@@ -164,6 +196,8 @@ enum RetroScenery
 	 */
 	final int meshId;
 
+	final Turn turn;
+
 	/** Every part of the 2005 model, merged into one in this order. */
 	private final int[] meshIds;
 
@@ -187,12 +221,31 @@ enum RetroScenery
 
 	RetroScenery(Source source, Placement placement, int meshId, int ambient, int contrast, int... objectIds)
 	{
-		this(source, placement, new int[]{meshId}, ambient, contrast, -1, new short[0], new short[0], objectIds);
+		this(source, placement, meshId, ambient, contrast, Turn.NONE, objectIds);
+	}
+
+	RetroScenery(Source source, Placement placement, int meshId, int ambient, int contrast, Turn turn, int... objectIds)
+	{
+		this(source, placement, new int[]{meshId}, ambient, contrast, -1, turn, new short[0], new short[0], objectIds);
 	}
 
 	RetroScenery(Source source, Placement placement, int[] meshIds, int ambient, int contrast, int animationId,
 		short[] recolorFind, short[] recolorReplace, int... objectIds)
 	{
+		this(source, placement, meshIds, ambient, contrast, animationId, Turn.NONE, recolorFind, recolorReplace, objectIds);
+	}
+
+	RetroScenery(Source source, Placement placement, int[] meshIds, int ambient, int contrast, int animationId,
+		Turn turn, short[] recolorFind, short[] recolorReplace, int... objectIds)
+	{
+		if ((source == Source.NONE) != (meshIds[0] == -1))
+		{
+			throw new IllegalArgumentException("Only a hidden scenery has no mesh");
+		}
+		if (source == Source.NONE && placement != Placement.GAME_OBJECT)
+		{
+			throw new IllegalArgumentException("Only a game object is hidden without a stand-in");
+		}
 		if (source == Source.LIVE_CACHE && meshIds.length != 1)
 		{
 			throw new IllegalArgumentException("A live cache scenery is drawn from one model");
@@ -210,12 +263,19 @@ enum RetroScenery
 		this.placement = placement;
 		this.meshId = meshIds[0];
 		this.meshIds = meshIds;
+		this.turn = turn;
 		this.ambient = ambient;
 		this.contrast = contrast;
 		this.animationId = animationId;
 		this.recolorFind = recolorFind;
 		this.recolorReplace = recolorReplace;
 		this.objectIds = objectIds;
+	}
+
+	/** Whether the live object is hidden with nothing drawn in its place. */
+	boolean isHideOnly()
+	{
+		return source == Source.NONE;
 	}
 
 	/** Whether the stand-in plays {@link #animationId}, posed on every draw. */

@@ -409,6 +409,25 @@ public class RetroNpcMapping
 		AnimationID.BEAR_REWORK_READY_GRIZZLY, AnimationID.BEAR_REWORK_READY_CUB_GRIZZLY
 	);
 
+	// Every modern terrorbird clip is on framemap 1533, which none of the retro rigs fit
+	public static final Set<Integer> TERRORBIRD_MODERN_ATTACKS = Set.of(AnimationID.POG_TERROR_BIRD_ATTACK);
+	public static final Set<Integer> TERRORBIRD_MODERN_DEFENDS = Set.of(AnimationID.POG_TERROR_BIRD_DEFEND);
+	public static final Set<Integer> TERRORBIRD_MODERN_DEATHS = Set.of(AnimationID.POG_TERROR_BIRD_DEATH);
+	public static final Set<Integer> TERRORBIRD_MODERN_MISC = Set.of(
+		AnimationID.POG_TERROR_BIRD_READY, AnimationID.POG_TERROR_BIRD_WALK,
+		AnimationID.POG_TERROR_BIRD_READY_EXTRA, AnimationID.TERROR_BIRD_READY_EXTRA
+	);
+	public static final Set<Integer> MOUNTED_TERRORBIRD_MODERN_ATTACKS = Set.of(AnimationID.MOUNTED_TERRORBIRD_ATTACK);
+	public static final Set<Integer> MOUNTED_TERRORBIRD_MODERN_DEFENDS = Set.of(AnimationID.MOUNTED_TERRORBIRD_DEFEND);
+	public static final Set<Integer> MOUNTED_TERRORBIRD_MODERN_DEATHS = Set.of(AnimationID.MOUNTED_TERRORBIRD_DEATH);
+	public static final Set<Integer> MOUNTED_TERRORBIRD_MODERN_MISC = Set.of(
+		AnimationID.MOUNTED_TERRORBIRD_READY, AnimationID.MOUNTED_TERRORBIRD_READY_EXTRA,
+		AnimationID.MOUNTED_TERRORBIRD_READY_TIMER, AnimationID.MOUNTED_TERRORBIRD_WALK,
+		AnimationID.MOUNTED_TERRORBIRD_READY_TIMER_1X1, AnimationID.MOUNTED_TERRORBIRD_READY_1X1,
+		AnimationID.MOUNTED_TERRORBIRD_WALK_1X1, AnimationID.MOUNTED_TERRORBIRD_GNOME_HANDS_OVER_FOOD,
+		AnimationID.TERRORCHICK_FOOD_DELIVERY
+	);
+
 	// Kalphites play their modern ids, which the bundle fills with 2005 frames. The ground family
 	// (workers, soldiers, guardians, larvae, crawling queen) and the airborne queen ride different
 	// 2005 rigs, so each set only names ids whose clips fit that family's meshes. That includes the
@@ -2440,6 +2459,60 @@ public class RetroNpcMapping
 		.scaleY(64)
 		.build();
 
+	// Meshes 3011-3013 and clips 321-331 survive in the live cache unchanged, unused by any live NPC.
+	// No 2005 def has recolours or a resize, so the live colour and size variants all take one look
+	private static final int TERRORBIRD_BODY = 3011;
+
+	private static RetroNpcData.Builder terrorbird()
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.TERRORBIRDS)
+			.idleAnimationId(AnimationID.TERRORBIRD_READY)
+			.miscAnimationId(AnimationID.TERRORBIRD_READY);
+	}
+
+	// Def 136
+	public static final RetroNpcData TERRORBIRD = terrorbird()
+		.retroModelIds(new int[]{TERRORBIRD_BODY})
+		.walkAnimationId(AnimationID.TERRORBIRD_WALK)
+		.attackAnimationId(AnimationID.TERRORBIRD_ATTACK)
+		.defendAnimationId(AnimationID.TERRORBIRD_BLOCK)
+		.deathAnimationId(AnimationID.TERRORBIRD_DEATH)
+		.modernAttackAnims(TERRORBIRD_MODERN_ATTACKS)
+		.modernDefendAnims(TERRORBIRD_MODERN_DEFENDS)
+		.modernDeathAnims(TERRORBIRD_MODERN_DEATHS)
+		.modernMiscAnims(TERRORBIRD_MODERN_MISC)
+		.build();
+
+	private static RetroNpcData.Builder mountedTerrorbird(int attack, int... parts)
+	{
+		return RetroNpcData.builder()
+			.category(RetroNpcCategory.TERRORBIRDS)
+			.retroModelIds(parts)
+			.idleAnimationId(AnimationID.TERRORBIRD_MOUNTED_READY)
+			.walkAnimationId(AnimationID.TERRORBIRD_MOUNTED_WALK)
+			.attackAnimationId(attack)
+			.defendAnimationId(AnimationID.TERRORBIRD_MOUNTED_BLOCK)
+			.deathAnimationId(AnimationID.TERRORBIRD_MOUNTED_DEATH)
+			.miscAnimationId(AnimationID.TERRORBIRD_MOUNTED_READY)
+			.modernAttackAnims(MOUNTED_TERRORBIRD_MODERN_ATTACKS)
+			.modernDefendAnims(MOUNTED_TERRORBIRD_MODERN_DEFENDS)
+			.modernDeathAnims(MOUNTED_TERRORBIRD_MODERN_DEATHS)
+			.modernMiscAnims(MOUNTED_TERRORBIRD_MODERN_MISC);
+	}
+
+	// Def 137
+	public static final RetroNpcData TERRORBIRD_MOUNTED =
+		mountedTerrorbird(AnimationID.TERRORBIRD_MOUNTED_ATTACK, 3012).build();
+
+	// Def 138, the spear
+	public static final RetroNpcData TERRORBIRD_MOUNTED_SPEAR =
+		mountedTerrorbird(AnimationID.TERRORBIRD_MOUNTED_ATTACK_SPEAR, 3013).build();
+
+	// Dec-2006 def 4570, its first form: chick 17161 and rider 17160 on the 2005 mounted clips
+	public static final RetroNpcData TERRORCHICK_MOUNTED =
+		mountedTerrorbird(AnimationID.TERRORBIRD_MOUNTED_ATTACK, 17161, 17160).build();
+
 	// Every 2005 Kalphite mesh is gone from the live cache, so the whole family is bundle-only. The
 	// opcode 40 pairs and the scales are the 2005 definitions; npc-mappings.json has no Kalphite
 	// row to graft from
@@ -3529,6 +3602,16 @@ public class RetroNpcMapping
 		NAME_MAPPINGS.put("bear cub", BEAR_CUB_1);
 		registerMapping(BEAR_CUB_1, NpcID.BROWNBEAR_CUB_1, NpcID.PRIF_GEE);
 		registerMapping(BEAR_CUB_2, NpcID.BROWNBEAR_CUB_2);
+
+		// Terrorbirds, by id only. The name would also take the Terrorbird Guards and the Mutated and
+		// Warped Terrorbirds
+		registerMapping(TERRORBIRD, NpcID.TERRORBIRD, NpcID.TERRORBIRD2, NpcID.TERRORBIRD3);
+		registerMapping(TERRORBIRD_MOUNTED, NpcID.TERRORBIRD_MOUNTED);
+		registerMapping(TERRORBIRD_MOUNTED_SPEAR,
+			NpcID.TERRORBIRD_MOUNTEDSPEAR, NpcID.BATTLEFIELD_TERRORBIRD_MOUNTEDSPEAR,
+			NpcID.BATTLEFIELD_TERRORBIRD_MOUNTEDSPEAR2, NpcID.BATTLEFIELD_TERRORBIRD_MOUNTEDSPEAR3
+		);
+		registerMapping(TERRORCHICK_MOUNTED, NpcID.ALUFT_DELIVERY_MOUNTED_TERRORCHIC);
 
 		// Fishing spots. Since Sailing every shoreline spot draws 41238 on the minnow clip; the 2005
 		// ripple 1491 and clips 447/448 all survive, so the cache path draws it. 2005 only knew

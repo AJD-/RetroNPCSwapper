@@ -68,6 +68,7 @@ public interface RetroNpcConfig extends Config
 	String USE_INJECTION_PIPELINE = "useInjectionPipeline";
 
 	String INCREASE_CHICKEN_SIZE = "increaseChickenSize";
+	String SMOOTH_RETRO_ANIMATIONS = "smoothRetroAnimations";
 
 	String SHOW_UPDATE_NOTES = "showUpdateNotes";
 
@@ -76,11 +77,11 @@ public interface RetroNpcConfig extends Config
 	 */
 	@ConfigItem(
 		keyName = "gpuRequiredNotice",
-		name = "<html><body style='width:170px'>This plugin requires the <b>GPU</b>, <b>117 HD</b>"
+		name = "<html><body style='width:170px'>This plugin requires the <b>GPU</b>, <b>GPU (experimental)</b>, <b>117 HD</b>"
 			+ " or <b>Region Locker GPU</b> plugin to be enabled. Models are swapped as the scene is"
 			+ " drawn, so nothing changes while none of them is rendering, or while 117 HD's"
 			+ " <b>Legacy renderer</b> option is on.</body></html>",
-		description = "Retro models are substituted while the GPU, 117 HD or Region Locker GPU plugin renders the scene, so one must be enabled.",
+		description = "Retro models are substituted while the GPU, GPU (experimental), 117 HD or Region Locker GPU plugin renders the scene, so one must be enabled.",
 		position = 0
 	)
 	default void gpuRequiredNotice()
@@ -94,7 +95,7 @@ public interface RetroNpcConfig extends Config
 			+ "plugin owns rather than handing the client's own model to the renderer.<br><br>"
 			+ "This is what restores meshes and animation that no longer exist anywhere in the live "
 			+ "game cache. Turn it off and only Chickens, Goblins (not cave goblins), Skeletons, Zombies, Hill Giants, "
-			+ "Ghosts, Hellhounds, Giant Rats, Spiders, Bears, Fishing Spots, and small Scorpions will swap to their retro assets. "
+			+ "Ghosts, Hellhounds, Giant Rats, Spiders, Bears, Terrorbirds, Fishing Spots, and small Scorpions will swap to their retro assets. "
             + "Hill Giants will wear a Jogre head.</body></html>",
 		position = 1
 	)
@@ -461,6 +462,19 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "swapTerrorbirds",
+		name = "Terrorbirds",
+		description = "<html><body style='width:170px'>Swap terrorbirds and mounted terrorbird gnomes "
+			+ "to their 2004/2005 retro models and animations</body></html>",
+		section = npcTogglesSection,
+		position = 26
+	)
+	default boolean swapTerrorbirds()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "swapChatheads",
 		name = "Chatheads",
 		description = "<html><body style='width:170px'>Show a swapped NPC's 2004/2005 dialogue head in "
@@ -469,7 +483,7 @@ public interface RetroNpcConfig extends Config
 			+ "others.<br><br>Follows each NPC's own toggle, and needs <b>Use Converted 2005 Assets</b>, "
 			+ "which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 26
+		position = 27
 	)
 	default boolean swapChatheads()
 	{
@@ -547,6 +561,20 @@ public interface RetroNpcConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+		keyName = SMOOTH_RETRO_ANIMATIONS,
+		name = "Smooth retro animations",
+		description = "<html><body style='width:170px'>Blend retro models between animation frames, as "
+			+ "the <b>Animation Smoothing</b> plugin does for everything else.<br><br>Only has an effect "
+			+ "while that plugin is on.</body></html>",
+		section = compatibilitySection,
+		position = 3
+	)
+	default boolean smoothRetroAnimations()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Items",
 		description = "Retro item models",
@@ -560,7 +588,7 @@ public interface RetroNpcConfig extends Config
 		name = "Anti-dragon shield",
 		description = "<html><body style='width:170px'>Restore the 2004-2007 anti-dragon shield: its "
 			+ "inventory icon, the model on the ground, and the shield worn by players.<br><br>The "
-			+ "icon swaps on any renderer. The worn shield needs the <b>GPU</b>, <b>117 HD</b> "
+			+ "icon swaps on any renderer. The worn shield needs the <b>GPU</b>, <b>GPU (experimental)</b>, <b>117 HD</b> "
 			+ "or <b>Region Locker GPU</b> plugin.</body></html>",
 		section = itemsSection,
 		position = 1
@@ -658,6 +686,18 @@ public interface RetroNpcConfig extends Config
 		position = 7
 	)
 	default boolean swapFishingSpots()
+	{
+		return true;
+	}
+
+	@ConfigItem(
+		keyName = "swapStoneCircle",
+		name = "Stone circle",
+		description = "Restore the 2005 stone circle south of Varrock.",
+		section = scenerySection,
+		position = 8
+	)
+	default boolean swapStoneCircle()
 	{
 		return true;
 	}

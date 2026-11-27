@@ -49,6 +49,12 @@ public class RetroAssetGeneratorTest
 	/** CROW_WALK and the three crow idles, Nov-2005 only. */
 	private static final int[] CROW_SEQUENCES = {1722, 1723, 1724, 1725};
 
+	/** TERRORBIRD_WALK through TERRORBIRD_DEATH. */
+	private static final int[] TERRORBIRD_SEQUENCES = {321, 322, 323, 324, 325};
+
+	/** TERRORBIRD_MOUNTED_WALK through TERRORBIRD_MOUNTED_DEATH. */
+	private static final int[] MOUNTED_TERRORBIRD_SEQUENCES = {326, 327, 328, 329, 330, 331};
+
 	/**
 	 * Checks the runtime merge against the generator's own, over real cache geometry.
 	 * <p>
@@ -496,12 +502,35 @@ public class RetroAssetGeneratorTest
 		return true;
 	}
 
+	/**
+	 * What the Terrorbirds category rests on: nothing live plays 321-331 any more, but they still
+	 * hold the 2005 frames. Live framemap 345 appends five transforms the bird clips never use.
+	 */
+	@Test
+	public void testRetroAndLiveClipPathsAgreeOnTheTerrorbirds() throws Exception
+	{
+		assertClipPathsAgree(TERRORBIRD_SEQUENCES, true);
+		assertClipPathsAgree(MOUNTED_TERRORBIRD_SEQUENCES, false);
+	}
+
 	private static void assertClipPathsAgree(int[] sequenceIds) throws Exception
 	{
-		assertClipPathsAgree(RETRO_CACHE_DIR, sequenceIds);
+		assertClipPathsAgree(RETRO_CACHE_DIR, sequenceIds, false);
 	}
 
 	private static void assertClipPathsAgree(File cacheDir, int[] sequenceIds) throws Exception
+	{
+		assertClipPathsAgree(cacheDir, sequenceIds, false);
+	}
+
+	private static void assertClipPathsAgree(int[] sequenceIds, boolean liveRigMayAppend) throws Exception
+	{
+		assertClipPathsAgree(RETRO_CACHE_DIR, sequenceIds, liveRigMayAppend);
+	}
+
+	/** @param liveRigMayAppend the live rig may carry transforms past the end of the 2005 one */
+	private static void assertClipPathsAgree(File cacheDir, int[] sequenceIds, boolean liveRigMayAppend)
+		throws Exception
 	{
 		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
 		assumeTrue("live cache not present", liveDir != null);
@@ -531,9 +560,17 @@ public class RetroAssetGeneratorTest
 				// gets a synthetic one - but the transforms they address are the same rig
 				RetroRig liveRig = rigs.get(live.getRigId());
 				RetroRig retroRig = rigs.get(retroClip.getRigId());
-				assertEquals("sequence " + sequenceId + " transform count",
-					liveRig.getTransformCount(), retroRig.getTransformCount());
-				for (int t = 0; t < liveRig.getTransformCount(); t++)
+				if (liveRigMayAppend)
+				{
+					assertTrue("sequence " + sequenceId + " transform count",
+						liveRig.getTransformCount() >= retroRig.getTransformCount());
+				}
+				else
+				{
+					assertEquals("sequence " + sequenceId + " transform count",
+						liveRig.getTransformCount(), retroRig.getTransformCount());
+				}
+				for (int t = 0; t < retroRig.getTransformCount(); t++)
 				{
 					assertEquals("sequence " + sequenceId + " transform " + t + " type",
 						liveRig.getType(t), retroRig.getType(t));

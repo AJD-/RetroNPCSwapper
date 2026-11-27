@@ -31,6 +31,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -419,6 +420,142 @@ public class RetroScenerySwapperTest
 		swapper.onDespawned(first);
 		assertNull(swapper.substitute(firstCarrier));
 		assertNotNull(swapper.substitute(secondCarrier));
+	}
+
+	/** Mid-frame, with Animation Smoothing on, a cow is drawn between its frames, not on the earlier one. */
+	@Test
+	public void testAnAnimatedStandInBlendsMidFrame() throws Exception
+	{
+		RetroAssetBundle bundle = shippedBundle();
+		int frames = bundle.getClip(RetroScenery.DAIRY_COW.animationId).getFrameCount();
+		int[] lengths = new int[frames];
+		Arrays.fill(lengths, 4);
+
+		Client client = mock(Client.class);
+		when(client.getAnimationInterpolationFilter()).thenReturn(id -> true);
+		ModelData data = mock(ModelData.class);
+		when(data.light()).thenAnswer(invocation -> mock(Model.class));
+		when(client.loadModelData(RetroScenery.DAIRY_COW.meshId)).thenReturn(data);
+		Animation chewing = mock(Animation.class);
+		when(chewing.getNumFrames()).thenReturn(frames);
+		when(chewing.getFrameStep()).thenReturn(-1);
+		when(chewing.getFrameLengths()).thenReturn(lengths);
+		when(client.loadAnimation(RetroScenery.DAIRY_COW.animationId)).thenReturn(chewing);
+
+		RetroAnimationSmoothing smoothing = new RetroAnimationSmoothing(client);
+		RetroScenerySwapper swapper = Guice.createInjector(binder ->
+		{
+			binder.bind(Client.class).toInstance(client);
+			binder.bind(RetroAnimationSmoothing.class).toInstance(smoothing);
+		}).getInstance(RetroScenerySwapper.class);
+		swapper.setBundle(bundle);
+		swapper.refresh(EnumSet.of(RetroScenery.DAIRY_COW));
+
+		GameObject cow = gameObject(ObjectID.FAT_COW, config(10, 0));
+		when(cow.getWorldView()).thenReturn(mock(WorldView.class));
+		swapper.onSpawned(cow);
+		RuneLiteObjectController standIn = swapper.getStandIns(cow).get(0);
+
+		// Frame 0, two cycles in
+		standIn.tick(3);
+		smoothing.setEnabled(false);
+		RetroModel model = (RetroModel) swapper.substitute(standIn.getModel());
+		float[] plain = model.getVerticesY().clone();
+		smoothing.setEnabled(true);
+		model = (RetroModel) swapper.substitute(standIn.getModel());
+
+		assertFalse(Arrays.equals(plain, model.getVerticesY()));
+	}
+
+	@Test
+	public void testTheStoneCircleIsHiddenWhileActive()
+	{
+		for (int id : new int[]{ObjectID.QIP_DS_STONE_WALL_SMALL, ObjectID.QIP_DS_STONE_WALL_LARGE,
+			ObjectID.QIP_DS_STONE_TABLE, ObjectID.QIP_DS_STONE_TABLE_INTACT, ObjectID.QIP_DS_STONE_TABLE_EXPLOSION,
+			ObjectID.QIP_DS_STONE_TABLE_SUMMONING, ObjectID.QIP_DS_STONE_TABLE_DESTROYED,
+			ObjectID.QIP_DS_STONE_WALL_LARGE_TOP, ObjectID.QIP_DS_STONE_WALL_TOP_DOME,
+			ObjectID.QIP_DS_STONE_WALL_LARGE_TOP_DOME2, ObjectID.QIP_DS_STONE_WALL_SMALL_TOP,
+			ObjectID.QIP_DS_STONE_WALL_SMALL_TOP_DOME})
+		{
+			assertTrue("object " + id, RetroScenerySwapper.shouldHide(gameObject(id, config(10, 0)), ALL));
+		}
+	}
+
+	/** The ground decoration stays live. */
+	@Test
+	public void testTheStoneCircleFloorIsLeftAlone()
+	{
+		for (int id : new int[]{ObjectID.QIP_DS_STONE_FLOOR1, ObjectID.QIP_DS_STONE_FLOOR2,
+			ObjectID.QIP_DS_STONE_FLOOR_EDGE1, ObjectID.QIP_DS_STONE_FLOOR_EDGE2})
+		{
+			assertNull("object " + id, RetroScenery.forObject(id));
+		}
+	}
+
+	/** Map orientations: 2005 Henge 407 is the live wall + 1, Henge 408 + 2, Dolmen 413 + 3. */
+	@Test
+	public void testAStoneCircleStandInIsTurnedToIts2005Orientation()
+	{
+		Client client = mock(Client.class);
+		for (int mesh : new int[]{1416, 1422, 1470})
+		{
+			ModelData data = mock(ModelData.class);
+			ModelData copy = mock(ModelData.class);
+			when(data.cloneVertices()).thenReturn(copy);
+			when(copy.getVerticesX()).thenReturn(new float[0]);
+			when(copy.getVerticesZ()).thenReturn(new float[0]);
+			when(copy.light(anyInt(), anyInt(), anyInt(), anyInt(), anyInt())).thenAnswer(invocation -> mock(Model.class));
+			when(client.loadModelData(mesh)).thenReturn(data);
+		}
+
+		RetroScenerySwapper swapper = Guice.createInjector(binder -> binder.bind(Client.class).toInstance(client))
+			.getInstance(RetroScenerySwapper.class);
+		swapper.refresh(ALL);
+
+		int[] ids = {ObjectID.QIP_DS_STONE_WALL_SMALL, ObjectID.QIP_DS_STONE_WALL_LARGE, ObjectID.QIP_DS_STONE_TABLE};
+		int[] offsets = {1, 2, 3};
+		WorldView worldView = mock(WorldView.class);
+		for (int kind = 0; kind < ids.length; kind++)
+		{
+			// Carriers are made in order of first use, one per 2005 quarter turn
+			Model[] byLiveOrientation = new Model[4];
+			for (int orientation = 0; orientation < 4; orientation++)
+			{
+				GameObject object = gameObject(ids[kind], config(10, orientation));
+				when(object.getWorldView()).thenReturn(worldView);
+				swapper.onSpawned(object);
+				assertEquals(1, swapper.getStandIns(object).size());
+				byLiveOrientation[orientation] = swapper.getStandIns(object).get(0).getModel();
+			}
+			assertEquals(4, new HashSet<>(Arrays.asList(byLiveOrientation)).size());
+
+			// A wall placed a full turn on from the offset is the one placed unturned in 2005
+			GameObject again = gameObject(ids[kind], config(10, (4 - offsets[kind]) % 4));
+			when(again.getWorldView()).thenReturn(worldView);
+			swapper.onSpawned(again);
+			assertSame(byLiveOrientation[(4 - offsets[kind]) % 4], swapper.getStandIns(again).get(0).getModel());
+		}
+
+		assertEquals(1, RetroScenery.STONE_CIRCLE_HENGE.turn.quarters());
+		assertEquals(2, RetroScenery.STONE_CIRCLE_CORNER_HENGE.turn.quarters());
+		assertEquals(3, RetroScenery.STONE_CIRCLE_DOLMEN.turn.quarters());
+	}
+
+	/** The upper storey is tracked, hidden, and has nothing drawn for it. */
+	@Test
+	public void testTheStoneCircleUpperStoreyHasNoStandIn()
+	{
+		Client client = mock(Client.class);
+		RetroScenerySwapper swapper = Guice.createInjector(binder -> binder.bind(Client.class).toInstance(client))
+			.getInstance(RetroScenerySwapper.class);
+		swapper.refresh(EnumSet.of(RetroScenery.STONE_CIRCLE_UPPER));
+
+		GameObject top = gameObject(ObjectID.QIP_DS_STONE_WALL_SMALL_TOP, config(10, 1));
+		swapper.onSpawned(top);
+
+		assertTrue(RetroScenery.STONE_CIRCLE_UPPER.isHideOnly());
+		assertFalse(swapper.drawObject(mock(Scene.class), top));
+		assertTrue(swapper.getStandIns(top).isEmpty());
 	}
 
 	private static RetroAssetBundle shippedBundle() throws Exception

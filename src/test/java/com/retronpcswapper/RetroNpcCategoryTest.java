@@ -1499,6 +1499,120 @@ public class RetroNpcCategoryTest
 	}
 
 	@Test
+	public void testTerrorbirds()
+	{
+		// archetype, parts, walk, attack, defend, death, live ids, live name
+		Object[][] rows = {
+			{RetroNpcMapping.TERRORBIRD, new int[]{3011}, AnimationID.TERRORBIRD_WALK,
+				AnimationID.TERRORBIRD_ATTACK, AnimationID.TERRORBIRD_BLOCK, AnimationID.TERRORBIRD_DEATH,
+				new int[]{NpcID.TERRORBIRD, NpcID.TERRORBIRD2, NpcID.TERRORBIRD3}, "Terrorbird"},
+			{RetroNpcMapping.TERRORBIRD_MOUNTED, new int[]{3012}, AnimationID.TERRORBIRD_MOUNTED_WALK,
+				AnimationID.TERRORBIRD_MOUNTED_ATTACK, AnimationID.TERRORBIRD_MOUNTED_BLOCK,
+				AnimationID.TERRORBIRD_MOUNTED_DEATH,
+				new int[]{NpcID.TERRORBIRD_MOUNTED}, "Mounted terrorbird gnome"},
+			{RetroNpcMapping.TERRORBIRD_MOUNTED_SPEAR, new int[]{3013}, AnimationID.TERRORBIRD_MOUNTED_WALK,
+				AnimationID.TERRORBIRD_MOUNTED_ATTACK_SPEAR, AnimationID.TERRORBIRD_MOUNTED_BLOCK,
+				AnimationID.TERRORBIRD_MOUNTED_DEATH,
+				new int[]{NpcID.TERRORBIRD_MOUNTEDSPEAR, NpcID.BATTLEFIELD_TERRORBIRD_MOUNTEDSPEAR,
+					NpcID.BATTLEFIELD_TERRORBIRD_MOUNTEDSPEAR2, NpcID.BATTLEFIELD_TERRORBIRD_MOUNTEDSPEAR3},
+				"Mounted terrorbird gnome"},
+			// Dec-2006 def 4570
+			{RetroNpcMapping.TERRORCHICK_MOUNTED, new int[]{17161, 17160}, AnimationID.TERRORBIRD_MOUNTED_WALK,
+				AnimationID.TERRORBIRD_MOUNTED_ATTACK, AnimationID.TERRORBIRD_MOUNTED_BLOCK,
+				AnimationID.TERRORBIRD_MOUNTED_DEATH,
+				new int[]{NpcID.ALUFT_DELIVERY_MOUNTED_TERRORCHIC}, "Mounted terrorchick gnome"}};
+
+		int[] modernBird = {AnimationID.POG_TERROR_BIRD_WALK, AnimationID.POG_TERROR_BIRD_READY,
+			AnimationID.POG_TERROR_BIRD_READY_EXTRA, AnimationID.POG_TERROR_BIRD_ATTACK,
+			AnimationID.POG_TERROR_BIRD_DEFEND, AnimationID.POG_TERROR_BIRD_DEATH,
+			AnimationID.TERROR_BIRD_READY_EXTRA};
+		int[] modernMounted = {AnimationID.MOUNTED_TERRORBIRD_GNOME_HANDS_OVER_FOOD,
+			AnimationID.TERRORCHICK_FOOD_DELIVERY, 6790, 6791, 6792, 6793, 6794, 6795, 6796, 6797, 6798, 6799};
+
+		int registered = 0;
+		for (Object[] row : rows)
+		{
+			RetroNpcData data = (RetroNpcData) row[0];
+			boolean mounted = (int) row[2] == AnimationID.TERRORBIRD_MOUNTED_WALK;
+			int ready = mounted ? AnimationID.TERRORBIRD_MOUNTED_READY : AnimationID.TERRORBIRD_READY;
+
+			assertEquals(RetroNpcCategory.TERRORBIRDS, data.getCategory());
+			assertArrayEquals((int[]) row[1], data.getRetroModelIds());
+			assertFalse(data.hasRecolors());
+			assertEquals(128, data.getScaleXZ());
+			assertEquals(128, data.getScaleY());
+			assertFalse(data.hasChathead());
+
+			assertEquals(ready, data.getIdleAnimationId());
+			assertEquals(ready, data.getMiscAnimationId());
+			assertEquals((int) row[2], data.getWalkAnimationId());
+			assertEquals((int) row[3], data.getAttackAnimationId());
+			assertEquals((int) row[4], data.getDefendAnimationId());
+			assertEquals((int) row[5], data.getDeathAnimationId());
+
+			// Every modern clip the NPC can be sent is taken off the modern rig
+			for (int modern : mounted ? modernMounted : modernBird)
+			{
+				assertTrue("modern " + modern, data.isAttackAnimation(modern) || data.isDefendAnimation(modern)
+					|| data.isDeathAnimation(modern) || data.isMiscAnimation(modern));
+			}
+
+			// The retro clips themselves are left to play
+			for (int retro = AnimationID.TERRORBIRD_WALK; retro <= AnimationID.TERRORBIRD_MOUNTED_DEATH; retro++)
+			{
+				assertFalse(data.isAttackAnimation(retro));
+				assertFalse(data.isDefendAnimation(retro));
+				assertFalse(data.isDeathAnimation(retro));
+				assertFalse(data.isMiscAnimation(retro));
+			}
+
+			for (int id : (int[]) row[6])
+			{
+				assertSame("npc " + id, data, RetroNpcMapping.get(id, (String) row[7]));
+				registered++;
+			}
+		}
+		assertEquals(9, registered);
+
+		RetroNpcData bird = RetroNpcMapping.TERRORBIRD;
+		assertEquals(AnimationID.TERRORBIRD_ATTACK, bird.getAttackAnimationFor(AnimationID.POG_TERROR_BIRD_ATTACK));
+		assertTrue(bird.isDefendAnimation(AnimationID.POG_TERROR_BIRD_DEFEND));
+		assertTrue(bird.isDeathAnimation(AnimationID.POG_TERROR_BIRD_DEATH));
+		RetroNpcData spear = RetroNpcMapping.TERRORBIRD_MOUNTED_SPEAR;
+		assertEquals(AnimationID.TERRORBIRD_MOUNTED_ATTACK_SPEAR,
+			spear.getAttackAnimationFor(AnimationID.MOUNTED_TERRORBIRD_ATTACK));
+		assertTrue(spear.isDefendAnimation(AnimationID.MOUNTED_TERRORBIRD_DEFEND));
+		assertTrue(spear.isDeathAnimation(AnimationID.MOUNTED_TERRORBIRD_DEATH));
+
+		// The 2005 Chompy's ids, which the modern terrorbird clips now sit on
+		assertEquals(1007, AnimationID.POG_TERROR_BIRD_WALK);
+		assertEquals(321, AnimationID.TERRORBIRD_WALK);
+
+		// Cache path: meshes and clips both survive
+		assertFalse(RetroNpcMapping.requiresInjectedGeometry(RetroNpcCategory.TERRORBIRDS));
+		assertFalse(RetroNpcMapping.usesInjectedGeometry(RetroNpcCategory.TERRORBIRDS));
+
+		// By registered id only
+		assertNull(RetroNpcMapping.get(0, "Terrorbird"));
+		assertNull(RetroNpcMapping.get(0, "Mounted terrorbird gnome"));
+		assertNull(RetroNpcMapping.get(0, "Mounted terrorchick gnome"));
+		assertNull(RetroNpcMapping.get(0, "Terrorbird display"));
+
+		// Unlisted terrorbirds keep their modern look
+		assertNull(RetroNpcMapping.get(NpcID.ALUFT_TERRORCHIC, "Terrorchick gnome"));
+		assertNull(RetroNpcMapping.get(NpcID.VM_NATURAL_HISTORY_DISPLAY_CASE_TERROR_BIRD, "Terrorbird display"));
+		assertNull(RetroNpcMapping.get(12464, "Mutated Terrorbird"));
+		for (int id = 12480; id <= 12485; id++)
+		{
+			assertNull(RetroNpcMapping.get(id, "Terrorbird Guard"));
+		}
+		for (int id = 12491; id <= 12504; id++)
+		{
+			assertNull(RetroNpcMapping.get(id, "Warped Terrorbird"));
+		}
+	}
+
+	@Test
 	public void testTheAngryGoblinWearsIts2006ModelInBothEras()
 	{
 		// Dec-2006 defs 3648 and 3663
@@ -3430,6 +3544,7 @@ public class RetroNpcCategoryTest
 		assertTrue("swapBarbarians must default to true", config.swapBarbarians());
 		assertTrue("swapSheep must default to true", config.swapSheep());
 		assertTrue("swapUnicorns must default to true", config.swapUnicorns());
+		assertTrue("swapTerrorbirds must default to true", config.swapTerrorbirds());
 
 		assertFalse("overrideInteractHighlight must default to false",
 			config.overrideInteractHighlight());
