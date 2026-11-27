@@ -27,6 +27,7 @@ package com.retronpcswapper;
 import com.google.inject.Guice;
 import com.retronpcswapper.chathead.RetroHead;
 import com.retronpcswapper.inject.RetroAssetBundle;
+import com.retronpcswapper.inject.RetroLighter;
 import com.retronpcswapper.inject.RetroMesh;
 import java.util.Collections;
 import net.runelite.api.Client;
@@ -34,6 +35,7 @@ import net.runelite.api.Model;
 import net.runelite.api.ModelData;
 import org.junit.Before;
 import org.junit.Test;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
@@ -119,5 +121,17 @@ public class RetroModelCacheTest
 
 		cache.setGoblinEra(GoblinEra.RETRO_2005);
 		assertSame(head, cache.headFor(NPC_ID, data));
+	}
+
+	@Test
+	public void testHiddenColorsMatchBeforeRecolouring()
+	{
+		int[] colors3 = {10, 20, 30, 40};
+		RetroModelCache.hideColors(new short[]{127, 66, 127, 86}, new short[]{127}, colors3);
+		assertArrayEquals(new int[]{RetroLighter.HIDDEN, 20, RetroLighter.HIDDEN, 40}, colors3);
+
+		int[] untouched = {10, 20};
+		RetroModelCache.hideColors(new short[]{127, 66}, new short[0], untouched);
+		assertArrayEquals(new int[]{10, 20}, untouched);
 	}
 }

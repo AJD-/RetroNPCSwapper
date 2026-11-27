@@ -230,6 +230,9 @@ public class RetroNpcData
 	 */
 	private final int[] paintedOver;
 
+	/** 2005 palette colours whose faces the injected model hides, matched before any recolour. */
+	private final short[] hiddenColors;
+
 	public RetroNpcData(
 		RetroNpcCategory category,
 		int[] retroModelIds,
@@ -252,7 +255,7 @@ public class RetroNpcData
 		this(category, retroModelIds, null, idleAnimationId, walkAnimationId, attackAnimationId,
 			defendAnimationId, deathAnimationId, miscAnimationId, scaleXZ, scaleY, originalColors,
 			replacementColors, modernAttackAnims, modernDefendAnims, modernDeathAnims, modernMiscAnims,
-			null, false, 0, 0, null, 0, null);
+			null, false, 0, 0, null, 0, null, null);
 	}
 
 	public RetroNpcData(
@@ -279,7 +282,8 @@ public class RetroNpcData
 		int offsetZ,
 		int[] chatheadModelIds,
 		int chatheadKeyBase,
-		int[] paintedOver
+		int[] paintedOver,
+		short[] hiddenColors
 	)
 	{
 		this.category = category;
@@ -321,6 +325,7 @@ public class RetroNpcData
 			? chatheadModelIds.clone() : null;
 		this.chatheadKeyBase = chatheadKeyBase;
 		this.paintedOver = paintedOver != null ? paintedOver.clone() : new int[0];
+		this.hiddenColors = hiddenColors != null ? hiddenColors.clone() : new short[0];
 	}
 
 	public boolean hasStaticIdle()
@@ -441,7 +446,8 @@ public class RetroNpcData
 			offsetZ,
 			chatheadModelIds,
 			chatheadKeyBase,
-			paintedOver);
+			paintedOver,
+			hiddenColors);
 	}
 
 	/**
@@ -477,7 +483,8 @@ public class RetroNpcData
 			offsetZ,
 			chatheadModelIds,
 			chatheadKeyBase,
-			paintedOver);
+			paintedOver,
+			hiddenColors);
 	}
 
 	/**
@@ -520,13 +527,20 @@ public class RetroNpcData
 			offsetZ,
 			chatheadModelIds,
 			chatheadKeyBase,
-			paintedOver);
+			paintedOver,
+			hiddenColors);
 	}
 
 	/** Lower and upper part ids, flattened in pairs. See {@link #paintedOver}. */
 	public int[] getPaintedOver()
 	{
 		return paintedOver.clone();
+	}
+
+	/** See {@link #hiddenColors}. */
+	public short[] getHiddenColors()
+	{
+		return hiddenColors.clone();
 	}
 
 	/** Whether the 2005 definition had a dialogue head of its own. */
@@ -574,7 +588,8 @@ public class RetroNpcData
 			offsetZ,
 			chatheadModelIds,
 			chatheadKeyBase,
-			paintedOver);
+			paintedOver,
+			hiddenColors);
 	}
 
 	@Override
@@ -602,6 +617,7 @@ public class RetroNpcData
 			Arrays.equals(replacementColors, that.replacementColors) &&
 			Arrays.equals(chatheadModelIds, that.chatheadModelIds) &&
 			Arrays.equals(paintedOver, that.paintedOver) &&
+			Arrays.equals(hiddenColors, that.hiddenColors) &&
 			Objects.equals(modernAttackAnims, that.modernAttackAnims) &&
 			Objects.equals(modernDefendAnims, that.modernDefendAnims) &&
 			Objects.equals(modernDeathAnims, that.modernDeathAnims) &&
@@ -629,6 +645,7 @@ public class RetroNpcData
 		result = 31 * result + Arrays.hashCode(chatheadModelIds);
 		result = 31 * result + chatheadKeyBase;
 		result = 31 * result + Arrays.hashCode(paintedOver);
+		result = 31 * result + Arrays.hashCode(hiddenColors);
 		result = 31 * result + Arrays.hashCode(originalColors);
 		result = 31 * result + Arrays.hashCode(replacementColors);
 		result = 31 * result + (modernAttackAnims != null ? modernAttackAnims.hashCode() : 0);
@@ -665,6 +682,7 @@ public class RetroNpcData
 		private int[] chatheadModelIds;
 		private Integer chatheadKeyBase;
 		private int[] paintedOver = new int[0];
+		private short[] hiddenColors = new short[0];
 
 		public Builder category(RetroNpcCategory category)
 		{
@@ -904,6 +922,14 @@ public class RetroNpcData
 			return this;
 		}
 
+		/** Hides the injected faces drawn in this 2005 colour, see {@link RetroNpcData#hiddenColors}. */
+		public Builder hideColor(int color)
+		{
+			hiddenColors = Arrays.copyOf(hiddenColors, hiddenColors.length + 1);
+			hiddenColors[hiddenColors.length - 1] = (short) color;
+			return this;
+		}
+
 		public RetroNpcData build()
 		{
 			return new RetroNpcData(
@@ -930,7 +956,8 @@ public class RetroNpcData
 				offsetZ,
 				chatheadModelIds,
 				chatheadKeyBase != null ? chatheadKeyBase : assetKeyBase,
-				paintedOver
+				paintedOver,
+				hiddenColors
 			);
 		}
 	}

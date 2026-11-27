@@ -302,6 +302,56 @@ public class RetroCacheTest
 		}
 	}
 
+	private static final Object[][] MISC_BIRD_FEB_DEFINITIONS = {
+		{139, RetroNpcMapping.ENTRANA_FIREBIRD}, {146, RetroNpcMapping.GULL}, {149, RetroNpcMapping.GULL_DARK}};
+
+	// The jungle birds are Nov's rows: Feb's 1475/1476 have no stance
+	private static final Object[][] MISC_BIRD_NOV_DEFINITIONS = {
+		{1911, RetroNpcMapping.DESERT_PHOENIX},
+		{2693, RetroNpcMapping.SEAGULL}, {2694, RetroNpcMapping.SEAGULL_BIG},
+		{1751, RetroNpcMapping.CROW}, {1752, RetroNpcMapping.CROW_2}, {1753, RetroNpcMapping.CROW_3},
+		{2726, RetroNpcMapping.GULL_BROWN},
+		{1475, RetroNpcMapping.JUNGLE_BIRD_GREEN}, {1476, RetroNpcMapping.JUNGLE_BIRD_BLUE}};
+
+	private static final Object[][] DUCK_FEB_DEFINITIONS = {
+		{44, RetroNpcMapping.DUCK}, {45, RetroNpcMapping.DUCK_FEMALE}, {45, RetroNpcMapping.DUCK_ON_LAND},
+		{46, RetroNpcMapping.DUCKLING}};
+
+	@Test
+	public void testMiscBirdArchetypesAreTheir2005Definitions() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + CACHE_DIR, CACHE_DIR.exists());
+		assumeTrue("Nov-2005 cache not present at " + NOV_CACHE_DIR, NOV_CACHE_DIR.exists());
+
+		Map<Integer, RetroNpcDefinition> feb = NpcMappingGenerator.decodeDefinitions(CACHE_DIR);
+		for (Object[] row : MISC_BIRD_FEB_DEFINITIONS)
+		{
+			assertSheepDefinition(feb.get((int) row[0]), (RetroNpcData) row[1]);
+		}
+
+		Map<Integer, RetroNpcDefinition> nov = NpcMappingGenerator.decodeDefinitions(NOV_CACHE_DIR);
+		for (Object[] row : MISC_BIRD_NOV_DEFINITIONS)
+		{
+			assertSheepDefinition(nov.get((int) row[0]), (RetroNpcData) row[1]);
+		}
+
+		// The ducks stand and walk on seq 7, whose frames the bundle keys under the modern ids
+		for (Object[] row : DUCK_FEB_DEFINITIONS)
+		{
+			RetroNpcDefinition def = feb.get((int) row[0]);
+			RetroNpcData data = (RetroNpcData) row[1];
+			String label = def.getId() + " " + def.getName();
+			assertArrayEquals(label, def.getModels(), data.getRetroModelIds());
+			assertArrayEquals(label, def.getOriginalColors() == null ? new short[0] : def.getOriginalColors(),
+				data.getOriginalColors());
+			assertArrayEquals(label, def.getReplacementColors() == null ? new short[0] : def.getReplacementColors(),
+				data.getReplacementColors());
+			assertEquals(label, def.getScaleXZ(), data.getScaleXZ());
+			assertEquals(label, 7, def.getStanceAnimation());
+			assertEquals(label, 7, def.getWalkAnimation());
+		}
+	}
+
 	/** Defs 136-138: no recolours, no resize, one fused mesh each. */
 	@Test
 	public void testTerrorbirdArchetypesAreTheir2005Definitions() throws Exception

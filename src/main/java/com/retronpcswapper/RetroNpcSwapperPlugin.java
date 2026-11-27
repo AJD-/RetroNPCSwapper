@@ -61,6 +61,7 @@ import com.retronpcswapper.compatibility.RetroSceneryOutliner;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.Actor;
+import net.runelite.api.Animation;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -190,6 +191,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	// Original pose/movement animations per swapped NPC, keyed by NPC index
 	private final Map<Integer, OriginalNpcState> originalNpcState = new HashMap<>();
+
+	// Client cycle the modern death would have ended on, per dying NPC index
+	private final Map<Integer, Integer> deathHolds = new HashMap<>();
 
 	/**
 	 * NPC ids a partner plugin - Custom NPC Models or Custom Servants - is drawing, kept per source,
@@ -512,6 +516,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	{
 		// A transform gives the NPC a different id, which the spawn-time build never saw.
 		// Without reprocessing here the substitution silently stops for that NPC.
+		deathHolds.remove(event.getNpc().getIndex());
 		processNpc(event.getNpc());
 	}
 
@@ -711,6 +716,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			// Only per-NPC bookkeeping is dropped. The cache's substitution memo is keyed by NPC
 			// id, not index, and is shared by every instance of that type, so it is left alone.
 			originalNpcState.remove(npc.getIndex());
+			deathHolds.remove(npc.getIndex());
 			modelCache.forget(npc);
 		}
 	}
@@ -745,6 +751,10 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 		if (anim == -1)
 		{
+			if (holdDeath(npc, data))
+			{
+				return;
+			}
 			// Animation finished - re-enforce retro pose animations (idle / walk)
 			applyRetroSwap(npc, data);
 			return;
@@ -757,11 +767,14 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return;
 		}
 
+		deathHolds.remove(npc.getIndex());
+
 		// Match modern combat animations using Category-Scoped Data Sets
 		if (data.isDeathAnimation(anim))
 		{
 			log.debug("SWAPPING DEATH ANIMATION for NPC '{}' (ID: {}): {} -> {}", npc.getName(), npc.getId(), anim, data.getDeathAnimationId());
 			npc.setAnimation(data.getDeathAnimationId());
+			deathHolds.put(npc.getIndex(), client.getGameCycle() + durationOf(anim));
 		}
 		else if (data.isDefendAnimation(anim))
 		{
@@ -786,6 +799,55 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 	}
 
+	/**
+	 * Keeps a 2005 death that ended early on its last frame until the modern death it replaced
+	 * would have ended, so the corpse does not stand back up before it despawns.
+	 */
+	private boolean holdDeath(NPC npc, RetroNpcData data)
+	{
+		Integer until = deathHolds.get(npc.getIndex());
+		if (until == null)
+		{
+			return false;
+		}
+
+		Animation death = client.loadAnimation(data.getDeathAnimationId());
+		if (death == null || death.getNumFrames() == 0 || client.getGameCycle() >= until)
+		{
+			deathHolds.remove(npc.getIndex());
+			return false;
+		}
+
+		npc.setAnimation(data.getDeathAnimationId());
+		npc.setAnimationFrame(death.getNumFrames() - 1);
+		return true;
+	}
+
+	/** Length of a sequence in client cycles, or 0 when it cannot be loaded. */
+	private int durationOf(int animationId)
+	{
+		Animation animation = client.loadAnimation(animationId);
+		if (animation == null)
+		{
+			return 0;
+		}
+		if (animation.isMayaAnim())
+		{
+			return animation.getDuration();
+		}
+
+		int[] lengths = animation.getFrameLengths();
+		int total = 0;
+		if (lengths != null)
+		{
+			for (int length : lengths)
+			{
+				total += length;
+			}
+		}
+		return total;
+	}
+
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
@@ -793,6 +855,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			|| gameStateChanged.getGameState() == GameState.HOPPING)
 		{
 			originalNpcState.clear();
+			deathHolds.clear();
 			modelCache.clearClocks();
 			targetTracker.reset();
 		}
@@ -968,6 +1031,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 */
 	private void resetNpc(NPC npc)
 	{
+		deathHolds.remove(npc.getIndex());
 		OriginalNpcState state = originalNpcState.remove(npc.getIndex());
 		if (state == null)
 		{
@@ -1170,6 +1234,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 		}
 
 		originalNpcState.clear();
+		deathHolds.clear();
 	}
 
 	/**

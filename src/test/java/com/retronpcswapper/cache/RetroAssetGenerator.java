@@ -191,6 +191,12 @@ public class RetroAssetGenerator
 		// The unicorn was remodelled and re-rigged in place by Dec-2006, clips 288-292 with it
 		new Spec("Unicorns", Source.RETRO, Source.RETRO, new int[]{2933},
 			new int[]{288, 289, 290, 291, 292}),
+		// Duck mesh 2847 is gone from live and seqs 7-9 were reused, so the frames are keyed under
+		// modern ids chosen by frame count (8-frame 6819 takes seq 7 1:1)
+		new Spec("Ducks", Source.RETRO, Source.RETRO, new int[]{2847},
+			new int[]{AnimationID.DUCK_REWORK_WALK, AnimationID.SEAGULL_ATTACK, AnimationID.SEAGULL_DEFEND,
+				AnimationID.DUCK_REWORK_DEATH},
+			new int[]{7, 8, 8, 9}),
 		// The Lost Tribe cave goblins. Live keeps every mesh but re-bound two neck vertices that
 		// live framemap 33 no longer moves with the body, so meshes and clips are both Nov-2005
 		Spec.keyed("Cave goblins", RetroAssetBundle.NOV_HUMAN_KEY_BASE, Source.RETRO_NOV, Source.RETRO_NOV,

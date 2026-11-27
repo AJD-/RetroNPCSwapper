@@ -447,12 +447,27 @@ public interface RetroNpcConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "swapMiscBirds",
+		name = "Misc Birds",
+		description = "<html><body style='width:170px'>Swap the Entrana firebird, Desert Phoenix, ducks, "
+			+ "gulls, seagulls, crows and jungle birds to their 2004/2005 retro models and animations, and "
+			+ "the Hunter birds to their 2006 ones.<br><br>"
+			+ "Ducks need <b>Use Converted 2005 Assets</b>, which is on by default.</body></html>",
+		section = npcTogglesSection,
+		position = 25
+	)
+	default boolean swapMiscBirds()
+	{
+		return true;
+	}
+
+	@ConfigItem(
 		keyName = "swapTerrorbirds",
 		name = "Terrorbirds",
 		description = "<html><body style='width:170px'>Swap terrorbirds and mounted terrorbird gnomes "
 			+ "to their 2004/2005 retro models and animations</body></html>",
 		section = npcTogglesSection,
-		position = 25
+		position = 26
 	)
 	default boolean swapTerrorbirds()
 	{
@@ -468,7 +483,7 @@ public interface RetroNpcConfig extends Config
 			+ "others.<br><br>Follows each NPC's own toggle, and needs <b>Use Converted 2005 Assets</b>, "
 			+ "which is on by default.</body></html>",
 		section = npcTogglesSection,
-		position = 26
+		position = 27
 	)
 	default boolean swapChatheads()
 	{

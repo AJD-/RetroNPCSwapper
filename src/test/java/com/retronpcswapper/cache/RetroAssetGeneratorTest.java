@@ -12,7 +12,11 @@ import java.util.Set;
 
 import com.retronpcswapper.inject.*;
 import net.runelite.api.gameval.AnimationID;
+import net.runelite.cache.IndexType;
 import net.runelite.cache.definitions.ModelDefinition;
+import net.runelite.cache.definitions.SequenceDefinition;
+import net.runelite.cache.definitions.loaders.ModelLoader;
+import net.runelite.cache.fs.Archive;
 import net.runelite.cache.fs.Store;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -31,12 +35,19 @@ import static org.junit.Assume.assumeTrue;
 public class RetroAssetGeneratorTest
 {
 	private static final File RETRO_CACHE_DIR = new File("retrocache/2005cache");
+	private static final File NOV_CACHE_DIR = new File("retrocache/nov2005cache");
 
 	/** Skeleton ready and walk - 2 and 8 frames in both caches. */
 	private static final int[] SKELETON_SEQUENCES = {262, 259};
 
 	/** BEAR_WALK through BEAR_DEATH - every 2005 bear sequence, with equal frame counts in both caches. */
 	private static final int[] BEAR_SEQUENCES = {37, 38, 39, 40, 41, 42, 43, 44};
+
+	/** FIREBIRD_* 114-118 and BIRD_* 341-345, left behind by the bird rework. */
+	private static final int[] MISC_BIRD_SEQUENCES = {114, 115, 116, 117, 118, 341, 342, 343, 344, 345};
+
+	/** CROW_WALK and the three crow idles, Nov-2005 only. */
+	private static final int[] CROW_SEQUENCES = {1722, 1723, 1724, 1725};
 
 	/** TERRORBIRD_WALK through TERRORBIRD_DEATH. */
 	private static final int[] TERRORBIRD_SEQUENCES = {321, 322, 323, 324, 325};
@@ -264,6 +275,156 @@ public class RetroAssetGeneratorTest
 		assertClipPathsAgree(BEAR_SEQUENCES);
 	}
 
+	/** Misc Birds rests on these: the firebird and flying bird clips survive on their 2005 rigs. */
+	@Test
+	public void testRetroAndLiveClipPathsAgreeOnTheMiscBirds() throws Exception
+	{
+		assertClipPathsAgree(MISC_BIRD_SEQUENCES);
+	}
+
+	@Test
+	public void testRetroAndLiveClipPathsAgreeOnTheNovCrows() throws Exception
+	{
+		assertClipPathsAgree(NOV_CACHE_DIR, CROW_SEQUENCES);
+	}
+
+	/** The land duck hides colour 127, which must be the flat water ripples and nothing else. */
+	@Test
+	public void testTheDuckRipplesAreItsOnlyWhiteFaces() throws Exception
+	{
+		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
+		RetroCacheReader retro = new RetroCacheReader(RETRO_CACHE_DIR);
+		assertTrue(retro.init());
+		try
+		{
+			ModelDefinition duck = RetroAssetGenerator.decodeRetroModel(retro, 2847);
+			int ripples = 0;
+			for (int f = 0; f < duck.faceCount; f++)
+			{
+				if (duck.faceColors[f] != 127)
+				{
+					continue;
+				}
+				ripples++;
+				assertEquals("face " + f, 0, duck.vertexY[duck.faceIndices1[f]]);
+				assertEquals("face " + f, 0, duck.vertexY[duck.faceIndices2[f]]);
+				assertEquals("face " + f, 0, duck.vertexY[duck.faceIndices3[f]]);
+			}
+			assertEquals(30, ripples);
+		}
+		finally
+		{
+			retro.close();
+		}
+	}
+
+	/** Every Misc Birds mesh but the duck is its 2005 self in live; {cache, mesh}. */
+	@Test
+	public void testTheCacheBackedBirdMeshesAreIdenticalInLive() throws Exception
+	{
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not present", liveDir != null);
+		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
+		assumeTrue("Nov-2005 cache not present at " + NOV_CACHE_DIR, NOV_CACHE_DIR.exists());
+
+		Object[][] meshes = {{RETRO_CACHE_DIR, 2850}, {RETRO_CACHE_DIR, 2861}, {RETRO_CACHE_DIR, 4836},
+			{NOV_CACHE_DIR, 5443}, {NOV_CACHE_DIR, 6205}, {NOV_CACHE_DIR, 9462}};
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+			for (Object[] row : meshes)
+			{
+				RetroCacheReader retro = new RetroCacheReader((File) row[0]);
+				assertTrue("could not open " + row[0], retro.init());
+				try
+				{
+					int id = (int) row[1];
+					ModelDefinition old = RetroAssetGenerator.decodeRetroModel(retro, id);
+					ModelDefinition live = loadLiveModel(store, id);
+					assertEquals("vertices " + id, old.vertexCount, live.vertexCount);
+					assertEquals("faces " + id, old.faceCount, live.faceCount);
+					assertArrayEquals("x " + id, old.vertexX, live.vertexX);
+					assertArrayEquals("y " + id, old.vertexY, live.vertexY);
+					assertArrayEquals("z " + id, old.vertexZ, live.vertexZ);
+					assertArrayEquals("colours " + id, old.faceColors, live.faceColors);
+					assertArrayEquals("rig " + id, old.getVertexGroups(), live.getVertexGroups());
+				}
+				finally
+				{
+					retro.close();
+				}
+			}
+
+			// The duck is not, which is why it is bundled
+			RetroCacheReader feb = new RetroCacheReader(RETRO_CACHE_DIR);
+			assertTrue(feb.init());
+			try
+			{
+				assertNotEquals(RetroAssetGenerator.decodeRetroModel(feb, 2847).vertexCount,
+					loadLiveModel(store, 2847).vertexCount);
+			}
+			finally
+			{
+				feb.close();
+			}
+		}
+	}
+
+	private static ModelDefinition loadLiveModel(Store store, int id) throws Exception
+	{
+		Archive archive = store.getIndex(IndexType.MODELS).getArchive(id);
+		assertNotNull("live archive " + id, archive);
+		return new ModelLoader().load(id, archive.decompress(store.getStorage().loadArchive(archive)));
+	}
+
+	/**
+	 * Duck seqs 7-9 are keyed under carriers chosen by frame count: the 8-frame walk takes seq 7 frame
+	 * for frame (24 cycles against 2005's 32, the closest carrier), 1014 takes seq 8 likewise, and
+	 * 3468 plays seq 9 once and holds.
+	 */
+	@Test
+	public void testDuckClipsMapOntoTheirCarriers() throws Exception
+	{
+		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
+		assumeTrue("live cache not present", liveDir != null);
+		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
+
+		RetroCacheReader retro = new RetroCacheReader(RETRO_CACHE_DIR);
+		assertTrue("could not open the 2005 cache", retro.init());
+		try (Store store = new Store(liveDir))
+		{
+			store.load();
+			Map<Integer, RetroSeqDefinition> sequences = RetroAssetGenerator.decodeRetroSequences(retro);
+
+			int[] straight = {0, 1, 2, 3, 4, 5, 6, 7};
+			assertArrayEquals(straight, duckMapping(store, sequences, AnimationID.DUCK_REWORK_WALK, 7));
+			assertArrayEquals(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+				duckMapping(store, sequences, AnimationID.SEAGULL_DEFEND, 8));
+			assertArrayEquals(new int[]{0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+				duckMapping(store, sequences, AnimationID.SEAGULL_ATTACK, 8));
+
+			int[] death = duckMapping(store, sequences, AnimationID.DUCK_REWORK_DEATH, 9);
+			assertArrayEquals(straight, Arrays.copyOf(death, 8));
+			for (int i = 8; i < death.length; i++)
+			{
+				assertEquals("and then hold the corpse", 7, death[i]);
+			}
+		}
+		finally
+		{
+			retro.close();
+		}
+	}
+
+	private static int[] duckMapping(Store store, Map<Integer, RetroSeqDefinition> sequences, int liveId, int retroId)
+		throws Exception
+	{
+		SequenceDefinition live = RetroAssetGenerator.loadSequence(store, liveId);
+		RetroSeqDefinition old = sequences.get(retroId);
+		return RetroAssetGenerator.resample(live.frameLengths, old.getFrameLengths(), live.frameIDs.length,
+			old.getFrameCount());
+	}
+
 	/**
 	 * The Kalphite deaths are 2005 clips keyed under longer modern sequences - 5 frames over 40, 13
 	 * over 20, 7 over 34. Each must run through its own frames once and then hold the corpse, not
@@ -354,17 +515,28 @@ public class RetroAssetGeneratorTest
 
 	private static void assertClipPathsAgree(int[] sequenceIds) throws Exception
 	{
-		assertClipPathsAgree(sequenceIds, false);
+		assertClipPathsAgree(RETRO_CACHE_DIR, sequenceIds, false);
+	}
+
+	private static void assertClipPathsAgree(File cacheDir, int[] sequenceIds) throws Exception
+	{
+		assertClipPathsAgree(cacheDir, sequenceIds, false);
+	}
+
+	private static void assertClipPathsAgree(int[] sequenceIds, boolean liveRigMayAppend) throws Exception
+	{
+		assertClipPathsAgree(RETRO_CACHE_DIR, sequenceIds, liveRigMayAppend);
 	}
 
 	/** @param liveRigMayAppend the live rig may carry transforms past the end of the 2005 one */
-	private static void assertClipPathsAgree(int[] sequenceIds, boolean liveRigMayAppend) throws Exception
+	private static void assertClipPathsAgree(File cacheDir, int[] sequenceIds, boolean liveRigMayAppend)
+		throws Exception
 	{
 		File liveDir = RetroAssetGenerator.resolveLiveCacheDir();
 		assumeTrue("live cache not present", liveDir != null);
-		assumeTrue("2005 cache not present at " + RETRO_CACHE_DIR, RETRO_CACHE_DIR.exists());
+		assumeTrue("2005 cache not present at " + cacheDir, cacheDir.exists());
 
-		RetroCacheReader retro = new RetroCacheReader(RETRO_CACHE_DIR);
+		RetroCacheReader retro = new RetroCacheReader(cacheDir);
 		assertTrue("could not open the 2005 cache", retro.init());
 
 		try (Store store = new Store(liveDir))

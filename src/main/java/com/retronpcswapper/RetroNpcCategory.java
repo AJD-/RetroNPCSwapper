@@ -74,6 +74,9 @@ public enum RetroNpcCategory
 	UNICORNS(RetroNpcConfig::swapUnicorns, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
 	// Shares the Unicorns toggle
 	ANGRY_UNICORNS(RetroNpcConfig::swapUnicorns, Geometry.CACHE, Trait.ID_ONLY),
+	MISC_BIRDS(RetroNpcConfig::swapMiscBirds, Geometry.CACHE, Trait.ID_ONLY),
+	// Shares the Misc Birds toggle
+	MISC_BIRD_DUCKS(RetroNpcConfig::swapMiscBirds, Geometry.BUNDLE_ONLY, Trait.ID_ONLY),
 	FISHING_SPOTS(RetroNpcConfig::swapFishingSpots, Geometry.CACHE),
 	TERRORBIRDS(RetroNpcConfig::swapTerrorbirds, Geometry.CACHE, Trait.ID_ONLY);
 
