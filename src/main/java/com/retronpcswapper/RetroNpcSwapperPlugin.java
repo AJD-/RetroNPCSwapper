@@ -195,8 +195,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 * NPC ids a partner plugin - Custom NPC Models or Custom Servants - is drawing, kept per source,
 	 * which this plugin leaves alone entirely: their clips are keyed to the live sequences, so retro
 	 * animations would break them as surely as a retro model.
-	 *
-	 * <p>Thread safe because a partner posts from its shutDown as well as from the client thread.
+	 * <p>
+	 * Thread safe because a partner posts from its shutDown as well as from the client thread.
 	 * Shared with the outliner, which must not pose a claimed NPC from the memo either.
 	 */
 	@Inject
@@ -211,6 +211,9 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private static final String REGION_LOCKER_RENDERER_CLASS = "com.gpu.RegionLockerGpuPlugin$GpuPluginWrapper";
 
 	private static final String REGION_LOCKER_GPU_PLUGIN_CLASS = "com.gpu.RegionLockerGpuPlugin";
+
+	/** GPU (experimental) plugin */
+	private static final String GPU_EXPERIMENTAL_CLASS = "info.sigterm.plugins.gpu.GpuPlugin";
 
 	/** Another Hub plugin, so recognized by class name alone like 117 HD. */
 	private static final String CUSTOM_PLUGIN_CLASS = "com.customnpcmodels.CustomNpcModelsPlugin";
@@ -584,7 +587,7 @@ public class RetroNpcSwapperPlugin extends Plugin
 			}
 		}
 		else if (event.getPlugin() instanceof GpuPlugin || isHdPlugin(event.getPlugin())
-			|| isRegionLockerGpuPlugin(event.getPlugin()))
+			|| isRegionLockerGpuPlugin(event.getPlugin()) || isGpuExperimentalPlugin(event.getPlugin()))
 		{
 			// attach() declines on its own when no supported renderer is holding the slot. 117 HD
 			// installs its renderer asynchronously once GL is up, so the per-tick guard is what
@@ -1164,8 +1167,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 
 	/**
 	 * Takes over the client's draw callbacks slot by wrapping whichever supported renderer holds it:
-	 * the GPU plugin, or 117 HD's zone renderer - directly, or beneath the decorators of Custom NPC
-	 * Models and Custom Servants.
+	 * the GPU plugin, GPU (experimental), Region Locker GPU, or 117 HD's zone renderer - directly, or
+	 * beneath the decorators of Custom NPC Models and Custom Servants.
 	 *
 	 * <p>Declines for anything else - no renderer at all, an unknown one, a decorator it cannot see
 	 * through, or 117 HD's legacy renderer. Which of the plugins stacks on top does not matter: this
@@ -1253,7 +1256,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 	 * name alone - there is no compile or runtime dependency on it, and with it absent nothing here
 	 * matches. The zone renderer package is allowlisted rather than the legacy one denylisted, so a
 	 * renderer 117 HD adds or renames later is declined instead of wrapped blind. Region Locker's
-	 * GPU renderer is matched by its exact class name for the same reason.
+	 * GPU renderer and the Hub's GPU (experimental) are matched by exact class name for the same
+	 * reason.
 	 */
 	static boolean isSupportedHost(DrawCallbacks current, Plugin gpu)
 	{
@@ -1263,7 +1267,8 @@ public class RetroNpcSwapperPlugin extends Plugin
 			return false;
 		}
 		String name = renderer.getClass().getName();
-		return renderer == gpu || isHdZoneRenderer(name) || isRegionLockerRenderer(name);
+		return renderer == gpu || isHdZoneRenderer(name) || isRegionLockerRenderer(name)
+			|| isGpuExperimentalRenderer(name);
 	}
 
 	static boolean isHdZoneRenderer(String className)
@@ -1276,6 +1281,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 		return REGION_LOCKER_RENDERER_CLASS.equals(className);
 	}
 
+	static boolean isGpuExperimentalRenderer(String className)
+	{
+		return GPU_EXPERIMENTAL_CLASS.equals(className);
+	}
+
 	private static boolean isHdPlugin(Plugin plugin)
 	{
 		return plugin != null && HD_PLUGIN_CLASS.equals(plugin.getClass().getName());
@@ -1284,6 +1294,11 @@ public class RetroNpcSwapperPlugin extends Plugin
 	private static boolean isRegionLockerGpuPlugin(Plugin plugin)
 	{
 		return plugin != null && REGION_LOCKER_GPU_PLUGIN_CLASS.equals(plugin.getClass().getName());
+	}
+
+	private static boolean isGpuExperimentalPlugin(Plugin plugin)
+	{
+		return plugin != null && isGpuExperimentalRenderer(plugin.getClass().getName());
 	}
 
 	private static boolean isCustomPlugin(Plugin plugin)

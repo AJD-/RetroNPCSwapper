@@ -77,11 +77,11 @@ public interface RetroNpcConfig extends Config
 	 */
 	@ConfigItem(
 		keyName = "gpuRequiredNotice",
-		name = "<html><body style='width:170px'>This plugin requires the <b>GPU</b>, <b>117 HD</b>"
+		name = "<html><body style='width:170px'>This plugin requires the <b>GPU</b>, <b>GPU (experimental)</b>, <b>117 HD</b>"
 			+ " or <b>Region Locker GPU</b> plugin to be enabled. Models are swapped as the scene is"
 			+ " drawn, so nothing changes while none of them is rendering, or while 117 HD's"
 			+ " <b>Legacy renderer</b> option is on.</body></html>",
-		description = "Retro models are substituted while the GPU, 117 HD or Region Locker GPU plugin renders the scene, so one must be enabled.",
+		description = "Retro models are substituted while the GPU, GPU (experimental), 117 HD or Region Locker GPU plugin renders the scene, so one must be enabled.",
 		position = 0
 	)
 	default void gpuRequiredNotice()
@@ -560,7 +560,7 @@ public interface RetroNpcConfig extends Config
 		name = "Anti-dragon shield",
 		description = "<html><body style='width:170px'>Restore the 2004-2007 anti-dragon shield: its "
 			+ "inventory icon, the model on the ground, and the shield worn by players.<br><br>The "
-			+ "icon swaps on any renderer. The worn shield needs the <b>GPU</b>, <b>117 HD</b> "
+			+ "icon swaps on any renderer. The worn shield needs the <b>GPU</b>, <b>GPU (experimental)</b>, <b>117 HD</b> "
 			+ "or <b>Region Locker GPU</b> plugin.</body></html>",
 		section = itemsSection,
 		position = 1
