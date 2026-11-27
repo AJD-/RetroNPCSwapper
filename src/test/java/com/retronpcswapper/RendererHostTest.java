@@ -39,8 +39,8 @@ import org.junit.Test;
 /**
  * Which slot holders the draw callbacks decorator is allowed to wrap.
  * <p>
- * 117 HD and Region Locker are matched by class name, so they are tested with names rather than
- * stand-in classes.
+ * 117 HD, Region Locker and GPU (experimental) are matched by class name, so they are tested with
+ * names rather than stand-in classes.
  * A stub declared under 117 HD's real package would sit on the {@code run} task's classpath, and
  * the Hub plugin's parent-first classloader could resolve 117 HD's own renderer to it.
  */
@@ -120,6 +120,21 @@ public class RendererHostTest
 		assertFalse(RetroNpcSwapperPlugin.isRegionLockerRenderer("com.gpu.RegionLockerGpuPlugin"));
 		assertFalse(RetroNpcSwapperPlugin.isRegionLockerRenderer("com.gpu.runelite.GpuPlugin"));
 		assertFalse(RetroNpcSwapperPlugin.isRegionLockerRenderer("com.gpu.SomeOtherRenderer"));
+	}
+
+	@Test
+	public void testTheGpuExperimentalRendererIsRecognised()
+	{
+		assertTrue(RetroNpcSwapperPlugin.isGpuExperimentalRenderer("info.sigterm.plugins.gpu.GpuPlugin"));
+	}
+
+	@Test
+	public void testGpuExperimentalLookalikesAreDeclined()
+	{
+		// Core GPU is matched by instance, and an old fork used a different package
+		assertFalse(RetroNpcSwapperPlugin.isGpuExperimentalRenderer("net.runelite.client.plugins.gpu.GpuPlugin"));
+		assertFalse(RetroNpcSwapperPlugin.isGpuExperimentalRenderer("info.sigterm.plugins.gpue.GpuPluginExperimental"));
+		assertFalse(RetroNpcSwapperPlugin.isGpuExperimentalRenderer("info.sigterm.plugins.gpu.SceneUploader"));
 	}
 
 	@Test

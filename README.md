@@ -56,7 +56,7 @@ Under **Scenery**:
 
 ## Requirements
 
-**The `GPU`, `117 HD` or `Region Locker GPU` plugin must be enabled.** Models are substituted via their specific renderers,
+**The `GPU`, `GPU (experimental)`, `117 HD` or `Region Locker GPU` plugin must be enabled.** Models are substituted via their specific renderers,
 and the stock CPU renderer and 117 HD's optional **Legacy renderer** are not supported. The plugin will
 automatically detect this and stand down until a supported renderer holds the renderer slot.
 
@@ -119,7 +119,7 @@ the live objects around it. The Varrock retextures are not supported.
 - Safety settings (on by default) disable all swapping on PvP worlds and in the Wilderness.
 
 There is currently no sanctioned RuneLite API for overriding NPC models, which is why the plugin
-utilizes the GPU, 117 HD or Region Locker GPU renderer's draw callbacks.
+utilizes the GPU, GPU (experimental), 117 HD or Region Locker GPU renderer's draw callbacks.
 
 </details>
 
